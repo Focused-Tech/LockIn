@@ -24,11 +24,36 @@ function isNativeRuntime(): boolean {
 }
 
 /**
+ * Master switch for native push. Push is DEFERRED until FCM is configured, so
+ * this is OFF by default. While off, {@link initPush} returns before it ever
+ * touches the native PushNotifications plugin.
+ *
+ * WHY: on Android, `PushNotifications.register()` calls
+ * `FirebaseMessaging.getInstance()`, which throws
+ * `IllegalStateException: Default FirebaseApp is not initialized` and crashes
+ * the whole process when `android/app/google-services.json` is absent (the
+ * `com.google.gms.google-services` Gradle plugin never applies, so no default
+ * FirebaseApp exists). The crash hit on the first authenticated screen because
+ * NativeBridge mounts there and calls initPush().
+ *
+ * TO ENABLE PUSH LATER (the on-switch):
+ *   1. Add `android/app/google-services.json` (and iOS APNs config).
+ *   2. Set `NEXT_PUBLIC_PUSH_ENABLED=true` (or flip the default below to true).
+ */
+export const PUSH_ENABLED = process.env.NEXT_PUBLIC_PUSH_ENABLED === "true";
+
+/**
  * Register for push on the native app: request permission, get the FCM/APNs
  * token, persist it on the user doc, and route taps to their deep link. No-ops
  * on web (the PWA path). Safe to call once on mount.
  */
 export async function initPush(): Promise<void> {
+  if (!PUSH_ENABLED) {
+    // Visible, greppable disabled-state marker (no silent failure). Surfaces in
+    // Android logcat under the `chromium` CONSOLE tag from the WebView.
+    console.info("[push] disabled — FCM not configured");
+    return;
+  }
   if (!isNativeRuntime()) return;
   const { PushNotifications } = await import("@capacitor/push-notifications");
 
