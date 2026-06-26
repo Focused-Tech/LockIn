@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { isNativePlatform } from "@/lib/platform";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -19,7 +20,10 @@ export function PwaSetup() {
     useState<BeforeInstallPromptEvent | null>(null);
 
   useEffect(() => {
-    if ("serviceWorker" in navigator) {
+    // Do NOT register the service worker inside the Capacitor native WebView.
+    // The SW intercepting navigations caused post-deploy ERR_FAILED reload loops
+    // in the APK; the native shell doesn't need offline caching. Web only.
+    if (!isNativePlatform() && "serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     }
 
