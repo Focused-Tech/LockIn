@@ -11,9 +11,11 @@ export default async function ExplorePage() {
   const profile = await getCurrentUserProfile();
   if (!profile) redirect("/login");
 
-  // Respect the persisted lane: beginner-lane users land on their guided feed.
-  // (Switching to Advanced from the beginner toggle sets the lane, so this
-  // won't loop.) Users predating the journey default to this advanced feed.
+  // Route by persisted lane. Anyone without a lane yet — every new signup, and
+  // any existing account predating the journey — is sent to the choose-your-
+  // journey picker first (so nobody is stuck on old Explore). Beginner-lane
+  // users land on their guided feed; advanced falls through to this Explore.
+  if (!profile.journeyLane) redirect("/app/choose");
   if (profile.journeyLane === "beginner") redirect("/app/beginner");
 
   const [slates, signals] = await Promise.all([
