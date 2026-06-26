@@ -133,5 +133,12 @@ service cloud.firestore {
       allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow write: if false;
     }
+
+    // beginnerEntries — owner reads their own; the coin debit + write are
+    // server-side (Admin SDK) in lockBeginnerEntry.
+    match /beginnerEntries/{entryId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow write: if false;
+    }
   }
 }

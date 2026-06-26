@@ -11,6 +11,11 @@ export default async function ExplorePage() {
   const profile = await getCurrentUserProfile();
   if (!profile) redirect("/login");
 
+  // Respect the persisted lane: beginner-lane users land on their guided feed.
+  // (Switching to Advanced from the beginner toggle sets the lane, so this
+  // won't loop.) Users predating the journey default to this advanced feed.
+  if (profile.journeyLane === "beginner") redirect("/app/beginner");
+
   const [slates, signals] = await Promise.all([
     fetchFeedSlates(adminDb()),
     fetchRecSignals(adminDb(), profile.id, profile.followedCreators ?? []),
@@ -26,6 +31,12 @@ export default async function ExplorePage() {
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          <Link
+            href="/app/beginner"
+            className="rounded border border-border px-3 py-1.5 text-sm font-medium text-muted hover:text-foreground"
+          >
+            Beginner
+          </Link>
           <Link
             href="/app/packages"
             className="rounded border border-border px-3 py-1.5 text-sm font-medium text-muted hover:text-foreground"

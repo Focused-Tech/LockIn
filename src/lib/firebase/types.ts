@@ -47,7 +47,12 @@ export const COLLECTIONS = {
   creatorApplications: "creatorApplications",
   /** Cross-slate parlays: crossParlays/{parlayId}. */
   crossParlays: "crossParlays",
+  /** Beginner-journey entries: beginnerEntries/{entryId}. */
+  beginnerEntries: "beginnerEntries",
 } as const;
+
+/** Which Explore lane a user has chosen (set at onboarding, switchable later). */
+export type JourneyLane = "beginner" | "advanced";
 
 export type KycStatus = "none" | "pending" | "verified" | "failed";
 export type CreatorTier = "basic" | "pro" | "elite" | "partner";
@@ -106,6 +111,20 @@ export interface UserDoc {
   referralCount: number;
   /** Cumulative cash earned from referrals (cents). */
   referralEarningsCents: number;
+  /**
+   * Chosen Explore lane. Undefined for users created before the beginner journey
+   * shipped (they default to the advanced/existing Explore). Set at onboarding
+   * and switchable from the in-feed lane toggle.
+   */
+  journeyLane?: JourneyLane;
+  /**
+   * Creator's historical pick hit-rate (0–100) shown on beginner cards. There is
+   * NO engine computing this yet (creator-accuracy scoring is unbuilt), so it is
+   * null/undefined for real creators and surfaced honestly ("no track record
+   * yet") rather than faked. Seed data sets it for demo creators so the journey
+   * is walkable. Only meaningful on docs where isCreator is true.
+   */
+  creatorHitRate?: number | null;
   createdAt: FsTimestamp;
 }
 
@@ -174,6 +193,36 @@ export interface EntryDoc {
   payoutCoins: number | null;
   /** True when the entry was refunded (tier under the min-participant floor). */
   refunded: boolean;
+  submittedAt: FsTimestamp;
+}
+
+// ── beginnerEntries/{entryId} ──────────────────────────────────────────────────
+/** One leg of a beginner combo: a yes/no call on a single prediction. */
+export interface BeginnerEntryLeg {
+  slateId: string;
+  predictionId: string;
+  /** The user's call. */
+  choice: "a" | "b";
+  /** Denormalized for display (no joins on the history view). */
+  question: string;
+  pickLabel: string;
+}
+
+/**
+ * A beginner-journey entry: 1–4 yes/no legs staked in coins. The coin debit is
+ * REAL and persisted here. Settlement is NOT wired — there is no real scoring of
+ * these entries yet (out of scope); `winUpToCoins` is the illustrative tunable
+ * projection captured at lock time, not a settled payout.
+ */
+export interface BeginnerEntryDoc {
+  userId: string;
+  creatorId: string | null;
+  legs: BeginnerEntryLeg[];
+  stakeCoins: number;
+  /** Illustrative "win up to" from the tunable model at lock time (not settled). */
+  winUpToCoins: number;
+  /** Always false until a real beginner-settlement engine exists. */
+  settled: boolean;
   submittedAt: FsTimestamp;
 }
 

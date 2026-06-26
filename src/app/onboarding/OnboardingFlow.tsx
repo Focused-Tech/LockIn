@@ -13,6 +13,8 @@ import {
   verifyIdentity,
   type KycInput,
 } from "./actions";
+import { setJourneyLane } from "@/app/app/beginner/actions";
+import type { JourneyLane } from "@/lib/firebase/types";
 import type { GuidedSlate } from "./guided";
 
 interface Category {
@@ -20,7 +22,7 @@ interface Category {
   icon: string;
 }
 
-const STEPS = ["Interests", "Verify", "First pick"] as const;
+const STEPS = ["Interests", "Verify", "First pick", "Your lane"] as const;
 
 export function OnboardingFlow({
   categories,
@@ -29,7 +31,6 @@ export function OnboardingFlow({
   categories: Category[];
   guided: GuidedSlate;
 }) {
-  const router = useRouter();
   const [step, setStep] = useState(0);
 
   return (
@@ -47,9 +48,66 @@ export function OnboardingFlow({
       )}
       {step === 1 && <KycStep onDone={() => setStep(2)} />}
       {step === 2 && (
-        <GuidedPickStep guided={guided} onDone={() => router.push("/app")} />
+        <GuidedPickStep guided={guided} onDone={() => setStep(3)} />
       )}
+      {step === 3 && <JourneyChoiceStep />}
     </main>
+  );
+}
+
+// ── Step 4: choose your lane (beginner vs advanced) ─────────────────────────────
+function JourneyChoiceStep() {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [choosing, setChoosing] = useState<JourneyLane | null>(null);
+
+  const choose = (lane: JourneyLane) =>
+    startTransition(async () => {
+      setChoosing(lane);
+      await setJourneyLane(lane);
+      router.push(lane === "beginner" ? "/app/beginner" : "/app");
+    });
+
+  return (
+    <div className="flex flex-1 flex-col gap-6">
+      <div className="text-center">
+        <h1 className="text-2xl font-semibold">How do you want to start?</h1>
+        <p className="mt-1 text-sm text-muted">
+          You can switch lanes any time from the feed.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => choose("beginner")}
+        disabled={pending}
+        aria-busy={choosing === "beginner"}
+        className="flex flex-col gap-1 rounded-xl border border-accent-border bg-accent-soft p-5 text-left transition-colors disabled:opacity-60"
+      >
+        <span className="text-base font-bold text-accent">Beginner — simple &amp; guided</span>
+        <span className="text-sm text-muted">
+          Creator picks, plain-language calls, coins not odds. We teach you up to
+          the full game, step by step.
+        </span>
+      </button>
+
+      <button
+        type="button"
+        onClick={() => choose("advanced")}
+        disabled={pending}
+        aria-busy={choosing === "advanced"}
+        className="flex flex-col gap-1 rounded-xl border border-border bg-surface-card p-5 text-left transition-colors disabled:opacity-60"
+      >
+        <span className="text-base font-bold text-foreground">Advanced — full market</span>
+        <span className="text-sm text-muted">
+          Every contest, odds, and parlays. The complete Explore feed.
+        </span>
+      </button>
+
+      {pending && (
+        <p className="text-center text-sm text-muted">Setting up your feed…</p>
+      )}
+    </div>
   );
 }
 

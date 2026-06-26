@@ -16,6 +16,7 @@
     "stripe:price": "node scripts/create-pro-price.mjs",
     "backfill:category-stats": "node scripts/backfill-category-stats.mjs",
     "seed:creators": "node scripts/seed-creators.mjs",
+    "seed:beginner": "node scripts/seed-beginner.mjs",
     "seed:settlement-demo": "node scripts/seed-settlement-demo.mjs",
     "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes,storage"
   },
