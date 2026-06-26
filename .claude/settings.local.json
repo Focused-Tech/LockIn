@@ -63,7 +63,9 @@
       "Read(//c/Users/frank/AppData/Local/Android/Sdk/platform-tools/**)",
       "Bash(npx firebase-tools *)",
       "Bash(npx vercel *)",
-      "Bash(adb devices *)"
+      "Bash(adb devices *)",
+      "Bash(git add *)",
+      "Bash(git commit -q -m 'Backup: pre-removal of leftover First pick onboarding step *)"
     ]
   }
 }
