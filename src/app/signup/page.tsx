@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { SkillGameDisclaimer } from "@/components/SkillGameDisclaimer";
+import { getCurrentUser } from "@/lib/firebase/session";
 import { SignupForm } from "./SignupForm";
 
 export default async function SignupPage({
@@ -8,6 +10,10 @@ export default async function SignupPage({
 }: {
   searchParams: Promise<{ ref?: string }>;
 }) {
+  // Verified bounce for already-signed-in users (real check, not cookie
+  // presence — avoids the /login<->/app loop on a present-but-invalid cookie).
+  if (await getCurrentUser()) redirect("/app");
+
   const { ref } = await searchParams;
 
   return (

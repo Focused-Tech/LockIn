@@ -3,15 +3,19 @@ import { SESSION_COOKIE } from "@/lib/firebase/config";
 
 /** Routes that require an authenticated session. */
 const PROTECTED_PREFIXES = ["/app", "/onboarding"];
-/** Auth routes a signed-in user should be bounced away from. */
-const AUTH_ROUTES = ["/login", "/signup"];
 
 /**
  * Coarse route protection based on presence of the Firebase session cookie.
  * The cookie is NOT cryptographically verified here — firebase-admin requires
  * the Node.js runtime, and middleware runs on Edge. Server components/route
  * handlers verify it for real via getCurrentUser(); this only avoids obvious
- * unauthenticated navigation and keeps auth pages out of signed-in users' way.
+ * unauthenticated navigation to protected pages.
+ *
+ * NOTE: we deliberately do NOT bounce signed-in users away from /login,/signup
+ * here. That was presence-based, and a present-but-invalid cookie created an
+ * infinite loop (server bounced /app->/login while middleware bounced
+ * /login->/app). The auth-route bounce now lives in the login/signup server
+ * components, which verify the session for real before redirecting to /app.
  */
 export function middleware(request: NextRequest) {
   const hasSession = Boolean(request.cookies.get(SESSION_COOKIE)?.value);
@@ -19,10 +23,6 @@ export function middleware(request: NextRequest) {
 
   if (!hasSession && PROTECTED_PREFIXES.some((p) => pathname.startsWith(p))) {
     return redirectTo(request, "/login");
-  }
-
-  if (hasSession && AUTH_ROUTES.includes(pathname)) {
-    return redirectTo(request, "/app");
   }
 
   return NextResponse.next();

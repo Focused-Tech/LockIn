@@ -1,9 +1,15 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { SkillGameDisclaimer } from "@/components/SkillGameDisclaimer";
+import { getCurrentUser } from "@/lib/firebase/session";
 import { LoginForm } from "./LoginForm";
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  // Verified bounce for already-signed-in users (real check, not cookie
+  // presence — avoids the /login<->/app loop on a present-but-invalid cookie).
+  if (await getCurrentUser()) redirect("/app");
+
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-6 p-6">
       <Link href="/" className="self-center">
