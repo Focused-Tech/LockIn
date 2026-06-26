@@ -1,6 +1,9 @@
 "use client";
 
 import { storeDeviceToken } from "./tokenActions";
+import { deepLinkToInAppPath } from "./deepLink";
+
+export { deepLinkToInAppPath };
 
 /**
  * True only inside the Capacitor native webview. We detect this via the
@@ -76,9 +79,14 @@ export async function initPush(): Promise<void> {
   await PushNotifications.register();
 }
 
+// A deep link that cold-starts the app is delivered once via getLaunchUrl();
+// guard so it's consumed a single time per process (NativeBridge can remount).
+let launchUrlConsumed = false;
+
 /**
- * Handle universal/app links (lockin.gg/s/<slateId>) opened into the native app
- * by routing to the in-app path. No-ops on web.
+ * Handle deep links opened into the native app — both the custom `lockin://`
+ * scheme and https app links — by routing to the in-app path. Covers a warm app
+ * (appUrlOpen) and a cold start (getLaunchUrl). No-ops on web.
  */
 export async function initDeepLinks(
   navigate: (path: string) => void,
@@ -86,12 +94,24 @@ export async function initDeepLinks(
   if (!isNativeRuntime()) return;
   const { App } = await import("@capacitor/app");
 
-  await App.addListener("appUrlOpen", (event) => {
+  const route = (rawUrl: string, source: string) => {
+    const path = deepLinkToInAppPath(rawUrl);
+    // Greppable in Android logcat under the `chromium` CONSOLE tag (WebView).
+    console.info(`[deeplink] ${source} url=${rawUrl} -> path=${path ?? "(none)"}`);
+    if (path) navigate(path);
+  };
+
+  // Warm app: an incoming VIEW intent (e.g. lockin://slate/<id>) fires this.
+  await App.addListener("appUrlOpen", (event) => route(event.url, "appUrlOpen"));
+
+  // Cold start: the launch intent's URL isn't replayed through appUrlOpen.
+  if (!launchUrlConsumed) {
+    launchUrlConsumed = true;
     try {
-      const u = new URL(event.url);
-      navigate(u.pathname + u.search);
+      const launch = await App.getLaunchUrl();
+      if (launch?.url) route(launch.url, "launchUrl");
     } catch {
-      /* malformed url — ignore */
+      /* no launch url */
     }
-  });
+  }
 }

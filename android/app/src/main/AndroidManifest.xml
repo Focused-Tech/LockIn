@@ -22,6 +22,18 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- Deep links: lockin://slate/<slateId> opens the app to that slate
+                 (and lockin://<path> generally). BROWSABLE lets a browser/IG link
+                 launch it; DEFAULT lets an implicit VIEW intent resolve here.
+                 Capacitor's App plugin delivers the URL to the JS appUrlOpen
+                 listener (see src/lib/notifications/native.ts). -->
+            <intent-filter android:label="@string/app_name">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="lockin" />
+            </intent-filter>
+
         </activity>
 
         <provider
