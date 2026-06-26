@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>LockIn — Beginner Journey (proposed v2)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+*::-webkit-scrollbar{display:none}*{scrollbar-width:none}
+:root{
+  --bg:#0A0D12;--sf:#0D1118;--cd:#12161E;--cd2:#161B25;--bd:#1E2A38;--bd2:#2A3A4D;
+  --tx:#E8ECF2;--mt:#6B7A8E;--ht:#3A4A5C;
+  --cy:#FF3B00;--cyb:rgba(255,59,0,.12);--cybd:rgba(255,59,0,.30);--cyg:rgba(255,59,0,.06);
+  --wn:#22C55E;--wnb:rgba(34,197,94,.12);--wnbd:rgba(34,197,94,.28);
+  --ls:#E8A14E;--lsb:rgba(232,161,78,.10);--lsbd:rgba(232,161,78,.25);
+  --cash:#3DD68C;--cashb:rgba(61,214,140,.10);
+  --gold:#F5A623;--ru:#9B5DE5;--rub:rgba(155,93,229,.10);--rubd:rgba(155,93,229,.28);
+}
+html,body{height:100%;background:#111;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--tx);overflow:hidden}
+body{display:flex;justify-content:center;align-items:center}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pop{0%{transform:scale(.97);opacity:0}100%{transform:scale(1);opacity:1}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+.phone{width:390px;max-width:100vw;height:100vh;max-height:820px;background:var(--bg);display:flex;flex-direction:column;position:relative;overflow:hidden}
+@media(min-width:420px){.phone{border-radius:38px;border:2px solid var(--bd);height:800px}}
+.topnav{display:flex;align-items:center;justify-content:space-between;padding:13px 16px 9px;flex-shrink:0;background:var(--sf)}
+.tnl{display:flex;align-items:center;gap:8px}
+.back{width:26px;height:26px;border-radius:50%;border:1px solid var(--bd);background:transparent;color:var(--mt);font-size:15px;display:none;align-items:center;justify-content:center}
+.logo{font-weight:800;font-size:19px;letter-spacing:1.4px;color:var(--cy)}.logo span{color:var(--tx)}
+.coins{border-radius:18px;padding:4px 11px;font-size:11px;font-weight:700;background:var(--cyb);border:1px solid var(--cybd);color:var(--gold)}
+.prog{display:flex;gap:3px;padding:9px 16px;flex-shrink:0;background:var(--sf);border-bottom:1px solid var(--bd)}
+.dot{flex:1;height:3px;border-radius:2px;background:var(--bd);transition:background .2s}
+.dot.done{background:var(--cy)}.dot.now{background:var(--cy);opacity:.55}
+.scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.screen{display:none;flex-direction:column;flex:1;animation:fadeIn .28s ease;padding:20px 18px}
+.screen.active{display:flex}
+.h1{font-size:23px;font-weight:800;line-height:1.2;letter-spacing:-.4px}
+.h2{font-size:16px;font-weight:700}
+.sub{font-size:13px;color:var(--mt);line-height:1.6}
+.eyebrow{font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--cy)}
+.btn{width:100%;padding:14px;border-radius:11px;font-size:14px;font-weight:700;border:1px solid;transition:transform .1s,background .15s}
+.btn:active{transform:scale(.98)}
+.btn-cy{background:var(--cy);color:#fff;border-color:var(--cy)}
+.btn-out{background:transparent;color:var(--tx);border-color:var(--bd2)}
+.btn-ghost{background:transparent;color:var(--mt);border-color:transparent;font-weight:600}
+.btn-ru{background:var(--rub);color:#c9a8f5;border-color:var(--rubd)}
+.cta{padding:14px 18px;flex-shrink:0;background:var(--sf);border-top:1px solid var(--bd);display:flex;flex-direction:column;gap:8px}
+.lcard{background:var(--cd);border:1px solid var(--bd);border-radius:16px;padding:16px;animation:pop .25s ease}
+.creator{display:flex;align-items:center;gap:11px}
+.av{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0}
+.av-m{background:rgba(255,59,0,.14);border:1.5px solid var(--cybd);color:var(--cy)}
+.av-j{background:rgba(34,197,94,.14);border:1.5px solid var(--wnbd);color:var(--wn)}
+.cname{font-size:14px;font-weight:700}.crate{font-size:11px;color:var(--mt)}.crate b{color:var(--wn)}
+.lanes{display:flex;gap:6px;background:var(--cd);border:1px solid var(--bd);border-radius:13px;padding:4px}
+.lane{flex:1;text-align:center;font-size:12px;font-weight:700;padding:9px;border-radius:9px;color:var(--mt);border:1px solid transparent;transition:all .15s}
+.lane.on{background:var(--cyb);color:var(--cy);border-color:var(--cybd)}
+.lane small{display:block;font-size:8px;font-weight:600;letter-spacing:.5px;opacity:.7;margin-top:1px}
+.lanenote{font-size:11px;color:var(--gold);background:var(--lsb);border:1px solid var(--lsbd);border-radius:9px;padding:9px 11px;line-height:1.5;display:none;animation:fadeIn .2s}
+.q{font-size:16px;font-weight:700;line-height:1.35;margin:13px 0}
+.outcome{width:100%;text-align:left;background:var(--cd2);border:1px solid var(--bd);border-radius:11px;padding:11px 13px;margin-bottom:8px;transition:all .15s}
+.outcome:active{transform:scale(.99)}.outcome:hover{border-color:var(--bd2)}
+.orow{display:flex;justify-content:space-between;align-items:center;font-size:14px;font-weight:700;margin-bottom:8px}
+.oagree{font-size:12px;color:var(--mt);font-weight:600}
+.bar{height:6px;border-radius:99px;background:var(--bg);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:99px}
+.bar-y i{background:var(--wn)}.bar-n i{background:var(--ht)}
+.meta{display:flex;align-items:center;justify-content:space-between;margin-top:12px;font-size:12px}
+.reward{color:var(--gold);font-weight:600}.closes{color:var(--mt)}
+.howrow{display:flex;gap:13px;align-items:flex-start;margin-bottom:15px}
+.hn{width:30px;height:30px;border-radius:9px;background:var(--cyb);border:1px solid var(--cybd);color:var(--cy);font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ht{font-size:14px;font-weight:700;margin-bottom:2px}.hs{font-size:12px;color:var(--mt);line-height:1.5}
+.chips{display:flex;gap:8px;margin:6px 0 14px}
+.chip{flex:1;text-align:center;padding:12px 0;border-radius:11px;background:var(--cd2);border:1px solid var(--bd);font-size:15px;font-weight:700;transition:all .15s}
+.chip.on{background:var(--cyb);border-color:var(--cybd);color:var(--cy)}
+.summary{background:var(--cd);border:1px solid var(--bd);border-radius:13px;padding:14px;margin-bottom:4px}
+.srow{display:flex;justify-content:space-between;font-size:13px;padding:5px 0}
+.srow .sl{color:var(--mt)}.srow .sr{font-weight:700}
+.big{font-size:44px;font-weight:800;text-align:center;letter-spacing:-1px;line-height:1}
+.resultpill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:6px 13px;border-radius:99px}
+.nudge{background:var(--rub);border:1px solid var(--rubd);border-radius:16px;padding:16px}
+.foot{padding:7px 16px;font-size:8px;color:var(--ht);line-height:1.5;text-align:center;border-top:1px solid var(--bd);flex-shrink:0;background:var(--sf)}
+.mini{font-size:11px;color:var(--mt)}
+.tunable{font-size:8px;font-weight:700;letter-spacing:.5px;color:var(--gold);background:var(--lsb);border:1px solid var(--lsbd);border-radius:5px;padding:2px 6px;display:inline-block}
+/* parlay ladder */
+.leg{display:flex;align-items:center;gap:10px;background:var(--cd2);border:1px solid var(--bd);border-radius:11px;padding:10px 12px;margin-bottom:7px}
+.legn{width:22px;height:22px;border-radius:6px;background:var(--cyb);color:var(--cy);font-weight:800;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.legq{font-size:12px;font-weight:600;flex:1;line-height:1.3}
+.legrm{font-size:11px;color:var(--mt);background:transparent;border:none;padding:4px}
+.addrow{display:flex;align-items:center;gap:10px;border:1px dashed var(--bd2);border-radius:11px;padding:10px 12px;margin-bottom:7px}
+.addbtn{font-size:11px;font-weight:700;color:var(--cy);background:var(--cyb);border:1px solid var(--cybd);border-radius:7px;padding:6px 10px}
+.grow{display:flex;gap:6px;margin:4px 0 6px}
+.gcell{flex:1;text-align:center;background:var(--cd2);border:1px solid var(--bd);border-radius:9px;padding:8px 4px}
+.gcell.on{background:var(--wnb);border-color:var(--wnbd)}
+.gcell .gl{font-size:8px;color:var(--mt);font-weight:600}
+.gcell .gv{font-size:13px;font-weight:800;color:var(--wn);margin-top:2px}
+.gcell.on .gl{color:var(--wn)}
+/* paid meter */
+.meter{position:relative;height:30px;border-radius:8px;background:var(--cd2);border:1px solid var(--bd);overflow:hidden;margin:8px 0 4px}
+.paidzone{position:absolute;left:0;top:0;bottom:0;width:30%;background:var(--wnb);border-right:1.5px dashed var(--wnbd)}
+.paidlbl{position:absolute;left:6px;top:7px;font-size:8px;font-weight:700;color:var(--wn)}
+.marker{position:absolute;top:3px;bottom:3px;width:3px;border-radius:2px;background:var(--cy);transition:left .25s}
+.markerlbl{position:absolute;top:-2px;font-size:8px;font-weight:700;color:var(--cy);transform:translateX(-50%);white-space:nowrap;transition:left .25s}
+.stepper{display:flex;align-items:center;justify-content:center;gap:16px;margin:8px 0}
+.stepbtn{width:34px;height:34px;border-radius:9px;background:var(--cd2);border:1px solid var(--bd);color:var(--tx);font-size:18px;font-weight:700}
+.shadow{background:var(--cashb);border:1px solid rgba(61,214,140,.28);border-radius:13px;padding:14px;margin-top:10px}
+.divider{border:none;border-top:1px solid var(--bd);margin:12px 0}
+</style>
+</head>
+<body>
+<div class="phone" id="app">
+
+  <div class="topnav">
+    <div class="tnl"><button class="back" id="back" aria-label="Back">&#8249;</button><div class="logo">LOCK<span>IN</span></div></div>
+    <div class="coins" id="coins">&#129689; 500</div>
+  </div>
+  <div class="prog" id="prog"></div>
+
+  <div class="scroll">
+
+    <!-- 0 FOLLOWED IN -->
+    <section class="screen active" data-screen="0">
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:center">
+        <div class="eyebrow" style="margin-bottom:14px">You followed Marcus here</div>
+        <div class="creator" style="margin-bottom:20px"><div class="av av-m">MR</div><div><div class="cname">Marcus Reed</div><div class="crate">his picks hit <b>64%</b> of the time</div></div></div>
+        <div class="h1">Marcus calls what<br>happens next.<br><span style="color:var(--cy)">Now it's your turn.</span></div>
+        <p class="sub" style="margin-top:14px">Agree or disagree with his picks — and the community's. Call it right, win coins.</p>
+        <div class="lcard" style="margin-top:22px;text-align:center;border-color:var(--cybd);background:var(--cyg)"><div style="font-size:30px;font-weight:800;color:var(--gold)">&#129689; 500</div><div class="mini" style="margin-top:2px">free coins to start — no real money, this one's on us</div></div>
+      </div>
+    </section>
+
+    <!-- 1 HOW IT WORKS -->
+    <section class="screen" data-screen="1">
+      <div class="eyebrow" style="margin-bottom:6px">The whole idea</div>
+      <div class="h1" style="font-size:21px;margin-bottom:20px">How you actually win</div>
+      <div class="howrow"><div class="hn">1</div><div><div class="ht">Pick what you think happens</div><div class="hs">Tap yes or no on real questions. No odds to decode — just your call.</div></div></div>
+      <div class="howrow"><div class="hn">2</div><div><div class="ht">Only the top 30% win the pool</div><div class="hs">Everyone's entry builds one prize pool. The most accurate 30% split it — the rest win nothing. So being right <b style="color:var(--tx)">more often</b> is the whole game.</div></div></div>
+      <div class="howrow"><div class="hn">3</div><div><div class="ht">Stack correct calls to climb</div><div class="hs">One right pick rarely gets you there — lots of people get a coin flip right. Combine a few correct calls and you rise toward the winning 30%. We'll show you how, step by step.</div></div></div>
+      <div class="lcard"><div class="hs" style="color:var(--mt)">Start simple with single picks. We'll introduce combining only when you're ready — never required. Switch to the full Advanced view any time.</div></div>
+    </section>
+
+    <!-- 2 EXPLORE -->
+    <section class="screen" data-screen="2">
+      <div class="lanes" style="margin-bottom:14px"><div class="lane on" id="laneBeg">Beginner<small>SIMPLE &amp; GUIDED</small></div><div class="lane" id="laneAdv">Advanced<small>FULL MARKET</small></div></div>
+      <div class="lanenote" id="laneNote">The full market — odds, parlays, every contest — is here when you want it. For now we'll keep you in the simple lane and teach you up to it. Switch any time.</div>
+      <div class="lcard" style="margin-top:4px;margin-bottom:12px">
+        <div class="creator"><div class="av av-m">MR</div><div><div class="cname">Marcus Reed</div><div class="crate">picks hit <b>64%</b></div></div></div>
+        <div class="q">Will the Chiefs beat the Ravens tonight?</div>
+        <button class="outcome pickbtn" data-side="Yes" data-agree="68"><div class="orow"><span>Yes</span><span class="oagree">68% agree</span></div><div class="bar bar-y"><i style="width:68%"></i></div></button>
+        <button class="outcome pickbtn" data-side="No" data-agree="32"><div class="orow"><span>No</span><span class="oagree">32% agree</span></div><div class="bar bar-n"><i style="width:32%"></i></div></button>
+        <div class="meta"><span class="reward">&#129689; play 50 · win up to 120</span><span class="closes">closes in 3h</span></div>
+      </div>
+      <div class="lcard">
+        <div class="creator"><div class="av av-j">JL</div><div><div class="cname">Jenna Lopez</div><div class="crate">picks hit <b>59%</b></div></div></div>
+        <div class="q">Will Bitcoin close above $90k Friday?</div>
+        <button class="outcome pickbtn" data-side="Yes" data-agree="54"><div class="orow"><span>Yes</span><span class="oagree">54% agree</span></div><div class="bar bar-y"><i style="width:54%"></i></div></button>
+        <button class="outcome pickbtn" data-side="No" data-agree="46"><div class="orow"><span>No</span><span class="oagree">46% agree</span></div><div class="bar bar-n"><i style="width:46%"></i></div></button>
+        <div class="meta"><span class="reward">&#129689; play 50 · win up to 95</span><span class="closes">closes Fri</span></div>
+      </div>
+      <p class="mini" style="text-align:center;margin-top:14px;color:var(--ht)">Tap a pick to try it &#8594;</p>
+    </section>
+
+    <!-- 3 SINGLE PICK -->
+    <section class="screen" data-screen="3">
+      <div class="eyebrow" style="margin-bottom:10px">Your pick</div>
+      <div class="lcard" style="margin-bottom:16px">
+        <div class="crate" id="cfCreator" style="margin-bottom:6px">with Marcus Reed</div>
+        <div class="q" id="cfQ" style="margin:0 0 12px">Will the Chiefs beat the Ravens tonight?</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="mini">You're saying</span><span id="cfSide" style="font-size:15px;font-weight:800;color:var(--cy)">YES</span><span class="mini" id="cfAgree">— 68% of players agree</span></div>
+      </div>
+      <div class="mini" style="font-weight:700;color:var(--tx);margin-bottom:4px">How many coins?</div>
+      <div class="chips" id="chips"><div class="chip" data-stake="25">25</div><div class="chip on" data-stake="50">50</div><div class="chip" data-stake="100">100</div></div>
+      <div class="summary">
+        <div class="srow"><span class="sl">You put in</span><span class="sr" id="sStake">&#129689; 50</span></div>
+        <div class="srow"><span class="sl">Coins left after</span><span class="sr" id="sLeft">&#129689; 450</span></div>
+        <div class="srow" style="border-top:1px solid var(--bd);margin-top:4px;padding-top:9px"><span class="sl">Win up to</span><span class="sr" style="color:var(--wn)" id="sWin">&#129689; 120</span></div>
+      </div>
+      <div class="lcard" style="margin-top:14px;background:var(--cyg);border-color:var(--cybd)"><div class="hs" style="color:var(--tx)"><b>Heads up:</b> one pick alone usually lands you outside the winning 30%. Next, we'll show you how stacking a few picks grows what you can win — totally optional.</div></div>
+    </section>
+
+    <!-- 4 PARLAY LADDER -->
+    <section class="screen" data-screen="4">
+      <div class="eyebrow" style="margin-bottom:6px">How you reach the winning 30%</div>
+      <div class="h1" style="font-size:20px;margin-bottom:6px">Make it count <span class="tunable">DEMO MATH — TUNABLE</span></div>
+      <p class="sub" style="margin-bottom:14px">Add a few more of Marcus's picks to your entry. Every correct call stacks — more right means a higher rank and a bigger share. You don't have to. One is fine.</p>
+
+      <div id="legList"></div>
+      <div id="addList"></div>
+
+      <div class="mini" style="font-weight:700;color:var(--tx);margin:16px 0 6px">What you could win as you stack</div>
+      <div class="grow" id="grow"></div>
+
+      <div class="mini" style="font-weight:700;color:var(--tx);margin:14px 0 2px">Where you'd land if they all hit</div>
+      <div class="meter" id="meter"><div class="paidzone"></div><div class="paidlbl">PAID · top 30%</div><div class="markerlbl" id="mlbl">you</div><div class="marker" id="marker"></div></div>
+      <p class="mini" id="meterNote" style="color:var(--ht);margin-top:6px">Miss one and you slide toward the 70% that wins nothing — that's the trade.</p>
+      <div class="lcard" style="margin-top:12px"><div class="hs" style="color:var(--mt)">On the bigger $25 slates, the very top 1–5% can hit <b style="color:var(--wn)">100× to 1,000×</b>. That's the Advanced lane — this is how you build toward it.</div></div>
+    </section>
+
+    <!-- 5 LOCKED IN -->
+    <section class="screen" data-screen="5">
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;text-align:center">
+        <div style="font-size:50px;margin-bottom:10px">&#128274;</div>
+        <div class="h1" style="margin-bottom:10px">You're locked in.</div>
+        <p class="sub">Your entry is in the contest. We'll tell you the moment it settles — nothing else to do.</p>
+        <div class="lcard" style="margin-top:22px;text-align:left">
+          <div class="srow"><span class="sl">Your entry</span><span class="sr" id="lkLegs">1 pick</span></div>
+          <div class="srow"><span class="sl">Coins in</span><span class="sr" id="lkStake">&#129689; 50</span></div>
+          <div class="srow"><span class="sl">Win up to</span><span class="sr" style="color:var(--wn)" id="lkWin">&#129689; 120</span></div>
+          <div class="srow"><span class="sl">Settles</span><span class="sr">in about 3 hours</span></div>
+        </div>
+        <p class="mini" style="margin-top:16px;color:var(--ht)">Find it any time under <b style="color:var(--mt)">Board</b>.</p>
+      </div>
+    </section>
+
+    <!-- 6 RESULT -->
+    <section class="screen" data-screen="6">
+      <p class="mini" style="text-align:center;color:var(--ht);margin-bottom:8px">Demo control — drag how many of your picks landed:</p>
+      <div class="stepper"><button class="stepbtn" id="landMinus">&#8722;</button><div style="text-align:center"><div id="landTxt" style="font-size:15px;font-weight:800">1 of 1 landed</div><div class="mini">tap &#8722; / +</div></div><button class="stepbtn" id="landPlus">+</button></div>
+
+      <div style="text-align:center;margin:6px 0 14px">
+        <span class="resultpill" id="resPill"></span>
+        <div class="big" id="resBig" style="margin-top:14px"></div>
+        <p class="sub" id="resSub" style="margin-top:8px"></p>
+      </div>
+
+      <div class="lcard">
+        <div class="srow"><span class="sl">Coins before</span><span class="sr" id="rBefore"></span></div>
+        <div class="srow"><span class="sl" id="rChangeL">Result</span><span class="sr" id="rChange"></span></div>
+        <div class="srow" style="border-top:1px solid var(--bd);margin-top:4px;padding-top:9px"><span class="sl">New balance</span><span class="sr" style="color:var(--gold)" id="rAfter"></span></div>
+      </div>
+
+      <div class="shadow">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span class="mini" style="font-weight:700;color:var(--cash)">If this had been the live $5 cash pool</span><span class="tunable">TUNABLE</span></div>
+        <div style="font-size:22px;font-weight:800" id="shadowVal"></div>
+        <div class="mini" id="shadowSub" style="margin-top:3px"></div>
+        <div class="divider"></div>
+        <div class="hs" style="color:var(--mt)">Same picks, same skill — the only difference is whether you were in with cash. We show you both ways, every time: what you'd have won, and what you'd have lost.</div>
+      </div>
+    </section>
+
+    <!-- 7 FOLLOW + CREATOR -->
+    <section class="screen" data-screen="7">
+      <div class="lcard" style="text-align:center;border-color:var(--cybd)"><div class="av av-m" style="margin:0 auto 10px">MR</div><span class="resultpill" style="background:var(--cyb);border:1px solid var(--cybd);color:var(--cy)">&#10003; Following Marcus Reed</span><p class="sub" style="margin-top:10px">You'll see his new picks first, right at the top of your feed.</p></div>
+      <div class="mini" style="font-weight:700;color:var(--tx);margin:18px 0 8px">Marcus's open picks</div>
+      <div class="lcard" style="padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;font-weight:600">Lakers to beat the Suns?</span><span class="oagree">61% yes</span></div>
+      <div class="lcard" style="padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;font-weight:600">Oscars: will it sweep?</span><span class="oagree">44% yes</span></div>
+      <div class="lcard" style="padding:12px 14px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;font-weight:600">Will gas dip below $3?</span><span class="oagree">57% yes</span></div>
+      <div class="nudge" style="margin-top:20px"><div class="eyebrow" style="color:var(--ru);margin-bottom:8px">Getting the hang of it?</div><div class="h2" style="margin-bottom:6px">People follow creators who call it right.</div><p class="hs">You're building a track record. When you're ready, make your own picks, bring your following, and earn a cut when they play. That's how Marcus started.</p></div>
+    </section>
+
+  </div>
+
+  <div class="cta" id="cta"></div>
+  <div class="foot">LockIn is a skill-based prediction contest platform. Winners determined by accuracy, not chance. Not gambling. Not sports betting. 18+. Eligible US states only. Play responsibly. Payout figures shown are illustrative placeholders for testing.</div>
+</div>
+
+<script>
+(function(){
+  var TOTAL=8, i=0;
+  var balance=500, stake=50, side='Yes', agree=68, q="Will the Chiefs beat the Ravens tonight?", creator="Marcus Reed";
+
+  // ---- TUNABLE DEMO MODEL ----
+  var MULT=[0,2.4,5.8,12,24];          // win-up-to multiplier by number of legs (gross return on stake)
+  var PROJ_ALL=[0,40,22,9,3];          // percentile if ALL legs land (lower=better), by legs
+  var MISS_PENALTY=18;                 // each missed leg pushes percentile this much worse
+  var PAID_LINE=30;                    // top 30% get paid
+  var CASH_ENTRY=5;                    // the live cash tier we shadow against ($5)
+  var PARTIAL_PAID_FRAC=0.5;           // if paid but not perfect, fraction of win-up-to credited
+  // ----------------------------
+
+  var POOL=[
+    {id:'lakers',q:'Lakers to beat the Suns',side:'Yes',agree:61},
+    {id:'oscars',q:'Oscars: will it sweep',side:'Yes',agree:44},
+    {id:'gas',q:'Gas dips below $3',side:'Yes',agree:57}
+  ];
+  var legs=[]; // current combo (first = base pick)
+  var landed=1;
+
+  var scr=document.querySelectorAll('.screen');
+  var prog=document.getElementById('prog');
+  var coinsEl=document.getElementById('coins');
+  var backEl=document.getElementById('back');
+  var ctaEl=document.getElementById('cta');
+  var COIN='\uD83E\uDE99';
+
+  function coinsTxt(n){return COIN+' '+n;}
+  function winUpTo(){return Math.round(stake*MULT[legs.length]);}
+
+  function buildProg(){var h='';for(var k=0;k<TOTAL;k++){h+='<div class="dot '+(k<i?'done':k===i?'now':'')+'"></div>';}prog.innerHTML=h;}
+
+  var CTA={
+    0:[{t:'Show me how it works',c:'btn-cy',go:1}],
+    1:[{t:'Let me try',c:'btn-cy',go:2}],
+    2:[],
+    3:[{t:'Show me how to win more',c:'btn-cy',go:4},{t:'Lock in just this one',c:'btn-ghost',go:5}],
+    4:[{t:'Lock in my picks',c:'btn-cy',go:5},{t:'Back',c:'btn-ghost',go:3}],
+    5:[{t:'See what happens',c:'btn-cy',go:6},{t:'Back to picks',c:'btn-ghost',go:2}],
+    6:[{t:'Follow Marcus for more',c:'btn-cy',go:7}],
+    7:[{t:'Learn about becoming a creator',c:'btn-ru',go:'creator'},{t:'Start over',c:'btn-ghost',go:0}]
+  };
+
+  function renderCTA(){
+    var items=CTA[i]||[];ctaEl.innerHTML='';
+    if(!items.length){ctaEl.style.display='none';return;}
+    ctaEl.style.display='flex';
+    items.forEach(function(it){
+      var b=document.createElement('button');b.className='btn '+it.c;
+      b.textContent=(i===4&&it.go===5)?('Lock in '+legs.length+(legs.length>1?' picks':' pick')):it.t;
+      b.onclick=function(){if(it.go==='creator'){alert('\u2192 This is the seam into the creator journey (v5), which we\u2019re reworking next.');return;}go(it.go);};
+      ctaEl.appendChild(b);
+    });
+  }
+
+  function go(n){
+    if(n===i)return;
+    if(n===0){balance=500;stake=50;legs=[baseLeg()];landed=1;}
+    if(n===2){balance=500;}
+    if(n===5){balance=500-stake;}
+    if(n===6){landed=legs.length;}
+    scr[i].classList.remove('active');i=n;scr[i].classList.add('active');
+    if(i===3)paintConfirm();
+    if(i===4)paintParlay();
+    if(i===5)paintLocked();
+    if(i===6)paintResult();
+    coinsEl.textContent=coinsTxt(i>=5?balance:500);
+    backEl.style.display=i>0?'flex':'none';
+    buildProg();renderCTA();
+    document.querySelector('.scroll').scrollTop=0;
+  }
+
+  function baseLeg(){return {id:'base',q:q,side:side,agree:agree};}
+
+  // lane toggle
+  document.getElementById('laneAdv').addEventListener('click',function(){
+    this.classList.add('on');document.getElementById('laneBeg').classList.remove('on');
+    document.getElementById('laneNote').style.display='block';var t=this;
+    setTimeout(function(){t.classList.remove('on');document.getElementById('laneBeg').classList.add('on');},1700);
+  });
+  document.getElementById('laneBeg').addEventListener('click',function(){document.getElementById('laneNote').style.display='none';});
+
+  // pick taps
+  document.querySelectorAll('.pickbtn').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      side=btn.getAttribute('data-side');agree=parseInt(btn.getAttribute('data-agree'),10);
+      var card=btn.closest('.lcard');
+      if(card){var qe=card.querySelector('.q');if(qe)q=qe.textContent;var ce=card.querySelector('.cname');if(ce)creator=ce.textContent;}
+      stake=50;legs=[baseLeg()];go(3);
+    });
+  });
+
+  // stake chips
+  document.getElementById('chips').addEventListener('click',function(e){
+    var c=e.target.closest('.chip');if(!c)return;
+    document.querySelectorAll('.chip').forEach(function(x){x.classList.remove('on');});
+    c.classList.add('on');stake=parseInt(c.getAttribute('data-stake'),10);paintConfirm();
+  });
+
+  function paintConfirm(){
+    legs=[baseLeg()];
+    document.getElementById('cfQ').textContent=q;
+    document.getElementById('cfCreator').textContent='with '+creator;
+    document.getElementById('cfSide').textContent=side.toUpperCase();
+    document.getElementById('cfAgree').textContent='— '+agree+'% of players agree';
+    document.getElementById('sStake').textContent=coinsTxt(stake);
+    document.getElementById('sLeft').textContent=coinsTxt(500-stake);
+    document.getElementById('sWin').textContent=coinsTxt(Math.round(stake*MULT[1]));
+  }
+
+  function paintParlay(){
+    var ll=document.getElementById('legList');ll.innerHTML='';
+    legs.forEach(function(lg,idx){
+      var rm=(idx===0)?'':'<button class="legrm" data-rm="'+idx+'">remove</button>';
+      ll.innerHTML+='<div class="leg"><div class="legn">'+(idx+1)+'</div><div class="legq">'+lg.q+' &middot; <span style="color:var(--cy)">'+lg.side+'</span></div>'+rm+'</div>';
+    });
+    var al=document.getElementById('addList');al.innerHTML='';
+    var usable=POOL.filter(function(p){return !legs.some(function(l){return l.id===p.id;});});
+    if(legs.length<4){
+      usable.forEach(function(p){
+        al.innerHTML+='<div class="addrow"><div class="legq" style="color:var(--mt)">'+p.q+' &middot; '+p.side+'</div><button class="addbtn" data-add="'+p.id+'">+ add</button></div>';
+      });
+    } else {
+      al.innerHTML='<p class="mini" style="text-align:center;color:var(--ht)">Max 4 picks in the beginner lane.</p>';
+    }
+    // growth row
+    var g=document.getElementById('grow');g.innerHTML='';
+    for(var n=1;n<=4;n++){
+      g.innerHTML+='<div class="gcell'+(n===legs.length?' on':'')+'"><div class="gl">'+n+(n>1?' picks':' pick')+'</div><div class="gv">'+Math.round(stake*MULT[n])+'</div></div>';
+    }
+    // meter
+    var pct=PROJ_ALL[legs.length];
+    document.getElementById('marker').style.left=pct+'%';
+    document.getElementById('mlbl').style.left=pct+'%';
+    var inPaid=pct<=PAID_LINE;
+    document.getElementById('mlbl').textContent=inPaid?('top '+pct+'%'):('~top '+pct+'%');
+    document.getElementById('mlbl').style.color=inPaid?'var(--wn)':'var(--cy)';
+    document.getElementById('marker').style.background=inPaid?'var(--wn)':'var(--cy)';
+    document.getElementById('meterNote').textContent=inPaid
+      ? 'If all '+legs.length+' land, you clear the paid line. Miss one and you slide back toward the unpaid 70%.'
+      : 'One pick all-correct still usually misses the paid 30%. Add another to climb in.';
+  }
+
+  document.getElementById('legList').addEventListener('click',function(e){
+    var b=e.target.closest('[data-rm]');if(!b)return;
+    legs.splice(parseInt(b.getAttribute('data-rm'),10),1);paintParlay();renderCTA();
+  });
+  document.getElementById('addList').addEventListener('click',function(e){
+    var b=e.target.closest('[data-add]');if(!b)return;
+    var p=POOL.find(function(x){return x.id===b.getAttribute('data-add');});
+    if(p&&legs.length<4){legs.push(p);paintParlay();renderCTA();}
+  });
+
+  function paintLocked(){
+    document.getElementById('lkLegs').textContent=legs.length+(legs.length>1?' picks (combo)':' pick');
+    document.getElementById('lkStake').textContent=coinsTxt(stake);
+    document.getElementById('lkWin').textContent=coinsTxt(winUpTo());
+  }
+
+  function resultFor(k){
+    var n=legs.length, missed=n-k;
+    var pct=Math.min(99,PROJ_ALL[n]+missed*MISS_PENALTY);
+    var paid=pct<=PAID_LINE;
+    var credited = !paid?0 : (missed===0?winUpTo():Math.round(winUpTo()*PARTIAL_PAID_FRAC));
+    var coinNet=credited-stake;
+    var cashCredited = stake>0? (credited/stake)*CASH_ENTRY : 0;
+    var cashNet = paid ? (cashCredited-CASH_ENTRY) : -CASH_ENTRY;
+    return {n:n,k:k,pct:pct,paid:paid,credited:credited,coinNet:coinNet,cashNet:cashNet};
+  }
+
+  function paintResult(){
+    if(landed>legs.length)landed=legs.length;if(landed<0)landed=0;
+    document.getElementById('landTxt').textContent=landed+' of '+legs.length+' landed';
+    var r=resultFor(landed);
+    var before=500-stake;
+    var pill=document.getElementById('resPill'),big=document.getElementById('resBig'),sub=document.getElementById('resSub');
+    if(r.paid){
+      pill.style.cssText='background:var(--wnb);border:1px solid var(--wnbd);color:var(--wn)';
+      pill.innerHTML='&#10003; Paid &middot; top '+r.pct+'%';
+      big.style.color='var(--wn)';big.textContent='+'+r.credited+' '+COIN;
+      sub.textContent=(r.k===r.n)?'You nailed all '+r.n+'. That ranks you high in the paid 30%.':'You hit '+r.k+' of '+r.n+' — enough to land inside the paid 30%.';
+    } else {
+      pill.style.cssText='background:var(--lsb);border:1px solid var(--lsbd);color:var(--ls)';
+      pill.innerHTML='Outside the paid 30% &middot; ~'+r.pct+'%';
+      big.style.color='var(--ls)';big.textContent='\u2212'+stake+' '+COIN;
+      sub.textContent=(r.k===0?'None landed this time.':'Only '+r.k+' of '+r.n+' landed — short of the winning 30%.')+' That\u2019s how the pool works.';
+    }
+    document.getElementById('rBefore').textContent=coinsTxt(before);
+    document.getElementById('rChangeL').textContent=r.paid?'You won':'This entry';
+    document.getElementById('rChange').textContent=(r.paid?'+'+r.credited:'\u2212'+stake);
+    document.getElementById('rChange').style.color=r.paid?'var(--wn)':'var(--ls)';
+    document.getElementById('rAfter').textContent=coinsTxt(before+(r.paid?r.credited:0));
+    // shadow cash
+    var sv=document.getElementById('shadowVal'),ss=document.getElementById('shadowSub');
+    if(r.cashNet>=0){sv.style.color='var(--cash)';sv.textContent='+$'+r.cashNet.toFixed(2);ss.textContent='what you\u2019d have won with a $'+CASH_ENTRY+' cash entry';}
+    else{sv.style.color='var(--ls)';sv.textContent='\u2212$'+Math.abs(r.cashNet).toFixed(2);ss.textContent='what a $'+CASH_ENTRY+' cash entry would have cost you';}
+    coinsEl.textContent=coinsTxt(before+(r.paid?r.credited:0));
+  }
+
+  document.getElementById('landMinus').addEventListener('click',function(){if(landed>0){landed--;paintResult();}});
+  document.getElementById('landPlus').addEventListener('click',function(){if(landed<legs.length){landed++;paintResult();}});
+
+  backEl.addEventListener('click',function(){if(i>0)go(i-1);});
+
+  legs=[baseLeg()];
+  buildProg();renderCTA();
+})();
+</script>
+</body>
+</html>

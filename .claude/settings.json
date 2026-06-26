@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "deny": [
+      "mcp__claude_ai_Google_Drive",
+      "mcp__claude_ai_Gmail",
+      "mcp__claude_ai_Google_Mail",
+      "mcp__gmail",
+      "mcp__google_drive",
+      "mcp__google",
+      "Bash(adb *)",
+      "PowerShell(adb *)",
+      "Bash(screencap *)",
+      "PowerShell(screencap *)",
+      "Bash(scrcpy *)",
+      "PowerShell(scrcpy *)"
+    ]
+  }
+}
