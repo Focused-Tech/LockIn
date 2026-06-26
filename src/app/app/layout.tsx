@@ -48,7 +48,12 @@ export default async function AppLayout({
         {children}
       </AppFrame>
       <NativeBridge />
-      {!profile.hasCompletedTour && (
+      {/* The guided first-pick tour belongs to users who have chosen a lane.
+          Gating on journeyLane keeps it out of the render path for lane-less
+          new signups — otherwise its "welcome / make your first pick" step
+          (which matches pathname === "/app") flashes for a frame during the
+          server redirect bounce from /app to the journey picker (/app/choose). */}
+      {profile.journeyLane && !profile.hasCompletedTour && (
         <GuidedTour initialStep={profile.currentTourStep ?? 0} />
       )}
     </CrossParlayProvider>

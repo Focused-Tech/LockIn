@@ -20,7 +20,7 @@ export function TopNav({
   cashBalanceCents: number;
 }) {
   return (
-    <header className="flex shrink-0 items-center justify-between bg-surface px-4 pb-2 pt-3">
+    <header className="flex shrink-0 items-center justify-between bg-surface px-4 pb-2 pt-[calc(env(safe-area-inset-top)_+_0.75rem)]">
       <Link href="/app" aria-label="LockIn home">
         <Logo />
       </Link>
