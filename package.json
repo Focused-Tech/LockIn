@@ -17,6 +17,7 @@
     "backfill:category-stats": "node scripts/backfill-category-stats.mjs",
     "seed:creators": "node scripts/seed-creators.mjs",
     "seed:beginner": "node scripts/seed-beginner.mjs",
+    "unseed:beginner": "node scripts/unseed-beginner.mjs",
     "seed:settlement-demo": "node scripts/seed-settlement-demo.mjs",
     "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes,storage"
   },
