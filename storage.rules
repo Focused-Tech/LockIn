@@ -1,0 +1,32 @@
+rules_version = '2';
+
+// LockIn Firebase Storage rules.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Public, world-readable assets (avatars, generated pick cards).
+    // A user may only write under their own avatars/ prefix; ≤5MB images.
+    match /avatars/{userId}/{fileName} {
+      allow read: if true;
+      allow write: if isSignedIn()
+        && request.auth.uid == userId
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // Server-generated shareable pick cards — public read, server-only write.
+    match /cards/{slateId}/{fileName} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Deny everything else by default.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

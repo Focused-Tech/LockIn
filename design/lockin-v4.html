@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>LockIn V4 — Full Demo</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+*::-webkit-scrollbar{display:none!important}*{scrollbar-width:none!important}
+:root{--bg:#0A0D12;--sf:#0D1118;--cd:#12161E;--bd:#1E2A38;--tx:#E8ECF2;--mt:#6B7A8E;--ht:#3A4A5C;
+--cy:#FF3B00;--cyb:rgba(255,59,0,.10);--cybd:rgba(255,59,0,.25);--cyg:rgba(255,59,0,.06);
+--wn:#22C55E;--wnb:rgba(34,197,94,.10);--wnbd:rgba(34,197,94,.25);
+--ls:#E85454;--lsb:rgba(232,84,84,.10);--lsbd:rgba(232,84,84,.20);
+--lv:#F5A623;--ru:#9B5DE5;--rub:rgba(155,93,229,.08);--rubd:rgba(155,93,229,.20)}
+html,body{height:100%;background:#111;font-family:system-ui,-apple-system,sans-serif;color:var(--tx);overflow:hidden}
+body{display:flex;justify-content:center;align-items:center}
+button{cursor:pointer;font-family:inherit}input,select{font-family:inherit}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.phone{width:390px;max-width:100vw;height:100vh;max-height:844px;background:var(--bg);display:flex;flex-direction:column;position:relative;overflow:hidden}
+@media(min-width:420px){.phone{border-radius:36px;border:2px solid var(--bd);height:810px}}
+.step{display:none;flex-direction:column;flex:1;overflow:hidden;animation:fadeIn .25s ease}.step.active{display:flex}
+.scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.topnav{display:flex;align-items:center;justify-content:space-between;padding:12px 16px 8px;flex-shrink:0;background:var(--sf)}
+.logo{font-weight:800;font-size:20px;letter-spacing:1.5px;color:var(--cy)}.logo span{color:var(--tx)}
+.pill{border-radius:18px;padding:4px 11px;font-size:10px;font-weight:600;border:1px solid}
+.pill-c{background:var(--cyb);border-color:var(--cybd);color:var(--cy)}
+.pill-g{background:var(--wnb);border-color:var(--wnbd);color:var(--wn)}
+.avatar{width:28px;height:28px;border-radius:50%;background:var(--cyb);border:1.5px solid var(--cybd);display:flex;align-items:center;justify-content:center;color:var(--cy);font-weight:700;font-size:10px}
+.btn{width:100%;padding:10px;border-radius:8px;font-size:12px;font-weight:600;border:1px solid;transition:all .15s}
+.btn-cy{background:var(--cyb);color:var(--cy);border-color:var(--cybd)}
+.btn-wn{background:var(--wnb);color:var(--wn);border-color:var(--wnbd)}
+.btn-gh{background:transparent;color:var(--mt);border-color:var(--bd)}
+.btn-ru{background:var(--rub);color:var(--ru);border-color:var(--rubd)}
+.btn:disabled{opacity:.35}
+.inp{width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--bd);border-radius:8px;color:var(--tx);font-size:13px;outline:none}
+.lbl{display:block;color:var(--mt);font-size:10px;font-weight:600;letter-spacing:.4px;margin-bottom:4px}
+.card{background:var(--cd);border:1px solid var(--bd);border-radius:12px;padding:13px;margin-bottom:10px}
+.divider{border:none;border-top:1px solid var(--bd);margin:8px 0}
+.disc{background:var(--bg);border:1px solid var(--bd);border-radius:7px;padding:8px;font-size:9px;color:var(--mt);line-height:1.5}
+.chk{display:flex;align-items:flex-start;gap:8px;margin-bottom:10px;font-size:11px;color:var(--mt);line-height:1.5}
+.chk input{margin-top:3px;accent-color:var(--cy);width:15px;height:15px;flex-shrink:0}
+.chk a{color:var(--cy);text-decoration:none}
+.tag{display:inline-block;font-size:8px;font-weight:600;padding:2px 7px;border-radius:4px}
+.tag-f{background:var(--wnb);color:var(--wn);border:1px solid var(--wnbd)}
+.tag-p{background:var(--cyb);color:var(--cy);border:1px solid var(--cybd)}
+.ai-badge{display:inline-flex;align-items:center;gap:3px;font-size:8px;padding:2px 6px;border-radius:4px;background:rgba(59,139,255,.1);color:#3B8BFF;border:1px solid rgba(59,139,255,.2)}
+.footer-d{padding:6px 16px;font-size:7px;color:var(--ht);line-height:1.4;text-align:center;border-top:1px solid var(--bd);flex-shrink:0;background:var(--sf)}
+.ev-o{display:flex;align-items:center;padding:7px 9px;border-radius:7px;border:1px solid var(--bd);margin-bottom:3px;cursor:pointer;transition:all .15s}
+.ev-o:hover{border-color:var(--ht)}.ev-o.sel{border-color:var(--cybd);background:var(--cyg)}
+.ev-p{padding:3px 9px;border-radius:6px;font-size:10px;font-weight:600;min-width:38px;text-align:center;border:1px solid var(--cybd);color:var(--cy);background:transparent}
+.ev-o.sel .ev-p{background:var(--cyb)}
+
+/* Demo-specific */
+.demo-progress{display:flex;gap:3px;padding:8px 16px;flex-shrink:0;background:var(--sf);border-bottom:1px solid var(--bd)}
+.demo-dot{flex:1;height:4px;border-radius:2px;background:var(--bd)}
+.demo-dot.done{background:var(--cy)}
+.demo-dot.now{background:var(--cy);animation:pulse .8s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.demo-label{font-size:9px;color:var(--cy);font-weight:600;padding:0 16px 6px;background:var(--sf);text-transform:uppercase;letter-spacing:1px}
+.next-btn{position:sticky;bottom:0;padding:12px 16px;background:var(--sf);border-top:1px solid var(--bd);flex-shrink:0}
+.settle-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd);font-size:12px}
+.settle-row:last-child{border-bottom:none}
+.settle-row .sl{color:var(--mt)}.settle-row .sr{font-weight:600}
+.settle-block{background:var(--cd);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:10px}
+.settle-block h4{font-size:13px;font-weight:600;margin-bottom:8px}
+.big-num{font-size:28px;font-weight:800;text-align:center;margin:6px 0}
+</style>
+</head>
+<body>
+<div class="phone" id="app">
+
+<!-- ============ DEMO LAUNCHER ============ -->
+<div class="step active" id="s-launch">
+<div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:24px">
+<div style="text-align:center;margin-bottom:32px">
+<div class="logo" style="font-size:36px;letter-spacing:3px;margin-bottom:6px">LOCK<span>IN</span></div>
+<p style="color:var(--mt);font-size:12px">V4 — Full Demo Experience</p>
+</div>
+<div class="card" style="padding:18px;margin-bottom:12px;cursor:pointer;border-color:var(--cybd)" onclick="startDemo('paid')">
+<div style="font-size:16px;font-weight:700;color:var(--cy);margin-bottom:4px">💵 Paid Journey</div>
+<div style="font-size:11px;color:var(--mt);line-height:1.6">Sign up → verify identity → deposit $50 → enter $5 contest → make picks → see results → full settlement report showing everyone's take.</div>
+<div style="margin-top:8px;font-size:10px;color:var(--cy)">~2 minutes · 10 steps →</div>
+</div>
+<div class="card" style="padding:18px;cursor:pointer;border-color:var(--wnbd)" onclick="startDemo('free')">
+<div style="font-size:16px;font-weight:700;color:var(--wn);margin-bottom:4px">🪙 Free Journey</div>
+<div style="font-size:11px;color:var(--mt);line-height:1.6">Sign up → skip KYC → play with coins → make picks → see results + shadow earnings showing what you would have won in cash.</div>
+<div style="margin-top:8px;font-size:10px;color:var(--wn)">~1.5 minutes · 8 steps →</div>
+</div>
+<div style="text-align:center;margin-top:16px;font-size:10px;color:var(--ht)">15% rake · 30/70 hosting split · Stripe fees passed to customer</div>
+</div>
+</div>
+
+<!-- Steps will be generated dynamically by JS -->
+<div class="step" id="s-demo" style="flex-direction:column">
+<div class="demo-progress" id="demo-prog"></div>
+<div class="demo-label" id="demo-label"></div>
+<div class="topnav" id="demo-nav" style="display:none">
+<div class="logo">LOCK<span>IN</span></div>
+<div style="display:flex;align-items:center;gap:6px">
+<div class="pill pill-c" id="d-coins">🪙 500</div>
+<div class="pill pill-g" id="d-cash" style="display:none">$0.00</div>
+<div class="avatar" id="d-av">D</div>
+</div></div>
+<div class="scroll" id="demo-content"></div>
+<div class="next-btn" id="demo-next-wrap"><button class="btn btn-cy" id="demo-next-btn" onclick="nextStep()">Continue</button></div>
+<div class="footer-d">LockIn is a skill-based prediction contest platform. Not gambling. Not sports betting. 18+. Eligible US states only. Play responsibly.</div>
+</div>
+
+</div>
+
+<script>
+const RAKE=0.15;
+let demoMode='paid';
+let currentStep=0;
+let demoState={coins:0,cash:0,picks:{},results:[]};
+
+const paidSteps=[
+  {label:"Step 1: Create Account",nav:false},
+  {label:"Step 2: Verify Identity (KYC)",nav:false},
+  {label:"Step 3: Deposit Funds",nav:true},
+  {label:"Step 4: Browse Predictions",nav:true},
+  {label:"Step 5: Make Your Picks",nav:true},
+  {label:"Step 6: Confirm Paid Entry",nav:true},
+  {label:"Step 7: Contest Results",nav:true},
+  {label:"Step 8: Share Your Card",nav:true},
+  {label:"Step 9: Check Wallet",nav:true},
+  {label:"Step 10: Settlement Report — Everyone's Take",nav:true}
+];
+const freeSteps=[
+  {label:"Step 1: Create Account",nav:false},
+  {label:"Step 2: Skip Verification",nav:false},
+  {label:"Step 3: Browse Free Contests",nav:true},
+  {label:"Step 4: Make Your Picks",nav:true},
+  {label:"Step 5: Contest Results",nav:true},
+  {label:"Step 6: Shadow Earnings — What You Missed",nav:true},
+  {label:"Step 7: Check Balance",nav:true},
+  {label:"Step 8: Free vs Paid Comparison",nav:true}
+];
+
+function startDemo(mode){
+  demoMode=mode;currentStep=0;
+  demoState=mode==='paid'?{coins:500,cash:0,picks:{},results:[]}:{coins:500,cash:0,picks:{},results:[]};
+  document.getElementById('s-launch').classList.remove('active');
+  document.getElementById('s-demo').classList.add('active');
+  renderStep();
+}
+
+function getSteps(){return demoMode==='paid'?paidSteps:freeSteps;}
+
+function renderStep(){
+  var steps=getSteps();var step=steps[currentStep];
+  // Progress bar
+  var prog='';for(var i=0;i<steps.length;i++){
+    prog+='<div class="demo-dot '+(i<currentStep?'done':i===currentStep?'now':'')+'"></div>';}
+  document.getElementById('demo-prog').innerHTML=prog;
+  document.getElementById('demo-label').textContent=step.label;
+  document.getElementById('demo-nav').style.display=step.nav?'flex':'none';
+  updateDemoNav();
+
+  var isLast=currentStep===steps.length-1;
+  var nextBtn=document.getElementById('demo-next-btn');
+  nextBtn.textContent=isLast?'← Back to Demo Launcher':'Continue →';
+  if(isLast)nextBtn.className='btn btn-wn';else nextBtn.className='btn btn-cy';
+
+  var ct=document.getElementById('demo-content');
+
+  if(demoMode==='paid') renderPaidStep(ct);
+  else renderFreeStep(ct);
+  ct.scrollTop=0;
+}
+
+function nextStep(){
+  var steps=getSteps();
+  if(currentStep>=steps.length-1){
+    document.getElementById('s-demo').classList.remove('active');
+    document.getElementById('s-launch').classList.add('active');
+    return;
+  }
+  // Apply step side effects
+  if(demoMode==='paid'){
+    if(currentStep===0) demoState.coins=500;
+    if(currentStep===2) demoState.cash=50;
+    if(currentStep===5){demoState.cash-=6;demoState.picks={w1:'a',v1:'a',n1:'b',p1:'b'};} // 4 picks
+  }else{
+    if(currentStep===0) demoState.coins=500;
+    if(currentStep===3){demoState.coins-=100;demoState.picks={w1:'a',v1:'a',n1:'b',t1:'a'};}
+  }
+  currentStep++;renderStep();
+}
+
+function updateDemoNav(){
+  document.getElementById('d-coins').textContent='🪙 '+demoState.coins;
+  if(demoMode==='paid'){document.getElementById('d-cash').style.display='inline';document.getElementById('d-cash').textContent='$'+demoState.cash.toFixed(2);}
+  else{document.getElementById('d-cash').style.display='none';}
+}
+
+// ==================== PAID JOURNEY STEPS ====================
+function renderPaidStep(ct){
+  var h='<div style="padding:16px">';
+  switch(currentStep){
+    case 0: // Signup
+      h+=`<div style="text-align:center;margin-bottom:16px"><div class="logo" style="font-size:30px">LOCK<span>IN</span></div></div>
+      <div class="card" style="padding:16px">
+      <div style="font-size:15px;font-weight:700;margin-bottom:12px">Create account</div>
+      <div style="margin-bottom:6px"><label class="lbl">Username</label><input class="inp" value="DemoUser123" readonly></div>
+      <div style="margin-bottom:6px"><label class="lbl">Email</label><input class="inp" value="demo@lockin.gg" readonly></div>
+      <div style="margin-bottom:6px"><label class="lbl">Date of birth</label><input class="inp" value="1998-03-15" readonly></div>
+      <div style="margin-bottom:6px"><label class="lbl">Password</label><input class="inp" type="password" value="demopass" readonly></div>
+      <hr class="divider">
+      <div class="chk"><input type="checkbox" checked disabled><label>I confirm I am <strong style="color:var(--tx)">18 years of age or older</strong></label></div>
+      <div class="chk"><input type="checkbox" checked disabled><label>I agree to the <a href="#">Terms of Service</a>, <a href="#">Privacy Policy</a>, and <a href="#">Responsible Play Policy</a></label></div>
+      <div class="disc" style="margin-bottom:10px">LockIn is a skill-based prediction contest platform. Not gambling. Not sports betting. Prize pools funded by entry fees. LockIn does not wager against participants.</div>
+      <div style="text-align:center;color:var(--wn);font-size:11px;font-weight:600;padding:8px;background:var(--wnb);border-radius:6px">✓ 500 free coins credited at signup</div>
+      </div>`;break;
+
+    case 1: // KYC
+      h+=`<div style="text-align:center;margin-bottom:14px"><div style="font-size:28px;margin-bottom:4px">🔐</div>
+      <div style="font-size:16px;font-weight:700;margin-bottom:4px">Identity Verified</div></div>
+      <div class="card" style="padding:14px">
+      <div style="margin-bottom:6px"><label class="lbl">Full legal name</label><input class="inp" value="Demo User" readonly></div>
+      <div style="margin-bottom:6px"><label class="lbl">Address</label><input class="inp" value="123 Main St, Richmond, VA 23223" readonly></div>
+      <div style="display:flex;gap:8px;margin-bottom:6px"><div style="flex:1"><label class="lbl">SSN (last 4)</label><input class="inp" value="••••" readonly style="width:90px"></div><div style="flex:1"><label class="lbl">Phone</label><input class="inp" value="(804) 555-0199" readonly></div></div>
+      <div style="text-align:center;color:var(--wn);font-size:12px;font-weight:600;padding:10px;background:var(--wnb);border-radius:8px;margin-top:8px">✓ Identity verified via Persona — Approved</div>
+      </div>
+      <div class="disc">Verified against public records in 3.2 seconds. You can now deposit funds, enter paid contests, and withdraw winnings.</div>`;break;
+
+    case 2: // Deposit
+      h+=`<div style="font-size:16px;font-weight:700;margin-bottom:12px">💵 Add Funds to Wallet</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+      <div style="flex:1;background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:700;color:var(--wn)">500</div><div style="font-size:8px;color:var(--mt)">🪙 Coins</div></div>
+      <div style="flex:1;background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:700;color:var(--cy)">$0.00</div><div style="font-size:8px;color:var(--mt)">💵 Cash</div></div></div>
+      <div class="card" style="padding:14px">
+      <div style="font-size:13px;font-weight:600;margin-bottom:8px">Depositing $50 via credit card</div>
+      <div style="background:var(--bg);border:1px solid var(--bd);border-radius:7px;padding:8px;margin-bottom:10px;font-size:11px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:var(--mt)">Deposit amount</span><span>$50.00</span></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:var(--mt)">Processing fee (2.9% + $0.30)</span><span style="color:var(--ls)">$1.75</span></div>
+      <div style="display:flex;justify-content:space-between;font-weight:600;padding-top:4px;border-top:1px solid var(--bd)"><span>Total charged to card</span><span>$51.75</span></div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px"><span style="color:var(--mt)">Wallet receives</span><span style="color:var(--wn);font-weight:600">$50.00</span></div>
+      </div>
+      <div class="disc" style="margin-bottom:10px">💡 Save on fees! Bank transfers are <strong style="color:var(--wn)">fee-free</strong>. Larger deposits = lower fee %. This $50 deposit fee is only 3.5%.</div>
+      <div style="text-align:center;color:var(--wn);font-size:11px;font-weight:600;padding:8px;background:var(--wnb);border-radius:6px">✓ $50.00 deposited to wallet</div>
+      </div>`;break;
+
+    case 3: // Browse
+      h+=`<div style="font-size:14px;font-weight:700;margin-bottom:10px">Browse Paid Contests — $5 Tier</div>
+      <div style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto">
+      <span class="tag tag-p" style="font-size:9px">For you</span><span class="tag" style="background:var(--bd);color:var(--mt);font-size:9px">NASCAR</span><span class="tag" style="background:var(--bd);color:var(--mt);font-size:9px">Esports</span><span class="tag" style="background:var(--bd);color:var(--mt);font-size:9px">Politics</span><span class="tag" style="background:var(--bd);color:var(--mt);font-size:9px">TV Shows</span><span class="tag" style="background:var(--bd);color:var(--mt);font-size:9px">Crypto</span></div>`;
+      var events=[
+        {icon:"🏎️",cat:"NASCAR",t:"Coca-Cola 600",s:"Charlotte · Lap 287",st:"live",pct1:34,pct2:66,pool:"$6,048"},
+        {icon:"🎮",cat:"ESPORTS",t:"Worlds 2024 Finals",s:"T1 vs BLG · Game 3",st:"live",pct1:73,pct2:27,pool:"$3,598"},
+        {icon:"🏆",cat:"ENTERTAINMENT",t:"VMAs 2024",s:"6 predictions",st:"open",pct1:71,pct2:29,pool:"$5,117"},
+        {icon:"🏛️",cat:"POLITICS",t:"Senate Control 2026",s:"Midterm predictions",st:"open",pct1:44,pct2:56,pool:"$17,850"}
+      ];
+      events.forEach(function(e){
+        h+=`<div class="card"><div style="display:flex;justify-content:space-between;margin-bottom:5px"><div style="font-size:8px;font-weight:600;color:var(--mt);text-transform:uppercase">${e.icon} ${e.cat}</div><div style="font-size:8px;font-weight:600;color:${e.st==='live'?'var(--lv)':'var(--cy)'}">${e.st==='live'?'● LIVE':'⏱ Open'}</div></div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:2px">${e.t}</div><div style="font-size:9px;color:var(--mt);margin-bottom:4px">${e.s}</div>
+        <div style="display:flex;gap:6px;margin-bottom:6px"><span class="tag tag-p">$5 + $1 host</span><span style="font-size:9px;color:var(--wn)">Pool: ${e.pool}</span><span class="ai-badge">🤖 AI verified</span></div></div>`;});
+      break;
+
+    case 4: // Make picks
+      h+=`<div style="font-size:14px;font-weight:700;margin-bottom:10px">Make Your Picks — 4-Pick Parlay</div>`;
+      var picks=[
+        {slate:"Worlds 2024",q:"Series winner?",a:"T1 wins series",b:"BLG wins series",aPct:73,bPct:27,sel:"a"},
+        {slate:"VMAs 2024",q:"Video of the Year?",a:"Taylor Swift VotY",b:"Different winner",aPct:71,bPct:29,sel:"a"},
+        {slate:"NASCAR Coca-Cola 600",q:"Race winner?",a:"Kyle Larson wins",b:"Different winner",aPct:34,bPct:66,sel:"b"},
+        {slate:"Senate 2026",q:"Senate majority?",a:"Democrats hold",b:"Republicans take",aPct:44,bPct:56,sel:"b"}
+      ];
+      picks.forEach(function(p){
+        h+=`<div class="card" style="padding:10px"><div style="font-size:8px;color:var(--mt);margin-bottom:3px">${p.slate}</div><div style="font-size:9px;color:var(--mt);margin-bottom:4px">${p.q}</div>`;
+        ['a','b'].forEach(function(side){
+          var sel=p.sel===side;
+          h+=`<div class="ev-o ${sel?'sel':''}" style="padding:6px 8px"><span style="font-size:10px;font-weight:500;color:var(--tx);flex:1">${side==='a'?p.a:p.b}</span><span class="ev-p">${side==='a'?p.aPct:p.bPct}%</span></div>`;
+        });h+=`</div>`;});
+      h+=`<div class="card" style="background:var(--cyg);border-color:var(--cybd);padding:12px">
+      <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px"><span style="color:var(--mt)">4-pick parlay</span><span style="color:var(--cy);font-weight:700;font-size:14px">10x</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px"><span style="color:var(--mt)">Entry fee</span><span>$5.00</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px"><span style="color:var(--mt)">Creator hosting fee (@NASCARNate)</span><span>$1.00</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;font-weight:600;padding-top:4px;border-top:1px solid var(--bd)"><span>Total</span><span style="color:var(--cy)">$6.00</span></div></div>`;break;
+
+    case 5: // Confirm
+      h+=`<div style="font-size:14px;font-weight:700;margin-bottom:10px">Paid Contest Acknowledgement</div>
+      <div class="card" style="padding:14px">
+      <div style="font-size:12px;color:var(--mt);line-height:1.7;margin-bottom:12px">You are entering a <strong style="color:var(--tx)">$5.00</strong> paid skill-based contest with a <strong style="color:var(--tx)">$1.00</strong> creator hosting fee. Your entry fee will be added to the prize pool. LockIn retains a <strong style="color:var(--tx)">15% platform fee</strong>. Remaining funds are distributed to winners based on scoring. Entry fees are non-refundable once the contest locks.</div>
+      <div class="chk"><input type="checkbox" checked disabled><label>I understand this is a paid skill-based contest and I am located in an eligible state.</label></div>
+      <div style="text-align:center;color:var(--wn);font-size:12px;font-weight:600;padding:10px;background:var(--wnb);border-radius:8px">✓ Entry confirmed — $6.00 deducted from wallet</div>
+      </div>
+      <div style="display:flex;gap:8px">
+      <div style="flex:1;background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--mt)">Wallet before</div><div style="font-size:14px;font-weight:600;color:var(--mt)">$50.00</div></div>
+      <div style="flex:1;background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--mt)">Wallet after</div><div style="font-size:14px;font-weight:600;color:var(--cy)">$44.00</div></div></div>`;break;
+
+    case 6: // Results
+      h+=`<div style="text-align:center;margin-bottom:14px"><div style="font-size:26px;font-weight:800;color:var(--wn)">Winner!</div>
+      <div style="font-size:44px;font-weight:800;color:var(--wn)">3<span style="font-size:18px;color:var(--mt)">/4</span></div>
+      <div style="font-size:11px;color:var(--mt)">correct picks</div></div>
+      <div class="card" style="padding:10px">`;
+      [{l:"T1 wins series",w:true},{l:"Taylor Swift VotY",w:true},{l:"Different winner (NASCAR)",w:true},{l:"Republicans take Senate",w:false}].forEach(function(p){
+        h+=`<div style="display:flex;align-items:center;gap:6px;padding:7px 8px;border-radius:7px;margin-bottom:3px;background:${p.w?'var(--wnb)':'var(--lsb)'};border:1px solid ${p.w?'var(--wnbd)':'var(--lsbd)'}"><span style="color:${p.w?'var(--wn)':'var(--ls)'};font-size:12px">${p.w?'✓':'✗'}</span><span style="font-size:10px">${p.l}</span></div>`;});
+      h+=`</div>
+      <div style="border-radius:8px;padding:12px;margin:8px 0;display:flex;justify-content:space-between;background:var(--wnb);border:1px solid var(--wnbd)"><span style="font-size:10px;color:var(--mt)">Your cash prize</span><span style="font-size:22px;font-weight:800;color:var(--wn)">$35.20</span></div>
+      <div class="ai-badge" style="margin-top:6px">🤖 Results verified by LockIn AI — cross-referenced ESPN, Riot Games API, and Billboard</div>`;break;
+
+    case 7: // Share card
+      h+=`<div style="font-size:14px;font-weight:700;margin-bottom:10px">Share Your Card</div>
+      <div style="background:linear-gradient(135deg,#1a1020,#0d1118);border:2px solid var(--cybd);border-radius:14px;padding:18px;text-align:center;margin-bottom:12px">
+      <div class="logo" style="font-size:16px;margin-bottom:10px">LOCK<span>IN</span></div>
+      <div style="font-size:10px;color:var(--mt);margin-bottom:4px">@DemoUser123</div>
+      <div style="font-size:22px;font-weight:800;color:var(--wn);margin-bottom:4px">3/4 CORRECT</div>
+      <div style="font-size:12px;color:var(--cy);font-weight:600;margin-bottom:10px">Won $35.20 on a $5 entry</div>
+      <div style="font-size:9px;color:var(--mt);text-align:left">✓ T1 wins series · ✓ Taylor Swift VotY<br>✓ Different NASCAR winner · ✗ Senate pick</div>
+      <div style="margin-top:10px;font-size:9px;color:var(--ht)">lockin.gg/card/demo123</div></div>
+      <div style="display:flex;gap:8px">
+      <button class="btn btn-cy" style="flex:1;font-size:11px">Share to TikTok</button>
+      <button class="btn btn-cy" style="flex:1;font-size:11px">Share to Instagram</button>
+      <button class="btn btn-gh" style="flex:1;font-size:11px">Copy link</button></div>`;break;
+
+    case 8: // Wallet
+      h+=`<div style="font-size:14px;font-weight:700;margin-bottom:10px">Wallet Updated</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+      <div style="flex:1;background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:700;color:var(--wn)">500</div><div style="font-size:8px;color:var(--mt)">🪙 Coins</div></div>
+      <div style="flex:1;background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:700;color:var(--cy)">$79.20</div><div style="font-size:8px;color:var(--mt)">💵 Cash ($44 + $35.20 winnings)</div></div></div>
+      <div class="card" style="padding:10px"><div style="font-size:11px;font-weight:600;margin-bottom:6px">Recent activity</div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd);font-size:10px"><div><div>Contest winnings</div><div style="font-size:8px;color:var(--mt)">Just now</div></div><div style="color:var(--wn);font-weight:600">+$35.20</div></div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd);font-size:10px"><div><div>Contest entry + hosting</div><div style="font-size:8px;color:var(--mt)">5 min ago</div></div><div style="color:var(--cy);font-weight:600">-$6.00</div></div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd);font-size:10px"><div><div>Deposit (card)</div><div style="font-size:8px;color:var(--mt)">10 min ago</div></div><div style="color:var(--wn);font-weight:600">+$50.00</div></div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:10px"><div><div>Sign-up bonus</div><div style="font-size:8px;color:var(--mt)">15 min ago</div></div><div style="color:var(--wn);font-weight:600">+500 🪙</div></div></div>
+      <div class="disc" style="margin-top:8px">You can withdraw your $79.20 anytime via bank transfer (1-3 business days, min $10).</div>`;break;
+
+    case 9: // Settlement
+      // Contest: 847 participants × $5 = $4,235 pool
+      // 847 × $1 hosting = $847 hosting fees
+      // Stripe: customer paid, $0 to LockIn
+      var participants=847;var entry=5;var hostFee=1;
+      var totalPool=participants*entry; // $4,235
+      var rake=Math.round(totalPool*RAKE*100)/100; // $635.25
+      var prizePool=Math.round(totalPool*(1-RAKE)*100)/100; // $3,599.75
+      var totalHost=participants*hostFee; // $847
+      var liHost=Math.round(totalHost*0.30*100)/100; // $254.10
+      var crHost=Math.round(totalHost*0.70*100)/100; // $592.90
+      var liTotal=Math.round((rake+liHost)*100)/100;
+      var stripe=Math.round((participants*(entry+hostFee)/25)*(25*0.029+0.30)*100)/100; // ~$295
+      var first=Math.round(prizePool*0.35*100)/100;
+      var userProfit=35.20-6; // net $29.20
+
+      h+=`<div style="font-size:16px;font-weight:700;margin-bottom:4px">💰 Settlement Report</div>
+      <div style="font-size:10px;color:var(--mt);margin-bottom:14px">Complete financial breakdown of this contest</div>
+
+      <div class="settle-block">
+      <h4>📊 Contest Details</h4>
+      <div class="settle-row"><span class="sl">Contest</span><span class="sr">Worlds Finals + VMAs + NASCAR + Senate</span></div>
+      <div class="settle-row"><span class="sl">Participants</span><span class="sr">${participants.toLocaleString()}</span></div>
+      <div class="settle-row"><span class="sl">Entry tier</span><span class="sr">$${entry} + $${hostFee} hosting</span></div>
+      <div class="settle-row"><span class="sl">Total collected</span><span class="sr">$${(participants*(entry+hostFee)).toLocaleString()}</span></div>
+      <div class="settle-row"><span class="sl">Hosted by</span><span class="sr">@NASCARNate</span></div>
+      </div>
+
+      <div class="settle-block" style="border-color:var(--cybd)">
+      <h4 style="color:var(--cy)">🏢 LockIn's Take</h4>
+      <div class="settle-row"><span class="sl">15% rake on $${totalPool.toLocaleString()} pool</span><span class="sr" style="color:var(--cy)">$${rake.toLocaleString()}</span></div>
+      <div class="settle-row"><span class="sl">30% of $${totalHost.toLocaleString()} hosting fees</span><span class="sr" style="color:var(--cy)">$${liHost.toFixed(2)}</span></div>
+      <div class="settle-row"><span class="sl">Stripe processing fees</span><span class="sr" style="color:var(--wn)">$0 (customer paid)</span></div>
+      <div class="big-num" style="color:var(--cy)">$${liTotal.toFixed(2)}</div>
+      <div style="text-align:center;font-size:9px;color:var(--mt)">LockIn net profit from this contest</div>
+      </div>
+
+      <div class="settle-block" style="border-color:var(--wnbd)">
+      <h4 style="color:var(--wn)">🎤 Creator's Take (@NASCARNate)</h4>
+      <div class="settle-row"><span class="sl">70% of $${totalHost.toLocaleString()} hosting fees</span><span class="sr" style="color:var(--wn)">$${crHost.toFixed(2)}</span></div>
+      <div class="settle-row"><span class="sl">Pick package sales (est. 80 × $4.99 × 75%)</span><span class="sr" style="color:var(--wn)">$299.40</span></div>
+      <div class="big-num" style="color:var(--wn)">$${(crHost+299.40).toFixed(2)}</div>
+      <div style="text-align:center;font-size:9px;color:var(--mt)">Creator total earnings from this contest</div>
+      </div>
+
+      <div class="settle-block" style="border-color:var(--lvb)">
+      <h4 style="color:var(--lv)">🏆 Winners' Take</h4>
+      <div class="settle-row"><span class="sl">Prize pool (85% of entries)</span><span class="sr" style="color:var(--lv)">$${prizePool.toLocaleString()}</span></div>
+      <div class="settle-row"><span class="sl">1st place (35%)</span><span class="sr">$${first.toFixed(2)}</span></div>
+      <div class="settle-row"><span class="sl">2nd place (20%)</span><span class="sr">$${(prizePool*0.20).toFixed(2)}</span></div>
+      <div class="settle-row"><span class="sl">3rd place (12%)</span><span class="sr">$${(prizePool*0.12).toFixed(2)}</span></div>
+      <div class="settle-row"><span class="sl">4th-10th (4% each)</span><span class="sr">$${(prizePool*0.04).toFixed(2)} each</span></div>
+      <div class="settle-row"><span class="sl">Winners (top 30%)</span><span class="sr">${Math.round(participants*0.3)} people paid</span></div>
+      </div>
+
+      <div class="settle-block" style="border-color:var(--lsbd)">
+      <h4 style="color:var(--ls)">💳 Stripe's Take</h4>
+      <div class="settle-row"><span class="sl">Processing fees</span><span class="sr" style="color:var(--ls)">~$${stripe.toFixed(0)}</span></div>
+      <div class="settle-row"><span class="sl">Paid by</span><span class="sr">Customers (at deposit)</span></div>
+      <div class="settle-row"><span class="sl">Cost to LockIn</span><span class="sr" style="color:var(--wn)">$0</span></div>
+      </div>
+
+      <div class="settle-block">
+      <h4>👤 Your Personal P&L</h4>
+      <div class="settle-row"><span class="sl">Entry fee + hosting</span><span class="sr" style="color:var(--ls)">-$6.00</span></div>
+      <div class="settle-row"><span class="sl">Stripe fee (on $50 deposit, amortized)</span><span class="sr" style="color:var(--ls)">-$0.21</span></div>
+      <div class="settle-row"><span class="sl">Cash prize won (ranked #12)</span><span class="sr" style="color:var(--wn)">+$35.20</span></div>
+      <div class="big-num" style="color:var(--wn)">+$28.99 net profit</div>
+      <div style="text-align:center;font-size:9px;color:var(--mt)">From a $6.21 total cost</div>
+      </div>
+
+      <div class="disc">This settlement was verified by LockIn AI, cross-referencing ESPN, Riot Games API, Billboard Hot 100, and Associated Press election data. Payouts released automatically upon verification.</div>`;break;
+  }
+  h+='</div>';ct.innerHTML=h;
+}
+
+// ==================== FREE JOURNEY STEPS ====================
+function renderFreeStep(ct){
+  var h='<div style="padding:16px">';
+  switch(currentStep){
+    case 0: // Signup
+      h+=`<div style="text-align:center;margin-bottom:16px"><div class="logo" style="font-size:30px">LOCK<span>IN</span></div></div>
+      <div class="card" style="padding:16px">
+      <div style="font-size:15px;font-weight:700;margin-bottom:12px">Create account</div>
+      <div style="margin-bottom:6px"><label class="lbl">Username</label><input class="inp" value="FreePlayer99" readonly></div>
+      <div style="margin-bottom:6px"><label class="lbl">Email</label><input class="inp" value="free@lockin.gg" readonly></div>
+      <div style="margin-bottom:6px"><label class="lbl">Date of birth</label><input class="inp" value="2001-07-22" readonly></div>
+      <hr class="divider">
+      <div class="chk"><input type="checkbox" checked disabled><label>I confirm I am <strong style="color:var(--tx)">18 years of age or older</strong></label></div>
+      <div class="chk"><input type="checkbox" checked disabled><label>I agree to the <a href="#">Terms of Service</a></label></div>
+      <div style="text-align:center;color:var(--wn);font-size:11px;font-weight:600;padding:8px;background:var(--wnb);border-radius:6px">✓ 500 free coins credited!</div>
+      </div>`;break;
+
+    case 1: // Skip KYC
+      h+=`<div style="text-align:center;margin-bottom:14px"><div style="font-size:28px;margin-bottom:6px">🪙</div>
+      <div style="font-size:16px;font-weight:700;margin-bottom:4px">Playing Free</div>
+      <div style="font-size:11px;color:var(--mt);line-height:1.5">No identity verification needed for free contests. You can verify later to unlock paid contests.</div></div>
+      <div class="card" style="text-align:center;padding:14px"><div style="font-size:28px;font-weight:800;color:var(--wn)">500 🪙</div><div style="font-size:10px;color:var(--mt)">Your starting balance</div></div>
+      <div class="disc">Free contests use coins. Prizes are leaderboard rank, badges, and streak rewards. No cash prizes in free tier. Available in all 50 states.</div>`;break;
+
+    case 2: // Browse free
+      h+=`<div style="font-size:14px;font-weight:700;margin-bottom:10px">Browse Free Contests</div>`;
+      [{icon:"🏎️",cat:"NASCAR",t:"Coca-Cola 600",cost:100},{icon:"🎮",cat:"ESPORTS",t:"Worlds 2024 Finals",cost:75},{icon:"📺",cat:"TV SHOWS",t:"Survivor S48",cost:50},{icon:"₿",cat:"CRYPTO",t:"Bitcoin $150K?",cost:75}].forEach(function(e){
+        h+=`<div class="card"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><div style="font-size:8px;font-weight:600;color:var(--mt);text-transform:uppercase">${e.icon} ${e.cat}</div><span class="tag tag-f">Free · ${e.cost} 🪙</span></div>
+        <div style="font-size:13px;font-weight:600">${e.t}</div><div style="font-size:9px;color:var(--mt)">Prizes: Leaderboard rank + XP</div></div>`;});break;
+
+    case 3: // Make picks
+      h+=`<div style="font-size:14px;font-weight:700;margin-bottom:10px">Your Free Picks — 4-Pick Parlay</div>`;
+      [{s:"Worlds 2024",pick:"T1 wins series",pct:73},{s:"VMAs 2024",pick:"Taylor Swift VotY",pct:71},{s:"NASCAR",pick:"Different winner",pct:66},{s:"Survivor S48",pick:"Austin wins",pct:31}].forEach(function(p){
+        h+=`<div class="ev-o sel" style="padding:6px 8px;margin-bottom:4px"><span style="font-size:9px;color:var(--mt);margin-right:6px">${p.s}</span><span style="font-size:10px;font-weight:500;flex:1">${p.pick}</span><span class="ev-p">${p.pct}%</span></div>`;});
+      h+=`<div class="card" style="background:var(--wnb);border-color:var(--wnbd);padding:10px;margin-top:8px">
+      <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px"><span style="color:var(--mt)">4-pick parlay</span><span style="color:var(--wn);font-weight:700;font-size:14px">10x</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:10px"><span style="color:var(--mt)">Cost</span><span>100 🪙</span></div></div>`;break;
+
+    case 4: // Results
+      h+=`<div style="text-align:center;margin-bottom:14px"><div style="font-size:26px;font-weight:800;color:var(--wn)">Winner!</div>
+      <div style="font-size:44px;font-weight:800;color:var(--wn)">3<span style="font-size:18px;color:var(--mt)">/4</span></div></div>
+      <div class="card" style="padding:10px">`;
+      [{l:"T1 wins series",w:true},{l:"Taylor Swift VotY",w:true},{l:"Different NASCAR winner",w:true},{l:"Austin wins Survivor",w:false}].forEach(function(p){
+        h+=`<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:6px;margin-bottom:3px;background:${p.w?'var(--wnb)':'var(--lsb)'};border:1px solid ${p.w?'var(--wnbd)':'var(--lsbd)'}"><span style="color:${p.w?'var(--wn)':'var(--ls)'};font-size:12px">${p.w?'✓':'✗'}</span><span style="font-size:10px">${p.l}</span></div>`;});
+      h+=`</div><div style="border-radius:8px;padding:12px;margin:8px 0;display:flex;justify-content:space-between;background:var(--wnb);border:1px solid var(--wnbd)"><span style="font-size:10px;color:var(--mt)">Coins earned</span><span style="font-size:22px;font-weight:800;color:var(--wn)">+420 🪙</span></div>`;break;
+
+    case 5: // Shadow earnings
+      h+=`<div style="font-size:14px;font-weight:700;margin-bottom:10px">💰 What You Would Have Won</div>
+      <div class="card" style="background:var(--cyg);border-color:var(--cybd);padding:14px">
+      <div style="font-size:12px;font-weight:600;color:var(--cy);margin-bottom:8px">Shadow earnings — your picks in paid contests</div>
+      <div style="font-size:10px;color:var(--mt);margin-bottom:8px">Your score ranked #12 out of 847 free players. Here's what you missed:</div>`;
+      [{tier:"$5",pool:3598,rank:12},{tier:"$10",pool:7196,rank:12},{tier:"$25",pool:17990,rank:12}].forEach(function(t){
+        var win=Math.round(t.pool*0.04*100)/100; // 4th-10th position
+        h+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px;background:var(--bg);border:1px solid var(--bd);border-radius:7px;margin-bottom:4px"><div><div style="font-size:10px;font-weight:600">${t.tier} paid contest</div><div style="font-size:8px;color:var(--mt)">Pool: $${t.pool.toLocaleString()} · Rank #${t.rank}</div></div><div style="font-size:16px;font-weight:700;color:var(--wn)">$${win.toFixed(2)}</div></div>`;});
+      h+=`<button class="btn btn-cy" style="margin-top:10px;font-size:11px">Deposit now → never miss cash again</button></div>
+      <div class="disc" style="margin-top:8px">Free contests show shadow earnings after every result. Same picks, same score — the only difference is whether you entered the paid pool.</div>`;break;
+
+    case 6: // Balance
+      h+=`<div style="font-size:14px;font-weight:700;margin-bottom:10px">Your Free Balance</div>
+      <div style="background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:14px;text-align:center;margin-bottom:12px"><div style="font-size:28px;font-weight:800;color:var(--wn)">820 🪙</div><div style="font-size:10px;color:var(--mt)">500 start + 420 won − 100 entry</div></div>
+      <div class="card" style="padding:10px"><div style="font-size:11px;font-weight:600;margin-bottom:6px">Activity</div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd);font-size:10px"><div>Contest winnings</div><div style="color:var(--wn);font-weight:600">+420 🪙</div></div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd);font-size:10px"><div>Contest entry</div><div style="color:var(--cy);font-weight:600">-100 🪙</div></div>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:10px"><div>Sign-up bonus</div><div style="color:var(--wn);font-weight:600">+500 🪙</div></div></div>`;break;
+
+    case 7: // Comparison
+      h+=`<div style="font-size:16px;font-weight:700;margin-bottom:4px">Free vs Paid — Side by Side</div>
+      <div style="font-size:10px;color:var(--mt);margin-bottom:14px">Same picks, same score. Different outcomes.</div>
+
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+      <div style="flex:1;background:var(--wnb);border:1px solid var(--wnbd);border-radius:10px;padding:12px;text-align:center">
+      <div style="font-size:10px;color:var(--wn);font-weight:600;margin-bottom:6px">🪙 FREE (you played this)</div>
+      <div style="font-size:9px;color:var(--mt);margin-bottom:4px">Cost: 100 coins</div>
+      <div style="font-size:9px;color:var(--mt);margin-bottom:4px">Won: 420 coins</div>
+      <div style="font-size:18px;font-weight:700;color:var(--wn)">+320 🪙</div>
+      <div style="font-size:8px;color:var(--mt)">Net coin profit</div></div>
+
+      <div style="flex:1;background:var(--cyg);border:1px solid var(--cybd);border-radius:10px;padding:12px;text-align:center">
+      <div style="font-size:10px;color:var(--cy);font-weight:600;margin-bottom:6px">💵 PAID (you missed this)</div>
+      <div style="font-size:9px;color:var(--mt);margin-bottom:4px">Cost: $6.00</div>
+      <div style="font-size:9px;color:var(--mt);margin-bottom:4px">Won: $35.20</div>
+      <div style="font-size:18px;font-weight:700;color:var(--cy)">+$29.20</div>
+      <div style="font-size:8px;color:var(--mt)">Net cash profit</div></div></div>
+
+      <div class="settle-block" style="border-color:var(--cybd)">
+      <h4 style="color:var(--cy)">Full paid contest settlement (what happened)</h4>
+      <div class="settle-row"><span class="sl">847 participants × $6 entry</span><span class="sr">$5,082 collected</span></div>
+      <div class="settle-row"><span class="sl">LockIn (15% rake + 30% hosting)</span><span class="sr" style="color:var(--cy)">$889.35</span></div>
+      <div class="settle-row"><span class="sl">Creator @NASCARNate (70% hosting)</span><span class="sr" style="color:var(--wn)">$592.90</span></div>
+      <div class="settle-row"><span class="sl">Prize pool (winners)</span><span class="sr" style="color:var(--lv)">$3,599.75</span></div>
+      <div class="settle-row"><span class="sl">Stripe fees</span><span class="sr" style="color:var(--ls)">$0 to LockIn (customer paid)</span></div>
+      </div>
+
+      <button class="btn btn-cy" style="margin-bottom:8px">Verify identity & deposit → play paid next time</button>
+      <div class="disc">Your picks are just as good as the paid players. The only difference is you didn't put money in. Deposit $5+ to start winning real cash.</div>`;break;
+  }
+  h+='</div>';ct.innerHTML=h;
+}
+</script>
+</body>
+</html>

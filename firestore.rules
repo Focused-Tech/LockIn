@@ -1,0 +1,137 @@
+rules_version = '2';
+
+// LockIn Firestore security rules — the client-facing equivalent of the old
+// Postgres RLS policies. The Admin SDK (server actions, API routes, tRPC,
+// settlement) bypasses these rules entirely; everything below governs the
+// browser SDK only. Money/KYC/creator fields are therefore server-write-only.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isUser(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    function slateCreator(slateId) {
+      return get(/databases/$(database)/documents/slates/$(slateId)).data.creatorId;
+    }
+
+    // users/{userId} — read your own; profile-only self-updates. Balances, KYC,
+    // creator, and subscription fields are written by the Admin SDK only.
+    match /users/{userId} {
+      allow read: if isUser(userId);
+      allow create: if false; // created server-side at signup
+      allow update: if isUser(userId)
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['avatarUrl', 'geoState', 'registeredState',
+                       'depositLimitDailyCents', 'selfExclusionUntil', 'categories']);
+      allow delete: if false;
+
+      // categoryStats — per-category aggregates, read your own. Written by the
+      // Admin SDK at settlement only.
+      match /categoryStats/{category} {
+        allow read: if isUser(userId);
+        allow write: if false;
+      }
+    }
+
+    // usernames/{lower} — uniqueness reservations, server-managed only.
+    match /usernames/{name} {
+      allow read, write: if false;
+    }
+
+    // slates/{slateId} — public read; a creator manages only their own slates.
+    match /slates/{slateId} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && request.resource.data.creatorId == request.auth.uid;
+      allow update: if isSignedIn()
+        && resource.data.creatorId == request.auth.uid;
+      allow delete: if false;
+
+      // predictions — public read; writable by the owning slate's creator.
+      // Results/verification are written by the Admin SDK (AI verifier).
+      match /predictions/{predictionId} {
+        allow read: if true;
+        allow create, update: if isSignedIn()
+          && slateCreator(slateId) == request.auth.uid;
+        allow delete: if false;
+      }
+
+      // entries — see and create only your own. Scores/ranks/payouts are
+      // stamped by the Admin SDK at settlement.
+      match /entries/{entryId} {
+        allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+        allow create: if isSignedIn()
+          && request.resource.data.userId == request.auth.uid;
+        allow update, delete: if false;
+      }
+    }
+
+    // deposits — read your own. Inserts happen server-side after Stripe confirms.
+    match /deposits/{depositId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow write: if false;
+    }
+
+    // withdrawals — read your own; request one only when KYC-verified.
+    match /withdrawals/{withdrawalId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && userDoc().kycStatus == 'verified';
+      allow update, delete: if false;
+    }
+
+    // pickPackages — the picks payload is the product, so clients may read only
+    // their OWN packages. The marketplace listing and gated reveal (to buyers /
+    // after lock) are served by the Admin SDK server-side.
+    match /pickPackages/{packageId} {
+      allow read: if isSignedIn()
+        && resource.data.creatorId == request.auth.uid;
+      allow create: if isSignedIn()
+        && request.resource.data.creatorId == request.auth.uid;
+      allow update: if isSignedIn()
+        && resource.data.creatorId == request.auth.uid;
+      allow delete: if false;
+    }
+
+    // packagePurchases — read your own; purchases are written server-side
+    // (payment / coin debit + revenue split happen in a transaction).
+    match /packagePurchases/{purchaseId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow write: if false;
+    }
+
+    // creatorEarnings — a creator reads their own ledger; written server-side.
+    match /creatorEarnings/{earningId} {
+      allow read: if isSignedIn()
+        && resource.data.creatorId == request.auth.uid;
+      allow write: if false;
+    }
+
+    // referrals — the referrer reads their own referrals; written server-side.
+    match /referrals/{referredUid} {
+      allow read: if isSignedIn()
+        && resource.data.referrerUid == request.auth.uid;
+      allow write: if false;
+    }
+
+    // creatorApplications — applicants read their own; submission + review are
+    // server-side (Admin SDK). Admin reads also go through the Admin SDK.
+    match /creatorApplications/{userId} {
+      allow read: if isUser(userId);
+      allow write: if false;
+    }
+
+    // crossParlays — owner reads their own; submission + settlement are server-side.
+    match /crossParlays/{parlayId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow write: if false;
+    }
+  }
+}

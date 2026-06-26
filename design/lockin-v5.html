@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>LockIn V5 — Creator Journey</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+*::-webkit-scrollbar{display:none!important}*{scrollbar-width:none!important}
+:root{--bg:#0A0D12;--sf:#0D1118;--cd:#12161E;--bd:#1E2A38;--tx:#E8ECF2;--mt:#6B7A8E;--ht:#3A4A5C;
+--cy:#FF3B00;--cyb:rgba(255,59,0,.10);--cybd:rgba(255,59,0,.25);--cyg:rgba(255,59,0,.06);
+--wn:#22C55E;--wnb:rgba(34,197,94,.10);--wnbd:rgba(34,197,94,.25);
+--ls:#E85454;--lsb:rgba(232,84,84,.10);--lsbd:rgba(232,84,84,.20);
+--lv:#F5A623;--ru:#9B5DE5;--rub:rgba(155,93,229,.08);--rubd:rgba(155,93,229,.20);
+--ai:#3B8BFF;--aib:rgba(59,139,255,.10);--aibd:rgba(59,139,255,.20)}
+html,body{height:100%;background:#111;font-family:system-ui,-apple-system,sans-serif;color:var(--tx);overflow:hidden}
+body{display:flex;justify-content:center;align-items:center}
+button{cursor:pointer;font-family:inherit}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+@keyframes grow{from{width:0}to{width:100%}}
+.phone{width:390px;max-width:100vw;height:100vh;max-height:844px;background:var(--bg);display:flex;flex-direction:column;position:relative;overflow:hidden}
+@media(min-width:420px){.phone{border-radius:36px;border:2px solid var(--bd);height:810px}}
+.step{display:none;flex-direction:column;flex:1;overflow:hidden;animation:fadeIn .25s ease}.step.active{display:flex}
+.scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.topnav{display:flex;align-items:center;justify-content:space-between;padding:12px 16px 8px;flex-shrink:0;background:var(--sf)}
+.logo{font-weight:800;font-size:20px;letter-spacing:1.5px;color:var(--cy)}.logo span{color:var(--tx)}
+.btn{width:100%;padding:10px;border-radius:8px;font-size:12px;font-weight:600;border:1px solid;transition:all .15s}
+.btn-cy{background:var(--cyb);color:var(--cy);border-color:var(--cybd)}
+.btn-wn{background:var(--wnb);color:var(--wn);border-color:var(--wnbd)}
+.btn-gh{background:transparent;color:var(--mt);border-color:var(--bd)}
+.btn-ru{background:var(--rub);color:var(--ru);border-color:var(--rubd)}
+.btn-ai{background:var(--aib);color:var(--ai);border-color:var(--aibd)}
+.card{background:var(--cd);border:1px solid var(--bd);border-radius:12px;padding:13px;margin-bottom:10px}
+.divider{border:none;border-top:1px solid var(--bd);margin:8px 0}
+.disc{background:var(--bg);border:1px solid var(--bd);border-radius:7px;padding:8px;font-size:9px;color:var(--mt);line-height:1.5}
+.inp{width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--bd);border-radius:8px;color:var(--tx);font-size:13px;outline:none}
+.lbl{display:block;color:var(--mt);font-size:10px;font-weight:600;letter-spacing:.4px;margin-bottom:4px}
+.tag{display:inline-block;font-size:8px;font-weight:600;padding:2px 7px;border-radius:4px}
+.tag-p{background:var(--cyb);color:var(--cy);border:1px solid var(--cybd)}
+.tag-v{background:var(--wnb);color:var(--wn);border:1px solid var(--wnbd)}
+.tag-ai{background:var(--aib);color:var(--ai);border:1px solid var(--aibd)}
+.footer-d{padding:6px 16px;font-size:7px;color:var(--ht);line-height:1.4;text-align:center;border-top:1px solid var(--bd);flex-shrink:0;background:var(--sf)}
+.prog{display:flex;gap:3px;padding:8px 16px;flex-shrink:0;background:var(--sf);border-bottom:1px solid var(--bd)}
+.pdot{flex:1;height:4px;border-radius:2px;background:var(--bd)}.pdot.done{background:var(--cy)}.pdot.now{background:var(--cy);animation:pulse .8s infinite}
+.plbl{font-size:9px;color:var(--cy);font-weight:600;padding:0 16px 6px;background:var(--sf);text-transform:uppercase;letter-spacing:1px}
+.nxt{position:sticky;bottom:0;padding:12px 16px;background:var(--sf);border-top:1px solid var(--bd);flex-shrink:0}
+.srow{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd);font-size:12px}.srow:last-child{border-bottom:none}
+.srow .sl{color:var(--mt)}.srow .sr{font-weight:600}
+.sblock{background:var(--cd);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:10px}
+.sblock h4{font-size:13px;font-weight:600;margin-bottom:8px}
+.bignum{font-size:28px;font-weight:800;text-align:center;margin:6px 0}
+.av-big{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;margin:0 auto 10px}
+.timeline{position:relative;padding-left:20px;margin:10px 0}
+.timeline::before{content:'';position:absolute;left:6px;top:0;bottom:0;width:2px;background:var(--bd)}
+.tl-item{position:relative;padding:8px 0 8px 12px;font-size:11px}
+.tl-item::before{content:'';position:absolute;left:-17px;top:12px;width:10px;height:10px;border-radius:50%;background:var(--cd);border:2px solid var(--cy)}
+.tl-item.done::before{background:var(--cy)}
+.tl-item.active::before{background:var(--cy);box-shadow:0 0 8px rgba(255,59,0,.4)}
+.tl-item .tl-t{font-weight:600;color:var(--tx)}.tl-item .tl-s{color:var(--mt);font-size:9px}
+.bar-fill{height:100%;border-radius:3px;transition:width .5s ease}
+.share-preview{background:linear-gradient(135deg,#1a1020,#0d1118);border:2px solid var(--cybd);border-radius:14px;padding:16px;text-align:center;margin-bottom:12px}
+</style>
+</head>
+<body>
+<div class="phone" id="app">
+
+<div class="step active" id="s-launch">
+<div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:24px">
+<div style="text-align:center;margin-bottom:28px">
+<div class="logo" style="font-size:36px;letter-spacing:3px">LOCK<span>IN</span></div>
+<p style="color:var(--mt);font-size:12px;margin-top:4px">V5 — Creator Journey Demo</p>
+</div>
+<div class="card" style="padding:18px;cursor:pointer;border-color:var(--cybd)" onclick="startDemo()">
+<div style="font-size:16px;font-weight:700;color:var(--cy);margin-bottom:4px">🎤 Creator Journey</div>
+<div style="font-size:11px;color:var(--mt);line-height:1.7;margin-bottom:8px">Apply for creator status → get verified → create a slate → set predictions & odds with AI → set hosting fee & tiers → promote to audience → watch entries roll in → contest settles → see your full earnings breakdown.</div>
+<div style="font-size:10px;color:var(--cy)">~3 minutes · 12 steps →</div>
+</div>
+<div style="margin-top:12px;font-size:10px;color:var(--ht);text-align:center">Also covers: AI agent odds calculation, slate timing, pick package creation, promotion tools, and the full creator settlement report.</div>
+</div>
+</div>
+
+<div class="step" id="s-demo" style="flex-direction:column">
+<div class="prog" id="prog"></div>
+<div class="plbl" id="plbl"></div>
+<div class="topnav">
+<div class="logo">LOCK<span>IN</span></div>
+<div style="display:flex;align-items:center;gap:6px">
+<div style="border-radius:18px;padding:4px 11px;font-size:10px;font-weight:600;background:var(--cyb);border:1px solid var(--cybd);color:var(--cy)">Creator Mode</div>
+<div style="width:28px;height:28px;border-radius:50%;background:var(--cyb);border:1.5px solid var(--cybd);display:flex;align-items:center;justify-content:center;color:var(--cy);font-weight:700;font-size:10px">N</div>
+</div></div>
+<div class="scroll" id="ct"></div>
+<div class="nxt"><button class="btn btn-cy" id="nxt-btn" onclick="next()">Continue →</button></div>
+<div class="footer-d">LockIn Creator Dashboard · 15% platform rake · 30/70 hosting split · Skill-based contests</div>
+</div>
+</div>
+
+<script>
+let cur=0;
+const steps=[
+  "Step 1: Apply for Creator Status",
+  "Step 2: Creator Verified",
+  "Step 3: Creator Dashboard",
+  "Step 4: Create a New Slate",
+  "Step 5: AI Agent Sets the Odds",
+  "Step 6: Set Hosting Fee & Tiers",
+  "Step 7: Create Pick Package",
+  "Step 8: Promote to Your Audience",
+  "Step 9: Watch the Buzz Build",
+  "Step 10: Contest Locks & Settles",
+  "Step 11: AI Verifies Results",
+  "Step 12: Creator Settlement Report"
+];
+
+function startDemo(){cur=0;document.getElementById('s-launch').classList.remove('active');document.getElementById('s-demo').classList.add('active');render();}
+function next(){if(cur>=steps.length-1){document.getElementById('s-demo').classList.remove('active');document.getElementById('s-launch').classList.add('active');return;}cur++;render();}
+
+function render(){
+  var p='';for(var i=0;i<steps.length;i++) p+='<div class="pdot '+(i<cur?'done':i===cur?'now':'')+'"></div>';
+  document.getElementById('prog').innerHTML=p;
+  document.getElementById('plbl').textContent=steps[cur];
+  var last=cur===steps.length-1;
+  document.getElementById('nxt-btn').textContent=last?'← Back to Launcher':'Continue →';
+  document.getElementById('nxt-btn').className=last?'btn btn-wn':'btn btn-cy';
+  var ct=document.getElementById('ct');
+  ct.innerHTML='<div style="padding:16px">'+getContent()+'</div>';
+  ct.scrollTop=0;
+}
+
+function getContent(){
+switch(cur){
+case 0: return `
+<div style="text-align:center;margin-bottom:14px">
+<div class="av-big" style="background:var(--cyb);border:3px solid var(--cybd);color:var(--cy)">N</div>
+<div style="font-size:16px;font-weight:700">Apply for Creator Status</div>
+<div style="font-size:11px;color:var(--mt)">@NASCARNate · NASCAR & Sports analyst</div></div>
+<div class="card" style="padding:14px">
+<div style="font-size:13px;font-weight:600;margin-bottom:10px">Creator Application</div>
+<div style="margin-bottom:6px"><label class="lbl">Display name</label><input class="inp" value="NASCARNate" readonly></div>
+<div style="margin-bottom:6px"><label class="lbl">Expertise categories</label>
+<div style="display:flex;gap:4px;flex-wrap:wrap"><span class="tag tag-p">NASCAR</span><span class="tag tag-p">Sports</span><span class="tag" style="background:var(--bd);color:var(--mt)">+ Add category</span></div></div>
+<div style="margin-bottom:6px"><label class="lbl">Social media links</label><input class="inp" value="tiktok.com/@nascarnate · 156K followers" readonly></div>
+<div style="margin-bottom:6px"><label class="lbl">Why should LockIn verify you?</label>
+<div class="inp" style="height:60px;font-size:11px;color:var(--mt)">5+ years analyzing NASCAR. Track-by-track breakdowns with 76% accuracy on race winners. 156K TikTok followers who trust my picks.</div></div>
+<div class="disc" style="margin-bottom:10px">Creators earn 70% of hosting fees, 75% of pick package sales, referral bonuses, and Pro subscription commissions. You must maintain a verified account and comply with LockIn's creator guidelines.</div>
+<div style="text-align:center;color:var(--wn);font-size:11px;font-weight:600;padding:8px;background:var(--wnb);border-radius:6px">Application submitted for review</div>
+</div>
+<div class="disc">Creator applications reviewed within 24-48 hours. Requirements: active social media presence, demonstrated prediction expertise, 18+ age verification, completed KYC.</div>`;
+
+case 1: return `
+<div style="text-align:center;margin-bottom:14px">
+<div class="av-big" style="background:var(--wnb);border:3px solid var(--wnbd);color:var(--wn)">✓</div>
+<div style="font-size:16px;font-weight:700;color:var(--wn)">Creator Verified!</div>
+<div style="font-size:11px;color:var(--mt)">Welcome to the LockIn Creator Program</div></div>
+<div class="card" style="padding:14px;border-color:var(--wnbd)">
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+<div style="width:40px;height:40px;border-radius:50%;background:var(--cyb);border:2px solid var(--cy);display:flex;align-items:center;justify-content:center;color:var(--cy);font-weight:700;font-size:16px">N</div>
+<div><div style="font-size:14px;font-weight:600">NASCARNate <span class="tag tag-v">✓ Verified Creator</span></div><div style="font-size:10px;color:var(--mt)">@nascarnate · NASCAR & Sports</div></div></div>
+<div style="font-size:12px;font-weight:600;margin-bottom:6px">What you can now do:</div>
+<div style="font-size:11px;color:var(--mt);line-height:1.8">
+✅ Create and host your own prediction slates<br>
+✅ Set hosting fees ($1-$3 per entry)<br>
+✅ Sell pick packages to your followers<br>
+✅ Earn referral bonuses for bringing new users<br>
+✅ Earn 20% commission on Pro subscription referrals<br>
+✅ Host Card Rush events<br>
+✅ Access AI agent tools for odds calculation<br>
+✅ Get your branded creator page</div></div>
+<div class="disc">Payouts via Stripe Connect to your bank account. Weekly or monthly schedule — you choose. 1099 tax reporting for earnings over $600/year.</div>`;
+
+case 2: return `
+<div style="font-size:16px;font-weight:700;margin-bottom:12px">Creator Dashboard</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+<div style="background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:700;color:var(--cy)">$0</div><div style="font-size:8px;color:var(--mt)">Lifetime earnings</div></div>
+<div style="background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:700;color:var(--wn)">76%</div><div style="font-size:8px;color:var(--mt)">Win rate</div></div>
+<div style="background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:700;color:var(--tx)">0</div><div style="font-size:8px;color:var(--mt)">Slates hosted</div></div>
+<div style="background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:700;color:var(--tx)">0</div><div style="font-size:8px;color:var(--mt)">Followers on LockIn</div></div></div>
+<button class="btn btn-cy" style="margin-bottom:10px;font-size:13px">+ Create New Slate</button>
+<button class="btn btn-ru" style="margin-bottom:10px;font-size:13px">⚡ Host a Card Rush</button>
+<button class="btn btn-gh" style="margin-bottom:10px;font-size:13px">📦 Create Pick Package</button>
+<div class="card" style="padding:10px"><div style="font-size:11px;font-weight:600;margin-bottom:6px">Revenue breakdown</div>
+<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:10px"><span style="color:var(--mt)">Hosting fees (70%)</span><span>$0.00</span></div>
+<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:10px"><span style="color:var(--mt)">Pick packages (75%)</span><span>$0.00</span></div>
+<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:10px"><span style="color:var(--mt)">Referral bonuses</span><span>$0.00</span></div>
+<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:10px"><span style="color:var(--mt)">Pro commissions (20%)</span><span>$0.00</span></div>
+</div>`;
+
+case 3: return `
+<div style="font-size:16px;font-weight:700;margin-bottom:12px">Create a Slate</div>
+<div class="card" style="padding:14px">
+<div style="margin-bottom:8px"><label class="lbl">Event</label><input class="inp" value="Coca-Cola 600 — Charlotte Motor Speedway" readonly></div>
+<div style="margin-bottom:8px"><label class="lbl">Category</label>
+<div style="display:flex;gap:4px"><span class="tag tag-p">NASCAR</span></div></div>
+<div style="margin-bottom:8px"><label class="lbl">Slate title</label><input class="inp" value="NASCARNate's Coca-Cola 600 Predictions" readonly></div>
+<hr class="divider">
+<div style="font-size:12px;font-weight:600;margin-bottom:8px">Predictions (you set the questions)</div>
+<div style="background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:8px;margin-bottom:6px">
+<div style="font-size:10px;font-weight:600;margin-bottom:4px">Q1: Race winner?</div>
+<div style="display:flex;gap:6px;font-size:10px"><span style="color:var(--wn)">A: Kyle Larson</span><span style="color:var(--mt)">vs</span><span style="color:var(--ls)">B: Different winner</span></div></div>
+<div style="background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:8px;margin-bottom:6px">
+<div style="font-size:10px;font-weight:600;margin-bottom:4px">Q2: Cautions over/under 7.5?</div>
+<div style="display:flex;gap:6px;font-size:10px"><span style="color:var(--wn)">A: Over 7.5</span><span style="color:var(--mt)">vs</span><span style="color:var(--ls)">B: Under 7.5</span></div></div>
+<div style="background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:8px;margin-bottom:6px">
+<div style="font-size:10px;font-weight:600;margin-bottom:4px">Q3: Leader at halfway (Lap 200)?</div>
+<div style="display:flex;gap:6px;font-size:10px"><span style="color:var(--wn)">A: Larson leads</span><span style="color:var(--mt)">vs</span><span style="color:var(--ls)">B: Someone else</span></div></div>
+<div style="background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:8px">
+<div style="font-size:10px;font-weight:600;margin-bottom:4px">Q4: Finish under caution?</div>
+<div style="display:flex;gap:6px;font-size:10px"><span style="color:var(--wn)">A: Yes — caution finish</span><span style="color:var(--mt)">vs</span><span style="color:var(--ls)">B: Green flag finish</span></div></div>
+</div>
+<div class="disc">AI agent will calculate probability odds for each option based on historical data, driver stats, weather, and track characteristics. You can override AI odds if you disagree.</div>`;
+
+case 4: return `
+<div style="font-size:16px;font-weight:700;margin-bottom:4px">🤖 AI Agent Calculates Odds</div>
+<div style="font-size:11px;color:var(--mt);margin-bottom:12px">Cross-referencing NASCAR.com, Racing Reference, weather data, and historical Charlotte results</div>
+<div class="card" style="border-color:var(--aibd);padding:14px">
+<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px"><span class="tag tag-ai">🤖 AI Calculated</span><span style="font-size:9px;color:var(--mt)">Sources: NASCAR API, Racing Reference, Weather.gov, 10yr historical data</span></div>
+<div style="margin-bottom:10px">
+<div style="font-size:11px;font-weight:600;margin-bottom:4px">Q1: Race winner?</div>
+<div style="display:flex;gap:6px;margin-bottom:2px"><div style="flex:1;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:6px 8px;font-size:10px"><span style="font-weight:600">Kyle Larson</span><div style="display:flex;justify-content:space-between;margin-top:2px"><span style="color:var(--ai)">34%</span><span style="color:var(--mt)">2.94x</span></div></div>
+<div style="flex:1;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:6px 8px;font-size:10px"><span style="font-weight:600">Different winner</span><div style="display:flex;justify-content:space-between;margin-top:2px"><span style="color:var(--ai)">66%</span><span style="color:var(--mt)">1.52x</span></div></div></div>
+<div style="font-size:8px;color:var(--ai)">AI insight: Larson has won 2 of last 5 Charlotte races but field is competitive this year</div></div>
+<div style="margin-bottom:10px">
+<div style="font-size:11px;font-weight:600;margin-bottom:4px">Q2: Cautions over/under 7.5?</div>
+<div style="display:flex;gap:6px;margin-bottom:2px"><div style="flex:1;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:6px 8px;font-size:10px"><span style="font-weight:600">Over 7.5</span><div style="display:flex;justify-content:space-between;margin-top:2px"><span style="color:var(--ai)">58%</span><span style="color:var(--mt)">1.72x</span></div></div>
+<div style="flex:1;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:6px 8px;font-size:10px"><span style="font-weight:600">Under 7.5</span><div style="display:flex;justify-content:space-between;margin-top:2px"><span style="color:var(--ai)">42%</span><span style="color:var(--mt)">2.38x</span></div></div></div>
+<div style="font-size:8px;color:var(--ai)">AI insight: Charlotte 600 averages 8.3 cautions over last decade. Heat forecast may increase tire issues.</div></div>
+<div style="margin-bottom:10px">
+<div style="font-size:11px;font-weight:600;margin-bottom:4px">Q3: Leader at halfway?</div>
+<div style="display:flex;gap:6px"><div style="flex:1;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:6px 8px;font-size:10px"><span style="font-weight:600">Larson leads</span><div style="display:flex;justify-content:space-between;margin-top:2px"><span style="color:var(--ai)">28%</span><span style="color:var(--mt)">3.57x</span></div></div>
+<div style="flex:1;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:6px 8px;font-size:10px"><span style="font-weight:600">Someone else</span><div style="display:flex;justify-content:space-between;margin-top:2px"><span style="color:var(--ai)">72%</span><span style="color:var(--mt)">1.39x</span></div></div></div></div>
+</div>
+<div style="display:flex;gap:8px"><button class="btn btn-ai" style="flex:1;font-size:11px">✓ Accept AI Odds</button><button class="btn btn-gh" style="flex:1;font-size:11px">Override manually</button></div>`;
+
+case 5: return `
+<div style="font-size:16px;font-weight:700;margin-bottom:12px">Set Hosting Fee & Entry Tiers</div>
+<div class="card" style="padding:14px">
+<div style="margin-bottom:10px"><label class="lbl">Your hosting fee per entry</label>
+<div style="display:flex;gap:6px">
+<button class="btn btn-gh" style="flex:1;padding:8px;font-size:12px">$1</button>
+<button class="btn btn-cy" style="flex:1;padding:8px;font-size:12px">$2</button>
+<button class="btn btn-gh" style="flex:1;padding:8px;font-size:12px">$3</button></div>
+<div style="font-size:9px;color:var(--mt);margin-top:4px">You earn 70% ($1.40) per entry. LockIn takes 30% ($0.60).</div></div>
+<div style="margin-bottom:10px"><label class="lbl">Entry tiers to offer</label>
+<div style="display:flex;gap:6px">
+<div style="flex:1;background:var(--cyg);border:1px solid var(--cybd);border-radius:8px;padding:8px;text-align:center;font-size:11px"><div style="font-weight:600;color:var(--cy)">$5</div><div style="font-size:8px;color:var(--mt)">Most entries</div></div>
+<div style="flex:1;background:var(--cyg);border:1px solid var(--cybd);border-radius:8px;padding:8px;text-align:center;font-size:11px"><div style="font-weight:600;color:var(--cy)">$10</div><div style="font-size:8px;color:var(--mt)">Mid stakes</div></div>
+<div style="flex:1;background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:8px;text-align:center;font-size:11px"><div style="font-weight:600;color:var(--mt)">$25</div><div style="font-size:8px;color:var(--mt)">High stakes</div></div></div></div>
+<hr class="divider">
+<div style="font-size:12px;font-weight:600;margin-bottom:6px">Slate timing</div>
+<div style="margin-bottom:6px"><label class="lbl">Promotion window opens</label><input class="inp" value="48 hours before race (Friday 6:00 PM)" readonly></div>
+<div style="margin-bottom:6px"><label class="lbl">Entries lock</label><input class="inp" value="Race start — Sunday 6:00 PM EDT" readonly></div>
+<div style="margin-bottom:6px"><label class="lbl">Minimum entries for payout</label><input class="inp" value="20 participants (auto-converts to free below 20)" readonly></div></div>
+<div class="disc">48-hour promotion window recommended. This gives you time to post on TikTok, go live on stream, and let word of mouth build. Longer windows (up to 7 days) available for politics/economics slates.</div>`;
+
+case 6: return `
+<div style="font-size:16px;font-weight:700;margin-bottom:12px">Create Pick Package</div>
+<div class="card" style="padding:14px">
+<div style="margin-bottom:8px"><label class="lbl">Package name</label><input class="inp" value="NASCARNate's Coca-Cola 600 Lock 🔒" readonly></div>
+<div style="margin-bottom:8px"><label class="lbl">Price</label>
+<div style="display:flex;gap:6px">
+<button class="btn btn-gh" style="flex:1;padding:6px;font-size:11px">$2.99</button>
+<button class="btn btn-cy" style="flex:1;padding:6px;font-size:11px">$4.99</button>
+<button class="btn btn-gh" style="flex:1;padding:6px;font-size:11px">$9.99</button></div>
+<div style="font-size:9px;color:var(--mt);margin-top:4px">You keep 75% ($3.74). LockIn takes 25% ($1.25). Also purchasable for 2,000 🪙.</div></div>
+<div style="margin-bottom:8px"><label class="lbl">Your picks (hidden until lock time)</label>
+<div style="background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:8px;font-size:10px">
+<div style="display:flex;justify-content:space-between;margin-bottom:3px"><span>Q1: Race winner</span><span style="color:var(--cy);font-weight:600">🔒 Hidden</span></div>
+<div style="display:flex;justify-content:space-between;margin-bottom:3px"><span>Q2: Cautions O/U</span><span style="color:var(--cy);font-weight:600">🔒 Hidden</span></div>
+<div style="display:flex;justify-content:space-between;margin-bottom:3px"><span>Q3: Halfway leader</span><span style="color:var(--cy);font-weight:600">🔒 Hidden</span></div>
+<div style="display:flex;justify-content:space-between"><span>Q4: Finish type</span><span style="color:var(--cy);font-weight:600">🔒 Hidden</span></div></div></div>
+<div style="margin-bottom:8px"><label class="lbl">Early bird pricing</label>
+<div style="display:flex;gap:6px"><span class="tag tag-v">First 6hrs: $3.99 (20% off)</span><span class="tag tag-p">After: $4.99</span></div></div>
+<div style="margin-bottom:8px"><label class="lbl">Picks revealed to buyers</label><input class="inp" value="At lock time (Sunday 6:00 PM EDT)" readonly></div>
+</div>
+<div class="disc">Picks stay hidden until lock to prevent leaking. Buyers trust your track record (76% win rate) and pay for early access to your analysis when it reveals at lock.</div>`;
+
+case 7: return `
+<div style="font-size:16px;font-weight:700;margin-bottom:12px">Promote to Your Audience</div>
+<div class="share-preview">
+<div class="logo" style="font-size:14px;margin-bottom:8px">LOCK<span>IN</span></div>
+<div style="font-size:8px;color:var(--mt);margin-bottom:6px">@NASCARNate · Verified Creator</div>
+<div style="font-size:16px;font-weight:700;margin-bottom:4px">🏎️ Coca-Cola 600 Predictions</div>
+<div style="font-size:11px;color:var(--cy);font-weight:600;margin-bottom:8px">4 picks · $5-$10 entry · LIVE Sunday</div>
+<div style="font-size:10px;color:var(--mt);text-align:left;margin-bottom:8px">
+Over/under on cautions? Who leads at halfway?<br>My lock package drops at race time 🔒</div>
+<div style="font-size:9px;background:var(--cyb);border:1px solid var(--cybd);border-radius:6px;padding:6px;color:var(--cy)">lockin.gg/c/nascarnate/coca-cola-600</div>
+</div>
+<div style="font-size:12px;font-weight:600;margin-bottom:8px">Share to your platforms</div>
+<div style="display:flex;gap:6px;margin-bottom:10px">
+<button class="btn btn-cy" style="flex:1;font-size:10px">TikTok</button>
+<button class="btn btn-cy" style="flex:1;font-size:10px">Instagram</button>
+<button class="btn btn-cy" style="flex:1;font-size:10px">X / Twitter</button>
+<button class="btn btn-gh" style="flex:1;font-size:10px">Copy link</button></div>
+<div class="card" style="padding:10px;font-size:11px"><div style="font-weight:600;margin-bottom:4px">Promo tools available:</div>
+<div style="color:var(--mt);line-height:1.8">
+📱 Story-size card (1080×1920) auto-generated<br>
+📐 Feed-size card (1080×1080) auto-generated<br>
+🔗 Deep link drops users into your slate<br>
+🎁 Share referral code: new users get 200 bonus coins<br>
+📊 Real-time entry counter on your dashboard</div></div>
+<div class="disc">Start promoting 48 hours before lock. Post the preview card, go live to discuss your analysis, tease your pick package. The more buzz, the bigger the pool, the more you earn.</div>`;
+
+case 8: return `
+<div style="font-size:16px;font-weight:700;margin-bottom:4px">Entries Rolling In 📈</div>
+<div style="font-size:10px;color:var(--mt);margin-bottom:14px">48-hour promotion window — here's how it builds</div>
+<div class="timeline">
+<div class="tl-item done"><div class="tl-t">Friday 6:00 PM — Slate goes live</div><div class="tl-s">You post the preview card on TikTok. 12 entries in first hour.</div></div>
+<div class="tl-item done"><div class="tl-t">Friday 10:00 PM — 87 entries</div><div class="tl-s">TikTok video hits 14K views. Pick packages selling. Early bird pricing active.</div></div>
+<div class="tl-item done"><div class="tl-t">Saturday 8:00 AM — 234 entries</div><div class="tl-s">Overnight growth. Other creators sharing your slate. $5 tier pool: $1,170.</div></div>
+<div class="tl-item done"><div class="tl-t">Saturday 4:00 PM — 512 entries</div><div class="tl-s">You go live on stream discussing picks. 43 pick packages sold. Early bird ends.</div></div>
+<div class="tl-item done"><div class="tl-t">Sunday 12:00 PM — 743 entries</div><div class="tl-s">Race day hype. Entries accelerating. $5 pool: $3,715. Your hosting earnings so far: $1,040.</div></div>
+<div class="tl-item active"><div class="tl-t">Sunday 5:55 PM — 847 entries (final)</div><div class="tl-s">Last-minute rush. Lock in 5 minutes. 62 pick packages sold total.</div></div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px">
+<div style="background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:8px;text-align:center"><div style="font-size:16px;font-weight:700;color:var(--tx)">847</div><div style="font-size:8px;color:var(--mt)">Total entries</div></div>
+<div style="background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:8px;text-align:center"><div style="font-size:16px;font-weight:700;color:var(--cy)">$5,929</div><div style="font-size:8px;color:var(--mt)">Total collected</div></div>
+<div style="background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:8px;text-align:center"><div style="font-size:16px;font-weight:700;color:var(--wn)">62</div><div style="font-size:8px;color:var(--mt)">Packages sold</div></div></div>`;
+
+case 9: return `
+<div style="font-size:16px;font-weight:700;margin-bottom:12px">Contest Locks & Race Starts</div>
+<div style="text-align:center;background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:12px">
+<div style="font-size:12px;color:var(--lv);font-weight:600;margin-bottom:4px">🔒 ENTRIES LOCKED</div>
+<div style="font-size:10px;color:var(--mt)">Sunday 6:00 PM EDT · 847 entries · Race starting</div></div>
+<div class="card" style="padding:12px"><div style="font-size:12px;font-weight:600;margin-bottom:8px">Your pick package revealed to 62 buyers:</div>
+<div style="background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:8px;font-size:10px">
+<div style="display:flex;justify-content:space-between;margin-bottom:3px"><span>Q1: Race winner</span><span style="color:var(--cy);font-weight:600">Different winner (66%)</span></div>
+<div style="display:flex;justify-content:space-between;margin-bottom:3px"><span>Q2: Cautions</span><span style="color:var(--cy);font-weight:600">Over 7.5 (58%)</span></div>
+<div style="display:flex;justify-content:space-between;margin-bottom:3px"><span>Q3: Halfway leader</span><span style="color:var(--cy);font-weight:600">Someone else (72%)</span></div>
+<div style="display:flex;justify-content:space-between"><span>Q4: Finish</span><span style="color:var(--cy);font-weight:600">Caution finish (61%)</span></div></div></div>
+<div class="card" style="padding:12px;border-color:var(--wnbd)">
+<div style="font-size:12px;font-weight:600;color:var(--wn);margin-bottom:6px">Race results (4+ hours later):</div>
+<div style="font-size:10px;line-height:2">
+<span style="color:var(--wn)">✓</span> Different winner won (not Larson) — <strong>Correct</strong><br>
+<span style="color:var(--wn)">✓</span> 9 caution flags (over 7.5) — <strong>Correct</strong><br>
+<span style="color:var(--wn)">✓</span> Denny Hamlin led at halfway — <strong>Correct</strong><br>
+<span style="color:var(--ls)">✗</span> Green flag finish — <strong>Incorrect</strong></div>
+<div style="font-size:14px;font-weight:700;color:var(--wn);margin-top:8px;text-align:center">Your package: 3/4 correct — 75% accuracy</div></div>`;
+
+case 10: return `
+<div style="font-size:16px;font-weight:700;margin-bottom:4px">🤖 AI Agent Verifies Results</div>
+<div style="font-size:10px;color:var(--mt);margin-bottom:12px">Cross-referencing sources before releasing payouts</div>
+<div class="card" style="border-color:var(--aibd);padding:14px">
+<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px"><span class="tag tag-ai">🤖 AI Verification</span><span style="font-size:9px;color:var(--wn);font-weight:600">CONFIRMED</span></div>
+<div style="font-size:11px;font-weight:600;margin-bottom:8px">Sources verified:</div>
+<div style="font-size:10px;color:var(--mt);line-height:2">
+✅ <strong style="color:var(--tx)">NASCAR.com</strong> — Official race results confirmed<br>
+✅ <strong style="color:var(--tx)">Racing Reference</strong> — Lap-by-lap data confirmed<br>
+✅ <strong style="color:var(--tx)">ESPN</strong> — Race recap confirmed all 4 outcomes<br>
+✅ <strong style="color:var(--tx)">AP Sports Wire</strong> — Independent confirmation</div>
+<div style="margin-top:8px;font-size:10px;font-weight:600;color:var(--wn)">Verification confidence: 99.8% — Payouts released automatically</div></div>
+<div class="disc">AI agent checked 4 independent sources. All agreed on all 4 prediction outcomes. Confidence exceeded 99% threshold. Payouts released without manual review. If sources had disagreed, contest would flag for admin review before payout.</div>`;
+
+case 11:
+  var p=847,entry=5,host=2,pkgSold=62,pkgPrice=4.99;
+  var pool=p*entry;var rake=Math.round(pool*0.15*100)/100;var prizePool=Math.round(pool*0.85*100)/100;
+  var totalHost=p*host;var liHost=Math.round(totalHost*0.30*100)/100;var crHost=Math.round(totalHost*0.70*100)/100;
+  var liPkg=Math.round(pkgSold*pkgPrice*0.25*100)/100;var crPkg=Math.round(pkgSold*pkgPrice*0.75*100)/100;
+  var liTotal=Math.round((rake+liHost+liPkg)*100)/100;
+  var crTotal=Math.round((crHost+crPkg)*100)/100;
+  var first=Math.round(prizePool*0.35*100)/100;
+  return `
+<div style="font-size:16px;font-weight:700;margin-bottom:4px">💰 Creator Settlement Report</div>
+<div style="font-size:10px;color:var(--mt);margin-bottom:14px">NASCARNate's Coca-Cola 600 — Complete breakdown</div>
+
+<div class="sblock" style="border-color:var(--wnbd)">
+<h4 style="color:var(--wn)">🎤 Your Creator Earnings</h4>
+<div class="srow"><span class="sl">Hosting fees (${p} × $${host} × 70%)</span><span class="sr" style="color:var(--wn)">$${crHost.toFixed(2)}</span></div>
+<div class="srow"><span class="sl">Pick packages (${pkgSold} × $${pkgPrice} × 75%)</span><span class="sr" style="color:var(--wn)">$${crPkg.toFixed(2)}</span></div>
+<div class="srow"><span class="sl">Referral bonuses (23 new users × $1.50)</span><span class="sr" style="color:var(--wn)">$34.50</span></div>
+<div class="srow"><span class="sl">Pro referral commissions (4 × $2)</span><span class="sr" style="color:var(--wn)">$8.00</span></div>
+<div class="bignum" style="color:var(--wn)">$${(crTotal+34.50+8).toFixed(2)}</div>
+<div style="text-align:center;font-size:9px;color:var(--mt)">Your total earnings from this single event</div></div>
+
+<div class="sblock" style="border-color:var(--cybd)">
+<h4 style="color:var(--cy)">🏢 LockIn's Take</h4>
+<div class="srow"><span class="sl">15% rake on $${pool.toLocaleString()} pool</span><span class="sr" style="color:var(--cy)">$${rake.toFixed(2)}</span></div>
+<div class="srow"><span class="sl">30% of $${totalHost.toLocaleString()} hosting</span><span class="sr" style="color:var(--cy)">$${liHost.toFixed(2)}</span></div>
+<div class="srow"><span class="sl">25% of $${(pkgSold*pkgPrice).toFixed(2)} packages</span><span class="sr" style="color:var(--cy)">$${liPkg.toFixed(2)}</span></div>
+<div class="srow"><span class="sl">Stripe fees</span><span class="sr" style="color:var(--wn)">$0 (customer paid)</span></div>
+<div class="bignum" style="color:var(--cy)">$${liTotal.toFixed(2)}</div>
+<div style="text-align:center;font-size:9px;color:var(--mt)">LockIn net from this event</div></div>
+
+<div class="sblock" style="border-color:rgba(245,166,35,.25)">
+<h4 style="color:var(--lv)">🏆 Winners' Take</h4>
+<div class="srow"><span class="sl">Prize pool (85% of entries)</span><span class="sr">$${prizePool.toFixed(2)}</span></div>
+<div class="srow"><span class="sl">1st place (35%)</span><span class="sr" style="color:var(--lv)">$${first.toFixed(2)}</span></div>
+<div class="srow"><span class="sl">2nd place (20%)</span><span class="sr">$${(prizePool*0.20).toFixed(2)}</span></div>
+<div class="srow"><span class="sl">Top 30% paid (${Math.round(p*0.3)} winners)</span><span class="sr">${Math.round(p*0.3)} people</span></div></div>
+
+<div class="sblock">
+<h4>📊 Event Summary</h4>
+<div class="srow"><span class="sl">Total collected</span><span class="sr">$${(p*(entry+host)).toLocaleString()}</span></div>
+<div class="srow"><span class="sl">Prize pool → winners</span><span class="sr">$${prizePool.toFixed(2)} (${Math.round(prizePool/(p*(entry+host))*100)}%)</span></div>
+<div class="srow"><span class="sl">Creator → @NASCARNate</span><span class="sr" style="color:var(--wn)">$${(crTotal+34.50+8).toFixed(2)}</span></div>
+<div class="srow"><span class="sl">Platform → LockIn</span><span class="sr" style="color:var(--cy)">$${liTotal.toFixed(2)}</span></div>
+<div class="srow"><span class="sl">Stripe → customer paid</span><span class="sr">$0 to LockIn</span></div>
+<div class="srow"><span class="sl">Your package accuracy</span><span class="sr" style="color:var(--wn)">3/4 — 75%</span></div>
+<div class="srow"><span class="sl">New followers gained</span><span class="sr">+127</span></div></div>
+
+<div style="text-align:center;margin-top:8px">
+<div style="font-size:10px;color:var(--mt);margin-bottom:4px">Payout deposited to your bank account</div>
+<div style="font-size:10px;color:var(--mt)">Next event: Create another slate to keep the momentum going</div></div>`;
+
+} return '';
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+import type { Config } from "tailwindcss";
+
+/**
+ * LockIn design system.
+ * Cayenne accent (#FF3B00) is ALWAYS translucent — never a solid fill.
+ * Use the `accent-*` utilities below for backgrounds/borders/text.
+ */
+const config: Config = {
+  content: [
+    "./src/app/**/*.{ts,tsx}",
+    "./src/components/**/*.{ts,tsx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        // Base surfaces
+        background: "#0A0D12",
+        surface: {
+          DEFAULT: "#0D1118",
+          card: "#12161E",
+        },
+        border: "#1E2A38",
+        // Text
+        foreground: "#E8ECF2",
+        muted: "#6B7A8E",
+        // Accent (cayenne) — solid value only for text/icons; backgrounds use the
+        // translucent tokens below. Never apply as a solid bg fill.
+        accent: {
+          DEFAULT: "#FF3B00",
+          soft: "rgba(255,59,0,0.10)",
+          border: "rgba(255,59,0,0.25)",
+        },
+        // Semantic states
+        win: "#22C55E",
+        loss: "#E85454",
+        live: "#F5A623",
+        rush: {
+          DEFAULT: "#9B5DE5",
+          soft: "rgba(155,93,229,0.10)",
+          border: "rgba(155,93,229,0.25)",
+        },
+        ai: "#3B8BFF",
+      },
+      borderRadius: {
+        DEFAULT: "8px",
+      },
+      keyframes: {
+        // Purple glow pulse — reserved for the Card Rush banner.
+        "rush-pulse": {
+          "0%, 100%": { boxShadow: "0 0 0 0 rgba(155,93,229,0)" },
+          "50%": { boxShadow: "0 0 18px 1px rgba(155,93,229,0.35)" },
+        },
+      },
+      animation: {
+        "rush-pulse": "rush-pulse 2.4s ease-in-out infinite",
+      },
+      fontFamily: {
+        sans: ["system-ui", "-apple-system", "sans-serif"],
+      },
+    },
+  },
+  plugins: [],
+};
+
+export default config;

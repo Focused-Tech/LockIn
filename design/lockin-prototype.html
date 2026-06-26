@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>LockIn — Prototype</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+*::-webkit-scrollbar{display:none!important}
+*{scrollbar-width:none!important;-ms-overflow-style:none!important}
+:root{
+  --bg:#0A0D12;--surface:#0D1118;--card:#12161E;--card2:#161B25;
+  --border:#1E2A38;--text:#E8ECF2;--muted:#6B7A8E;--hint:#3A4A5C;
+  --cay:#FF3B00;--cay-bg:rgba(255,59,0,.10);--cay-border:rgba(255,59,0,.25);--cay-glow:rgba(255,59,0,.06);
+  --win:#22C55E;--win-bg:rgba(34,197,94,.10);--win-border:rgba(34,197,94,.25);
+  --loss:#E85454;--loss-bg:rgba(232,84,84,.10);--loss-border:rgba(232,84,84,.20);
+  --live:#F5A623;--live-bg:rgba(245,166,35,.10);
+  --rush:#9B5DE5;--rush-bg:rgba(155,93,229,.08);--rush-border:rgba(155,93,229,.20);
+}
+html,body{height:100%;background:#111;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:var(--text);overflow:hidden}
+body{display:flex;justify-content:center;align-items:center}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+button{cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
+
+.phone{width:390px;max-width:100vw;height:100vh;max-height:844px;background:var(--bg);display:flex;flex-direction:column;position:relative;overflow:hidden}
+@media(min-width:420px){.phone{border-radius:36px;border:2px solid var(--border);height:780px}}
+
+.top-nav{display:flex;align-items:center;justify-content:space-between;padding:12px 16px 8px;flex-shrink:0;background:var(--surface);z-index:10}
+.logo{font-weight:800;font-size:20px;letter-spacing:1.5px;color:var(--cay)}
+.logo span{color:var(--text)}
+.nav-r{display:flex;align-items:center;gap:10px}
+.coin-pill{background:var(--cay-bg);border:1px solid var(--cay-border);border-radius:18px;padding:4px 12px;font-size:11px;font-weight:600;color:var(--cay)}
+.nav-bell{width:30px;height:30px;border-radius:50%;background:rgba(30,42,56,.6);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px;position:relative}
+.nav-bell::after{content:'';position:absolute;top:2px;right:2px;width:7px;height:7px;background:var(--cay);border-radius:50%;border:1.5px solid var(--surface)}
+.nav-av{width:30px;height:30px;border-radius:50%;background:var(--cay-bg);border:1.5px solid var(--cay-border);display:flex;align-items:center;justify-content:center;color:var(--cay);font-weight:700;font-size:11px}
+
+.cat-tabs{display:flex;gap:4px;padding:4px 16px 10px;overflow-x:auto;flex-shrink:0;background:var(--surface)}
+.cat-tab{padding:6px 14px;border-radius:18px;font-size:11px;font-weight:500;white-space:nowrap;border:1px solid var(--border);color:var(--muted);background:transparent;flex-shrink:0;transition:all .15s}
+.cat-tab.active{background:var(--cay-bg);border-color:var(--cay-border);color:var(--cay);font-weight:600}
+
+.content{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.screen{display:none;animation:fadeIn .25s ease}
+.screen.active{display:block}
+
+.sec-head{display:flex;align-items:center;justify-content:space-between;padding:4px 16px 10px}
+.sec-head h3{font-size:13px;font-weight:600;color:var(--text)}
+.sec-head .see-all{font-size:11px;color:var(--cay);background:none;border:none}
+
+.feat-row{display:flex;gap:10px;padding:0 16px 14px;overflow-x:auto}
+.feat-card{flex-shrink:0;width:190px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;cursor:pointer;transition:border-color .15s}
+.feat-card:hover{border-color:var(--hint)}
+.fc-cat{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:5px}
+.fc-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px}
+.fc-sub{font-size:10px;color:var(--muted);margin-bottom:8px}
+.fc-opt{display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px}
+.fc-opt-name{color:var(--text);font-weight:500}
+.fc-opt-pct{color:var(--cay);font-weight:600}
+.fc-foot{font-size:9px;color:var(--muted);margin-top:6px;padding-top:6px;border-top:1px solid rgba(30,42,56,.5)}
+
+.rush-banner{margin:0 16px 14px;background:var(--rush-bg);border:1px solid var(--rush-border);border-radius:12px;padding:11px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:border-color .15s}
+.rush-banner:hover{border-color:rgba(155,93,229,.4)}
+.rb-left{display:flex;align-items:center;gap:8px}
+.rb-icon{color:var(--rush);font-size:16px}
+.rb-title{font-size:12px;font-weight:600;color:var(--rush)}
+.rb-sub{font-size:9px;color:var(--muted)}
+.rb-btn{padding:5px 12px;border-radius:7px;background:rgba(155,93,229,.15);color:var(--rush);font-size:10px;font-weight:600;border:1px solid var(--rush-border)}
+
+.ev-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px;margin:0 16px 10px}
+.ev-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.ev-cat{font-size:9px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.ev-status{font-size:9px;font-weight:600;display:flex;align-items:center;gap:4px}
+.ev-status.live{color:var(--live)}
+.ev-status.live::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--live);animation:blink 1.2s infinite}
+.ev-status.open{color:var(--cay)}
+.ev-status.locked{color:var(--loss)}
+.ev-title{font-size:15px;font-weight:600;color:var(--text);margin-bottom:3px}
+.ev-sub{font-size:10px;color:var(--muted);margin-bottom:10px}
+.ev-question{font-size:10px;color:var(--muted);font-weight:500;margin-bottom:5px}
+.ev-opt{display:flex;align-items:center;padding:8px 10px;border-radius:8px;border:1px solid var(--border);margin-bottom:4px;cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}
+.ev-opt:hover{border-color:var(--hint)}
+.ev-opt.selected{border-color:var(--cay-border);background:var(--cay-glow)}
+.ev-opt-name{font-size:11px;font-weight:500;color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:6px}
+.ev-opt-mult{font-size:10px;color:var(--muted);margin-right:8px}
+.ev-pill{padding:4px 10px;border-radius:7px;font-size:11px;font-weight:600;min-width:42px;text-align:center;border:1px solid var(--cay-border);color:var(--cay);background:transparent;transition:all .15s}
+.ev-opt.selected .ev-pill{background:var(--cay-bg);border-color:var(--cay-border);color:var(--cay)}
+.ev-foot{display:flex;justify-content:space-between;align-items:center;margin-top:7px;padding-top:7px;border-top:1px solid rgba(30,42,56,.5);font-size:9px;color:var(--muted)}
+.ev-foot .expand-btn{color:var(--cay);background:none;border:none;font-size:9px;font-weight:500}
+
+.pick-slip{border-top:1px solid var(--border);background:var(--card);padding:12px 16px;flex-shrink:0;display:none;animation:fadeIn .2s ease}
+.pick-slip.visible{display:block}
+.ps-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
+.ps-header span{font-size:11px;font-weight:600;color:var(--text)}
+.ps-header .ps-count{color:var(--cay)}
+.ps-clear{font-size:9px;color:var(--muted);background:none;border:none}
+.ps-item{display:flex;align-items:center;justify-content:space-between;font-size:10px;color:var(--text);padding:3px 0}
+.ps-item-slate{font-size:8px;color:var(--muted)}
+.ps-item-pct{color:var(--cay);font-weight:600;margin-left:8px}
+.ps-remove{color:var(--muted);background:none;border:none;font-size:14px;margin-left:6px;padding:2px 4px}
+.ps-divider{border:none;border-top:1px solid var(--border);margin:8px 0}
+.ps-parlay{display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px}
+.ps-parlay-label{color:var(--muted)}
+.ps-parlay-val{color:var(--cay);font-weight:600;font-size:13px}
+.ps-cost-val{color:var(--text);font-weight:500}
+.ps-btn{width:100%;padding:10px;border-radius:8px;background:var(--cay-bg);color:var(--cay);font-size:12px;font-weight:600;border:1px solid var(--cay-border);margin-top:6px;transition:all .15s}
+.ps-btn:disabled{opacity:.35}
+.ps-btn:not(:disabled):hover{background:rgba(255,59,0,.18)}
+.ps-hint{text-align:center;font-size:9px;color:var(--muted);margin-top:5px}
+
+.bot-nav{display:flex;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0}
+.bn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0 12px;background:none;border:none;color:var(--muted);transition:color .15s}
+.bn.active{color:var(--cay)}
+.bn-icon{font-size:18px;line-height:1}
+.bn-label{font-size:9px;font-weight:500}
+
+/* Rush screen */
+.rush-card{background:var(--rush-bg);border:1px solid var(--rush-border);border-radius:12px;padding:14px;margin-bottom:10px}
+.rush-card-title{font-size:14px;font-weight:600;color:var(--rush);margin-bottom:2px}
+.rush-card-sub{font-size:10px;color:var(--muted);margin-bottom:10px}
+.rush-stats{display:flex;gap:14px;font-size:11px;margin-bottom:10px}
+.rush-stats span{color:var(--text);font-weight:600}
+.rush-stats label{color:var(--muted)}
+.rush-bar{background:var(--border);border-radius:3px;height:4px;margin-bottom:6px;overflow:hidden}
+.rush-bar-fill{height:100%;background:var(--rush);border-radius:3px;transition:width .3s}
+.rush-foot{display:flex;justify-content:space-between;align-items:center}
+.rush-foot span{font-size:9px;color:var(--muted)}
+.rush-enter{padding:6px 16px;border-radius:7px;background:rgba(155,93,229,.12);color:var(--rush);font-size:10px;font-weight:600;border:1px solid var(--rush-border)}
+
+/* Creator screen */
+.cr-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer;transition:border-color .15s}
+.cr-card:hover{border-color:var(--hint)}
+.cr-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.cr-av{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex-shrink:0}
+.cr-name{font-size:14px;font-weight:600;color:var(--text)}
+.cr-handle{font-size:10px;color:var(--muted)}
+.cr-verified{display:inline-block;font-size:9px;padding:2px 7px;border-radius:4px;background:var(--cay-bg);color:var(--cay);border:1px solid var(--cay-border);margin-left:6px}
+.cr-stats{display:flex;gap:16px;font-size:11px}
+.cr-stats .cr-wr{color:var(--win);font-weight:600}
+.cr-stats .cr-fol{color:var(--text);font-weight:600}
+.cr-stats label{color:var(--muted)}
+
+/* Board screen */
+.lb-row{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px}
+.lb-row.me{background:var(--cay-glow);border-color:var(--cay-border)}
+.lb-rank{font-size:13px;font-weight:700;width:24px;text-align:center}
+.lb-av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600}
+.lb-info{flex:1}
+.lb-name{font-size:12px;font-weight:500;color:var(--text)}
+.lb-you{font-size:8px;color:var(--cay);margin-left:4px;font-weight:600}
+.lb-wins{text-align:right}
+.lb-wins-num{font-size:15px;font-weight:700}
+.lb-wins-label{font-size:8px;color:var(--muted)}
+
+/* Result */
+.result-header{text-align:center;padding:20px 0}
+.result-label{font-size:28px;font-weight:800;margin-bottom:4px}
+.result-score{font-size:52px;font-weight:800;line-height:1}
+.result-score small{font-size:24px;color:var(--muted);font-weight:600}
+.result-sub{font-size:12px;color:var(--muted);margin-top:4px}
+.result-pick{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;margin-bottom:4px;font-size:11px;font-weight:500;color:var(--text)}
+.result-pick.win{background:var(--win-bg);border:1px solid var(--win-border)}
+.result-pick.lose{background:var(--loss-bg);border:1px solid var(--loss-border)}
+.result-pick .rp-icon{font-size:14px}
+.result-total{border-radius:10px;padding:14px;display:flex;justify-content:space-between;align-items:center;margin:12px 0 16px}
+.result-total .rt-label{font-size:11px;font-weight:600;color:var(--muted)}
+.result-total .rt-pts{font-size:28px;font-weight:800}
+.back-btn{background:none;border:none;color:var(--muted);font-size:12px;display:flex;align-items:center;gap:4px;margin-bottom:16px;padding:0}
+</style>
+</head>
+<body>
+<div class="phone" id="app">
+  <!-- Top nav -->
+  <div class="top-nav">
+    <div class="logo">LOCK<span>IN</span></div>
+    <div class="nav-r">
+      <div class="coin-pill" id="coin-display">🪙 500</div>
+      <div class="nav-bell">🔔</div>
+      <div class="nav-av">K</div>
+    </div>
+  </div>
+
+  <!-- Category tabs -->
+  <div class="cat-tabs" id="cat-tabs">
+    <button class="cat-tab active" data-cat="all">For you</button>
+    <button class="cat-tab" data-cat="esports">Esports <small>4</small></button>
+    <button class="cat-tab" data-cat="awards">Awards <small>3</small></button>
+    <button class="cat-tab" data-cat="music">Music <small>1</small></button>
+    <button class="cat-tab" data-cat="viral">Viral</button>
+  </div>
+
+  <!-- Scrollable content -->
+  <div class="content" id="content">
+    <!-- EXPLORE SCREEN -->
+    <div class="screen active" id="sc-explore">
+      <div class="sec-head"><h3>Happening now</h3><button class="see-all">See all</button></div>
+      <div class="feat-row" id="feat-row"></div>
+      <div class="rush-banner" onclick="switchTab('rush')">
+        <div class="rb-left"><span class="rb-icon">⚡</span><div><div class="rb-title">Card Rush active</div><div class="rb-sub">3 boosted contests · $9,200 in prizes</div></div></div>
+        <button class="rb-btn">Enter</button>
+      </div>
+      <div class="sec-head"><h3>Today's slates</h3></div>
+      <div id="slates-feed"></div>
+      <div class="sec-head" style="margin-top:6px"><h3>Top creators</h3><button class="see-all" onclick="switchTab('creators')">See all</button></div>
+      <div id="creators-preview" style="padding:0 16px 24px"></div>
+    </div>
+
+    <!-- RUSH SCREEN -->
+    <div class="screen" id="sc-rush">
+      <div style="padding:14px 16px">
+        <div style="font-size:22px;font-weight:700;color:var(--text);margin-bottom:2px"><span style="color:var(--rush)">Card</span> Rush</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Boosted contests. Bigger prizes. Limited windows.</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:14px">
+          <span style="width:7px;height:7px;border-radius:50%;background:var(--rush);animation:blink 1.2s infinite;display:inline-block"></span>
+          <span style="font-size:10px;font-weight:600;color:var(--rush);text-transform:uppercase;letter-spacing:1px">3 active rushes</span>
+        </div>
+        <div id="rush-list"></div>
+      </div>
+    </div>
+
+    <!-- CREATORS SCREEN -->
+    <div class="screen" id="sc-creators">
+      <div style="padding:14px 16px">
+        <div style="font-size:20px;font-weight:700;color:var(--text);margin-bottom:2px">Creator picks</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:16px">Buy picks from verified analysts.</div>
+        <div id="creators-full"></div>
+      </div>
+    </div>
+
+    <!-- BOARD SCREEN -->
+    <div class="screen" id="sc-board">
+      <div style="padding:14px 16px">
+        <div style="font-size:20px;font-weight:700;color:var(--text);margin-bottom:14px">The board</div>
+        <div id="board-list"></div>
+      </div>
+    </div>
+
+    <!-- RESULT SCREEN -->
+    <div class="screen" id="sc-result"></div>
+  </div>
+
+  <!-- Pick slip -->
+  <div class="pick-slip" id="pick-slip"></div>
+
+  <!-- Bottom nav -->
+  <div class="bot-nav">
+    <button class="bn active" data-tab="explore" onclick="switchTab('explore')"><span class="bn-icon">◎</span><span class="bn-label">Explore</span></button>
+    <button class="bn" data-tab="board" onclick="switchTab('board')"><span class="bn-icon">🏅</span><span class="bn-label">Board</span></button>
+    <button class="bn" data-tab="rush" onclick="switchTab('rush')"><span class="bn-icon">⚡</span><span class="bn-label">Rush</span></button>
+    <button class="bn" data-tab="creators" onclick="switchTab('creators')"><span class="bn-icon">★</span><span class="bn-label">Creators</span></button>
+  </div>
+</div>
+
+<script>
+const slates=[
+  {id:"worlds",cat:"Esports",icon:"🎮",title:"Worlds 2024 Finals",sub:"T1 vs BLG · Locks in 47m",status:"live",statusText:"Live · Game 3",picks:5,vol:"$12,400",count:847,
+    options:[
+      {id:"w1",q:"Match 1 winner?",a:"T1 wins Match 1",b:"BLG wins Match 1",aPct:73,bPct:27,aMult:"1.37x",bMult:"3.71x"},
+      {id:"w2",q:"Game under 35 min?",a:"Yes — short game",b:"No — goes long",aPct:61,bPct:39,aMult:"1.64x",bMult:"2.56x"},
+      {id:"w3",q:"T1 clean sweep 3-0?",a:"Yes — clean sweep",b:"No — goes longer",aPct:32,bPct:68,aMult:"3.13x",bMult:"1.47x"},
+      {id:"w4",q:"Faker MVP of series?",a:"Yes — Faker MVP",b:"No — different MVP",aPct:80,bPct:20,aMult:"1.25x",bMult:"5.00x"},
+      {id:"w5",q:"Over 4.5 kills Game 1?",a:"Yes — over",b:"No — under",aPct:67,bPct:33,aMult:"1.49x",bMult:"3.03x"}]},
+  {id:"vmas",cat:"Awards",icon:"🏆",title:"VMAs 2024",sub:"Music awards · 6 predictions",status:"open",statusText:"2h 14m left",picks:6,vol:"$8,900",count:1204,
+    options:[
+      {id:"v1",q:"Video of the Year?",a:"Taylor Swift wins VotY",b:"Different winner",aPct:71,bPct:29,aMult:"1.41x",bMult:"3.45x"},
+      {id:"v2",q:"Surprise performance?",a:"Yes — surprise guest",b:"No surprises",aPct:58,bPct:42,aMult:"1.72x",bMult:"2.38x"},
+      {id:"v3",q:"Best Pop?",a:"Olivia Rodrigo wins",b:"Different winner",aPct:48,bPct:52,aMult:"2.08x",bMult:"1.92x"},
+      {id:"v4",q:"Show over 3 hours?",a:"Yes — runs long",b:"No — on time",aPct:64,bPct:36,aMult:"1.56x",bMult:"2.78x"}]},
+  {id:"val",cat:"Esports",icon:"🎮",title:"Valorant Champions",sub:"Sentinels vs LOUD · 4 picks",status:"open",statusText:"3h 20m left",picks:4,vol:"$3,800",count:412,
+    options:[
+      {id:"vl1",q:"Match winner?",a:"Sentinels win",b:"LOUD win",aPct:47,bPct:53,aMult:"2.13x",bMult:"1.89x"},
+      {id:"vl2",q:"Total maps played?",a:"Over 2.5 maps",b:"Under 2.5 maps",aPct:62,bPct:38,aMult:"1.61x",bMult:"2.63x"}]},
+  {id:"bb",cat:"Music",icon:"🎵",title:"Billboard Hot 100",sub:"Weekly chart predictions",status:"open",statusText:"5h 45m left",picks:4,vol:"$1,600",count:203,
+    options:[
+      {id:"b1",q:"Who's #1 this week?",a:"Sabrina Carpenter at #1",b:"Different artist at #1",aPct:66,bPct:34,aMult:"1.52x",bMult:"2.94x"}]}
+];
+
+const creators=[
+  {id:"c1",name:"EsportsKid",handle:"@esportskid",bio:"LoL & Valorant specialist",wr:78,fol:"42.3K",color:"var(--cay)"},
+  {id:"c2",name:"Cultural Caleb",handle:"@culturalcaleb",bio:"Pop culture & music",wr:71,fol:"18.7K",color:"var(--live)"},
+  {id:"c3",name:"Jake Says",handle:"@jakesays",bio:"Underdog specialist",wr:74,fol:"31.4K",color:"var(--win)"}
+];
+
+const rushEvents=[
+  {title:"Flash Rush — Valorant",sub:"Champions Tour · 15min window",prize:"$2,400",entry:"$5",mult:"2x",ent:87,max:150,time:"14:23"},
+  {title:"Flash Rush — VMAs",sub:"Live right now",prize:"$1,800",entry:"$3",mult:"2x",ent:204,max:300,time:"38:00"},
+  {title:"Creator Showdown",sub:"EsportsKid vs Cultural Caleb",prize:"$5,000",entry:"$10",mult:"3x",ent:312,max:500,time:"2:14:14"}
+];
+
+const boardData=[
+  {name:"ProPickerX",wins:847,me:false},{name:"EsportsKid",wins:743,me:false},{name:"ViralVince",wins:698,me:false},
+  {name:"CultureCal",wins:634,me:false},{name:"coolpicker",wins:612,me:true},{name:"SlateSlayer",wins:589,me:false},
+  {name:"NightOwl",wins:542,me:false},{name:"QuickDraw99",wins:501,me:false}
+];
+
+const mults={2:"3x",3:"5x",4:"10x",5:"20x",6:"40x"};
+const costs={2:50,3:75,4:100,5:150,6:200};
+
+let picks={};
+let expanded={};
+let coins=500;
+let currentCat="all";
+let currentTab="explore";
+
+function switchTab(tab){
+  currentTab=tab;
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sc-'+tab).classList.add('active');
+  document.querySelectorAll('.bn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+  document.getElementById('cat-tabs').style.display=tab==='explore'?'flex':'none';
+  document.getElementById('content').scrollTop=0;
+}
+
+function togglePick(optId,side){
+  if(picks[optId]===side) delete picks[optId];
+  else picks[optId]=side;
+  renderSlates();
+  renderPickSlip();
+}
+
+function clearPicks(){picks={};renderSlates();renderPickSlip();}
+function removePick(id){delete picks[id];renderSlates();renderPickSlip();}
+
+function getOptInfo(optId,side){
+  for(const s of slates){
+    const o=s.options.find(x=>x.id===optId);
+    if(o) return {label:side==='a'?o.a:o.b,pct:side==='a'?o.aPct:o.bPct,slate:s.title};
+  }
+  return {label:'Pick',pct:0,slate:''};
+}
+
+function renderFeatured(){
+  const row=document.getElementById('feat-row');
+  row.innerHTML=slates.slice(0,3).map(s=>`
+    <div class="feat-card">
+      <div class="fc-cat">${s.icon} ${s.cat}</div>
+      <div class="fc-title">${s.title}</div>
+      <div class="fc-sub">${s.sub}</div>
+      ${s.options.slice(0,2).map(o=>`
+        <div class="fc-opt"><span class="fc-opt-name">${o.a.length>20?o.a.slice(0,20)+'…':o.a}</span><span class="fc-opt-pct">${o.aPct}%</span></div>
+      `).join('')}
+      <div class="fc-foot">${s.count.toLocaleString()} picks · ${s.vol}</div>
+    </div>
+  `).join('');
+}
+
+function renderSlates(){
+  const filtered=currentCat==='all'?slates:slates.filter(s=>s.cat.toLowerCase()===currentCat);
+  const feed=document.getElementById('slates-feed');
+  feed.innerHTML=filtered.map(s=>{
+    const isExpanded=expanded[s.id];
+    const shown=isExpanded?s.options:s.options.slice(0,2);
+    const remaining=s.options.length-2;
+    const statusCls=s.status==='live'?'live':s.status==='locked'?'locked':'open';
+    return `<div class="ev-card">
+      <div class="ev-top">
+        <div class="ev-cat">${s.icon} ${s.cat}</div>
+        <div class="ev-status ${statusCls}">${s.statusText}</div>
+      </div>
+      <div class="ev-title">${s.title}</div>
+      <div class="ev-sub">${s.sub} · ${s.picks} picks</div>
+      ${shown.map(o=>`
+        <div class="ev-question">${o.q}</div>
+        ${['a','b'].map(side=>{
+          const sel=picks[o.id]===side;
+          const label=side==='a'?o.a:o.b;
+          const mult=side==='a'?o.aMult:o.bMult;
+          const pct=side==='a'?o.aPct:o.bPct;
+          return `<div class="ev-opt ${sel?'selected':''}" onclick="togglePick('${o.id}','${side}')">
+            <span class="ev-opt-name">${label}</span>
+            <span class="ev-opt-mult">${mult}</span>
+            <span class="ev-pill">${pct}%</span>
+          </div>`;
+        }).join('')}
+      `).join('')}
+      <div class="ev-foot">
+        <span>${s.count.toLocaleString()} picks · ${s.vol} vol</span>
+        ${!isExpanded&&remaining>0?`<button class="expand-btn" onclick="event.stopPropagation();expanded['${s.id}']=true;renderSlates()">+${remaining} more</button>`:''}
+        ${isExpanded?`<button class="expand-btn" onclick="event.stopPropagation();expanded['${s.id}']=false;renderSlates()">Show less</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderPickSlip(){
+  const slip=document.getElementById('pick-slip');
+  const entries=Object.entries(picks);
+  const count=entries.length;
+  if(count===0){slip.classList.remove('visible');return;}
+  slip.classList.add('visible');
+  const mult=mults[Math.min(count,6)]||'40x';
+  const cost=costs[Math.min(count,6)]||200;
+  const canSubmit=count>=2;
+  const nextMult=mults[Math.min(count+1,6)];
+
+  slip.innerHTML=`
+    <div class="ps-header">
+      <span>Your picks <span class="ps-count">(${count})</span></span>
+      <button class="ps-clear" onclick="clearPicks()">Clear</button>
+    </div>
+    ${entries.map(([id,side])=>{
+      const info=getOptInfo(id,side);
+      return `<div class="ps-item">
+        <div style="flex:1;overflow:hidden"><div class="ps-item-slate">${info.slate}</div><div>${info.label}</div></div>
+        <span class="ps-item-pct">${info.pct}%</span>
+        <button class="ps-remove" onclick="removePick('${id}')">×</button>
+      </div>`;
+    }).join('')}
+    <hr class="ps-divider">
+    <div class="ps-parlay"><span class="ps-parlay-label">${count}-pick parlay</span><span class="ps-parlay-val">${mult}</span></div>
+    <div class="ps-parlay"><span class="ps-parlay-label">Cost</span><span class="ps-cost-val">${cost} coins</span></div>
+    <button class="ps-btn" ${canSubmit?'':'disabled'} onclick="submitPicks()">Lock it in</button>
+    ${!canSubmit?`<div class="ps-hint">Select ${2-count} more for 3x parlay</div>`:''}
+    ${canSubmit&&nextMult&&count<6?`<div class="ps-hint">Add 1 more for ${nextMult} parlay</div>`:''}
+  `;
+}
+
+function submitPicks(){
+  const entries=Object.entries(picks);
+  if(entries.length<2) return;
+  const total=entries.length;
+  const correct=Math.min(total,Math.max(1,Math.floor(total*.6+Math.random()*1.5)));
+  const isWin=correct>=Math.ceil(total/2);
+  const isPerfect=correct===total;
+  const color=isPerfect?'var(--live)':isWin?'var(--win)':'var(--loss)';
+  const label=isPerfect?'Perfect card!':isWin?'Winner!':'No luck';
+  const pts=isWin?(isPerfect?960:420):80;
+
+  const cost=costs[Math.min(total,6)]||200;
+  coins=Math.max(0,coins-cost);
+  if(isWin) coins+=pts;
+  document.getElementById('coin-display').textContent='🪙 '+coins;
+
+  const resultHTML=`
+    <div style="padding:16px">
+      <button class="back-btn" onclick="backFromResult()">← Back to picks</button>
+      <div class="result-header">
+        <div class="result-label" style="color:${color}">${label}</div>
+        <div class="result-score" style="color:${color}">${correct}<small>/${total}</small></div>
+        <div class="result-sub">correct picks</div>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:12px">
+        ${entries.map(([id,side],i)=>{
+          const won=i<correct;
+          const info=getOptInfo(id,side);
+          return `<div class="result-pick ${won?'win':'lose'}"><span class="rp-icon" style="color:${won?'var(--win)':'var(--loss)'}">${won?'✓':'✗'}</span>${info.label}</div>`;
+        }).join('')}
+      </div>
+      <div class="result-total" style="background:${isWin?'var(--win-bg)':'var(--loss-bg)'};border:1px solid ${isWin?'var(--win-border)':'var(--loss-border)'}">
+        <span class="rt-label">Score</span>
+        <span class="rt-pts" style="color:${color}">${pts} pts</span>
+      </div>
+      <button class="ps-btn" onclick="backFromResult()" style="background:${isWin?'var(--win-bg)':'var(--cay-bg)'};color:${isWin?'var(--win)':'var(--cay)'};border-color:${isWin?'var(--win-border)':'var(--cay-border)'}">Make another pick</button>
+    </div>
+  `;
+
+  document.getElementById('sc-result').innerHTML=resultHTML;
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sc-result').classList.add('active');
+  document.getElementById('pick-slip').classList.remove('visible');
+  document.getElementById('cat-tabs').style.display='none';
+  document.getElementById('content').scrollTop=0;
+}
+
+function backFromResult(){
+  picks={};
+  renderSlates();
+  renderPickSlip();
+  switchTab('explore');
+}
+
+function renderRush(){
+  document.getElementById('rush-list').innerHTML=rushEvents.map(r=>`
+    <div class="rush-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+        <div><div class="rush-card-title">⚡ ${r.title}</div><div class="rush-card-sub">${r.sub}</div></div>
+        <div style="font-size:11px;color:var(--muted)">${r.time}</div>
+      </div>
+      <div class="rush-stats">
+        <div><label>Prize </label><span>${r.prize}</span></div>
+        <div><label>Entry </label><span>${r.entry}</span></div>
+        <div><label>Boost </label><span style="color:var(--rush)">${r.mult}</span></div>
+      </div>
+      <div class="rush-bar"><div class="rush-bar-fill" style="width:${(r.ent/r.max)*100}%"></div></div>
+      <div class="rush-foot"><span>${r.ent}/${r.max} entered</span><button class="rush-enter">Enter rush</button></div>
+    </div>
+  `).join('');
+}
+
+function renderCreatorCard(cr,full){
+  return `<div class="cr-card">
+    <div class="cr-top">
+      <div class="cr-av" style="background:${cr.color}18;border:2px solid ${cr.color};color:${cr.color}">${cr.name[0]}</div>
+      <div style="flex:1">
+        <div class="cr-name">${cr.name}<span class="cr-verified">Verified</span></div>
+        <div class="cr-handle">${cr.handle} · ${cr.bio}</div>
+      </div>
+    </div>
+    <div class="cr-stats">
+      <div><span class="cr-wr">${cr.wr}%</span> <label>win rate</label></div>
+      <div><span class="cr-fol">${cr.fol}</span> <label>followers</label></div>
+    </div>
+  </div>`;
+}
+
+function renderCreators(){
+  document.getElementById('creators-preview').innerHTML=creators.slice(0,2).map(c=>renderCreatorCard(c,false)).join('');
+  document.getElementById('creators-full').innerHTML=creators.map(c=>renderCreatorCard(c,true)).join('');
+}
+
+function renderBoard(){
+  document.getElementById('board-list').innerHTML=boardData.map((b,i)=>{
+    const isTop3=i<3;
+    return `<div class="lb-row ${b.me?'me':''}">
+      <div class="lb-rank" style="color:${isTop3?'var(--cay)':'var(--muted)'}">#${i+1}</div>
+      <div class="lb-av" style="background:${b.me?'var(--cay-bg)':'var(--border)'}40;color:${b.me?'var(--cay)':'var(--muted)'}">${b.name[0]}</div>
+      <div class="lb-info"><div class="lb-name">${b.name}${b.me?'<span class="lb-you">YOU</span>':''}</div></div>
+      <div class="lb-wins"><div class="lb-wins-num" style="color:${isTop3?'var(--cay)':'var(--text)'}">${b.wins}</div><div class="lb-wins-label">wins</div></div>
+    </div>`;
+  }).join('');
+}
+
+// Category tab handlers
+document.querySelectorAll('.cat-tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    currentCat=tab.dataset.cat;
+    document.querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    renderSlates();
+  });
+});
+
+// Init
+renderFeatured();
+renderSlates();
+renderPickSlip();
+renderRush();
+renderCreators();
+renderBoard();
+</script>
+</body>
+</html>
