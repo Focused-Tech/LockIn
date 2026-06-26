@@ -4,22 +4,41 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input } from "@/components/ui";
 import { registerUser } from "@/lib/firebase/auth";
-import { signupSchema } from "@/lib/validation";
+import { signupSchema, validateDobInput } from "@/lib/validation";
+
+/** Format raw keystrokes into an MM/DD/YYYY mask as the user types. */
+function maskDob(input: string): string {
+  const d = input.replace(/\D/g, "").slice(0, 8); // MMDDYYYY
+  if (d.length <= 2) return d;
+  if (d.length <= 4) return `${d.slice(0, 2)}/${d.slice(2)}`;
+  return `${d.slice(0, 2)}/${d.slice(2, 4)}/${d.slice(4)}`;
+}
 
 export function SignupForm({ referralCode }: { referralCode?: string }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [dob, setDob] = useState("");
+  const [dobError, setDobError] = useState<string | null>(null);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+    setDobError(null);
+
+    // Validate + normalize the typed MM/DD/YYYY date to the YYYY-MM-DD the API
+    // expects; show the failure inline on the field (no silent failure).
+    const dobResult = validateDobInput(dob);
+    if ("error" in dobResult) {
+      setDobError(dobResult.error);
+      return;
+    }
 
     const form = new FormData(e.currentTarget);
     const parsed = signupSchema.safeParse({
       username: form.get("username"),
       email: form.get("email"),
-      dateOfBirth: form.get("dateOfBirth"),
+      dateOfBirth: dobResult.iso,
       password: form.get("password"),
       ageConfirm: form.get("ageConfirm"),
       tosConfirm: form.get("tosConfirm"),
@@ -59,7 +78,24 @@ export function SignupForm({ referralCode }: { referralCode?: string }) {
 
       <label className="flex flex-col gap-1.5">
         <span className="text-sm text-muted">Date of birth</span>
-        <Input name="dateOfBirth" type="date" required />
+        <Input
+          name="dateOfBirth"
+          inputMode="numeric"
+          autoComplete="bday"
+          placeholder="MM/DD/YYYY"
+          value={dob}
+          onChange={(e) => {
+            setDob(maskDob(e.target.value));
+            if (dobError) setDobError(null);
+          }}
+          aria-invalid={dobError ? true : undefined}
+          required
+        />
+        {dobError && (
+          <span role="alert" className="text-xs text-loss">
+            {dobError}
+          </span>
+        )}
       </label>
 
       <label className="flex flex-col gap-1.5">

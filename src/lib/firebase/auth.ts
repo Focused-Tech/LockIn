@@ -3,6 +3,7 @@
 import {
   createUserWithEmailAndPassword,
   deleteUser,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
 } from "firebase/auth";
@@ -100,6 +101,26 @@ export async function loginUser(input: {
     body: JSON.stringify({ idToken }),
   });
   if (!res.ok) throw new Error("Could not start your session");
+}
+
+/**
+ * Send a password-reset email via Firebase Auth. Stays neutral about whether
+ * the address is registered: `auth/user-not-found` is swallowed so the caller
+ * always shows the same confirmation. Only genuinely actionable errors (bad
+ * email, rate limiting) are surfaced.
+ */
+export async function sendPasswordReset(email: string): Promise<void> {
+  try {
+    await sendPasswordResetEmail(getClientAuth(), email);
+  } catch (err) {
+    const code = firebaseErrorCode(err);
+    if (code === "auth/invalid-email") throw new Error("Enter a valid email");
+    if (code === "auth/too-many-requests") {
+      throw new Error("Too many attempts. Try again later.");
+    }
+    // auth/user-not-found and anything else → swallow; the caller shows the
+    // neutral "if an account exists…" confirmation regardless.
+  }
 }
 
 /** Sign out: clear client auth state and the session cookie. */
