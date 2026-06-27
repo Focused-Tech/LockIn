@@ -53,6 +53,42 @@ export function isPaidPercentile(pct: number): boolean {
   return pct <= PAYOUT_MODEL.PAID_LINE;
 }
 
+/** The single canonical "paid" cutoff (top N% of the field). Used everywhere a
+ *  screen draws the paid line — the beginner result screen AND the advanced
+ *  leaderboard's "paid 30%" marker — so the number has one source. */
+export const PAID_LINE = PAYOUT_MODEL.PAID_LINE;
+
+export interface EntryProjection {
+  legs: number;
+  stake: number;
+  /** Gross coins this combo can win if every leg lands. */
+  winUpToCoins: number;
+  /** Best-case finishing percentile (all legs land; lower = better). */
+  bestPercentile: number;
+  /** Top N% of the field that gets paid. */
+  paidLinePct: number;
+  /** Whether a perfect entry is projected to finish inside the paid line. */
+  projectedPaid: boolean;
+}
+
+/**
+ * Canonical pre-settlement projection for an entry of `legs` at `stake` coins.
+ * One struct, derived entirely from {@link PAYOUT_MODEL}, so the entry screen
+ * and the settlement/leaderboard screens render the same numbers from the same
+ * source. Illustrative (placeholder economics), not a settled outcome.
+ */
+export function entryProjection(stake: number, legs: number): EntryProjection {
+  const bestPercentile = projectedPercentile(legs);
+  return {
+    legs,
+    stake,
+    winUpToCoins: winUpTo(stake, legs),
+    bestPercentile,
+    paidLinePct: PAID_LINE,
+    projectedPaid: isPaidPercentile(bestPercentile),
+  };
+}
+
 export interface BeginnerResult {
   /** Total legs in the entry. */
   legs: number;
