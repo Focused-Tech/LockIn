@@ -98,9 +98,6 @@ export interface UserDoc {
   selfExclusionUntil: FsTimestamp | null;
   /** Selected interest categories (replaces auth metadata). */
   categories: string[];
-  /** Guided first-pick tour: completion + resume position. */
-  hasCompletedTour: boolean;
-  currentTourStep: number;
   /** Creator uids this user follows (drives "For you" recommendations). */
   followedCreators: string[];
   /** FCM/APNs device tokens for push notifications (native app). */

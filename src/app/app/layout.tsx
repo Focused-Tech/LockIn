@@ -47,12 +47,6 @@ export default async function AppLayout({
         {children}
       </AppFrame>
       <NativeBridge />
-      {/* The old GuidedTour walkthrough is intentionally NOT mounted. It rendered
-          a full-screen pointer-capturing overlay on /app (its "welcome" step has
-          no target → a centered modal) that trapped lane-having users on Explore:
-          every tap hit the backdrop, so Beginner/Creator/etc. were unreachable.
-          It's obsolete — the beginner journey teaches first-pick in context and
-          the advanced journey is the full market. Removed rather than re-gated. */}
     </CrossParlayProvider>
   );
 }

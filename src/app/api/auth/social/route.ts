@@ -139,8 +139,6 @@ export async function POST(req: NextRequest) {
             depositLimitMonthlyCents: DEPOSIT_LIMITS.monthlyCents,
             selfExclusionUntil: null,
             categories: [],
-            hasCompletedTour: false,
-            currentTourStep: 0,
             followedCreators: [],
             deviceTokens: [],
             referredBy: referrerUid,

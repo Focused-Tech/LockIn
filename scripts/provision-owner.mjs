@@ -93,8 +93,6 @@ await db.runTransaction(async (tx) => {
     depositLimitMonthlyCents: 5000_00,
     selfExclusionUntil: null,
     categories: [],
-    hasCompletedTour: false,
-    currentTourStep: 0,
     journeyLane: "advanced",
     followedCreators: [],
     deviceTokens: [],
