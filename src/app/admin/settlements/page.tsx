@@ -11,7 +11,7 @@ export const runtime = "nodejs";
 export default async function AdminSettlementsPage() {
   const uid = await getCurrentUserId();
   if (!uid) redirect("/login");
-  if (!isAdminUid(uid)) notFound();
+  if (!(await isAdminUid(uid))) notFound();
 
   const slates = await fetchPendingReviewSlates(adminDb());
 

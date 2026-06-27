@@ -29,13 +29,27 @@ export async function getCurrentUserId(): Promise<string | null> {
   return user?.uid ?? null;
 }
 
-/** Platform admins, from the comma-separated ADMIN_UIDS env. */
-export function isAdminUid(uid: string): boolean {
-  return (process.env.ADMIN_UIDS ?? "")
+/**
+ * Whether a uid is a platform admin. Source of truth is the Firestore user doc
+ * (`isAdmin === true`); the legacy comma-separated ADMIN_UIDS env still works as
+ * a fallback so any pre-existing config keeps functioning. Async because it may
+ * read the user doc.
+ */
+export async function isAdminUid(uid: string): Promise<boolean> {
+  const envAdmins = (process.env.ADMIN_UIDS ?? "")
     .split(",")
     .map((s) => s.trim())
-    .filter(Boolean)
-    .includes(uid);
+    .filter(Boolean);
+  if (envAdmins.includes(uid)) return true;
+
+  const snap = await adminDb().collection(COLLECTIONS.users).doc(uid).get();
+  return (snap.data() as UserDoc | undefined)?.isAdmin === true;
+}
+
+/** Convenience: is the current request from an admin? */
+export async function isCurrentUserAdmin(): Promise<boolean> {
+  const uid = await getCurrentUserId();
+  return uid ? isAdminUid(uid) : false;
 }
 
 /** Load the authenticated user's Firestore profile, or null. */

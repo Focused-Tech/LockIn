@@ -15,7 +15,7 @@ const QUICK_LINKS = [
   { href: "/app/leaderboard", label: "Ranks", hint: "Your standing on the board" },
   { href: "/app/parlays", label: "Parlays", hint: "Your cross-slate entries" },
   { href: "/app/refer", label: "Refer", hint: "Invite friends, earn rewards" },
-  { href: "/app/creator", label: "Creator", hint: "Host contests & earnings" },
+  { href: "/app/creator", label: "Creator dashboard", hint: "Your contests & earnings" },
   {
     href: "/app/responsible-play",
     label: "Responsible play",
@@ -108,6 +108,42 @@ export default async function ProfilePage() {
       {/* Category performance — Pro only */}
       {profile.proSubscriber && (
         <CategoryPerformance stats={stats.categoryStats ?? []} />
+      )}
+
+      {/* Creator entry point — state-aware so the journey is always one tap away */}
+      <Link
+        href={profile.creatorVerified ? "/app/create" : "/app/apply"}
+        className="flex items-center justify-between rounded border border-accent-border bg-accent-soft px-4 py-3"
+      >
+        <span className="text-sm">
+          <span className="block font-semibold text-accent">
+            {profile.creatorVerified ? "Create a contest" : "Become a creator"}
+          </span>
+          <span className="block text-xs text-muted">
+            {profile.creatorVerified
+              ? "Host a new prediction slate for your audience"
+              : "Apply to host prediction contests and earn"}
+          </span>
+        </span>
+        <span className="text-sm font-medium text-accent">→</span>
+      </Link>
+
+      {/* Admin-only: front door to the owner dashboard (web) */}
+      {profile.isAdmin && (
+        <Link
+          href="/admin"
+          className="flex items-center justify-between rounded border border-border bg-surface-card px-4 py-3"
+        >
+          <span className="text-sm">
+            <span className="block font-semibold text-foreground">
+              Admin dashboard
+            </span>
+            <span className="block text-xs text-muted">
+              Approve creators & review platform state
+            </span>
+          </span>
+          <span className="text-muted">→</span>
+        </Link>
       )}
 
       {/* Quick links */}

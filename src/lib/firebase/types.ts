@@ -81,6 +81,8 @@ export interface UserDoc {
   geoState: string | null;
   registeredState: string | null;
   stripeCustomerId: string | null;
+  /** Platform owner/admin. Gates the web admin dashboard (/admin). */
+  isAdmin?: boolean;
   isCreator: boolean;
   creatorVerified: boolean;
   creatorTier: CreatorTier;

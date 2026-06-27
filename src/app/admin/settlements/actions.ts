@@ -19,7 +19,7 @@ export async function resolveSlate(
   picks: Record<string, "a" | "b">,
 ): Promise<ResolveResult> {
   const uid = await getCurrentUserId();
-  if (!uid || !isAdminUid(uid)) return { ok: false, error: "Not authorized" };
+  if (!uid || !(await isAdminUid(uid))) return { ok: false, error: "Not authorized" };
 
   const db = adminDb();
   const slateRef = db.collection(COLLECTIONS.slates).doc(slateId);

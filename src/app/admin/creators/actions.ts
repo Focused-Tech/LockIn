@@ -12,7 +12,7 @@ export type ReviewResult = { ok: true } | { ok: false; error: string };
 
 async function requireAdmin(): Promise<string | null> {
   const uid = await getCurrentUserId();
-  if (!uid || !isAdminUid(uid)) return null;
+  if (!uid || !(await isAdminUid(uid))) return null;
   return uid;
 }
 
@@ -51,6 +51,51 @@ export async function approveCreator(targetUid: string): Promise<ReviewResult> {
     const m = err instanceof Error ? err.message : "";
     if (m === "NOT_FOUND") return { ok: false, error: "Application not found" };
     return { ok: false, error: "Could not approve" };
+  }
+  return { ok: true };
+}
+
+/**
+ * Directly set a user's creator-verified status — works with or without an
+ * application doc (used for "approve my own account" and one-click revoke from
+ * the admin dashboard). When an application exists, its status is kept in sync.
+ */
+export async function setCreatorVerified(
+  targetUid: string,
+  verified: boolean,
+): Promise<ReviewResult> {
+  const adminUid = await requireAdmin();
+  if (!adminUid) return { ok: false, error: "Not authorized" };
+  if (!targetUid) return { ok: false, error: "Missing user" };
+
+  const db = adminDb();
+  const userRef = db.collection(COLLECTIONS.users).doc(targetUid);
+  const appRef = db.collection(COLLECTIONS.creatorApplications).doc(targetUid);
+
+  try {
+    const userSnap = await userRef.get();
+    if (!userSnap.exists) return { ok: false, error: "User not found" };
+
+    await userRef.set(
+      { creatorVerified: verified, isCreator: verified },
+      { merge: true },
+    );
+
+    // Keep any application record consistent with the manual decision.
+    const appSnap = await appRef.get();
+    if (appSnap.exists) {
+      await appRef.set(
+        {
+          status: verified ? "approved" : "rejected",
+          reviewNote: verified ? null : "Access revoked by admin",
+          reviewedBy: adminUid,
+          reviewedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
+    }
+  } catch {
+    return { ok: false, error: "Could not update creator status" };
   }
   return { ok: true };
 }

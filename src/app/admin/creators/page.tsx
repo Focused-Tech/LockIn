@@ -14,7 +14,7 @@ export const runtime = "nodejs";
 export default async function AdminCreatorsPage() {
   const uid = await getCurrentUserId();
   if (!uid) redirect("/login");
-  if (!isAdminUid(uid)) notFound(); // hide the route from non-admins
+  if (!(await isAdminUid(uid))) notFound(); // hide the route from non-admins
 
   const snap = await adminDb()
     .collection(COLLECTIONS.creatorApplications)
