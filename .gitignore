@@ -41,3 +41,6 @@ serviceAccountKey.json
 .vercel
 
 .vercel
+
+# Firebase Android config (contains project keys; provide per-environment)
+android/app/google-services.json
