@@ -2,7 +2,7 @@ import { forwardRef, type ButtonHTMLAttributes } from "react";
 import Link, { type LinkProps } from "next/link";
 import { cn } from "@/lib/utils";
 
-type Variant = "accent" | "rush" | "neutral" | "ghost";
+type Variant = "accent" | "rush" | "ai" | "neutral" | "ghost";
 type Size = "sm" | "md" | "lg";
 
 /**
@@ -15,6 +15,8 @@ const variantStyles: Record<Variant, string> = {
     "bg-accent-soft text-accent border border-accent-border hover:bg-[rgba(255,59,0,0.16)]",
   rush:
     "bg-rush-soft text-rush border border-rush-border hover:bg-[rgba(155,93,229,0.16)]",
+  ai:
+    "bg-[rgba(59,139,255,0.10)] text-ai border border-[rgba(59,139,255,0.30)] hover:bg-[rgba(59,139,255,0.16)]",
   neutral:
     "bg-surface-card text-foreground border border-border hover:bg-[#161b25]",
   ghost:

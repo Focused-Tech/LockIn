@@ -8,6 +8,7 @@ import type { Category } from "@/lib/categories";
 import { createSlate, suggestOdds } from "./actions";
 
 type PredType = "binary" | "over_under";
+type Difficulty = "easy" | "medium" | "hard";
 
 interface PredForm {
   id: number;
@@ -17,7 +18,37 @@ interface PredForm {
   optionB: string;
   line: string;
   probA: string; // probB is derived as 100 - probA
+  /** Set when the leg came from the AI engine (display-only). */
+  difficulty?: Difficulty;
+  rank?: number;
 }
+
+/** Shape returned by POST /api/slate/generate (see src/lib/ai/slatePrompt.ts). */
+interface GeneratedLeg {
+  rank: number;
+  question: string;
+  type: PredType;
+  optionA: string;
+  optionB: string;
+  overUnderLine: number | null;
+  probA: number;
+  probB: number;
+  difficulty: Difficulty;
+  rationale: string;
+}
+interface GeneratedSlate {
+  topic: string;
+  category: string;
+  legs: GeneratedLeg[];
+  source: "llm" | "llm+odds";
+  model: string;
+}
+
+const DIFFICULTY_TONE: Record<Difficulty, string> = {
+  easy: "border-win-border bg-win-soft text-win",
+  medium: "border-live-border bg-live-soft text-live",
+  hard: "border-loss-border bg-loss-soft text-loss",
+};
 
 const DEFAULT_HOSTING_DOLLARS: Record<EntryTier, string> = {
   5: "1.00",
@@ -60,6 +91,65 @@ export function SlateBuilder({ categories }: { categories: Category[] }) {
   const [cardRush, setCardRush] = useState(false);
   const [rushMult, setRushMult] = useState<2 | 3>(2);
   const [maxEntries, setMaxEntries] = useState("");
+
+  // AI-suggest (calls POST /api/slate/generate).
+  const [topic, setTopic] = useState("");
+  const [aiLegCount, setAiLegCount] = useState(5);
+  const [aiPending, setAiPending] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiNote, setAiNote] = useState<string | null>(null);
+
+  async function aiSuggest() {
+    const t = topic.trim() || title.trim();
+    if (!t) {
+      setAiError("Enter a topic (or a title) to generate from");
+      return;
+    }
+    setAiError(null);
+    setAiNote(null);
+    setAiPending(true);
+    try {
+      const res = await fetch("/api/slate/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic: t, legCount: aiLegCount }),
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        setAiError(body.error ?? `AI request failed (${res.status})`);
+        return;
+      }
+      const slate = (await res.json()) as GeneratedSlate;
+      const rows: PredForm[] = slate.legs.map((leg) => ({
+        id: nextId.current++,
+        type: leg.type,
+        question: leg.question,
+        optionA: leg.type === "over_under" ? "" : leg.optionA,
+        optionB: leg.type === "over_under" ? "" : leg.optionB,
+        line:
+          leg.type === "over_under" && leg.overUnderLine != null
+            ? String(leg.overUnderLine)
+            : "",
+        probA: String(leg.probA),
+        difficulty: leg.difficulty,
+        rank: leg.rank,
+      }));
+      if (rows.length) setPredictions(rows);
+      const match = categories.find(
+        (c) => c.name.toLowerCase() === slate.category.toLowerCase(),
+      );
+      if (match) setCategory(match.name);
+      setAiNote(
+        `Generated ${rows.length} ranked legs · ${
+          slate.source === "llm+odds" ? "odds-anchored" : "AI estimate"
+        } · ${slate.model}. Review and edit before publishing.`,
+      );
+    } catch {
+      setAiError("Network error reaching the AI engine");
+    } finally {
+      setAiPending(false);
+    }
+  }
 
   const updatePred = (id: number, patch: Partial<PredForm>) =>
     setPredictions((ps) => ps.map((p) => (p.id === id ? { ...p, ...patch } : p)));
@@ -183,6 +273,49 @@ export function SlateBuilder({ categories }: { categories: Category[] }) {
         </label>
       </Card>
 
+      {/* AI suggest — manual-first: optional, fills the legs below to edit. */}
+      <Card className="flex flex-col gap-3 border-[rgba(59,139,255,0.30)] bg-[rgba(59,139,255,0.08)]">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold text-ai">✨ AI suggest a slate</span>
+          <span className="text-xs text-muted">optional — you stay in control</span>
+        </div>
+        <Input
+          value={topic}
+          onChange={(e) => setTopic(e.target.value)}
+          placeholder="Topic, e.g. NBA tonight, Premier League Saturday…"
+        />
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-muted">Legs</span>
+            {[3, 4, 5, 6].map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setAiLegCount(n)}
+                className={
+                  "rounded border px-2.5 py-1 text-sm transition-colors " +
+                  (aiLegCount === n
+                    ? "border-[rgba(59,139,255,0.30)] bg-[rgba(59,139,255,0.10)] text-ai"
+                    : "border-border text-muted hover:text-foreground")
+                }
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+          <Button
+            variant="ai"
+            size="sm"
+            disabled={aiPending}
+            onClick={aiSuggest}
+          >
+            {aiPending ? "Generating…" : "Generate legs"}
+          </Button>
+        </div>
+        {aiNote && <p className="text-xs text-ai">{aiNote}</p>}
+        {aiError && <p className="text-xs text-loss">{aiError}</p>}
+      </Card>
+
       {/* Predictions */}
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
@@ -195,7 +328,20 @@ export function SlateBuilder({ categories }: { categories: Category[] }) {
         {predictions.map((p, i) => (
           <Card key={p.id} className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-muted">Question {i + 1}</span>
+              <span className="flex items-center gap-2 text-xs text-muted">
+                Question {i + 1}
+                {p.difficulty && (
+                  <span
+                    className={
+                      "rounded border px-1.5 py-0.5 text-[10px] font-medium capitalize " +
+                      DIFFICULTY_TONE[p.difficulty]
+                    }
+                  >
+                    {p.rank ? `#${p.rank} · ` : ""}
+                    {p.difficulty}
+                  </span>
+                )}
+              </span>
               {predictions.length > 1 && (
                 <button
                   type="button"
@@ -317,7 +463,9 @@ export function SlateBuilder({ categories }: { categories: Category[] }) {
           </div>
         ))}
         <p className="text-xs text-muted">
-          You keep 40% of hosting fees; LockIn takes 60%.
+          Enable more than one tier to open this slate as multiple entry-level
+          pools — each tier is its own prize pool, settled independently. You
+          keep 40% of hosting fees; LockIn takes 60%.
         </p>
       </Card>
 
