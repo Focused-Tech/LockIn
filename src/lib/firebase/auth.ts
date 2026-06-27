@@ -7,6 +7,7 @@ import {
   GoogleAuthProvider,
   OAuthProvider,
   sendPasswordResetEmail,
+  signInWithCredential,
   signInWithEmailAndPassword,
   signInWithPopup,
   signInWithRedirect,
@@ -113,6 +114,13 @@ export async function loginUser(input: {
 
 export type SocialProvider = "google" | "apple";
 
+/** Minimal shape of the native FirebaseAuthentication plugin call we use. */
+interface NativeFirebaseAuth {
+  signInWithGoogle(): Promise<{
+    credential?: { idToken?: string | null } | null;
+  }>;
+}
+
 /** Friendly copy for the social-specific Firebase Auth error codes. */
 function socialAuthMessage(code: string): string {
   switch (code) {
@@ -200,7 +208,37 @@ export async function signInWithProvider(
   const provider = buildProvider(kind);
 
   if (isNativeWebView()) {
-    // Stash the referral so the post-redirect handler can still pass it.
+    // NATIVE GOOGLE: use the @capacitor-firebase/authentication plugin via the
+    // Capacitor bridge (Play Services / system browser) — NOT a WebView redirect,
+    // which Google blocks with `disallowed_useragent`. We only need its ID token,
+    // then sign into the JS SDK so the rest of the flow is identical to web. We
+    // reach it through registerPlugin (not an npm import) so the web bundle never
+    // pulls in the plugin's firebase-12 web implementation.
+    if (kind === "google") {
+      try {
+        const { registerPlugin } = await import("@capacitor/core");
+        const FirebaseAuthentication = registerPlugin<NativeFirebaseAuth>(
+          "FirebaseAuthentication",
+        );
+        const result = await FirebaseAuthentication.signInWithGoogle();
+        const idToken = result?.credential?.idToken;
+        if (!idToken) throw new Error("No Google credential returned");
+        const userCred = await signInWithCredential(
+          auth,
+          GoogleAuthProvider.credential(idToken),
+        );
+        const { isNewUser } = await mintSocialSession(userCred.user, ref);
+        return { completed: true, isNewUser };
+      } catch (err) {
+        const code = firebaseErrorCode(err);
+        throw new Error(
+          code ? socialAuthMessage(code) : (err as Error).message,
+        );
+      }
+    }
+
+    // Apple (and any fallback) on native: full-page redirect for now. Native
+    // Apple sign-in (the plugin's signInWithApple) is wired when we're on iOS.
     if (ref) {
       try {
         sessionStorage.setItem("lockin.socialRef", ref);

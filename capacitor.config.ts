@@ -18,6 +18,12 @@ const config: CapacitorConfig = {
     androidScheme: "https",
   },
   plugins: {
+    FirebaseAuthentication: {
+      // We hold the session in the JS SDK (signInWithCredential), so the plugin
+      // only needs to return the provider credential — not sign in natively.
+      skipNativeAuth: true,
+      providers: ["google.com"],
+    },
     PushNotifications: {
       presentationOptions: ["badge", "sound", "alert"],
     },
