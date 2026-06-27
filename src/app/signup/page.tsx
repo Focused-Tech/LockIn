@@ -13,7 +13,8 @@ export default async function SignupPage({
 }) {
   // Verified bounce for already-signed-in users (real check, not cookie
   // presence — avoids the /login<->/app loop on a present-but-invalid cookie).
-  if (await getCurrentUser()) redirect("/app");
+  // Land in the journey hub (front door), not straight into Explore.
+  if (await getCurrentUser()) redirect("/app/choose");
 
   const { ref } = await searchParams;
 

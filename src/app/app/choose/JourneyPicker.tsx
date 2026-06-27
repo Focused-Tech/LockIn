@@ -7,71 +7,164 @@ import type { JourneyLane } from "@/lib/firebase/types";
 import { setJourneyLane } from "@/app/app/beginner/actions";
 
 /**
- * Choose-your-journey screen. Persists the lane, then routes:
- *  - beginner -> /app/beginner (the guided journey)
- *  - advanced -> /app (the existing Explore)
- * Reached by every account whose journeyLane is unset (new signups land here
- * right after onboarding; existing lane-less accounts are sent here from /app).
+ * Journey hub — the app's front door. Three first-class, one-tap journeys
+ * (Beginner / Advanced / Creator) plus a "Continue to my feed" shortcut that
+ * respects the saved lane (so returning users aren't forced to re-pick).
+ * Reachable any time via the "Switch journey" link in the Explore header.
+ *
+ * Beginner/Advanced persist the lane then route; Creator is a role (not a lane)
+ * so it just navigates to the creator dashboard (which gates non-creators to the
+ * application flow).
  */
-export function JourneyPicker() {
+export function JourneyPicker({
+  currentLane,
+  creatorVerified,
+}: {
+  currentLane: JourneyLane | null;
+  creatorVerified: boolean;
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [choosing, setChoosing] = useState<JourneyLane | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
 
-  const choose = (lane: JourneyLane) =>
+  const laneHref = (lane: JourneyLane) =>
+    lane === "beginner" ? "/app/beginner" : "/app";
+
+  const pickLane = (lane: JourneyLane) =>
     startTransition(async () => {
-      setChoosing(lane);
+      setBusy(lane);
       await setJourneyLane(lane);
-      router.replace(lane === "beginner" ? "/app/beginner" : "/app");
+      router.replace(laneHref(lane));
     });
 
+  const continueToFeed = () => {
+    if (!currentLane) return;
+    setBusy("continue");
+    router.push(laneHref(currentLane));
+  };
+
+  const goCreator = () => {
+    setBusy("creator");
+    router.push("/app/creator");
+  };
+
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-lg flex-col gap-6 p-6">
-      <header className="flex flex-col items-center gap-4 pt-2">
+    <div className="flex flex-col gap-4 p-6">
+      <header className="flex flex-col items-center gap-3 pt-1">
         <Logo />
       </header>
 
       <div className="text-center">
-        <h1 className="text-2xl font-semibold">How do you want to start?</h1>
+        <h1 className="text-2xl font-semibold">Your journeys</h1>
         <p className="mt-1 text-sm text-muted">
-          You can switch lanes any time from the feed.
+          Jump back into your feed, or switch lanes — your choice, any time.
         </p>
       </div>
 
-      <button
-        type="button"
-        onClick={() => choose("beginner")}
-        disabled={pending}
-        aria-busy={choosing === "beginner"}
-        className="flex flex-col gap-1 rounded-xl border border-accent-border bg-accent-soft p-5 text-left transition-colors disabled:opacity-60"
-      >
-        <span className="text-base font-bold text-accent">
-          Beginner — simple &amp; guided
-        </span>
-        <span className="text-sm text-muted">
-          Creator picks, plain-language calls, coins not odds. We teach you up to
-          the full game, step by step.
-        </span>
-      </button>
+      {/* Continue — only when a lane is already set (no forced re-pick) */}
+      {currentLane && (
+        <button
+          type="button"
+          onClick={continueToFeed}
+          disabled={pending}
+          aria-busy={busy === "continue"}
+          className="flex items-center justify-between rounded-xl border border-accent-border bg-accent-soft p-5 text-left transition-colors disabled:opacity-60"
+        >
+          <span>
+            <span className="block text-base font-bold text-accent">
+              Continue to my feed
+            </span>
+            <span className="block text-sm text-muted">
+              Back to your{" "}
+              {currentLane === "beginner" ? "Beginner" : "Advanced"} journey
+            </span>
+          </span>
+          <span className="text-xl text-accent">→</span>
+        </button>
+      )}
 
-      <button
-        type="button"
-        onClick={() => choose("advanced")}
+      <p className="pt-1 text-xs font-medium uppercase tracking-wide text-muted">
+        {currentLane ? "Switch journey" : "Choose your journey"}
+      </p>
+
+      {/* Beginner */}
+      <JourneyCard
+        title="Beginner — simple & guided"
+        body="Creator picks, plain-language calls, coins not odds. We teach you up to the full game, step by step."
+        active={currentLane === "beginner"}
+        busy={busy === "beginner"}
         disabled={pending}
-        aria-busy={choosing === "advanced"}
-        className="flex flex-col gap-1 rounded-xl border border-border bg-surface-card p-5 text-left transition-colors disabled:opacity-60"
-      >
-        <span className="text-base font-bold text-foreground">
-          Advanced — full market
-        </span>
-        <span className="text-sm text-muted">
-          Every contest, odds, and parlays. The complete Explore feed.
-        </span>
-      </button>
+        onClick={() => pickLane("beginner")}
+      />
+
+      {/* Advanced */}
+      <JourneyCard
+        title="Advanced — full market"
+        body="Every contest, odds, and parlays. The complete Explore feed."
+        active={currentLane === "advanced"}
+        busy={busy === "advanced"}
+        disabled={pending}
+        onClick={() => pickLane("advanced")}
+      />
+
+      {/* Creator — first-class entry (a role, not a lane) */}
+      <JourneyCard
+        title="Creator — host contests"
+        body={
+          creatorVerified
+            ? "Build prediction slates with AI-suggested odds, sell pick packages, and earn."
+            : "Apply to host prediction contests for your audience and earn."
+        }
+        active={false}
+        busy={busy === "creator"}
+        disabled={pending}
+        onClick={goCreator}
+      />
 
       {pending && (
         <p className="text-center text-sm text-muted">Setting up your feed…</p>
       )}
-    </main>
+    </div>
+  );
+}
+
+function JourneyCard({
+  title,
+  body,
+  active,
+  busy,
+  disabled,
+  onClick,
+}: {
+  title: string;
+  body: string;
+  active: boolean;
+  busy: boolean;
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-busy={busy}
+      className={
+        "flex flex-col gap-1 rounded-xl border p-5 text-left transition-colors disabled:opacity-60 " +
+        (active
+          ? "border-accent-border bg-accent-soft"
+          : "border-border bg-surface-card hover:bg-surface")
+      }
+    >
+      <span className="flex items-center gap-2 text-base font-bold text-foreground">
+        {title}
+        {active && (
+          <span className="rounded-full border border-accent-border px-2 py-0.5 text-[10px] font-medium uppercase text-accent">
+            Current
+          </span>
+        )}
+      </span>
+      <span className="text-sm text-muted">{body}</span>
+    </button>
   );
 }

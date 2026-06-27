@@ -9,7 +9,8 @@ import { LoginForm } from "./LoginForm";
 export default async function LoginPage() {
   // Verified bounce for already-signed-in users (real check, not cookie
   // presence — avoids the /login<->/app loop on a present-but-invalid cookie).
-  if (await getCurrentUser()) redirect("/app");
+  // Land in the journey hub (front door), not straight into Explore.
+  if (await getCurrentUser()) redirect("/app/choose");
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-6 p-6">

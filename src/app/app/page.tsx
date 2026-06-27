@@ -34,10 +34,10 @@ export default async function ExplorePage() {
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <Link
-            href="/app/beginner"
-            className="rounded border border-border px-3 py-1.5 text-sm font-medium text-muted hover:text-foreground"
+            href="/app/choose"
+            className="rounded border border-accent-border bg-accent-soft px-3 py-1.5 text-sm font-medium text-accent"
           >
-            Beginner
+            Switch journey
           </Link>
           <Link
             href="/app/packages"
