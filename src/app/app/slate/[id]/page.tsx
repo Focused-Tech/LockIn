@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { SkillGameDisclaimer } from "@/components/SkillGameDisclaimer";
-import { Pill } from "@/components/ui";
+import { Card, Pill } from "@/components/ui";
 import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUserProfile } from "@/lib/firebase/session";
 import { COLLECTIONS, type EntryDoc } from "@/lib/firebase/types";
@@ -100,6 +100,20 @@ export default async function SlatePage({
 
       {slate.status === "live" && (
         <StrategyAdvisor slateId={id} isPro={profile.proSubscriber} />
+      )}
+
+      {slate.predictions.some((p) => p.type === "over_under") && (
+        <Card className="flex flex-col gap-1.5">
+          <p className="text-sm font-semibold">How over/under works</p>
+          <p className="text-xs text-muted">
+            Some questions ask whether a number finishes{" "}
+            <span className="text-foreground">over</span> or{" "}
+            <span className="text-foreground">under</span> a set line — say
+            total points over/under 220.5. Pick <b>Over</b> if you think the real
+            result lands higher than the line, <b>Under</b> if lower. The
+            half-point means there&apos;s no tie — one side always wins.
+          </p>
+        </Card>
       )}
 
       <SlatePicker

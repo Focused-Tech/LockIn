@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ProBadge } from "@/components/ProBadge";
@@ -10,6 +11,7 @@ import {
   type LeaderRow,
   type LeaderboardWindow,
 } from "@/server/data/leaderboard";
+import { PAID_LINE } from "@/lib/beginner/payoutModel";
 import { formatCents } from "@/lib/utils";
 
 const TABS: { key: LeaderboardWindow; label: string }[] = [
@@ -34,9 +36,22 @@ export default async function LeaderboardPage({
   const podium = data.rows.slice(0, 3);
   const rest = data.rows.slice(3);
 
+  // The paid line: in a contest the top PAID_LINE% of the field cash. Project
+  // that cutoff onto the visible field so players can see where they stand
+  // relative to "getting paid". Sourced from payoutModel so the number is one.
+  const fieldSize = data.rows.length;
+  const paidLineRank = Math.max(1, Math.round((fieldSize * PAID_LINE) / 100));
+  const paidLineIdx = rest.findIndex((r) => r.rank > paidLineRank);
+
   return (
     <div className="flex flex-col gap-5 p-6">
-      <h1 className="text-xl font-semibold">Leaderboard</h1>
+      <div>
+        <h1 className="text-xl font-semibold">Leaderboard</h1>
+        <p className="text-sm text-muted">
+          The green line marks the top {PAID_LINE}% — in a contest, that&apos;s
+          who finishes in the money.
+        </p>
+      </div>
 
       {/* Window tabs */}
       <div className="flex gap-2">
@@ -75,8 +90,11 @@ export default async function LeaderboardPage({
           {/* The rest */}
           {rest.length > 0 && (
             <ul className="flex flex-col overflow-hidden rounded border border-border">
-              {rest.map((r) => (
-                <RankRow key={r.userId} row={r} />
+              {rest.map((r, idx) => (
+                <Fragment key={r.userId}>
+                  {idx === paidLineIdx && <PaidLineDivider rank={paidLineRank} />}
+                  <RankRow row={r} />
+                </Fragment>
               ))}
             </ul>
           )}
@@ -95,6 +113,16 @@ export default async function LeaderboardPage({
 
       <SkillGameDisclaimer className="mt-auto pt-4" />
     </div>
+  );
+}
+
+function PaidLineDivider({ rank }: { rank: number }) {
+  return (
+    <li className="flex items-center gap-2 bg-win-soft px-4 py-1.5 text-[11px] font-medium text-win">
+      <span className="h-px flex-1 bg-win-border" />
+      Paid line · top {PAID_LINE}% (≈ rank {rank})
+      <span className="h-px flex-1 bg-win-border" />
+    </li>
   );
 }
 
