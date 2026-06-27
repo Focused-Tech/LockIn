@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { SkillGameDisclaimer } from "@/components/SkillGameDisclaimer";
 import { getCurrentUser } from "@/lib/firebase/session";
+import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
 import { SignupForm } from "./SignupForm";
 
 export default async function SignupPage({
@@ -34,6 +35,8 @@ export default async function SignupPage({
           Invited by @{ref} — you&apos;ll get bonus coins when you join.
         </p>
       )}
+
+      <SocialAuthButtons referralCode={ref} />
 
       <SignupForm referralCode={ref} />
 

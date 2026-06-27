@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { SkillGameDisclaimer } from "@/components/SkillGameDisclaimer";
 import { getCurrentUser } from "@/lib/firebase/session";
+import { SocialAuthButtons } from "@/components/auth/SocialAuthButtons";
 import { LoginForm } from "./LoginForm";
 
 export default async function LoginPage() {
@@ -20,6 +21,8 @@ export default async function LoginPage() {
         <h1 className="text-2xl font-semibold">Welcome back</h1>
         <p className="mt-1 text-sm text-muted">Sign in to lock in your picks.</p>
       </div>
+
+      <SocialAuthButtons />
 
       <LoginForm />
 

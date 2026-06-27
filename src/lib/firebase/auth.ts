@@ -3,9 +3,15 @@
 import {
   createUserWithEmailAndPassword,
   deleteUser,
+  getRedirectResult,
+  GoogleAuthProvider,
+  OAuthProvider,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
+  signInWithPopup,
+  signInWithRedirect,
   signOut,
+  type User,
 } from "firebase/auth";
 import { getClientAuth } from "./client";
 
@@ -101,6 +107,150 @@ export async function loginUser(input: {
     body: JSON.stringify({ idToken }),
   });
   if (!res.ok) throw new Error("Could not start your session");
+}
+
+// ── Social sign-in (Google / Apple) ─────────────────────────────────────────────
+
+export type SocialProvider = "google" | "apple";
+
+/** Friendly copy for the social-specific Firebase Auth error codes. */
+function socialAuthMessage(code: string): string {
+  switch (code) {
+    case "auth/operation-not-allowed":
+      return "That sign-in method isn't enabled yet. Try email, or check back soon.";
+    case "auth/popup-closed-by-user":
+    case "auth/cancelled-popup-request":
+    case "auth/user-cancelled":
+      return "Sign-in cancelled.";
+    case "auth/popup-blocked":
+      return "Your browser blocked the sign-in window. Allow popups and try again.";
+    case "auth/account-exists-with-different-credential":
+      return "An account already exists for this email. Sign in with your original method.";
+    case "auth/unauthorized-domain":
+      return "This site isn't authorized for social sign-in yet.";
+    case "auth/network-request-failed":
+      return "Network error. Check your connection and try again.";
+    default:
+      return "Could not complete sign-in. Please try again.";
+  }
+}
+
+function buildProvider(kind: SocialProvider) {
+  if (kind === "google") {
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });
+    return provider;
+  }
+  // Apple via Firebase's generic OIDC provider.
+  const provider = new OAuthProvider("apple.com");
+  provider.addScope("email");
+  provider.addScope("name");
+  return provider;
+}
+
+/**
+ * True inside the Capacitor native WebView, where OAuth popups don't work —
+ * we use a full-page redirect there instead. Detected via the injected
+ * `window.Capacitor` global (no @capacitor/core import needed).
+ */
+function isNativeWebView(): boolean {
+  if (typeof window === "undefined") return false;
+  const cap = (window as unknown as {
+    Capacitor?: { isNativePlatform?: () => boolean };
+  }).Capacitor;
+  return Boolean(cap?.isNativePlatform?.());
+}
+
+/** Exchange a signed-in provider user for our session cookie + profile. */
+async function mintSocialSession(
+  user: User,
+  ref?: string,
+): Promise<{ isNewUser: boolean }> {
+  const idToken = await user.getIdToken();
+  const res = await fetch("/api/auth/social", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      idToken,
+      displayName: user.displayName ?? null,
+      photoURL: user.photoURL ?? null,
+      ref,
+    }),
+  });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(body.error ?? "Could not complete sign-in");
+  }
+  const body = (await res.json()) as { isNewUser: boolean };
+  return { isNewUser: body.isNewUser };
+}
+
+/**
+ * Start social sign-in.
+ *  - Web: a popup completes inline → returns `{ completed: true, isNewUser }`.
+ *  - Native (Capacitor WebView): kicks off a full-page redirect → returns
+ *    `{ completed: false }`; the result is finished by {@link completeSocialRedirect}
+ *    when the app reloads back onto the auth screen.
+ */
+export async function signInWithProvider(
+  kind: SocialProvider,
+  ref?: string,
+): Promise<{ completed: boolean; isNewUser?: boolean }> {
+  const auth = getClientAuth();
+  const provider = buildProvider(kind);
+
+  if (isNativeWebView()) {
+    // Stash the referral so the post-redirect handler can still pass it.
+    if (ref) {
+      try {
+        sessionStorage.setItem("lockin.socialRef", ref);
+      } catch {
+        /* storage blocked — referral simply won't apply */
+      }
+    }
+    try {
+      await signInWithRedirect(auth, provider);
+    } catch (err) {
+      throw new Error(socialAuthMessage(firebaseErrorCode(err)));
+    }
+    return { completed: false };
+  }
+
+  try {
+    const cred = await signInWithPopup(auth, provider);
+    const { isNewUser } = await mintSocialSession(cred.user, ref);
+    return { completed: true, isNewUser };
+  } catch (err) {
+    // Re-throw our own server errors (Error without a Firebase code) as-is.
+    const code = firebaseErrorCode(err);
+    throw new Error(code ? socialAuthMessage(code) : (err as Error).message);
+  }
+}
+
+/**
+ * Finish a redirect-based social sign-in. Call once on the auth screen's mount;
+ * returns the routing decision when a redirect just completed, else null.
+ */
+export async function completeSocialRedirect(): Promise<
+  { isNewUser: boolean } | null
+> {
+  const auth = getClientAuth();
+  let result;
+  try {
+    result = await getRedirectResult(auth);
+  } catch (err) {
+    throw new Error(socialAuthMessage(firebaseErrorCode(err)));
+  }
+  if (!result?.user) return null;
+
+  let ref: string | undefined;
+  try {
+    ref = sessionStorage.getItem("lockin.socialRef") ?? undefined;
+    sessionStorage.removeItem("lockin.socialRef");
+  } catch {
+    /* ignore */
+  }
+  return mintSocialSession(result.user, ref);
 }
 
 /**
