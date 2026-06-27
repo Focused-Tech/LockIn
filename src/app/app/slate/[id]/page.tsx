@@ -11,6 +11,7 @@ import {
   type ShadowEarnings,
 } from "@/server/data/shadowEarnings";
 import { EmbedSnippet } from "@/components/EmbedSnippet";
+import { ShareCardPanel } from "@/components/ShareCardPanel";
 import { FollowButton } from "@/components/feed/FollowButton";
 import { SlatePicker } from "./SlatePicker";
 import { StrategyAdvisor } from "./StrategyAdvisor";
@@ -97,6 +98,8 @@ export default async function SlatePage({
       )}
 
       {slate.creatorId === profile.id && <EmbedSnippet slateId={id} />}
+
+      {slate.creatorId === profile.id && <ShareCardPanel slateId={id} />}
 
       {slate.status === "live" && (
         <StrategyAdvisor slateId={id} isPro={profile.proSubscriber} />
