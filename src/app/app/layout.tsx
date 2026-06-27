@@ -1,6 +1,5 @@
 import { ChatAssistant } from "@/components/ChatAssistant";
 import { AppFrame } from "@/components/app/AppFrame";
-import { GuidedTour } from "@/components/onboarding/GuidedTour";
 import { CrossParlayProvider } from "@/components/cross-parlay/CrossParlayProvider";
 import { CrossParlayBuilder } from "@/components/cross-parlay/CrossParlayBuilder";
 import { NativeBridge } from "@/components/notifications/NativeBridge";
@@ -48,14 +47,12 @@ export default async function AppLayout({
         {children}
       </AppFrame>
       <NativeBridge />
-      {/* The guided first-pick tour belongs to users who have chosen a lane.
-          Gating on journeyLane keeps it out of the render path for lane-less
-          new signups — otherwise its "welcome / make your first pick" step
-          (which matches pathname === "/app") flashes for a frame during the
-          server redirect bounce from /app to the journey picker (/app/choose). */}
-      {profile.journeyLane && !profile.hasCompletedTour && (
-        <GuidedTour initialStep={profile.currentTourStep ?? 0} />
-      )}
+      {/* The old GuidedTour walkthrough is intentionally NOT mounted. It rendered
+          a full-screen pointer-capturing overlay on /app (its "welcome" step has
+          no target → a centered modal) that trapped lane-having users on Explore:
+          every tap hit the backdrop, so Beginner/Creator/etc. were unreachable.
+          It's obsolete — the beginner journey teaches first-pick in context and
+          the advanced journey is the full market. Removed rather than re-gated. */}
     </CrossParlayProvider>
   );
 }

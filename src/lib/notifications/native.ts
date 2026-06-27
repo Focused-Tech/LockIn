@@ -56,25 +56,33 @@ export async function initPush(): Promise<void> {
     return;
   }
   if (!isNativeRuntime()) return;
-  const { PushNotifications } = await import("@capacitor/push-notifications");
 
-  let perm = await PushNotifications.checkPermissions();
-  if (perm.receive === "prompt") {
-    perm = await PushNotifications.requestPermissions();
+  // Fully self-contained: any native failure (permission flow, FCM/register, a
+  // plugin that didn't load) is swallowed here so it can NEVER surface as an
+  // unhandled rejection that could disrupt the WebView's JS / client navigation.
+  try {
+    const { PushNotifications } = await import("@capacitor/push-notifications");
+
+    let perm = await PushNotifications.checkPermissions();
+    if (perm.receive === "prompt") {
+      perm = await PushNotifications.requestPermissions();
+    }
+    if (perm.receive !== "granted") return;
+
+    await PushNotifications.addListener("registration", (token) => {
+      void storeDeviceToken(token.value);
+    });
+    await PushNotifications.addListener(
+      "pushNotificationActionPerformed",
+      (action) => {
+        const link = action.notification.data?.link as string | undefined;
+        if (link) window.location.assign(link);
+      },
+    );
+    await PushNotifications.register();
+  } catch (err) {
+    console.warn("[push] init failed (non-fatal):", err);
   }
-  if (perm.receive !== "granted") return;
-
-  await PushNotifications.addListener("registration", (token) => {
-    void storeDeviceToken(token.value);
-  });
-  await PushNotifications.addListener(
-    "pushNotificationActionPerformed",
-    (action) => {
-      const link = action.notification.data?.link as string | undefined;
-      if (link) window.location.assign(link);
-    },
-  );
-  await PushNotifications.register();
 }
 
 // A deep link that cold-starts the app is delivered once via getLaunchUrl();
@@ -90,26 +98,28 @@ export async function initDeepLinks(
   navigate: (path: string) => void,
 ): Promise<void> {
   if (!isNativeRuntime()) return;
-  const { App } = await import("@capacitor/app");
 
-  const route = (rawUrl: string, source: string) => {
-    const path = deepLinkToInAppPath(rawUrl);
-    // Greppable in Android logcat under the `chromium` CONSOLE tag (WebView).
-    console.info(`[deeplink] ${source} url=${rawUrl} -> path=${path ?? "(none)"}`);
-    if (path) navigate(path);
-  };
+  // Defensive: a failure wiring deep links must never break the WebView's JS.
+  try {
+    const { App } = await import("@capacitor/app");
 
-  // Warm app: an incoming VIEW intent (e.g. lockin://slate/<id>) fires this.
-  await App.addListener("appUrlOpen", (event) => route(event.url, "appUrlOpen"));
+    const route = (rawUrl: string, source: string) => {
+      const path = deepLinkToInAppPath(rawUrl);
+      // Greppable in Android logcat under the `chromium` CONSOLE tag (WebView).
+      console.info(`[deeplink] ${source} url=${rawUrl} -> path=${path ?? "(none)"}`);
+      if (path) navigate(path);
+    };
 
-  // Cold start: the launch intent's URL isn't replayed through appUrlOpen.
-  if (!launchUrlConsumed) {
-    launchUrlConsumed = true;
-    try {
+    // Warm app: an incoming VIEW intent (e.g. lockin://slate/<id>) fires this.
+    await App.addListener("appUrlOpen", (event) => route(event.url, "appUrlOpen"));
+
+    // Cold start: the launch intent's URL isn't replayed through appUrlOpen.
+    if (!launchUrlConsumed) {
+      launchUrlConsumed = true;
       const launch = await App.getLaunchUrl();
       if (launch?.url) route(launch.url, "launchUrl");
-    } catch {
-      /* no launch url */
     }
+  } catch (err) {
+    console.warn("[deeplink] init failed (non-fatal):", err);
   }
 }
