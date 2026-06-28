@@ -48,6 +48,11 @@ export function JourneyPicker({
     router.push("/app/creator");
   };
 
+  const goPractice = () => {
+    setBusy("practice");
+    router.push("/app/practice");
+  };
+
   return (
     <div className="flex flex-col gap-4 p-6">
       <header className="flex flex-col items-center gap-3 pt-1">
@@ -119,6 +124,16 @@ export function JourneyPicker({
         busy={busy === "creator"}
         disabled={pending}
         onClick={goCreator}
+      />
+
+      {/* Practice — play-money multiplayer (coins are score; nothing cashable) */}
+      <JourneyCard
+        title="Practice arena — play with friends"
+        body="Play-money contests for coins, rank & bragging rights. Host AI or manual slates, invite friends, climb the tiers. No real money, ever."
+        active={false}
+        busy={busy === "practice"}
+        disabled={pending}
+        onClick={goPractice}
       />
 
       {pending && (

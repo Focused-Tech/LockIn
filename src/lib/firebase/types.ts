@@ -49,6 +49,8 @@ export const COLLECTIONS = {
   crossParlays: "crossParlays",
   /** Beginner-journey entries: beginnerEntries/{entryId}. */
   beginnerEntries: "beginnerEntries",
+  /** Multiplayer PRACTICE contests (play-money): practiceContests/{contestId}. */
+  practiceContests: "practiceContests",
 } as const;
 
 /** Which Explore lane a user has chosen (set at onboarding, switchable later). */
@@ -124,7 +126,74 @@ export interface UserDoc {
    * is walkable. Only meaningful on docs where isCreator is true.
    */
   creatorHitRate?: number | null;
+  /**
+   * PRACTICE MODE (play-money) balances — SCORE ONLY. Completely separate from
+   * coinBalance/cashBalanceCents: never cashable, transferable, purchasable-with,
+   * or redeemable, and buy nothing. Undefined for users predating practice mode
+   * (treated as the 500 starting balance lazily). Shares no value with real slates.
+   */
+  practiceCoins?: number;
+  /** Lifetime practice coins earned — drives the EARNED rank tier (title). */
+  practiceLifetimeCoins?: number;
+  /** Current practice win streak (for streak rewards + the rare funnel nudge). */
+  practiceStreak?: number;
+  /** Rolling recent practice results (true=win) for the dynamic difficulty tune. */
+  practiceRecent?: boolean[];
   createdAt: FsTimestamp;
+}
+
+// ── practiceContests/{contestId} (multiplayer PRACTICE — play-money) ─────────────
+export type PracticeContestStatus = "open" | "closed";
+
+/** A practice leg shown to players (NO outcome — outcomes are server-only). */
+export interface PracticeLeg {
+  id: string;
+  question: string;
+  optionA: string;
+  optionB: string;
+  probA: number; // 0–100 (AI estimate)
+  probB: number;
+  type: PredictionType;
+  line: number | null;
+  difficulty: "easy" | "medium" | "hard";
+}
+
+export interface PracticeContestDoc {
+  hostId: string;
+  hostUsername: string;
+  title: string;
+  category: string;
+  /** 6-char invite/join code (shareable). */
+  inviteCode: string;
+  status: PracticeContestStatus;
+  /** "ai" = engine-generated (SLATE_MODEL); "manual" = host wrote the legs. */
+  mode: "ai" | "manual";
+  /** Tier the contest was scaled to. */
+  tier: string;
+  /** Practice-coin stake every entrant puts up (SCORE only). */
+  stakeCoins: number;
+  legs: PracticeLeg[];
+  /**
+   * Hidden, pre-rolled per-leg outcomes ("a"/"b"), revealed to a player only
+   * after they submit. SERVER-ONLY — never sent to clients before settlement.
+   */
+  outcomes: ("a" | "b")[];
+  entryCount: number;
+  createdAt: FsTimestamp;
+}
+
+// ── practiceContests/{contestId}/entries/{uid} ──────────────────────────────────
+export interface PracticeEntryDoc {
+  userId: string;
+  username: string;
+  /** Rank tier at submit time (for the leaderboard badge). */
+  tier: string;
+  picks: ("a" | "b")[];
+  correct: number;
+  score: number; // = correct count (used to rank)
+  netCoins: number;
+  won: boolean;
+  submittedAt: FsTimestamp;
 }
 
 // ── slates/{slateId} ───────────────────────────────────────────────────────────
