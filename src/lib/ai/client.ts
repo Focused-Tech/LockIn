@@ -17,9 +17,12 @@ export function getAnthropic(): Anthropic {
  * Per-feature model config (split from a single shared constant so cost vs
  * quality is tuned per feature). Change deliberately; tiers differ in cost.
  *
- * - Slate generation + chat: high-volume / latency-sensitive → Haiku 4.5.
+ * - Slate generation: the slate is the core product. A Haiku-vs-Sonnet
+ *   comparison showed Sonnet is meaningfully sharper on knowledge-heavy events
+ *   (e.g. awards, crypto) and produces less-correlated legs → Sonnet 4.6.
+ * - Chat: high-volume / latency-sensitive → Haiku 4.5.
  * - Strategy advisor: heavier reasoning, lower volume → Sonnet 4.6 (quality).
  */
-export const SLATE_MODEL = "claude-haiku-4-5-20251001";
+export const SLATE_MODEL = "claude-sonnet-4-6";
 export const CHAT_MODEL = "claude-haiku-4-5-20251001";
 export const ADVISOR_MODEL = "claude-sonnet-4-6";
