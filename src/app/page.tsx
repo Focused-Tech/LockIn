@@ -1,14 +1,10 @@
-import { redirect } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { SkillGameDisclaimer } from "@/components/SkillGameDisclaimer";
 import { ButtonLink } from "@/components/ui";
-import { getCurrentUser } from "@/lib/firebase/session";
 
-export default async function Landing() {
-  // A signed-in user opening the app should land in the journey hub, not on the
-  // marketing splash (which then bounced them straight into Explore).
-  if (await getCurrentUser()) redirect("/app/choose");
-
+// Static marketing splash (kept off the critical path). Signed-in users are
+// bounced to /app/choose by middleware (cookie-presence) before this renders.
+export default function Landing() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-6">
       <div className="flex flex-1 flex-col items-center justify-center text-center">

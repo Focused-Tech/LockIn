@@ -25,7 +25,7 @@ export function SocialAuthButtons({ referralCode }: { referralCode?: string }) {
   const [error, setError] = useState<string | null>(null);
 
   const routeFor = (isNewUser: boolean) =>
-    router.push(isNewUser ? "/onboarding" : "/app");
+    router.push(isNewUser ? "/onboarding" : "/app/choose");
 
   // Complete a redirect-based sign-in if we just came back from one.
   useEffect(() => {

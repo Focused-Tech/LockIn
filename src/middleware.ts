@@ -25,6 +25,15 @@ export function middleware(request: NextRequest) {
     return redirectTo(request, "/login");
   }
 
+  // A signed-in user opening the app at "/" lands in the journey hub, not the
+  // marketing splash. Done here (cheap cookie-presence, no Firebase round-trip)
+  // so the landing stays a static page off the critical path. Only "/" is
+  // bounced — NOT /login,/signup — so a present-but-invalid cookie can't loop
+  // (/app/choose verifies for real and falls to /login, which isn't bounced).
+  if (hasSession && pathname === "/") {
+    return redirectTo(request, "/app/choose");
+  }
+
   return NextResponse.next();
 }
 
