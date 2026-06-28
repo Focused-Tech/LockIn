@@ -9,7 +9,8 @@ import { fetchPracticeHome } from "@/server/data/practice";
 import { isBusted } from "@/lib/practice/scoring";
 import { PRACTICE_CONFIG, type PracticeTierKey } from "@/lib/practice/config";
 import { PracticeHomeClient } from "./PracticeHomeClient";
-import { SoundToggle } from "@/components/practice/SoundToggle";
+import { AudioSettings } from "@/components/practice/AudioSettings";
+import { PracticeMusic } from "@/components/practice/PracticeMusic";
 
 const SHARP_PCT = PRACTICE_CONFIG.sharpPercentile;
 
@@ -23,6 +24,7 @@ export default async function PracticeHomePage() {
 
   return (
     <div className="flex flex-col gap-5 p-6">
+      <PracticeMusic track="solo" />
       <div>
         <h1 className="text-xl font-semibold">Practice arena</h1>
         <p className="text-sm text-muted">
@@ -76,7 +78,7 @@ export default async function PracticeHomePage() {
         <p className="text-xs text-muted">
           Coins are score — they buy nothing &amp; never convert to cash.
         </p>
-        <SoundToggle />
+        <AudioSettings musicTrack="solo" />
       </div>
 
       <PracticeHomeClient

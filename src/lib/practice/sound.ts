@@ -1,42 +1,54 @@
 "use client";
 
 /**
- * PRACTICE MODE sound manager. Plays short SFX from /public/sounds/<name>.mp3.
+ * PRACTICE SFX manager. Plays short one-shots from /public/sounds/<name>.mp3.
  *
- * PLACEHOLDER-SAFE: until the real audio files are dropped into public/sounds/,
- * play() simply no-ops (the missing-file load / autoplay rejection is swallowed)
- * — so the system is fully wired now and "lights up" the moment files exist.
- *
- * Muteable: a single toggle persisted in localStorage (default ON). On mobile,
- * HTML5 Audio also respects the device ring/silent switch automatically.
+ * PLACEHOLDER-SAFE: until real files are dropped into public/sounds/, play() is a
+ * silent no-op (missing-file / autoplay rejection is swallowed). Muteable via a
+ * toggle (default ON) and, on mobile, the device ring/silent switch. Each SFX
+ * also DUCKS the background music briefly.
  */
+import { PRACTICE_CONFIG } from "./config";
+import { duckMusic } from "./music";
 
-export type SoundName = "win" | "nearmiss" | "tierup" | "coin" | "loss";
+export type SoundName =
+  | "tick" // leg selected (tactile)
+  | "add" // leg added (pitch ascends with combo length)
+  | "locking" // "locking soon" quickening tick
+  | "win"
+  | "nearmiss"
+  | "loss"
+  | "tierup"
+  | "coin"; // coin count-up tick
 
-const MUTE_KEY = "lockin.practice.soundOff";
+const SFX_KEY = "lockin.practice.sfxOff";
 
-export function isSoundOn(): boolean {
-  if (typeof window === "undefined") return true;
+export function isSfxOn(): boolean {
+  if (typeof window === "undefined") return PRACTICE_CONFIG.audio.sfxDefaultOn;
   try {
-    return localStorage.getItem(MUTE_KEY) !== "1"; // default ON
+    const v = localStorage.getItem(SFX_KEY);
+    return v == null ? PRACTICE_CONFIG.audio.sfxDefaultOn : v !== "1";
   } catch {
-    return true;
+    return PRACTICE_CONFIG.audio.sfxDefaultOn;
   }
 }
 
-export function setSoundOn(on: boolean): void {
+export function setSfxOn(on: boolean): void {
   try {
-    localStorage.setItem(MUTE_KEY, on ? "0" : "1");
+    localStorage.setItem(SFX_KEY, on ? "0" : "1");
   } catch {
-    /* storage blocked — ignore */
+    /* ignore */
   }
 }
 
 const cache: Partial<Record<SoundName, HTMLAudioElement>> = {};
 
-/** Play a one-shot SFX if sound is on. Safe no-op when the file is absent. */
-export function playSound(name: SoundName, volume = 0.6): void {
-  if (typeof window === "undefined" || !isSoundOn()) return;
+/** Play a one-shot SFX (if on). `rate` shifts pitch+speed (used by leg-add). */
+export function playSound(
+  name: SoundName,
+  opts: { rate?: number; volume?: number } = {},
+): void {
+  if (typeof window === "undefined" || !isSfxOn()) return;
   try {
     let audio = cache[name];
     if (!audio) {
@@ -44,11 +56,21 @@ export function playSound(name: SoundName, volume = 0.6): void {
       audio.preload = "auto";
       cache[name] = audio;
     }
-    audio.volume = volume;
+    audio.playbackRate = opts.rate ?? 1;
+    audio.volume = opts.volume ?? PRACTICE_CONFIG.audio.sfxVolume;
     audio.currentTime = 0;
-    // Missing file, codec, or autoplay policy → rejected promise → stay silent.
+    duckMusic(); // SFX duck the music
     void audio.play().catch(() => {});
   } catch {
     /* never let audio break the game loop */
   }
+}
+
+/**
+ * "Leg added" with ascending pitch — combo momentum. `count` is how many legs
+ * are now in the build (1 = first/low pitch, climbing each added leg).
+ */
+export function playLegAdded(count: number): void {
+  const step = PRACTICE_CONFIG.audio.legAddPitchStep;
+  playSound("add", { rate: 1 + Math.max(0, count - 1) * step });
 }

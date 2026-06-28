@@ -7,6 +7,8 @@ import { Button, Card, Pill } from "@/components/ui";
 import { RankBadge } from "@/components/practice/RankBadge";
 import type { PracticeContestView } from "@/server/data/practice";
 import { PRACTICE_CONFIG, type PracticeTierKey } from "@/lib/practice/config";
+import { playSound, playLegAdded } from "@/lib/practice/sound";
+import { PracticeMusic } from "@/components/practice/PracticeMusic";
 import { submitPracticePicks } from "../actions";
 import {
   PracticeResultAnimation,
@@ -37,6 +39,14 @@ export function PracticeContest({
 
   const played = view.myEntry !== null;
   const allPicked = view.legs.every((l) => picks[l.id]);
+
+  // Leg selected → tactile tick; a NEW leg added → "add" with ascending pitch.
+  const pickLeg = (id: string, side: Choice) => {
+    const isNew = !picks[id];
+    setPicks((p) => ({ ...p, [id]: side }));
+    if (isNew) playLegAdded(Object.keys(picks).length + 1);
+    else playSound("tick");
+  };
 
   // Funnel nudge: earned + rare. Only after a WIN, and capped per session via
   // PRACTICE_CONFIG.nudge.perSessionCap so it's never naggy.
@@ -73,6 +83,7 @@ export function PracticeContest({
 
   function submit() {
     setError(null);
+    playSound("locking"); // quickening "locking in" cue
     startTransition(async () => {
       const ordered = view.legs.map((l) => picks[l.id]!) as Choice[];
       const res = await submitPracticePicks(view.id, ordered);
@@ -92,6 +103,7 @@ export function PracticeContest({
 
   return (
     <div className="flex flex-col gap-4">
+      <PracticeMusic track="multiplayer" />
       {anim && (
         <PracticeResultAnimation
           result={anim}
@@ -147,7 +159,13 @@ export function PracticeContest({
           {view.legs.map((l, i) => {
             const pick = picks[l.id];
             return (
-              <div key={l.id} className="flex flex-col gap-2">
+              <div
+                key={l.id}
+                className="practice-deal flex flex-col gap-2"
+                style={{
+                  animationDelay: `${i * PRACTICE_CONFIG.audio.dealStaggerMs}ms`,
+                }}
+              >
                 <p className="text-sm font-medium">
                   <span className="text-muted">{i + 1}.</span> {l.question}
                 </p>
@@ -160,7 +178,7 @@ export function PracticeContest({
                       <button
                         key={side}
                         type="button"
-                        onClick={() => setPicks((p) => ({ ...p, [l.id]: side }))}
+                        onClick={() => pickLeg(l.id, side)}
                         aria-pressed={on}
                         className={
                           "flex flex-col gap-0.5 rounded border px-3 py-2 text-left transition-colors " +

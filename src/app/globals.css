@@ -57,3 +57,17 @@
 .practice-loss { animation: practice-rise 0.4s ease-out both; }
 .practice-tierup { animation: practice-tier-pop 0.6s ease-out both; }
 .practice-burst { animation: practice-coin-burst 0.7s ease-out forwards; }
+
+/* Card "deal in" (quick stagger) + "locking soon" urgency pulse */
+@keyframes practice-deal {
+  0% { transform: translateY(14px) scale(0.97); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+.practice-deal { animation: practice-deal 0.32s ease-out both; }
+@keyframes practice-lock-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.08); opacity: 0.82; }
+}
+.practice-lock-pulse {
+  animation: practice-lock-pulse var(--pulse, 1s) ease-in-out infinite;
+}

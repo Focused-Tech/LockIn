@@ -56,7 +56,7 @@ export function PracticeResultAnimation({
     const id = setInterval(() => {
       i += 1;
       setShown(Math.round((target * i) / steps));
-      if (++tick.current % 4 === 0) playSound("coin", 0.25);
+      if (++tick.current % 4 === 0) playSound("coin", { volume: 0.25 });
       if (i >= steps) {
         setShown(target);
         clearInterval(id);

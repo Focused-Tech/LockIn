@@ -66,4 +66,23 @@ export const PRACTICE_CONFIG = {
 
   /** Win-up-to multiplier by leg count (index = legs). Variable-reward curve. */
   perfectMultiplier: [0, 2, 4, 8, 16, 28, 48, 80],
+
+  /** Audio (engagement layer). SFX + background music are independent toggles. */
+  audio: {
+    /** Defaults (the persisted user pref overrides these). */
+    sfxDefaultOn: true,
+    musicDefaultOn: false,
+    /** SFX volume (0–1). */
+    sfxVolume: 0.6,
+    /** Looping background-music volume, and the lowered volume while an SFX ducks it. */
+    musicVolume: 0.35,
+    duckVolume: 0.12,
+    /** How long the music stays ducked after an SFX (ms). */
+    duckMs: 350,
+    /** "Leg added" pitch climbs by this playbackRate step per leg (combo momentum). */
+    legAddPitchStep: 0.07,
+    /** Card deal-in stagger per card (ms) and the lock-imminent threshold (ms). */
+    dealStaggerMs: 50,
+    lockingSoonMs: 60_000,
+  },
 } as const;

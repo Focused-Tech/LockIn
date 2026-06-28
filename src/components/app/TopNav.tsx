@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { Logo } from "@/components/Logo";
 import { Pill } from "@/components/ui";
 import { formatCents } from "@/lib/utils";
+import { HeaderBack } from "./HeaderBack";
 
 /**
  * Persistent mobile top bar (design: prototype `.top-nav`). Logo left; coin +
@@ -22,9 +22,7 @@ export function TopNav({
 }) {
   return (
     <header className="flex shrink-0 items-center justify-between bg-surface px-4 pb-2 pt-[calc(env(safe-area-inset-top)_+_0.75rem)]">
-      <Link href="/app" aria-label="LockIn home">
-        <Logo />
-      </Link>
+      <HeaderBack />
 
       <div className="flex items-center gap-2.5">
         <Link href="/app/wallet" className="flex items-center gap-1.5">

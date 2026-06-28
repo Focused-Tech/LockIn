@@ -30,5 +30,21 @@ export function Countdown({ targetMs }: { targetMs: number }) {
         ? `${h}h ${m}m`
         : `${m}:${String(sec).padStart(2, "0")}`;
 
+  // "Locking soon": pulse faster as lock approaches (under 60s → 1s pulse down
+  // to ~0.3s at zero). Visual only here; audio is opt-in per screen.
+  const LOCKING_SOON_MS = 60_000;
+  const lockingSoon = ms < LOCKING_SOON_MS;
+  if (lockingSoon) {
+    const pulse = Math.max(0.3, ms / LOCKING_SOON_MS).toFixed(2);
+    return (
+      <span
+        className="practice-lock-pulse inline-block tabular-nums text-live"
+        style={{ "--pulse": `${pulse}s` } as React.CSSProperties}
+      >
+        {text}
+      </span>
+    );
+  }
+
   return <span className="tabular-nums text-foreground">{text}</span>;
 }
