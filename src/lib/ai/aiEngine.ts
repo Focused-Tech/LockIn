@@ -1,5 +1,5 @@
 import "server-only";
-import { getAnthropic, AI_MODEL } from "./client";
+import { getAnthropic, SLATE_MODEL } from "./client";
 import {
   buildPrompt,
   mapModelSlate,
@@ -46,7 +46,7 @@ export async function generateSlate(
   const legCount = Math.max(MIN_LEGS, Math.min(MAX_LEGS, input.legCount));
 
   const message = await getAnthropic().messages.create({
-    model: AI_MODEL,
+    model: SLATE_MODEL,
     max_tokens: 2048,
     tools: [SLATE_TOOL],
     tool_choice: { type: "tool", name: SLATE_TOOL.name },
@@ -59,6 +59,6 @@ export async function generateSlate(
   }
 
   const slate = mapModelSlate(toolBlock.input, input, legCount);
-  slate.model = AI_MODEL;
+  slate.model = SLATE_MODEL;
   return slate;
 }

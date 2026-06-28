@@ -14,8 +14,12 @@ export function getAnthropic(): Anthropic {
 }
 
 /**
- * Model for the AI agent. Sonnet 4.6 is the project's documented choice
- * (HANDOFF.md) — the right tier for a high-volume, latency-sensitive chat
- * assistant. Change deliberately; higher tiers cost more per token.
+ * Per-feature model config (split from a single shared constant so cost vs
+ * quality is tuned per feature). Change deliberately; tiers differ in cost.
+ *
+ * - Slate generation + chat: high-volume / latency-sensitive → Haiku 4.5.
+ * - Strategy advisor: heavier reasoning, lower volume → Sonnet 4.6 (quality).
  */
-export const AI_MODEL = "claude-sonnet-4-6";
+export const SLATE_MODEL = "claude-haiku-4-5-20251001";
+export const CHAT_MODEL = "claude-haiku-4-5-20251001";
+export const ADVISOR_MODEL = "claude-sonnet-4-6";

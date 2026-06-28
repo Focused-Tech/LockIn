@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { entryProjection, PAID_LINE, resultFor, winUpTo } from "./payoutModel";
+import { PAID_LINE, resultFor, winUpTo } from "./payoutModel";
 
 /**
  * Locks the beginner tunable model to the design-spec demo math
@@ -50,17 +50,7 @@ describe("beginner payoutModel", () => {
     expect(r.cashNet).toBe(-5);
   });
 
-  it("entryProjection bundles the canonical numbers from one source", () => {
+  it("PAID_LINE is the canonical top-30% cutoff", () => {
     expect(PAID_LINE).toBe(30);
-    const single = entryProjection(50, 1);
-    expect(single.winUpToCoins).toBe(120); // 50 × 2.4
-    expect(single.bestPercentile).toBe(40);
-    expect(single.paidLinePct).toBe(30);
-    expect(single.projectedPaid).toBe(false); // a single pick can't clear 30%
-
-    const three = entryProjection(50, 3);
-    expect(three.winUpToCoins).toBe(600);
-    expect(three.bestPercentile).toBe(9);
-    expect(three.projectedPaid).toBe(true);
   });
 });

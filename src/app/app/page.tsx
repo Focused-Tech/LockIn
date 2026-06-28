@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { SkillGameDisclaimer } from "@/components/SkillGameDisclaimer";
 import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUserProfile } from "@/lib/firebase/session";
-import { fetchFeedSlates } from "@/server/data/slates";
+import { fetchFeedSlatesCached } from "@/server/data/slates";
 import { fetchRecSignals } from "@/server/data/recommendations";
 import { ExploreFeed } from "./ExploreFeed";
 
@@ -19,7 +19,7 @@ export default async function ExplorePage() {
   if (profile.journeyLane === "beginner") redirect("/app/beginner");
 
   const [slates, signals] = await Promise.all([
-    fetchFeedSlates(adminDb()),
+    fetchFeedSlatesCached(),
     fetchRecSignals(adminDb(), profile.id, profile.followedCreators ?? []),
   ]);
 

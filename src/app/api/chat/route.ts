@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUser } from "@/lib/firebase/session";
-import { getAnthropic, AI_MODEL } from "@/lib/ai/client";
+import { getAnthropic, CHAT_MODEL } from "@/lib/ai/client";
 import { buildSystemPrompt, MAX_CHAT_HISTORY, type ChatMessage } from "@/lib/ai/chat";
 import { fetchUserChatContext } from "@/server/data/userStats";
 
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
   const system = buildSystemPrompt(context);
 
   const anthropicStream = getAnthropic().messages.stream({
-    model: AI_MODEL,
+    model: CHAT_MODEL,
     max_tokens: 1024,
     system,
     messages,

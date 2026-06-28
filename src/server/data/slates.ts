@@ -1,5 +1,7 @@
 import "server-only";
+import { unstable_cache } from "next/cache";
 import type { Firestore } from "firebase-admin/firestore";
+import { adminDb } from "@/lib/firebase/admin";
 import {
   COLLECTIONS,
   type PredictionDoc,
@@ -63,6 +65,20 @@ export async function fetchFeedSlates(db: Firestore): Promise<FeedSlate[]> {
 
   return slates.sort((a, b) => a.lockTimeMs - b.lockTimeMs);
 }
+
+/**
+ * Cached Explore feed for the SSR payload. The feed (slates + predictions) is
+ * identical for every user, so it's cached globally with a short revalidate
+ * instead of re-running the N+1 (1 slates query + 1 predictions query per slate)
+ * on every request. Safe because the client `ExploreFeed` subscribes via
+ * `onSnapshot` and reconciles live entry counts / pools — a ≤15s-stale SSR list
+ * is fine. Per-user personalization stays out of here (see `fetchRecSignals`).
+ */
+export const fetchFeedSlatesCached = unstable_cache(
+  async (): Promise<FeedSlate[]> => fetchFeedSlates(adminDb()),
+  ["explore-feed-slates"],
+  { revalidate: 15, tags: ["feed-slates"] },
+);
 
 /** Fetch a single slate + its predictions as a {@link FeedSlate}, or null. */
 export async function fetchSlate(

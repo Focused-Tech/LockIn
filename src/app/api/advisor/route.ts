@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUserProfile } from "@/lib/firebase/session";
-import { getAnthropic, AI_MODEL } from "@/lib/ai/client";
+import { getAnthropic, ADVISOR_MODEL } from "@/lib/ai/client";
 import { buildAdvisorSystemPrompt } from "@/lib/ai/advisor";
 import { fetchUserChatContext } from "@/server/data/userStats";
 import { fetchSlate } from "@/server/data/slates";
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
   );
 
   const anthropicStream = getAnthropic().messages.stream({
-    model: AI_MODEL,
+    model: ADVISOR_MODEL,
     max_tokens: 600,
     system,
     messages: [
