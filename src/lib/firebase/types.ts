@@ -51,6 +51,12 @@ export const COLLECTIONS = {
   beginnerEntries: "beginnerEntries",
   /** Multiplayer PRACTICE contests (play-money): practiceContests/{contestId}. */
   practiceContests: "practiceContests",
+  /**
+   * PRACTICE entries: practiceContests/{id}/practiceEntries/{uid}. Deliberately
+   * NOT named "entries" so collectionGroup("entries") scans (the REAL-money
+   * leaderboard, rec signals, wallet activity) can never sweep up practice play.
+   */
+  practiceEntries: "practiceEntries",
 } as const;
 
 /** Which Explore lane a user has chosen (set at onboarding, switchable later). */
@@ -139,6 +145,8 @@ export interface UserDoc {
   practiceStreak?: number;
   /** Rolling recent practice results (true=win) for the dynamic difficulty tune. */
   practiceRecent?: boolean[];
+  /** Epoch ms when the busted player's free DAILY refill becomes claimable. */
+  practiceRefillAt?: number | null;
   createdAt: FsTimestamp;
 }
 

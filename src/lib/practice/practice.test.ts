@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { rankForCoins, difficultyForTier, PRACTICE_TIERS } from "./tiers";
-import { scorePractice, winThreshold } from "./scoring";
+import {
+  scorePractice,
+  winThreshold,
+  isBusted,
+  scheduledRefillAt,
+  claimRefill,
+  PRACTICE_REFILL_COOLDOWN_MS,
+} from "./scoring";
 import { PRACTICE_CONFIG } from "./config";
 
 describe("practice rank tiers (config-driven)", () => {
@@ -67,5 +74,40 @@ describe("instant scoring (coins are score)", () => {
     expect(PRACTICE_TIERS.map((t) => t.key)).toEqual([
       "rookie", "sharp", "pro", "elite", "legend",
     ]);
+  });
+});
+
+describe("daily refill (wait, not instant; never buyable)", () => {
+  const STAKE = PRACTICE_CONFIG.coins.defaultStake;
+  const now = 1_000_000_000_000;
+
+  it("busted = can't afford the minimum stake", () => {
+    expect(isBusted(STAKE)).toBe(false);
+    expect(isBusted(STAKE - 1)).toBe(true);
+    expect(isBusted(0)).toBe(true);
+  });
+
+  it("schedules the refill one cooldown out when busted (sticky)", () => {
+    expect(scheduledRefillAt(500, null, now)).toBeNull(); // not busted
+    expect(scheduledRefillAt(0, null, now)).toBe(now + PRACTICE_REFILL_COOLDOWN_MS);
+    // sticky: keeps the existing time, doesn't push it out
+    expect(scheduledRefillAt(0, now + 5, now)).toBe(now + 5);
+  });
+
+  it("does NOT refill before the cooldown elapses", () => {
+    const c = claimRefill(0, now + PRACTICE_REFILL_COOLDOWN_MS, now);
+    expect(c.refilled).toBe(false);
+    expect(c.coins).toBe(0);
+  });
+
+  it("refills to 500 once the cooldown has elapsed", () => {
+    const c = claimRefill(0, now - 1, now);
+    expect(c.refilled).toBe(true);
+    expect(c.coins).toBe(PRACTICE_CONFIG.coins.refillTo);
+    expect(c.refillAt).toBeNull();
+  });
+
+  it("cooldown is config-driven (24h default)", () => {
+    expect(PRACTICE_REFILL_COOLDOWN_MS).toBe(24 * 3_600_000);
   });
 });

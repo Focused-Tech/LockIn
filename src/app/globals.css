@@ -23,3 +23,37 @@
     display: none;
   }
 }
+
+/* ── Practice mode win/lose "juice" (fast, sub-second) ─────────────────────── */
+@keyframes practice-coin-pop {
+  0% { transform: scale(0.4); opacity: 0; }
+  55% { transform: scale(1.18); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes practice-coin-burst {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(0.25); opacity: 0; }
+}
+@keyframes practice-shake {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-7px) rotate(-1deg); }
+  30% { transform: translateX(7px) rotate(1deg); }
+  45% { transform: translateX(-5px); }
+  60% { transform: translateX(5px); }
+  75% { transform: translateX(-3px); }
+}
+@keyframes practice-rise {
+  0% { transform: translateY(10px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+@keyframes practice-tier-pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  45% { transform: scale(1.2); opacity: 1; }
+  70% { transform: scale(0.95); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.practice-win { animation: practice-coin-pop 0.45s ease-out both; }
+.practice-nearmiss { animation: practice-shake 0.5s ease-in-out both; }
+.practice-loss { animation: practice-rise 0.4s ease-out both; }
+.practice-tierup { animation: practice-tier-pop 0.6s ease-out both; }
+.practice-burst { animation: practice-coin-burst 0.7s ease-out forwards; }

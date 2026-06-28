@@ -87,3 +87,43 @@ export const STREAK_NUDGE_AT = PRACTICE_CONFIG.nudge.streakAt;
 
 /** Rolling window (recent entries) used to estimate a player's win rate. */
 export const PRACTICE_RECENT_WINDOW = PRACTICE_CONFIG.recentWindow;
+
+/** Daily refill cooldown in ms (config-driven). */
+export const PRACTICE_REFILL_COOLDOWN_MS =
+  PRACTICE_CONFIG.coins.refillCooldownHours * 3_600_000;
+
+/** Busted = can't afford the minimum stake (so they wait for the daily refill). */
+export function isBusted(coins: number): boolean {
+  return coins < PRACTICE_DEFAULT_STAKE;
+}
+
+/**
+ * The pending refill time for a player: once busted, schedule the free refill
+ * `refillCooldownHours` out (set once, sticky); when not busted, clear it.
+ */
+export function scheduledRefillAt(
+  coins: number,
+  currentRefillAt: number | null | undefined,
+  nowMs: number,
+): number | null {
+  if (isBusted(coins)) return currentRefillAt ?? nowMs + PRACTICE_REFILL_COOLDOWN_MS;
+  return null;
+}
+
+export interface RefillClaim {
+  coins: number;
+  refillAt: number | null;
+  refilled: boolean;
+}
+
+/** Claim the free daily refill if busted AND the cooldown has elapsed. */
+export function claimRefill(
+  coins: number,
+  refillAt: number | null | undefined,
+  nowMs: number,
+): RefillClaim {
+  if (isBusted(coins) && refillAt && nowMs >= refillAt) {
+    return { coins: PRACTICE_CONFIG.coins.refillTo, refillAt: null, refilled: true };
+  }
+  return { coins, refillAt: refillAt ?? null, refilled: false };
+}

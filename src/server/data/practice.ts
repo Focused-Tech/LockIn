@@ -111,8 +111,8 @@ export async function fetchPracticeContest(
   const c = snap.data() as PracticeContestDoc;
 
   const [mineSnap, entriesSnap] = await Promise.all([
-    ref.collection(COLLECTIONS.entries).doc(uid).get(),
-    ref.collection(COLLECTIONS.entries).get(),
+    ref.collection(COLLECTIONS.practiceEntries).doc(uid).get(),
+    ref.collection(COLLECTIONS.practiceEntries).get(),
   ]);
 
   const mine = mineSnap.exists ? (mineSnap.data() as PracticeEntryDoc) : null;

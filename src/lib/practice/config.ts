@@ -51,12 +51,16 @@ export const PRACTICE_CONFIG = {
     perSessionCap: 1,
   },
 
-  /** Coin (SCORE) economy — play-money only. */
+  /** Coin (SCORE) economy — play-money only. Coins are NEVER purchasable with
+   *  real money. The refill is a DAILY free top-up (wait, not instant). */
   coins: {
     start: 500,
-    /** At/under this balance, the free refill is offered (loop never hard-stops). */
-    refillThreshold: 50,
+    /** At/under this balance the player is "busted" and waits for the daily refill. */
+    refillThreshold: 0,
+    /** Free daily top-up amount. */
     refillTo: 500,
+    /** Hours to wait after busting before the free refill is available. */
+    refillCooldownHours: 24,
     defaultStake: 50,
   },
 

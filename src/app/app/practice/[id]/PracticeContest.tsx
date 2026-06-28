@@ -8,6 +8,10 @@ import { RankBadge } from "@/components/practice/RankBadge";
 import type { PracticeContestView } from "@/server/data/practice";
 import { PRACTICE_CONFIG, type PracticeTierKey } from "@/lib/practice/config";
 import { submitPracticePicks } from "../actions";
+import {
+  PracticeResultAnimation,
+  type PlayedResult,
+} from "./PracticeResultAnimation";
 
 type Choice = "a" | "b";
 
@@ -15,16 +19,21 @@ export function PracticeContest({
   view,
   isHost,
   funnelEligible,
+  canStake,
+  refillAt,
 }: {
   view: PracticeContestView;
   isHost: boolean;
   funnelEligible: boolean;
+  canStake: boolean;
+  refillAt: number | null;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [picks, setPicks] = useState<Record<string, Choice>>({});
   const [copied, setCopied] = useState(false);
+  const [anim, setAnim] = useState<PlayedResult | null>(null);
 
   const played = view.myEntry !== null;
   const allPicked = view.legs.every((l) => picks[l.id]);
@@ -67,13 +76,31 @@ export function PracticeContest({
     startTransition(async () => {
       const ordered = view.legs.map((l) => picks[l.id]!) as Choice[];
       const res = await submitPracticePicks(view.id, ordered);
-      if (res.ok) router.refresh();
+      if (res.ok) setAnim(res); // play the juice, then refresh to the results view
       else setError(res.error);
     });
   }
 
+  const refillCountdown = () => {
+    if (refillAt == null) return "tomorrow";
+    const ms = refillAt - Date.now();
+    if (ms <= 0) return "now";
+    const h = Math.floor(ms / 3_600_000);
+    const m = Math.floor((ms % 3_600_000) / 60_000);
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  };
+
   return (
     <div className="flex flex-col gap-4">
+      {anim && (
+        <PracticeResultAnimation
+          result={anim}
+          onContinue={() => {
+            setAnim(null);
+            router.refresh();
+          }}
+        />
+      )}
       <div>
         <div className="mb-1 flex items-center gap-2">
           <Pill tone="accent">{view.category}</Pill>
@@ -100,8 +127,22 @@ export function PracticeContest({
         </Button>
       </Card>
 
-      {/* Pick card (not yet played) */}
-      {!played && (
+      {/* Busted — can browse + see the leaderboard, just can't stake until refill */}
+      {!played && !canStake && (
+        <Card className="flex flex-col gap-1.5 border-loss-border bg-loss-soft">
+          <p className="text-sm font-semibold text-loss">
+            Out of practice coins — refills in {refillCountdown()}
+          </p>
+          <p className="text-xs text-muted">
+            Your free daily top-up to 500 is on the way. You can still browse this
+            contest and watch the leaderboard; you just can&apos;t lock in picks
+            until then. Coins are never buyable with real money.
+          </p>
+        </Card>
+      )}
+
+      {/* Pick card (not yet played, has coins to stake) */}
+      {!played && canStake && (
         <Card className="flex flex-col gap-3">
           {view.legs.map((l, i) => {
             const pick = picks[l.id];

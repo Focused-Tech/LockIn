@@ -6,9 +6,10 @@ import { RankBadge } from "@/components/practice/RankBadge";
 import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUserProfile } from "@/lib/firebase/session";
 import { fetchPracticeHome } from "@/server/data/practice";
-import { PRACTICE_REFILL_THRESHOLD } from "@/lib/practice/scoring";
+import { isBusted } from "@/lib/practice/scoring";
 import { PRACTICE_CONFIG, type PracticeTierKey } from "@/lib/practice/config";
 import { PracticeHomeClient } from "./PracticeHomeClient";
+import { SoundToggle } from "@/components/practice/SoundToggle";
 
 const SHARP_PCT = PRACTICE_CONFIG.sharpPercentile;
 
@@ -18,7 +19,7 @@ export default async function PracticeHomePage() {
 
   const home = await fetchPracticeHome(adminDb(), profile.id, profile);
   const tierKey = home.rank.tier.key as PracticeTierKey;
-  const busted = home.practiceCoins <= PRACTICE_REFILL_THRESHOLD;
+  const busted = isBusted(home.practiceCoins);
 
   return (
     <div className="flex flex-col gap-5 p-6">
@@ -71,7 +72,18 @@ export default async function PracticeHomePage() {
         </div>
       </Card>
 
-      <PracticeHomeClient busted={busted} balance={home.practiceCoins} />
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted">
+          Coins are score — they buy nothing &amp; never convert to cash.
+        </p>
+        <SoundToggle />
+      </div>
+
+      <PracticeHomeClient
+        busted={busted}
+        balance={home.practiceCoins}
+        refillAt={profile.practiceRefillAt ?? null}
+      />
 
       <Link
         href="/app/practice/create"

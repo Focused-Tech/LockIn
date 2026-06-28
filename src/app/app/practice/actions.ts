@@ -18,11 +18,11 @@ import {
   type PracticeTierKey,
 } from "@/lib/practice/tiers";
 import {
+  claimRefill,
   PRACTICE_DEFAULT_STAKE,
   PRACTICE_RECENT_WINDOW,
-  PRACTICE_REFILL_THRESHOLD,
-  PRACTICE_REFILL_TO,
   PRACTICE_START_COINS,
+  scheduledRefillAt,
   scorePractice,
   type Choice,
 } from "@/lib/practice/scoring";
@@ -168,11 +168,16 @@ export type SubmitPracticeResult =
       net: number;
       won: boolean;
       perfect: boolean;
+      nearMiss: boolean;
       message: string;
       hits: boolean[];
       outcomes: Choice[];
       newBalance: number;
       streak: number;
+      /** True when this entry crossed into a higher rank tier. */
+      tierUp: boolean;
+      newTierKey: string;
+      newTierLabel: string;
     }
   | { ok: false; error: string };
 
@@ -199,7 +204,7 @@ export async function submitPracticePicks(
     return { ok: false, error: "Make a pick on every leg" };
   }
 
-  const entryRef = contestRef.collection(COLLECTIONS.entries).doc(profile.id);
+  const entryRef = contestRef.collection(COLLECTIONS.practiceEntries).doc(profile.id);
   const userRef = db.collection(COLLECTIONS.users).doc(profile.id);
 
   let result;
@@ -213,23 +218,36 @@ export async function submitPracticePicks(
       const user = userSnap.data() as UserDoc;
 
       const stake = contest.stakeCoins;
-      const balance = practiceBalance(user);
-      if (balance < stake) throw new Error("LOW_COINS");
+      const now = Date.now();
+      // Auto-claim the free daily refill if the cooldown has elapsed.
+      const claim = claimRefill(
+        practiceBalance(user),
+        user.practiceRefillAt ?? null,
+        now,
+      );
+      if (claim.coins < stake) throw new Error("BUSTED"); // wait for the daily refill
 
       const r = scorePractice(picks, contest.outcomes, stake);
       const recent = [...(user.practiceRecent ?? []), r.won].slice(
         -PRACTICE_RECENT_WINDOW,
       );
       const streak = r.won ? (user.practiceStreak ?? 0) + 1 : 0;
-      const lifetimeAdd = Math.max(0, r.creditedCoins); // titles only ever go up
+      const beforeLifetime = user.practiceLifetimeCoins ?? 0;
+      const afterLifetime = beforeLifetime + Math.max(0, r.creditedCoins);
+      const newBalance = claim.coins - stake + r.creditedCoins;
+      const refillAt = scheduledRefillAt(newBalance, claim.refillAt, now);
+
+      const rankBefore = rankForCoins(beforeLifetime);
+      const rankAfter = rankForCoins(afterLifetime);
 
       tx.set(
         userRef,
         {
-          practiceCoins: balance - stake + r.creditedCoins,
-          practiceLifetimeCoins: (user.practiceLifetimeCoins ?? 0) + lifetimeAdd,
+          practiceCoins: newBalance,
+          practiceLifetimeCoins: afterLifetime,
           practiceStreak: streak,
           practiceRecent: recent,
+          practiceRefillAt: refillAt,
         },
         { merge: true },
       );
@@ -237,7 +255,7 @@ export async function submitPracticePicks(
       const entry: PracticeEntryDoc = {
         userId: profile.id,
         username: profile.username,
-        tier: rankForCoins(user.practiceLifetimeCoins ?? 0).tier.key,
+        tier: rankAfter.tier.key,
         picks,
         correct: r.correct,
         score: r.correct,
@@ -248,18 +266,24 @@ export async function submitPracticePicks(
       tx.set(entryRef, entry);
       tx.update(contestRef, { entryCount: FieldValue.increment(1) });
 
-      return { r, streak, newBalance: balance - stake + r.creditedCoins };
+      return {
+        r,
+        streak,
+        newBalance,
+        tierUp: rankAfter.index > rankBefore.index,
+        newTier: rankAfter.tier,
+      };
     });
   } catch (err) {
     const m = err instanceof Error ? err.message : "";
     if (m === "ALREADY_ENTERED")
       return { ok: false, error: "You already played this contest" };
-    if (m === "LOW_COINS")
-      return { ok: false, error: "Not enough practice coins — refill first" };
+    if (m === "BUSTED")
+      return { ok: false, error: "Out of practice coins — your free refill arrives tomorrow." };
     return { ok: false, error: "Could not submit your picks" };
   }
 
-  const { r, streak, newBalance } = result;
+  const { r, streak, newBalance, tierUp, newTier } = result;
   return {
     ok: true,
     correct: r.correct,
@@ -267,23 +291,44 @@ export async function submitPracticePicks(
     net: r.net,
     won: r.won,
     perfect: r.perfect,
+    nearMiss: !r.perfect && r.correct === r.legs - 1,
     message: r.message,
     hits: r.hits,
     outcomes: contest.outcomes,
     newBalance,
     streak,
+    tierUp,
+    newTierKey: newTier.key,
+    newTierLabel: newTier.label,
   };
 }
 
-/** Free refill when busted — keeps the practice loop from hard-stopping. */
-export async function refillPractice(): Promise<{ ok: boolean; balance: number }> {
+/**
+ * Claim the FREE DAILY refill (not instant): only tops up to 500 once the
+ * busted player's cooldown has elapsed. Never sells coins for real money.
+ * Returns the (possibly unchanged) balance + the next refill time for the UI.
+ */
+export async function refillPractice(): Promise<{
+  balance: number;
+  refillAt: number | null;
+  refilled: boolean;
+}> {
   const profile = await getCurrentUserProfile();
-  if (!profile) return { ok: false, balance: 0 };
-  const balance = practiceBalance(profile);
-  if (balance > PRACTICE_REFILL_THRESHOLD) return { ok: true, balance };
-  await adminDb()
-    .collection(COLLECTIONS.users)
-    .doc(profile.id)
-    .set({ practiceCoins: PRACTICE_REFILL_TO }, { merge: true });
-  return { ok: true, balance: PRACTICE_REFILL_TO };
+  if (!profile) return { balance: 0, refillAt: null, refilled: false };
+  const claim = claimRefill(
+    practiceBalance(profile),
+    profile.practiceRefillAt ?? null,
+    Date.now(),
+  );
+  if (claim.refilled) {
+    await adminDb()
+      .collection(COLLECTIONS.users)
+      .doc(profile.id)
+      .set({ practiceCoins: claim.coins, practiceRefillAt: null }, { merge: true });
+  }
+  return {
+    balance: claim.coins,
+    refillAt: claim.refillAt,
+    refilled: claim.refilled,
+  };
 }
