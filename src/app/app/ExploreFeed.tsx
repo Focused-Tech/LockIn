@@ -136,8 +136,8 @@ export function ExploreFeed({
       {/* Pulsing Card Rush banner (only when a rush is active) */}
       <RushBanner rushes={liveRushes} />
 
-      {/* Category tabs */}
-      <div className="-mx-6 flex gap-2 overflow-x-auto px-6">
+      {/* Category pills — wrapping rows of clearly-bordered chips */}
+      <div className="flex flex-wrap gap-2">
         {tabs.map((tab) => {
           const active = tab === category;
           const count =
@@ -149,15 +149,23 @@ export function ExploreFeed({
               key={tab}
               type="button"
               onClick={() => setCategory(tab)}
+              aria-pressed={active}
               className={
-                "flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors " +
+                "flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors " +
                 (active
                   ? "border-accent-border bg-accent-soft text-accent"
-                  : "border-border bg-surface-card text-muted hover:text-foreground")
+                  : "border-border bg-surface-card text-foreground hover:border-accent-border hover:text-accent")
               }
             >
               {tab}
-              <span className="text-xs opacity-70">{count}</span>
+              <span
+                className={
+                  "rounded-full px-1.5 text-xs " +
+                  (active ? "bg-accent/15 text-accent" : "bg-surface text-muted")
+                }
+              >
+                {count}
+              </span>
             </button>
           );
         })}
