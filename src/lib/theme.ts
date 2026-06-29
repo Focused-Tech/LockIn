@@ -14,4 +14,4 @@
  * src/app/layout.tsx) selects the variant; it affects every `bg-accent-soft` /
  * `border-accent-border` app-wide (choose screen, practice, etc.).
  */
-export const ACCENT_VARIANT: "a" | "b" | "c" = "b";
+export const ACCENT_VARIANT: "a" | "b" | "c" = "c";
