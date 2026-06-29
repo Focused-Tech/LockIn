@@ -68,7 +68,17 @@ export default async function PracticeHomePage() {
           <span className="font-medium text-foreground">
             Top {SHARP_PCT[tierKey]}% of predictors
             {home.streak > 1 && (
-              <span className="ml-2 text-accent">🔥 {home.streak} streak</span>
+              <span
+                className="practice-streak ml-2 inline-block font-bold text-accent"
+                style={
+                  {
+                    "--pulse": `${Math.max(0.42, 1.1 - (home.streak - 2) * 0.13).toFixed(2)}s`,
+                  } as React.CSSProperties
+                }
+              >
+                {"🔥".repeat(Math.min(3, Math.floor((home.streak - 1) / 3) + 1))}{" "}
+                {home.streak} streak
+              </span>
             )}
           </span>
         </div>

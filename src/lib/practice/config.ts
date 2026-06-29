@@ -84,5 +84,10 @@ export const PRACTICE_CONFIG = {
     /** Card deal-in stagger per card (ms) and the lock-imminent threshold (ms). */
     dealStaggerMs: 50,
     lockingSoonMs: 60_000,
+    /** SETTLEMENT REVEAL: beat between each leg landing (ms) and the rising-tick
+     *  pitch climb per leg — anticipation builds, the deciding leg lands last. */
+    revealBeatMs: 300,
+    revealMaxTotalMs: 2_100,
+    revealPitchStep: 0.08,
   },
 } as const;

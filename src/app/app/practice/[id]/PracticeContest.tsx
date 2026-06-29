@@ -9,7 +9,7 @@ import type { PracticeContestView } from "@/server/data/practice";
 import { PRACTICE_CONFIG, type PracticeTierKey } from "@/lib/practice/config";
 import { playSound, playLegAdded } from "@/lib/practice/sound";
 import { PracticeMusic } from "@/components/practice/PracticeMusic";
-import { submitPracticePicks } from "../actions";
+import { submitPracticePicks, createPracticeContest } from "../actions";
 import {
   PracticeResultAnimation,
   type PlayedResult,
@@ -32,7 +32,9 @@ export function PracticeContest({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [nextPending, startNext] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [nextError, setNextError] = useState<string | null>(null);
   const [picks, setPicks] = useState<Record<string, Choice>>({});
   const [copied, setCopied] = useState(false);
   const [anim, setAnim] = useState<PlayedResult | null>(null);
@@ -87,8 +89,32 @@ export function PracticeContest({
     startTransition(async () => {
       const ordered = view.legs.map((l) => picks[l.id]!) as Choice[];
       const res = await submitPracticePicks(view.id, ordered);
-      if (res.ok) setAnim(res); // play the juice, then refresh to the results view
-      else setError(res.error);
+      if (res.ok) {
+        // Shape the per-leg reveal for the leg-by-leg settlement animation.
+        const revealLegs = view.legs.map((l, i) => ({
+          question: l.question,
+          pickedLabel: ordered[i] === "a" ? l.optionA : l.optionB,
+          correctLabel: res.outcomes[i] === "a" ? l.optionA : l.optionB,
+          hit: res.hits[i] ?? false,
+        }));
+        setAnim({ ...res, revealLegs }); // play the juice, then into the next round
+      } else setError(res.error);
+    });
+  }
+
+  // The "one more" loop: spin up a fresh AI round in the SAME category and jump
+  // straight into it — no detour back through the arena.
+  function nextRound() {
+    setNextError(null);
+    startNext(async () => {
+      const res = await createPracticeContest({
+        category: view.category,
+        mode: "ai",
+      });
+      if (res.ok) {
+        setAnim(null);
+        router.push(`/app/practice/${res.contestId}`);
+      } else setNextError(res.error);
     });
   }
 
@@ -111,6 +137,9 @@ export function PracticeContest({
             setAnim(null);
             router.refresh();
           }}
+          onNextRound={nextRound}
+          nextPending={nextPending}
+          nextError={nextError}
         />
       )}
       <div>
@@ -181,9 +210,9 @@ export function PracticeContest({
                         onClick={() => pickLeg(l.id, side)}
                         aria-pressed={on}
                         className={
-                          "flex flex-col gap-0.5 rounded border px-3 py-2 text-left transition-colors " +
+                          "flex flex-col gap-0.5 rounded border px-3 py-2 text-left transition duration-100 active:scale-[0.97] " +
                           (on
-                            ? "border-accent-border bg-accent-soft"
+                            ? "practice-pick-pop border-accent-border bg-accent-soft"
                             : "border-border bg-surface hover:bg-surface-card")
                         }
                       >
@@ -248,6 +277,40 @@ export function PracticeContest({
                 </div>
               );
             })}
+          </div>
+
+          {/* The "one more" loop — Next round is the loudest thing on the results
+              screen; changing category / leaving the arena are the quiet outs. */}
+          <Button
+            variant="accent"
+            size="lg"
+            className="mt-1 w-full"
+            disabled={nextPending}
+            onClick={nextRound}
+          >
+            {nextPending
+              ? "Dealing next round…"
+              : view.myEntry.won
+                ? "Next round →"
+                : "Run it back →"}
+          </Button>
+          {nextError && (
+            <p className="text-center text-sm text-loss">{nextError}</p>
+          )}
+          <div className="flex items-center justify-center gap-4 text-sm">
+            <Link
+              href="/app/practice/create"
+              className="text-muted hover:text-foreground"
+            >
+              Change category
+            </Link>
+            <span className="text-border">·</span>
+            <Link
+              href="/app/practice"
+              className="text-muted hover:text-foreground"
+            >
+              Back to arena
+            </Link>
           </div>
         </Card>
       )}

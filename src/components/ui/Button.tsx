@@ -30,7 +30,9 @@ const sizeStyles: Record<Size, string> = {
 };
 
 const base =
-  "inline-flex items-center justify-center rounded font-medium transition-colors " +
+  "inline-flex items-center justify-center rounded font-medium " +
+  // Colors AND transform transition so the press-to-depress reads as physical.
+  "transition-[color,background-color,transform] duration-100 active:scale-[0.98] " +
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-border " +
   "disabled:opacity-35 disabled:pointer-events-none";
 

@@ -15,6 +15,8 @@ export type SoundName =
   | "tick" // leg selected (tactile)
   | "add" // leg added (pitch ascends with combo length)
   | "locking" // "locking soon" quickening tick
+  | "reveal" // settlement: a leg lands (pitch rises leg by leg — anticipation)
+  | "stamp" // "SO CLOSE" / impact slam
   | "win"
   | "nearmiss"
   | "loss"
@@ -73,4 +75,14 @@ export function playSound(
 export function playLegAdded(count: number): void {
   const step = PRACTICE_CONFIG.audio.legAddPitchStep;
   playSound("add", { rate: 1 + Math.max(0, count - 1) * step });
+}
+
+/**
+ * Settlement "leg lands" tick — the rising hook. Pitch climbs with each leg
+ * revealed (`step` = 0-based position in the reveal order) so the slate resolves
+ * with mounting tension and the deciding leg lands at the top of the climb.
+ */
+export function playReveal(step: number): void {
+  const pitch = PRACTICE_CONFIG.audio.revealPitchStep;
+  playSound("reveal", { rate: 1 + Math.max(0, step) * pitch });
 }
