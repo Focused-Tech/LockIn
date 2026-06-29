@@ -117,4 +117,32 @@ export const PRACTICE_CONFIG = {
     medium: { label: "Medium", color: "#F5A623", bg: "rgba(245,166,35,0.10)", border: "rgba(245,166,35,0.55)" },
     hard: { label: "Hard", color: "#FF6A3D", bg: "rgba(255,106,61,0.12)", border: "rgba(255,106,61,0.6)" },
   } as Record<"easy" | "medium" | "hard", { label: string; color: string; bg: string; border: string }>,
+
+  /** URGENCY — countdown + spot race. A visible clock ticks toward lock; LABELED
+   *  mock players (training bots) claim the top spots one by one as it winds down,
+   *  so hesitating costs good spots. The spot the player lands in scales their
+   *  payout (SCORE only) via spotBonus. All values tunable; spots capped at 3. */
+  urgency: {
+    enabled: true,
+    /** Total countdown length (ms) from contest creation to lock. */
+    countdownMs: 75_000,
+    /** Hard cap on filled top spots (the mechanic never fills more than this). */
+    maxSpots: 3,
+    /** Number of distinct labeled mock players that can claim spots (≤ roster). */
+    mockPlayerCount: 3,
+    /** Elapsed-fraction (0–1) at which the best OPEN spot gets claimed by a mock —
+     *  one entry per spot, top spot first. Length must equal maxSpots. Front/back
+     *  loading the curve here tunes how fast good spots vanish. */
+    spotFillFracs: [0.38, 0.62, 0.84],
+    /** Payout (winnings) multiplier for landing spot 1 / 2 / 3 (else 1.0). The
+     *  earlier you lock, the higher the spot, the bigger the score bonus. */
+    spotBonus: [1.6, 1.3, 1.12],
+    /** Remaining-ms threshold at which the clock turns urgent (pulse + tick). */
+    urgentMs: 20_000,
+    /** Pulse period bounds as the clock quickens toward zero (ms). */
+    pulseSlowMs: 1_000,
+    pulseFastMs: 320,
+    /** Min remaining-ms gap between urgency "tick" SFX (throttle near zero). */
+    tickEveryMs: 1_000,
+  },
 } as const;

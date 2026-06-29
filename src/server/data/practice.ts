@@ -92,6 +92,8 @@ export interface PracticeContestView {
   tier: string;
   stakeCoins: number;
   legs: PracticeLeg[];
+  /** Countdown + spot-race window (epoch ms), or null when not running. */
+  urgency: { startAt: number; lockAt: number } | null;
   entryCount: number;
   /** The current user's own entry, if they've played. */
   myEntry: {
@@ -163,6 +165,10 @@ export async function fetchPracticeContest(
     tier: c.tier,
     stakeCoins: c.stakeCoins,
     legs: c.legs, // no outcome field on PracticeLeg
+    urgency:
+      c.urgencyStartAt != null && c.urgencyLockAt != null
+        ? { startAt: c.urgencyStartAt, lockAt: c.urgencyLockAt }
+        : null,
     entryCount: c.entryCount ?? 0,
     myEntry: mine
       ? { picks: mine.picks, correct: mine.correct, netCoins: mine.netCoins, won: mine.won }

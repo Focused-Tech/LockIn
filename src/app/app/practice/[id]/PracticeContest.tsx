@@ -10,6 +10,7 @@ import { PRACTICE_CONFIG, type PracticeTierKey } from "@/lib/practice/config";
 import { playSound, playLegAdded } from "@/lib/practice/sound";
 import { PracticeMusic } from "@/components/practice/PracticeMusic";
 import { AiBadge } from "@/components/practice/AiBadge";
+import { SpotRace } from "./SpotRace";
 import { submitPracticePicks, createPracticeContest } from "../actions";
 import {
   PracticeResultAnimation,
@@ -215,6 +216,16 @@ export function PracticeContest({
             until then. Coins are never buyable with real money.
           </p>
         </Card>
+      )}
+
+      {/* Countdown + spot race — drives "lock in before the bots take the good
+          spots". Shown only while the player can still stake. */}
+      {!played && canStake && view.urgency && (
+        <SpotRace
+          startAt={view.urgency.startAt}
+          lockAt={view.urgency.lockAt}
+          seed={view.id}
+        />
       )}
 
       {/* Pick card (not yet played, has coins to stake) */}

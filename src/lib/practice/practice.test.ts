@@ -8,6 +8,15 @@ import {
   claimRefill,
   PRACTICE_REFILL_COOLDOWN_MS,
 } from "./scoring";
+import {
+  elapsedFrac,
+  spotsFilledAt,
+  bestAvailableSpot,
+  spotBonusMultiplier,
+  resolveSpot,
+  fillSchedule,
+  MOCK_PLAYERS,
+} from "./urgency";
 import { PRACTICE_CONFIG } from "./config";
 
 describe("practice rank tiers (config-driven)", () => {
@@ -74,6 +83,68 @@ describe("instant scoring (coins are score)", () => {
     expect(PRACTICE_TIERS.map((t) => t.key)).toEqual([
       "rookie", "sharp", "pro", "elite", "legend",
     ]);
+  });
+});
+
+describe("urgency: countdown + spot race (config-driven, capped at 3)", () => {
+  const U = PRACTICE_CONFIG.urgency;
+
+  it("never fills more than maxSpots (3) and tracks the fill curve", () => {
+    expect(U.maxSpots).toBe(3);
+    expect(U.spotFillFracs.length).toBe(U.maxSpots);
+    expect(spotsFilledAt(0)).toBe(0);
+    expect(spotsFilledAt(U.spotFillFracs[0]!)).toBe(1);
+    expect(spotsFilledAt(U.spotFillFracs[1]!)).toBe(2);
+    expect(spotsFilledAt(U.spotFillFracs[2]!)).toBe(3);
+    expect(spotsFilledAt(1)).toBe(3); // capped — never exceeds 3
+  });
+
+  it("the longer you wait, the worse (or gone) your spot", () => {
+    expect(bestAvailableSpot(0)).toBe(1); // lock instantly → top spot
+    expect(bestAvailableSpot(1)).toBe(2);
+    expect(bestAvailableSpot(2)).toBe(3);
+    expect(bestAvailableSpot(3)).toBeNull(); // all premium spots gone
+  });
+
+  it("spot bonus scales the payout by spot (1.0 when no spot)", () => {
+    expect(spotBonusMultiplier(1)).toBe(U.spotBonus[0]);
+    expect(spotBonusMultiplier(2)).toBe(U.spotBonus[1]);
+    expect(spotBonusMultiplier(3)).toBe(U.spotBonus[2]);
+    expect(spotBonusMultiplier(null)).toBe(1);
+  });
+
+  it("resolveSpot maps elapsed time → spot + bonus deterministically", () => {
+    const start = 0;
+    const lock = 1000;
+    expect(elapsedFrac(start, lock, 500)).toBeCloseTo(0.5, 5);
+    expect(resolveSpot(start, lock, 0)).toEqual({ spot: 1, filled: 0, bonus: U.spotBonus[0] });
+    // just past the first fill threshold → spot #1 taken by a mock
+    const t1 = U.spotFillFracs[0]! * lock + 1;
+    expect(resolveSpot(start, lock, t1).spot).toBe(2);
+    // after the last threshold → no premium spot, no bonus
+    expect(resolveSpot(start, lock, lock)).toEqual({ spot: null, filled: 3, bonus: 1 });
+  });
+
+  it("fill schedule assigns one labeled mock per spot (stable per seed)", () => {
+    const a = fillSchedule("contest-123");
+    const b = fillSchedule("contest-123");
+    expect(a.length).toBe(U.maxSpots);
+    expect(a.map((s) => s.spot)).toEqual([1, 2, 3]);
+    expect(a.map((s) => s.mock.id)).toEqual(b.map((s) => s.mock.id)); // deterministic
+    a.forEach((s) => expect(MOCK_PLAYERS.some((m) => m.id === s.mock.id)).toBe(true));
+  });
+});
+
+describe("spot bonus applied to scoring (SCORE only, winnings only)", () => {
+  it("boosts winnings for a top spot, never the loss", () => {
+    const base = scorePractice(["a", "a", "a"], ["a", "a", "a"], 50);
+    const boosted = scorePractice(["a", "a", "a"], ["a", "a", "a"], 50, 1.6);
+    expect(boosted.creditedCoins).toBe(Math.round(base.creditedCoins * 1.6));
+    expect(boosted.net).toBe(boosted.creditedCoins - 50);
+    // A losing card credits 0 regardless of any spot multiplier.
+    const lost = scorePractice(["a", "a", "b", "b", "b"], ["a", "b", "a", "a", "a"], 50, 1.6);
+    expect(lost.creditedCoins).toBe(0);
+    expect(lost.net).toBe(-50);
   });
 });
 

@@ -13,6 +13,8 @@ import {
 import { generateSlate } from "@/lib/ai/aiEngine";
 import { CATEGORIES } from "@/lib/categories";
 import { getAiCreator } from "@/lib/practice/creators";
+import { PRACTICE_CONFIG } from "@/lib/practice/config";
+import { resolveSpot } from "@/lib/practice/urgency";
 import {
   difficultyForTier,
   rankForCoins,
@@ -157,6 +159,15 @@ export async function createPracticeContest(
     Math.random() * 100 < l.probA ? "a" : "b",
   );
 
+  // Start the urgency countdown at creation (fresh slates are played immediately).
+  const nowMs = Date.now();
+  const urgency = PRACTICE_CONFIG.urgency.enabled
+    ? {
+        urgencyStartAt: nowMs,
+        urgencyLockAt: nowMs + PRACTICE_CONFIG.urgency.countdownMs,
+      }
+    : {};
+
   const ref = adminDb().collection(COLLECTIONS.practiceContests).doc();
   const doc: PracticeContestDoc = {
     hostId: creator ? creator.id : profile.id,
@@ -172,6 +183,7 @@ export async function createPracticeContest(
     outcomes,
     entryCount: 0,
     ...(creator ? { aiCreatorId: creator.id } : {}),
+    ...urgency,
     createdAt: FieldValue.serverTimestamp() as never,
   };
   await ref.set(doc);
@@ -196,6 +208,12 @@ export type SubmitPracticeResult =
       tierUp: boolean;
       newTierKey: string;
       newTierLabel: string;
+      /** Spot race: the top spot (1–3) the player claimed, or null if all gone. */
+      spot: number | null;
+      /** How many top spots were already filled by mocks at submit time. */
+      spotsFilled: number;
+      /** Winnings multiplier applied for the claimed spot (1.0 if none). */
+      spotBonus: number;
     }
   | { ok: false; error: string };
 
@@ -245,7 +263,14 @@ export async function submitPracticePicks(
       );
       if (claim.coins < stake) throw new Error("BUSTED"); // wait for the daily refill
 
-      const r = scorePractice(picks, contest.outcomes, stake);
+      // Spot race: how many premium spots remain at this instant decides which
+      // spot the player claims and how much their winnings are boosted (SCORE).
+      const spotRes =
+        contest.urgencyStartAt != null && contest.urgencyLockAt != null
+          ? resolveSpot(contest.urgencyStartAt, contest.urgencyLockAt, now)
+          : { spot: null, filled: 0, bonus: 1 };
+
+      const r = scorePractice(picks, contest.outcomes, stake, spotRes.bonus);
       const recent = [...(user.practiceRecent ?? []), r.won].slice(
         -PRACTICE_RECENT_WINDOW,
       );
@@ -290,6 +315,7 @@ export async function submitPracticePicks(
         newBalance,
         tierUp: rankAfter.index > rankBefore.index,
         newTier: rankAfter.tier,
+        spotRes,
       };
     });
   } catch (err) {
@@ -301,7 +327,7 @@ export async function submitPracticePicks(
     return { ok: false, error: "Could not submit your picks" };
   }
 
-  const { r, streak, newBalance, tierUp, newTier } = result;
+  const { r, streak, newBalance, tierUp, newTier, spotRes } = result;
   return {
     ok: true,
     correct: r.correct,
@@ -318,6 +344,9 @@ export async function submitPracticePicks(
     tierUp,
     newTierKey: newTier.key,
     newTierLabel: newTier.label,
+    spot: spotRes.spot,
+    spotsFilled: spotRes.filled,
+    spotBonus: spotRes.bonus,
   };
 }
 

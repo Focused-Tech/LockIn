@@ -28,6 +28,9 @@ export interface PlayedResult {
   newTierLabel: string;
   /** Per-leg outcomes, in slate order — drives the reveal. */
   revealLegs: RevealLeg[];
+  /** Spot race: the top spot (1–3) claimed, the winnings multiplier applied. */
+  spot: number | null;
+  spotBonus: number;
 }
 
 type Kind = "win" | "nearmiss" | "loss";
@@ -354,6 +357,14 @@ export function PracticeResultAnimation({
                     coins
                   </span>
                 </p>
+
+                {/* Spot race payoff — the spot you beat the bots to boosted your score */}
+                {result.won && result.spot != null && result.spotBonus > 1 && (
+                  <p className="practice-spot-claim mt-3 inline-block rounded-full border border-live/50 bg-[rgba(245,166,35,0.12)] px-3 py-1 text-sm font-bold text-live">
+                    ⭐ Spot #{result.spot} · +
+                    {Math.round((result.spotBonus - 1) * 100)}% score bonus
+                  </p>
+                )}
 
                 {result.won && result.streak > 1 && (
                   <p

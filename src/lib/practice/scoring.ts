@@ -46,6 +46,9 @@ export function scorePractice(
   picks: Choice[],
   outcomes: Choice[],
   stake: number,
+  /** Spot-race winnings multiplier (≥1). Landing a top spot boosts the winnings
+   *  (SCORE only); applied to credited coins, never to the returned stake. */
+  winningsMultiplier = 1,
 ): PracticeResult {
   const legs = outcomes.length;
   const hits = outcomes.map((o, i) => picks[i] === o);
@@ -61,6 +64,10 @@ export function scorePractice(
     // Pro-rated between the threshold (small) and perfect (full).
     const frac = (correct - threshold + 1) / (legs - threshold + 1);
     creditedCoins = Math.round(gross * 0.5 * frac);
+  }
+  // The spot bonus scales actual winnings (not losses — 0 stays 0).
+  if (winningsMultiplier !== 1 && creditedCoins > 0) {
+    creditedCoins = Math.round(creditedCoins * winningsMultiplier);
   }
   const net = creditedCoins - stake;
 

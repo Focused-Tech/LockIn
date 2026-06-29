@@ -188,6 +188,14 @@ export interface PracticeContestDoc {
    * player-hosted contests; later, real creators are hosted by their real uid.
    */
   aiCreatorId?: string;
+  /**
+   * URGENCY (countdown + spot race) — epoch ms when the countdown started
+   * (≈ creation) and when it locks. Labeled mock players claim the top spots as
+   * the clock winds down; the spot a player lands in scales their SCORE payout.
+   * Absent on contests created before the mechanic shipped (treated as no race).
+   */
+  urgencyStartAt?: number;
+  urgencyLockAt?: number;
   /** Tier the contest was scaled to. */
   tier: string;
   /** Practice-coin stake every entrant puts up (SCORE only). */
