@@ -12,6 +12,7 @@ import {
 } from "@/lib/firebase/types";
 import { generateSlate } from "@/lib/ai/aiEngine";
 import { CATEGORIES } from "@/lib/categories";
+import { getAiCreator } from "@/lib/practice/creators";
 import {
   difficultyForTier,
   rankForCoins,
@@ -56,6 +57,9 @@ export type CreatePracticeInput = {
   mode: "ai" | "manual";
   topic?: string;
   manualLegs?: ManualLeg[];
+  /** When set to a known `ai_*` id, the slate is hosted by that AI creator and
+   *  generated in their style (always AI mode). */
+  creatorId?: string;
 };
 
 export type CreatePracticeResult =
@@ -74,9 +78,15 @@ export async function createPracticeContest(
   const profile = await getCurrentUserProfile();
   if (!profile) return { ok: false, error: "Not signed in" };
 
-  const category =
+  // An AI creator hosts in their own style (always AI mode); steer the category
+  // to one they actually cover.
+  const creator = input.creatorId ? getAiCreator(input.creatorId) : undefined;
+  let category =
     CATEGORIES.find((c) => c.name === input.category)?.name ??
     input.category.slice(0, 40);
+  if (creator && !creator.categories.includes(category)) {
+    category = creator.categories[0]!;
+  }
   const rank = rankForCoins(profile.practiceLifetimeCoins ?? 0);
   const tierKey = rank.tier.key as PracticeTierKey;
   const difficulty = difficultyForTier(
@@ -87,7 +97,10 @@ export async function createPracticeContest(
   let legs: PracticeLeg[];
   let title: string;
 
-  if (input.mode === "manual") {
+  // A creator forces AI mode (they host engine-built slates in their style).
+  const mode: "ai" | "manual" = creator ? "ai" : input.mode;
+
+  if (mode === "manual") {
     const raw = (input.manualLegs ?? []).filter(
       (l) => l.question.trim() && l.optionA.trim() && l.optionB.trim(),
     );
@@ -111,7 +124,9 @@ export async function createPracticeContest(
     title = `${category} practice`;
   } else {
     try {
-      const topic = `${input.topic?.trim() || `${category} practice slate`}. Difficulty: ${difficulty.lineStyle}`;
+      // A creator's persona/style steers the lines; otherwise the tier difficulty.
+      const lineStyle = creator ? creator.lineStyle : difficulty.lineStyle;
+      const topic = `${input.topic?.trim() || `${category} practice slate`}. Difficulty: ${lineStyle}`;
       const slate = await generateSlate({ topic, legCount: difficulty.legs });
       if (!slate.legs.length) return { ok: false, error: "AI returned no legs" };
       legs = slate.legs.map((leg, i) => ({
@@ -125,7 +140,9 @@ export async function createPracticeContest(
         line: leg.overUnderLine,
         difficulty: leg.difficulty,
       }));
-      title = `${slate.category || category} practice`;
+      title = creator
+        ? `${creator.name}'s ${slate.category || category} slate`
+        : `${slate.category || category} practice`;
     } catch (err) {
       const code = err instanceof Error ? err.message : "";
       if (code === "AI_NOT_CONFIGURED") {
@@ -142,18 +159,19 @@ export async function createPracticeContest(
 
   const ref = adminDb().collection(COLLECTIONS.practiceContests).doc();
   const doc: PracticeContestDoc = {
-    hostId: profile.id,
-    hostUsername: profile.username,
+    hostId: creator ? creator.id : profile.id,
+    hostUsername: creator ? creator.handle : profile.username,
     title,
     category,
     inviteCode: randCode(),
     status: "open",
-    mode: input.mode,
+    mode,
     tier: tierKey,
     stakeCoins: PRACTICE_DEFAULT_STAKE,
     legs,
     outcomes,
     entryCount: 0,
+    ...(creator ? { aiCreatorId: creator.id } : {}),
     createdAt: FieldValue.serverTimestamp() as never,
   };
   await ref.set(doc);
@@ -331,4 +349,34 @@ export async function refillPractice(): Promise<{
     refillAt: claim.refillAt,
     refilled: claim.refilled,
   };
+}
+
+/**
+ * Follow / unfollow an AI-SIMULATED creator (training opponent). Stored on the
+ * user doc in `followedAiCreators`, kept separate from real-creator follows.
+ * Returns the new follow state. Play-money only — grants nothing of value.
+ */
+export async function toggleFollowAiCreator(
+  creatorId: string,
+): Promise<{ ok: true; following: boolean } | { ok: false; error: string }> {
+  const profile = await getCurrentUserProfile();
+  if (!profile) return { ok: false, error: "Not signed in" };
+  if (!getAiCreator(creatorId)) return { ok: false, error: "Unknown creator" };
+
+  const current = new Set(profile.followedAiCreators ?? []);
+  const following = !current.has(creatorId);
+
+  await adminDb()
+    .collection(COLLECTIONS.users)
+    .doc(profile.id)
+    .set(
+      {
+        followedAiCreators: following
+          ? FieldValue.arrayUnion(creatorId)
+          : FieldValue.arrayRemove(creatorId),
+      },
+      { merge: true },
+    );
+
+  return { ok: true, following };
 }

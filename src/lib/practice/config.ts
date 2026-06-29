@@ -89,5 +89,32 @@ export const PRACTICE_CONFIG = {
     revealBeatMs: 300,
     revealMaxTotalMs: 2_100,
     revealPitchStep: 0.08,
+    /** SLATE LOCK-IN: per-leg "seal" stagger + the minimum time the seal flourish
+     *  is shown before the settlement reveal takes over (so it's always felt). */
+    sealStaggerMs: 55,
+    sealMinMs: 620,
   },
+
+  /** AI-SIMULATED creators (training opponents that seed the arena before real
+   *  creators exist). The label is CLEAR + honestly framed — never disguised as a
+   *  real person — and its prominence is tunable here. */
+  aiCreators: {
+    /** Short tag shown on cards/host lines. */
+    label: "AI",
+    /** Expanded, positive framing. */
+    labelLong: "AI training opponent",
+    tagline: "Sharpen your reads against our AI before you face real creators.",
+    /** Tag prominence: "badge" = clear pill (default), "subtle" = muted text.
+     *  CLEAR by design so players always know AI vs (future) real creators. */
+    labelStyle: "badge" as "badge" | "subtle",
+  },
+
+  /** COLORED LEGS — vivid difficulty palette (escalates teal → amber → cayenne).
+   *  Avoids win-green / loss-red / select-cayenne-fill collisions; cayenne marks
+   *  the hardest legs (on-brand "spicy"). Contrast-checked on the #0A0D12 bg. */
+  legColors: {
+    easy: { label: "Easy", color: "#2DD4BF", bg: "rgba(45,212,191,0.10)", border: "rgba(45,212,191,0.55)" },
+    medium: { label: "Medium", color: "#F5A623", bg: "rgba(245,166,35,0.10)", border: "rgba(245,166,35,0.55)" },
+    hard: { label: "Hard", color: "#FF6A3D", bg: "rgba(255,106,61,0.12)", border: "rgba(255,106,61,0.6)" },
+  } as Record<"easy" | "medium" | "hard", { label: string; color: string; bg: string; border: string }>,
 } as const;

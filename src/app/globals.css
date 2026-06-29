@@ -173,3 +173,47 @@
   100% { transform: scale(1); }
 }
 .practice-pick-pop { animation: practice-pick-pop 0.18s ease-out; }
+
+/* Leg-select flourish — a check/lock that snaps in on the chosen option. */
+@keyframes practice-check-pop {
+  0% { transform: scale(0) rotate(-25deg); opacity: 0; }
+  60% { transform: scale(1.35) rotate(6deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+.practice-check-pop { animation: practice-check-pop 0.19s cubic-bezier(0.2, 1.5, 0.4, 1) both; }
+
+/* A selected leg pulses once in its difficulty colour (--glow). */
+@keyframes practice-leg-glow {
+  0% { box-shadow: 0 0 0 0 var(--glow, rgba(255, 59, 0, 0)); }
+  40% { box-shadow: 0 0 16px 1px var(--glow, rgba(255, 59, 0, 0.5)); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
+}
+.practice-leg-glow { animation: practice-leg-glow 0.4s ease-out; }
+
+/* ── SLATE LOCK-IN — the decisive commit: every leg snaps shut, then a sweep ── */
+
+/* Each leg "seals" — a quick crush + accent ring flash (staggered per leg). */
+@keyframes practice-seal {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 59, 0, 0); }
+  45% { transform: scale(0.94); box-shadow: 0 0 0 2px rgba(255, 59, 0, 0.7); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 59, 0, 0); }
+}
+.practice-seal { animation: practice-seal 0.34s ease-out both; }
+
+/* A light bar sweeps across the whole slate as it locks. */
+@keyframes practice-lockin-sweep {
+  0% { transform: translateX(-120%) skewX(-18deg); opacity: 0; }
+  20% { opacity: 0.9; }
+  100% { transform: translateX(120%) skewX(-18deg); opacity: 0; }
+}
+.practice-lockin-sweep {
+  animation: practice-lockin-sweep 0.62s ease-out forwards;
+}
+
+/* The slate card flashes accent once on lock-in. */
+@keyframes practice-lockin-flash {
+  0% { border-color: var(--tw-border, #1e2a38); }
+  35% { border-color: rgba(255, 59, 0, 0.9); box-shadow: 0 0 24px 1px rgba(255, 59, 0, 0.35); }
+  100% { border-color: #1e2a38; box-shadow: none; }
+}
+.practice-lockin-flash { animation: practice-lockin-flash 0.62s ease-out both; }

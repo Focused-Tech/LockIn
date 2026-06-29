@@ -8,6 +8,7 @@ import {
 } from "@/lib/firebase/types";
 import { rankForCoins, type RankInfo } from "@/lib/practice/tiers";
 import { PRACTICE_START_COINS } from "@/lib/practice/scoring";
+import { getAiCreator } from "@/lib/practice/creators";
 
 export interface PracticeHostedRow {
   id: string;
@@ -74,6 +75,15 @@ export interface PracticeLeaderRow {
 export interface PracticeContestView {
   id: string;
   hostUsername: string;
+  /** Present when an AI-simulated creator hosts this slate (honest labeling). */
+  aiCreator: {
+    name: string;
+    handle: string;
+    avatar: string;
+    persona: string;
+    styleNote: string;
+    accent: string;
+  } | null;
   title: string;
   category: string;
   inviteCode: string;
@@ -130,9 +140,21 @@ export async function fetchPracticeContest(
     }))
     .sort((a, b) => b.score - a.score || b.netCoins - a.netCoins);
 
+  const creator = c.aiCreatorId ? getAiCreator(c.aiCreatorId) : undefined;
+
   return {
     id: snap.id,
     hostUsername: c.hostUsername,
+    aiCreator: creator
+      ? {
+          name: creator.name,
+          handle: creator.handle,
+          avatar: creator.avatar,
+          persona: creator.persona,
+          styleNote: creator.styleNote,
+          accent: creator.accent,
+        }
+      : null,
     title: c.title,
     category: c.category,
     inviteCode: c.inviteCode,

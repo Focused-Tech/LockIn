@@ -143,6 +143,12 @@ export interface UserDoc {
   practiceLifetimeCoins?: number;
   /** Current practice win streak (for streak rewards + the rare funnel nudge). */
   practiceStreak?: number;
+  /**
+   * AI-SIMULATED creators this user follows in PRACTICE mode (ids like `ai_*`).
+   * Kept SEPARATE from `followedCreators` (real creators / rec engine) so the
+   * simulated training roster never leaks into real-creator recommendations.
+   */
+  followedAiCreators?: string[];
   /** Rolling recent practice results (true=win) for the dynamic difficulty tune. */
   practiceRecent?: boolean[];
   /** Epoch ms when the busted player's free DAILY refill becomes claimable. */
@@ -176,6 +182,12 @@ export interface PracticeContestDoc {
   status: PracticeContestStatus;
   /** "ai" = engine-generated (SLATE_MODEL); "manual" = host wrote the legs. */
   mode: "ai" | "manual";
+  /**
+   * Set when this contest is hosted by an AI-SIMULATED creator (training
+   * opponent), e.g. `ai_longshot`. Drives the honest "AI" host label. Absent for
+   * player-hosted contests; later, real creators are hosted by their real uid.
+   */
+  aiCreatorId?: string;
   /** Tier the contest was scaled to. */
   tier: string;
   /** Practice-coin stake every entrant puts up (SCORE only). */

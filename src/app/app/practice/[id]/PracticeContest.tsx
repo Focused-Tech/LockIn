@@ -9,6 +9,7 @@ import type { PracticeContestView } from "@/server/data/practice";
 import { PRACTICE_CONFIG, type PracticeTierKey } from "@/lib/practice/config";
 import { playSound, playLegAdded } from "@/lib/practice/sound";
 import { PracticeMusic } from "@/components/practice/PracticeMusic";
+import { AiBadge } from "@/components/practice/AiBadge";
 import { submitPracticePicks, createPracticeContest } from "../actions";
 import {
   PracticeResultAnimation,
@@ -38,6 +39,7 @@ export function PracticeContest({
   const [picks, setPicks] = useState<Record<string, Choice>>({});
   const [copied, setCopied] = useState(false);
   const [anim, setAnim] = useState<PlayedResult | null>(null);
+  const [sealing, setSealing] = useState(false); // whole-slate lock-in flourish
 
   const played = view.myEntry !== null;
   const allPicked = view.legs.every((l) => picks[l.id]);
@@ -85,7 +87,11 @@ export function PracticeContest({
 
   function submit() {
     setError(null);
-    playSound("locking"); // quickening "locking in" cue
+    // The decisive commit: seal the whole slate (legs snap + sweep + sound),
+    // hold the flourish a beat, then hand off to the settlement reveal.
+    setSealing(true);
+    playSound("lockin");
+    const startedAt = performance.now();
     startTransition(async () => {
       const ordered = view.legs.map((l) => picks[l.id]!) as Choice[];
       const res = await submitPracticePicks(view.id, ordered);
@@ -97,8 +103,18 @@ export function PracticeContest({
           correctLabel: res.outcomes[i] === "a" ? l.optionA : l.optionB,
           hit: res.hits[i] ?? false,
         }));
-        setAnim({ ...res, revealLegs }); // play the juice, then into the next round
-      } else setError(res.error);
+        const wait = Math.max(
+          0,
+          PRACTICE_CONFIG.audio.sealMinMs - (performance.now() - startedAt),
+        );
+        setTimeout(() => {
+          setSealing(false);
+          setAnim({ ...res, revealLegs }); // play the juice, then into next round
+        }, wait);
+      } else {
+        setSealing(false);
+        setError(res.error);
+      }
     });
   }
 
@@ -148,11 +164,30 @@ export function PracticeContest({
           <Pill tone="neutral">practice · play-money</Pill>
         </div>
         <h1 className="text-xl font-semibold">{view.title}</h1>
-        <p className="text-sm text-muted">
-          Hosted by @{view.hostUsername} · {view.entryCount} player
-          {view.entryCount === 1 ? "" : "s"} · {view.stakeCoins} coin stake
-          (score)
-        </p>
+        {view.aiCreator ? (
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted">
+            <span
+              className="flex h-6 w-6 items-center justify-center rounded-full text-sm"
+              style={{
+                backgroundColor: `${view.aiCreator.accent}1F`,
+                border: `1px solid ${view.aiCreator.accent}66`,
+              }}
+            >
+              {view.aiCreator.avatar}
+            </span>
+            <span className="font-medium text-foreground">
+              {view.aiCreator.name}
+            </span>
+            <AiBadge />
+            <span>· {view.entryCount} played · {view.stakeCoins} coin stake (score)</span>
+          </div>
+        ) : (
+          <p className="text-sm text-muted">
+            Hosted by @{view.hostUsername} · {view.entryCount} player
+            {view.entryCount === 1 ? "" : "s"} · {view.stakeCoins} coin stake
+            (score)
+          </p>
+        )}
       </div>
 
       {/* Invite */}
@@ -184,20 +219,51 @@ export function PracticeContest({
 
       {/* Pick card (not yet played, has coins to stake) */}
       {!played && canStake && (
-        <Card className="flex flex-col gap-3">
+        <Card
+          className={
+            "relative flex flex-col gap-3 overflow-hidden " +
+            (sealing ? "practice-lockin-flash" : "")
+          }
+        >
+          {/* Lock-in light sweep across the whole slate */}
+          {sealing && (
+            <div className="practice-lockin-sweep pointer-events-none absolute inset-y-0 left-0 z-10 w-2/5 bg-gradient-to-r from-transparent via-[rgba(255,59,0,0.28)] to-transparent" />
+          )}
+
           {view.legs.map((l, i) => {
             const pick = picks[l.id];
+            const picked = !!pick;
+            const dc = PRACTICE_CONFIG.legColors[l.difficulty];
             return (
               <div
                 key={l.id}
-                className="practice-deal flex flex-col gap-2"
+                className={
+                  "flex flex-col gap-2 rounded-lg border border-l-4 p-3 transition-colors " +
+                  (sealing ? "practice-seal" : "practice-deal")
+                }
                 style={{
-                  animationDelay: `${i * PRACTICE_CONFIG.audio.dealStaggerMs}ms`,
+                  animationDelay: `${
+                    i *
+                    (sealing
+                      ? PRACTICE_CONFIG.audio.sealStaggerMs
+                      : PRACTICE_CONFIG.audio.dealStaggerMs)
+                  }ms`,
+                  borderColor: picked ? dc.border : "#1E2A38",
+                  borderLeftColor: dc.color,
+                  backgroundColor: picked ? dc.bg : undefined,
                 }}
               >
-                <p className="text-sm font-medium">
-                  <span className="text-muted">{i + 1}.</span> {l.question}
-                </p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium">
+                    <span className="text-muted">{i + 1}.</span> {l.question}
+                  </p>
+                  <span
+                    className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
+                    style={{ backgroundColor: dc.bg, color: dc.color }}
+                  >
+                    {dc.label}
+                  </span>
+                </div>
                 <div className="grid grid-cols-2 gap-2">
                   {(["a", "b"] as const).map((side) => {
                     const label = side === "a" ? l.optionA : l.optionB;
@@ -209,6 +275,7 @@ export function PracticeContest({
                         type="button"
                         onClick={() => pickLeg(l.id, side)}
                         aria-pressed={on}
+                        disabled={sealing}
                         className={
                           "flex flex-col gap-0.5 rounded border px-3 py-2 text-left transition duration-100 active:scale-[0.97] " +
                           (on
@@ -216,7 +283,17 @@ export function PracticeContest({
                             : "border-border bg-surface hover:bg-surface-card")
                         }
                       >
-                        <span className="text-sm font-medium">{label}</span>
+                        <span className="flex items-center justify-between gap-1">
+                          <span className="text-sm font-medium">{label}</span>
+                          {on && (
+                            <span
+                              className="practice-check-pop text-sm font-bold text-accent"
+                              aria-hidden
+                            >
+                              ✓
+                            </span>
+                          )}
+                        </span>
                         <span
                           className={
                             "text-xs " + (on ? "text-accent" : "text-muted")
@@ -235,10 +312,14 @@ export function PracticeContest({
           <Button
             variant="accent"
             size="lg"
-            disabled={pending || !allPicked}
+            disabled={pending || sealing || !allPicked}
             onClick={submit}
           >
-            {pending ? "Locking in…" : allPicked ? "Lock in picks" : "Pick every leg"}
+            {pending || sealing
+              ? "Locking in…"
+              : allPicked
+                ? "Lock in picks"
+                : "Pick every leg"}
           </Button>
           <p className="text-center text-[11px] text-muted">
             Coins are score for rank &amp; bragging rights — they buy nothing and

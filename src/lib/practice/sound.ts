@@ -15,6 +15,8 @@ export type SoundName =
   | "tick" // leg selected (tactile)
   | "add" // leg added (pitch ascends with combo length)
   | "locking" // "locking soon" quickening tick
+  | "seal" // a single leg snaps/seals shut during the lock-in flourish
+  | "lockin" // the whole slate seals — the decisive commit moment
   | "reveal" // settlement: a leg lands (pitch rises leg by leg — anticipation)
   | "stamp" // "SO CLOSE" / impact slam
   | "win"

@@ -9,6 +9,7 @@ import { fetchPracticeHome } from "@/server/data/practice";
 import { isBusted } from "@/lib/practice/scoring";
 import { PRACTICE_CONFIG, type PracticeTierKey } from "@/lib/practice/config";
 import { PracticeHomeClient } from "./PracticeHomeClient";
+import { AiCreatorsSection } from "./AiCreatorsSection";
 import { AudioSettings } from "@/components/practice/AudioSettings";
 import { PracticeMusic } from "@/components/practice/PracticeMusic";
 
@@ -104,6 +105,8 @@ export default async function PracticeHomePage() {
         <span className="font-semibold">＋ Host a practice contest</span>
         <span>→</span>
       </Link>
+
+      <AiCreatorsSection following={profile.followedAiCreators ?? []} />
 
       {/* Your hosted contests */}
       {home.hosted.length > 0 && (
