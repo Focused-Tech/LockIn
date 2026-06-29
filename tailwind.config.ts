@@ -25,10 +25,14 @@ const config: Config = {
         muted: "#6B7A8E",
         // Accent (cayenne) — solid value only for text/icons; backgrounds use the
         // translucent tokens below. Never apply as a solid bg fill.
+        // Cayenne. The translucent fill/border are CSS variables so the
+        // "reads brown at low opacity" fix can be switched between variants
+        // (a/b/c) from one place — see ACCENT_VARIANT in src/lib/theme.ts and the
+        // [data-accent] blocks in globals.css. Stays translucent (brand rule).
         accent: {
           DEFAULT: "#FF3B00",
-          soft: "rgba(255,59,0,0.10)",
-          border: "rgba(255,59,0,0.25)",
+          soft: "var(--accent-soft)",
+          border: "var(--accent-border)",
         },
         // Semantic states
         win: "#22C55E",

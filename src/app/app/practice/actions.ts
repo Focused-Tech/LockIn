@@ -1,7 +1,12 @@
 "use server";
 
 import { FieldValue } from "firebase-admin/firestore";
+import { revalidateTag } from "next/cache";
 import { adminDb } from "@/lib/firebase/admin";
+import {
+  PRACTICE_CONTEST_TAG,
+  PRACTICE_HOSTED_TAG,
+} from "@/server/data/practice";
 import { getCurrentUserProfile } from "@/lib/firebase/session";
 import {
   COLLECTIONS,
@@ -187,6 +192,8 @@ export async function createPracticeContest(
     createdAt: FieldValue.serverTimestamp() as never,
   };
   await ref.set(doc);
+  // New contest → the host's cached "Your contests" list is stale.
+  revalidateTag(PRACTICE_HOSTED_TAG);
   return { ok: true, contestId: ref.id, inviteCode: doc.inviteCode };
 }
 
@@ -326,6 +333,9 @@ export async function submitPracticePicks(
       return { ok: false, error: "Out of practice coins — your free refill arrives tomorrow." };
     return { ok: false, error: "Could not submit your picks" };
   }
+
+  // New entry → the contest's cached leaderboard + entry count are stale.
+  revalidateTag(PRACTICE_CONTEST_TAG);
 
   const { r, streak, newBalance, tierUp, newTier, spotRes } = result;
   return {

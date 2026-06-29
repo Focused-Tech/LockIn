@@ -55,11 +55,11 @@ export function JourneyPicker({
 
   return (
     <div className="flex flex-col gap-4 p-6">
-      <header className="flex flex-col items-center gap-3 pt-1">
+      <header className="practice-deal flex flex-col items-center gap-3 pt-1">
         <Logo />
       </header>
 
-      <div className="text-center">
+      <div className="practice-deal text-center" style={{ animationDelay: "50ms" }}>
         <h1 className="text-2xl font-semibold">Your journeys</h1>
         <p className="mt-1 text-sm text-muted">
           Jump back into your feed, or switch lanes — your choice, any time.
@@ -73,7 +73,8 @@ export function JourneyPicker({
           onClick={continueToFeed}
           disabled={pending}
           aria-busy={busy === "continue"}
-          className="flex items-center justify-between rounded-xl border border-accent-border bg-accent-soft p-5 text-left transition-colors disabled:opacity-60"
+          style={{ animationDelay: "100ms" }}
+          className="practice-deal flex items-center justify-between rounded-xl border border-accent-border bg-accent-soft p-5 text-left transition active:scale-[0.98] disabled:opacity-60"
         >
           <span>
             <span className="block text-base font-bold text-accent">
@@ -88,7 +89,10 @@ export function JourneyPicker({
         </button>
       )}
 
-      <p className="pt-1 text-xs font-medium uppercase tracking-wide text-muted">
+      <p
+        className="practice-deal pt-1 text-xs font-medium uppercase tracking-wide text-muted"
+        style={{ animationDelay: "150ms" }}
+      >
         {currentLane ? "Switch journey" : "Choose your journey"}
       </p>
 
@@ -99,6 +103,7 @@ export function JourneyPicker({
         active={currentLane === "beginner"}
         busy={busy === "beginner"}
         disabled={pending}
+        delayMs={190}
         onClick={() => pickLane("beginner")}
       />
 
@@ -109,6 +114,7 @@ export function JourneyPicker({
         active={currentLane === "advanced"}
         busy={busy === "advanced"}
         disabled={pending}
+        delayMs={240}
         onClick={() => pickLane("advanced")}
       />
 
@@ -123,6 +129,7 @@ export function JourneyPicker({
         active={false}
         busy={busy === "creator"}
         disabled={pending}
+        delayMs={290}
         onClick={goCreator}
       />
 
@@ -133,6 +140,7 @@ export function JourneyPicker({
         active={false}
         busy={busy === "practice"}
         disabled={pending}
+        delayMs={340}
         onClick={goPractice}
       />
 
@@ -149,6 +157,7 @@ function JourneyCard({
   active,
   busy,
   disabled,
+  delayMs,
   onClick,
 }: {
   title: string;
@@ -156,6 +165,7 @@ function JourneyCard({
   active: boolean;
   busy: boolean;
   disabled: boolean;
+  delayMs: number;
   onClick: () => void;
 }) {
   return (
@@ -164,8 +174,9 @@ function JourneyCard({
       onClick={onClick}
       disabled={disabled}
       aria-busy={busy}
+      style={{ animationDelay: `${delayMs}ms` }}
       className={
-        "flex flex-col gap-1 rounded-xl border p-5 text-left transition-colors disabled:opacity-60 " +
+        "practice-deal flex flex-col gap-1 rounded-xl border p-5 text-left transition active:scale-[0.98] disabled:opacity-60 " +
         (active
           ? "border-accent-border bg-accent-soft"
           : "border-border bg-surface-card hover:bg-surface")

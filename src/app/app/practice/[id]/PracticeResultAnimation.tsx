@@ -233,7 +233,12 @@ export function PracticeResultAnimation({
           </p>
         </div>
       ) : (
-        <div className="relative z-[3] w-full max-w-sm">
+        <div
+          className={
+            "relative z-[3] w-full max-w-sm" +
+            (nextPending ? " practice-sweep-out" : "") // clear the board for the deal
+          }
+        >
           {/* Leg-by-leg reveal list (carries from reveal → outcome) */}
           <div className="rounded-2xl border border-border bg-surface-card p-5">
             <p className="text-center text-[11px] uppercase tracking-[0.2em] text-muted">

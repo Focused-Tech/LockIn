@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { PwaSetup } from "@/components/pwa/PwaSetup";
+import { ACCENT_VARIANT } from "@/lib/theme";
 
 export const metadata: Metadata = {
   metadataBase: new URL(
@@ -28,7 +29,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" data-accent={ACCENT_VARIANT}>
       <body className="min-h-screen bg-background text-foreground antialiased">
         {children}
         <PwaSetup />

@@ -34,7 +34,7 @@ export default async function PracticeContestPage({
     !isBusted(coins) || (refillAt != null && Date.now() >= refillAt);
 
   return (
-    <div className="flex flex-col gap-5 p-6">
+    <div className="page-enter flex flex-col gap-5 p-6">
       <PracticeContest
         view={view}
         isHost={view.hostUsername === profile.username}

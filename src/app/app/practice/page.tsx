@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { SkillGameDisclaimer } from "@/components/SkillGameDisclaimer";
 import { Card, Pill } from "@/components/ui";
 import { RankBadge } from "@/components/practice/RankBadge";
-import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUserProfile } from "@/lib/firebase/session";
 import { fetchPracticeHome } from "@/server/data/practice";
 import { isBusted } from "@/lib/practice/scoring";
@@ -19,12 +18,12 @@ export default async function PracticeHomePage() {
   const profile = await getCurrentUserProfile();
   if (!profile) redirect("/login");
 
-  const home = await fetchPracticeHome(adminDb(), profile.id, profile);
+  const home = await fetchPracticeHome(profile.id, profile);
   const tierKey = home.rank.tier.key as PracticeTierKey;
   const busted = isBusted(home.practiceCoins);
 
   return (
-    <div className="flex flex-col gap-5 p-6">
+    <div className="page-enter flex flex-col gap-5 p-6">
       <PracticeMusic track="solo" />
       <div>
         <h1 className="text-xl font-semibold">Practice arena</h1>

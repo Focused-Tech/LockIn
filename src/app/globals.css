@@ -4,6 +4,28 @@
 
 :root {
   color-scheme: dark;
+
+  /* Accent-fill (translucent cayenne) — default = variant B (warm/brighter, reads
+   * clearly orange, not brown). Overridden per [data-accent] below; switch via
+   * ACCENT_VARIANT in src/lib/theme.ts. Always translucent (brand rule). */
+  --accent-soft: rgba(255, 99, 53, 0.2);
+  --accent-border: rgba(255, 99, 53, 0.55);
+}
+
+/* (a) Same cayenne hue, just raised opacity so less dark shows through. */
+[data-accent="a"] {
+  --accent-soft: rgba(255, 59, 0, 0.18);
+  --accent-border: rgba(255, 59, 0, 0.5);
+}
+/* (b) Warmer/brighter base + raised opacity — the clearest "orange not brown". */
+[data-accent="b"] {
+  --accent-soft: rgba(255, 99, 53, 0.2);
+  --accent-border: rgba(255, 99, 53, 0.55);
+}
+/* (c) Subtle translucent fill + a crisp near-solid orange border (outline glow). */
+[data-accent="c"] {
+  --accent-soft: rgba(255, 59, 0, 0.12);
+  --accent-border: rgba(255, 107, 53, 0.9);
 }
 
 @layer base {
@@ -234,3 +256,19 @@
   100% { transform: scale(1) rotate(0); opacity: 1; }
 }
 .practice-spot-claim { animation: practice-spot-claim 0.4s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+
+/* ── Screen-to-screen transitions — a snappy "deal-in" on page mount so moving
+ *    between arena screens (and into the choose picker) feels juicy, not a hard
+ *    cut. Matches the dealer-deal easing family. Sub-second. ───────────────── */
+@keyframes page-enter {
+  0% { opacity: 0; transform: translateY(10px) scale(0.992); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.page-enter { animation: page-enter 0.34s cubic-bezier(0.2, 0.8, 0.3, 1) both; }
+
+/* Between-round "sweep away" — the outgoing slate wipes before the next deals in. */
+@keyframes practice-sweep-out {
+  0% { opacity: 1; transform: translateX(0) scale(1); }
+  100% { opacity: 0; transform: translateX(-26px) scale(0.97); }
+}
+.practice-sweep-out { animation: practice-sweep-out 0.26s ease-in both; }

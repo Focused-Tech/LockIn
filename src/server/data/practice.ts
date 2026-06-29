@@ -1,5 +1,7 @@
 import "server-only";
+import { unstable_cache } from "next/cache";
 import type { Firestore } from "firebase-admin/firestore";
+import { adminDb } from "@/lib/firebase/admin";
 import {
   COLLECTIONS,
   type PracticeContestDoc,
@@ -9,6 +11,10 @@ import {
 import { rankForCoins, type RankInfo } from "@/lib/practice/tiers";
 import { PRACTICE_START_COINS } from "@/lib/practice/scoring";
 import { getAiCreator } from "@/lib/practice/creators";
+
+/** Cache tags (bust on writes — see practice actions). */
+export const PRACTICE_HOSTED_TAG = "practice-hosted";
+export const PRACTICE_CONTEST_TAG = "practice-contest";
 
 export interface PracticeHostedRow {
   id: string;
@@ -27,17 +33,19 @@ export interface PracticeHome {
   hosted: PracticeHostedRow[];
 }
 
-/** Practice home: rank/coins/streak + the contests this user hosts. */
-export async function fetchPracticeHome(
-  db: Firestore,
-  uid: string,
-  user: { practiceCoins?: number; practiceLifetimeCoins?: number; practiceStreak?: number },
-): Promise<PracticeHome> {
-  const snap = await db
+/**
+ * The contests a given user hosts — the only repeatable query behind the arena
+ * home. Cached per-uid (short revalidate, busted on host) so repeat loads skip
+ * the Firestore round-trip. Mirrors the Explore feed cache: shared/repeatable
+ * read cached; live/private state reconciled by the page (rank/coins come from
+ * the already-loaded user doc, not from here).
+ */
+async function fetchHostedContests(uid: string): Promise<PracticeHostedRow[]> {
+  const snap = await adminDb()
     .collection(COLLECTIONS.practiceContests)
     .where("hostId", "==", uid)
     .get();
-  const hosted: PracticeHostedRow[] = snap.docs
+  return snap.docs
     .map((d) => {
       const c = d.data() as PracticeContestDoc;
       return {
@@ -52,6 +60,20 @@ export async function fetchPracticeHome(
     })
     .sort((a, b) => b.createdAtMs - a.createdAtMs)
     .map(({ createdAtMs: _drop, ...row }) => row);
+}
+
+const fetchHostedContestsCached = unstable_cache(
+  (uid: string) => fetchHostedContests(uid),
+  ["practice-hosted-contests"],
+  { revalidate: 30, tags: [PRACTICE_HOSTED_TAG] },
+);
+
+/** Practice home: rank/coins/streak (from the user doc) + cached hosted list. */
+export async function fetchPracticeHome(
+  uid: string,
+  user: { practiceCoins?: number; practiceLifetimeCoins?: number; practiceStreak?: number },
+): Promise<PracticeHome> {
+  const hosted = await fetchHostedContestsCached(uid);
 
   return {
     practiceCoins: user.practiceCoins ?? PRACTICE_START_COINS,
@@ -108,27 +130,39 @@ export interface PracticeContestView {
 }
 
 /**
- * A practice contest shaped for a player. Hidden outcomes are included ONLY when
- * the requesting user has already submitted (they've earned the reveal); other
- * players never receive the outcomes before they play.
+ * SHARED contest core — identical for every viewer: the contest doc (title,
+ * legs, host, urgency window) + the full leaderboard. Includes the hidden
+ * `outcomes` (SERVER-ONLY; this cache lives in server memory and outcomes only
+ * ever reach a client via `reveal`, after they've played). Cached per-contest
+ * with a short revalidate so the leaderboard N-read isn't re-run every request.
  */
-export async function fetchPracticeContest(
-  db: Firestore,
+interface PracticeContestCore {
+  id: string;
+  hostUsername: string;
+  aiCreator: PracticeContestView["aiCreator"];
+  title: string;
+  category: string;
+  inviteCode: string;
+  status: string;
+  mode: string;
+  tier: string;
+  stakeCoins: number;
+  legs: PracticeLeg[];
+  urgency: { startAt: number; lockAt: number } | null;
+  entryCount: number;
+  outcomes: ("a" | "b")[];
+  leaderboard: PracticeLeaderRow[];
+}
+
+async function fetchPracticeContestCore(
   contestId: string,
-  uid: string,
-): Promise<PracticeContestView | null> {
-  const ref = db.collection(COLLECTIONS.practiceContests).doc(contestId);
+): Promise<PracticeContestCore | null> {
+  const ref = adminDb().collection(COLLECTIONS.practiceContests).doc(contestId);
   const snap = await ref.get();
   if (!snap.exists) return null;
   const c = snap.data() as PracticeContestDoc;
 
-  const [mineSnap, entriesSnap] = await Promise.all([
-    ref.collection(COLLECTIONS.practiceEntries).doc(uid).get(),
-    ref.collection(COLLECTIONS.practiceEntries).get(),
-  ]);
-
-  const mine = mineSnap.exists ? (mineSnap.data() as PracticeEntryDoc) : null;
-
+  const entriesSnap = await ref.collection(COLLECTIONS.practiceEntries).get();
   const leaderboard: PracticeLeaderRow[] = entriesSnap.docs
     .map((d) => d.data() as PracticeEntryDoc)
     .map((e) => ({
@@ -170,16 +204,51 @@ export async function fetchPracticeContest(
         ? { startAt: c.urgencyStartAt, lockAt: c.urgencyLockAt }
         : null,
     entryCount: c.entryCount ?? 0,
+    outcomes: c.outcomes,
+    leaderboard,
+  };
+}
+
+const fetchPracticeContestCoreCached = unstable_cache(
+  (contestId: string) => fetchPracticeContestCore(contestId),
+  ["practice-contest-core"],
+  { revalidate: 15, tags: [PRACTICE_CONTEST_TAG] },
+);
+
+/**
+ * A practice contest shaped for a player. The shared core (doc + leaderboard) is
+ * cached; the requesting user's OWN entry is fetched fresh (uncached) so it's
+ * never cross-contaminated between users. Hidden outcomes are surfaced ONLY via
+ * `reveal`, and only once this user has submitted (they've earned the reveal).
+ */
+export async function fetchPracticeContest(
+  db: Firestore,
+  contestId: string,
+  uid: string,
+): Promise<PracticeContestView | null> {
+  const core = await fetchPracticeContestCoreCached(contestId);
+  if (!core) return null;
+
+  const mineSnap = await db
+    .collection(COLLECTIONS.practiceContests)
+    .doc(contestId)
+    .collection(COLLECTIONS.practiceEntries)
+    .doc(uid)
+    .get();
+  const mine = mineSnap.exists ? (mineSnap.data() as PracticeEntryDoc) : null;
+
+  const { outcomes, ...shared } = core;
+  return {
+    ...shared,
     myEntry: mine
       ? { picks: mine.picks, correct: mine.correct, netCoins: mine.netCoins, won: mine.won }
       : null,
     reveal: mine
       ? {
-          outcomes: c.outcomes,
-          hits: c.outcomes.map((o, i) => mine.picks[i] === o),
+          outcomes,
+          hits: outcomes.map((o, i) => mine.picks[i] === o),
         }
       : null,
-    leaderboard,
   };
 }
 

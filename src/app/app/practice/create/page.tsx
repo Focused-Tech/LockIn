@@ -16,7 +16,7 @@ export default async function CreatePracticePage() {
   const difficulty = difficultyForTier(rank.tier.key as PracticeTierKey);
 
   return (
-    <div className="flex flex-col gap-5 p-6">
+    <div className="page-enter flex flex-col gap-5 p-6">
       <div>
         <h1 className="text-xl font-semibold">Host a practice contest</h1>
         <p className="text-sm text-muted">
