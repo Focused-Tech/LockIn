@@ -97,6 +97,21 @@ export default async function PracticeHomePage() {
         refillAt={profile.practiceRefillAt ?? null}
       />
 
+      {/* Arena — the multi-slate round. GREEN (money/play "go"), not orange: the
+          one orange primary on this screen is "Host" below. */}
+      <Link
+        href="/app/practice/arena"
+        className="flex items-center justify-between rounded-xl border border-[rgba(34,197,94,0.35)] bg-[rgba(34,197,94,0.10)] p-4 text-win"
+      >
+        <span className="flex flex-col">
+          <span className="font-semibold">▶ Enter the Arena</span>
+          <span className="text-xs text-muted">
+            Pick categories, stack multiple slates, play them back-to-back.
+          </span>
+        </span>
+        <span>→</span>
+      </Link>
+
       <Link
         href="/app/practice/create"
         className="flex items-center justify-between rounded-xl border border-accent-border bg-accent-soft p-4 text-accent"

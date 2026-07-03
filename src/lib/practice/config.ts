@@ -145,4 +145,22 @@ export const PRACTICE_CONFIG = {
     /** Min remaining-ms gap between urgency "tick" SFX (throttle near zero). */
     tickEveryMs: 1_000,
   },
+
+  /** ARENA — the multi-slate round: select several slates, play them back-to-back,
+   *  then a batched reveal in event-time order. All timings tunable here. */
+  arena: {
+    /** Max slates a single round may bundle (keeps a round bounded + snappy). */
+    maxSlates: 6,
+    /** Pause between finishing one slate and the next dealing in (ms). */
+    interSlateCountdownMs: 5_000,
+    /** Suspense countdown before each reveal fires (ms) — the "3…2…1" beat.
+     *  Kept in the 5–10s design band; per-tick cadence derived from it. */
+    revealSuspenseMs: 6_000,
+    /** Ticks shown in the suspense countdown (e.g. 3 → "3…2…1"). */
+    revealSuspenseTicks: 3,
+    /** Synthetic event-time spread: selected slates are staggered this far apart
+     *  (ms) so "reveal in event-time order" has a well-defined ordering even
+     *  though practice slates settle instantly. */
+    eventTimeStepMs: 30 * 60_000,
+  },
 } as const;

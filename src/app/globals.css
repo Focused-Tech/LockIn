@@ -272,3 +272,73 @@
   100% { opacity: 0; transform: translateX(-26px) scale(0.97); }
 }
 .practice-sweep-out { animation: practice-sweep-out 0.26s ease-in both; }
+
+/* ── Leg swipe-away + lock-glyph (leg selection) ──────────────────────────────
+ * On select, the leg card swipes off to the right while the LockGlyph snaps shut
+ * over it. ~360ms — satisfying, not slow. Reduced-motion degrades to a fade
+ * (see the prefers-reduced-motion block at the end of this file). */
+@keyframes leg-swipe-away {
+  0%   { opacity: 1; transform: translateX(0) rotate(0deg); }
+  35%  { opacity: 1; transform: translateX(2%) rotate(-1deg); }
+  100% { opacity: 0; transform: translateX(118%) rotate(5deg); }
+}
+.leg-swiping { animation: leg-swipe-away 0.36s cubic-bezier(0.4, 0, 0.7, 0.2) both; }
+
+@keyframes lock-glyph-pop {
+  0%   { opacity: 0; transform: scale(0.5); }
+  55%  { opacity: 1; transform: scale(1.14); }
+  80%  { transform: scale(0.96); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.lock-glyph { animation: lock-glyph-pop 0.34s cubic-bezier(0.2, 1.3, 0.35, 1) both; }
+
+@keyframes lock-shackle-close {
+  0%   { transform: translateY(-3px); }
+  70%  { transform: translateY(1px); }
+  100% { transform: translateY(0); }
+}
+.lock-shackle {
+  transform-origin: center;
+  animation: lock-shackle-close 0.3s cubic-bezier(0.2, 1.4, 0.4, 1) 0.04s both;
+}
+
+/* ── Spots-locked: bot enters → flashes → collapses into the running list ─────── */
+@keyframes bot-flash {
+  0%   { background-color: var(--accent-soft); box-shadow: 0 0 0 1px var(--accent-border); }
+  100% { background-color: transparent; box-shadow: 0 0 0 1px transparent; }
+}
+.bot-flash { animation: bot-flash 0.55s ease-out both; }
+
+/* Collapsing a freshly-revealed bot from the tall "top slot" into a compact list
+ * row. Height/padding/opacity transition together (JS toggles the class). */
+.bot-row {
+  transition: max-height 0.34s ease, padding 0.34s ease, opacity 0.34s ease,
+    margin 0.34s ease;
+}
+
+/* ── Arena reveal suspense countdown ("3 … 2 … 1") ────────────────────────────── */
+@keyframes arena-tick {
+  0%   { opacity: 0; transform: scale(1.7); }
+  30%  { opacity: 1; transform: scale(1); }
+  100% { opacity: 0.25; transform: scale(0.9); }
+}
+.arena-tick { animation: arena-tick var(--tick, 1s) ease-out both; }
+
+/* ── prefers-reduced-motion — respect the OS setting everywhere ────────────────
+ * Kills every decorative keyframe animation (pops, pulses, sweeps, coin rain,
+ * bot flashes, suspense ticks). Large transform motions become instant; the leg
+ * swipe degrades to a plain opacity fade (the spec's reduced-motion fallback). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+  }
+  .leg-swiping {
+    opacity: 0 !important;
+    transition: opacity 0.2s ease !important;
+  }
+  .bot-row {
+    transition: opacity 0.2s ease !important;
+  }
+}

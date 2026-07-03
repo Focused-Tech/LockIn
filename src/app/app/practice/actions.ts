@@ -70,7 +70,18 @@ export type CreatePracticeInput = {
 };
 
 export type CreatePracticeResult =
-  | { ok: true; contestId: string; inviteCode: string }
+  | {
+      ok: true;
+      contestId: string;
+      inviteCode: string;
+      /** The generated/host legs — so a client that just created this contest can
+       *  render the pick surface without a second round-trip (used by the Arena's
+       *  sequential play). Never carries the hidden outcomes. */
+      legs: PracticeLeg[];
+      /** Countdown + spot-race window for the fresh contest, or null if disabled. */
+      urgency: { startAt: number; lockAt: number } | null;
+      stakeCoins: number;
+    }
   | { ok: false; error: string };
 
 /**
@@ -194,7 +205,16 @@ export async function createPracticeContest(
   await ref.set(doc);
   // New contest → the host's cached "Your contests" list is stale.
   revalidateTag(PRACTICE_HOSTED_TAG);
-  return { ok: true, contestId: ref.id, inviteCode: doc.inviteCode };
+  return {
+    ok: true,
+    contestId: ref.id,
+    inviteCode: doc.inviteCode,
+    legs,
+    urgency: PRACTICE_CONFIG.urgency.enabled
+      ? { startAt: nowMs, lockAt: nowMs + PRACTICE_CONFIG.urgency.countdownMs }
+      : null,
+    stakeCoins: doc.stakeCoins,
+  };
 }
 
 export type SubmitPracticeResult =

@@ -7,9 +7,10 @@ import { Button, Card, Pill } from "@/components/ui";
 import { RankBadge } from "@/components/practice/RankBadge";
 import type { PracticeContestView } from "@/server/data/practice";
 import { PRACTICE_CONFIG, type PracticeTierKey } from "@/lib/practice/config";
-import { playSound, playLegAdded } from "@/lib/practice/sound";
+import { playSound } from "@/lib/practice/sound";
 import { PracticeMusic } from "@/components/practice/PracticeMusic";
 import { AiBadge } from "@/components/practice/AiBadge";
+import { LegPicker } from "@/components/practice/LegPicker";
 import { SpotRace } from "./SpotRace";
 import { submitPracticePicks, createPracticeContest } from "../actions";
 import {
@@ -38,20 +39,11 @@ export function PracticeContest({
   const [error, setError] = useState<string | null>(null);
   const [nextError, setNextError] = useState<string | null>(null);
   const [picks, setPicks] = useState<Record<string, Choice>>({});
-  const [copied, setCopied] = useState(false);
   const [anim, setAnim] = useState<PlayedResult | null>(null);
   const [sealing, setSealing] = useState(false); // whole-slate lock-in flourish
 
   const played = view.myEntry !== null;
   const allPicked = view.legs.every((l) => picks[l.id]);
-
-  // Leg selected → tactile tick; a NEW leg added → "add" with ascending pitch.
-  const pickLeg = (id: string, side: Choice) => {
-    const isNew = !picks[id];
-    setPicks((p) => ({ ...p, [id]: side }));
-    if (isNew) playLegAdded(Object.keys(picks).length + 1);
-    else playSound("tick");
-  };
 
   // Funnel nudge: earned + rare. Only after a WIN, and capped per session via
   // PRACTICE_CONFIG.nudge.perSessionCap so it's never naggy.
@@ -70,21 +62,6 @@ export function PracticeContest({
       setShowNudge(true);
     }
   }, [nudgeBase]);
-
-  const shareLink =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/app/practice/${view.id}`
-      : "";
-
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(shareLink);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      /* clipboard blocked */
-    }
-  };
 
   function submit() {
     setError(null);
@@ -191,19 +168,6 @@ export function PracticeContest({
         )}
       </div>
 
-      {/* Invite */}
-      <Card className="flex items-center justify-between gap-2">
-        <div className="min-w-0">
-          <p className="text-xs text-muted">Invite friends — code</p>
-          <p className="text-lg font-bold tracking-widest text-accent">
-            {view.inviteCode}
-          </p>
-        </div>
-        <Button variant="neutral" size="sm" onClick={copy}>
-          {copied ? "Copied" : "Copy link"}
-        </Button>
-      </Card>
-
       {/* Busted — can browse + see the leaderboard, just can't stake until refill */}
       {!played && !canStake && (
         <Card className="flex flex-col gap-1.5 border-loss-border bg-loss-soft">
@@ -241,84 +205,9 @@ export function PracticeContest({
             <div className="practice-lockin-sweep pointer-events-none absolute inset-y-0 left-0 z-10 w-2/5 bg-gradient-to-r from-transparent via-[rgba(255,59,0,0.28)] to-transparent" />
           )}
 
-          {view.legs.map((l, i) => {
-            const pick = picks[l.id];
-            const picked = !!pick;
-            const dc = PRACTICE_CONFIG.legColors[l.difficulty];
-            return (
-              <div
-                key={l.id}
-                className={
-                  "flex flex-col gap-2 rounded-lg border border-l-4 p-3 transition-colors " +
-                  (sealing ? "practice-seal" : "practice-deal")
-                }
-                style={{
-                  animationDelay: `${
-                    i *
-                    (sealing
-                      ? PRACTICE_CONFIG.audio.sealStaggerMs
-                      : PRACTICE_CONFIG.audio.dealStaggerMs)
-                  }ms`,
-                  borderColor: picked ? dc.border : "#1E2A38",
-                  borderLeftColor: dc.color,
-                  backgroundColor: picked ? dc.bg : undefined,
-                }}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-medium">
-                    <span className="text-muted">{i + 1}.</span> {l.question}
-                  </p>
-                  <span
-                    className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
-                    style={{ backgroundColor: dc.bg, color: dc.color }}
-                  >
-                    {dc.label}
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {(["a", "b"] as const).map((side) => {
-                    const label = side === "a" ? l.optionA : l.optionB;
-                    const prob = side === "a" ? l.probA : l.probB;
-                    const on = pick === side;
-                    return (
-                      <button
-                        key={side}
-                        type="button"
-                        onClick={() => pickLeg(l.id, side)}
-                        aria-pressed={on}
-                        disabled={sealing}
-                        className={
-                          "flex flex-col gap-0.5 rounded border px-3 py-2 text-left transition duration-100 active:scale-[0.97] " +
-                          (on
-                            ? "practice-pick-pop border-accent-border bg-accent-soft"
-                            : "border-border bg-surface hover:bg-surface-card")
-                        }
-                      >
-                        <span className="flex items-center justify-between gap-1">
-                          <span className="text-sm font-medium">{label}</span>
-                          {on && (
-                            <span
-                              className="practice-check-pop text-sm font-bold text-accent"
-                              aria-hidden
-                            >
-                              ✓
-                            </span>
-                          )}
-                        </span>
-                        <span
-                          className={
-                            "text-xs " + (on ? "text-accent" : "text-muted")
-                          }
-                        >
-                          {prob}%
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
+          {/* Legs scroll as a list; picking a side swipes the card away under a
+              closing lock (LegPicker). Picks flow up to drive lock-in. */}
+          <LegPicker legs={view.legs} onChange={setPicks} disabled={sealing} />
           {error && <p className="text-sm text-loss">{error}</p>}
           <Button
             variant="accent"

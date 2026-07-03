@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button, Card } from "@/components/ui";
 import { AiBadge } from "@/components/practice/AiBadge";
 import { AI_CREATORS, type AiCreator } from "@/lib/practice/creators";
+import { playstyleTint } from "@/lib/practice/tints";
 import { PRACTICE_CONFIG } from "@/lib/practice/config";
 import { playSound } from "@/lib/practice/sound";
 import { createPracticeContest, toggleFollowAiCreator } from "./actions";
@@ -131,8 +132,14 @@ function CreatorCard({
   onToggle: () => void;
   onPlay: () => void;
 }) {
+  // Outline tinted by PLAYSTYLE lean (favorites=teal / balanced=amber /
+  // underdog=red) — carries the creator's style as information, not brand orange.
+  const tint = playstyleTint(c.difficulty);
   return (
-    <Card className="flex flex-col gap-2.5">
+    <Card
+      className="flex flex-col gap-2.5 border-l-4"
+      style={{ borderColor: tint.border, borderLeftColor: tint.color }}
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2.5">
           <span
@@ -161,11 +168,11 @@ function CreatorCard({
           className={
             "shrink-0 rounded-full border px-3 py-1 text-xs font-medium transition active:scale-95 " +
             (following
-              ? "border-border bg-surface text-muted hover:text-foreground"
-              : "border-accent-border bg-accent-soft text-accent")
+              ? "border-[rgba(34,197,94,0.35)] bg-[rgba(34,197,94,0.10)] text-win"
+              : "border-border bg-transparent text-foreground hover:bg-surface-card")
           }
         >
-          {following ? "Following" : "Follow"}
+          {following ? "Following ✓" : "Follow"}
         </button>
       </div>
 
@@ -174,7 +181,7 @@ function CreatorCard({
       <div className="flex flex-wrap items-center gap-1.5">
         <span
           className="rounded-full px-2 py-0.5 text-[11px] font-medium"
-          style={{ backgroundColor: `${c.accent}1F`, color: c.accent }}
+          style={{ backgroundColor: tint.soft, color: tint.color }}
         >
           {c.styleNote}
         </span>
@@ -189,7 +196,7 @@ function CreatorCard({
       </div>
 
       <Button
-        variant="accent"
+        variant="win"
         size="sm"
         className="w-full"
         disabled={playing}

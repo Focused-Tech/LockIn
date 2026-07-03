@@ -65,7 +65,8 @@
       "Bash(npx vercel *)",
       "Bash(adb devices *)",
       "Bash(git add *)",
-      "Bash(git commit -q -m 'Backup: pre-removal of leftover First pick onboarding step *)"
+      "Bash(git commit -q -m 'Backup: pre-removal of leftover First pick onboarding step *)",
+      "Bash(git commit -q -m ' *)"
     ]
   }
 }

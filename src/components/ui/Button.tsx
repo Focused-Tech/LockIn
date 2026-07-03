@@ -2,7 +2,7 @@ import { forwardRef, type ButtonHTMLAttributes } from "react";
 import Link, { type LinkProps } from "next/link";
 import { cn } from "@/lib/utils";
 
-type Variant = "accent" | "rush" | "ai" | "neutral" | "ghost";
+type Variant = "accent" | "win" | "rush" | "ai" | "neutral" | "ghost";
 type Size = "sm" | "md" | "lg";
 
 /**
@@ -13,6 +13,9 @@ type Size = "sm" | "md" | "lg";
 const variantStyles: Record<Variant, string> = {
   accent:
     "bg-accent-soft text-accent border border-accent-border hover:bg-[rgba(255,59,0,0.16)]",
+  // Green = money / prize / "go play". Translucent, per the brand rule.
+  win:
+    "bg-[rgba(34,197,94,0.10)] text-win border border-[rgba(34,197,94,0.35)] hover:bg-[rgba(34,197,94,0.16)]",
   rush:
     "bg-rush-soft text-rush border border-rush-border hover:bg-[rgba(155,93,229,0.16)]",
   ai:

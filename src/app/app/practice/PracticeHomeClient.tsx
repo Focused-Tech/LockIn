@@ -63,7 +63,7 @@ export function PracticeHomeClient({
                 Your daily refill is ready 🎁
               </span>
               <Button
-                variant="accent"
+                variant="win"
                 size="sm"
                 disabled={pending}
                 onClick={claim}
@@ -97,7 +97,7 @@ export function PracticeHomeClient({
           />
         </label>
         <Button
-          variant="accent"
+          variant="neutral"
           disabled={pending || code.trim().length < 4}
           onClick={join}
         >
