@@ -15,6 +15,25 @@ import { setJourneyLane } from "@/app/app/beginner/actions";
  * so it just navigates to the creator dashboard (which gates non-creators to the
  * application flow).
  */
+/**
+ * Fox Pit card accents alternate orange / electric violet (design reference:
+ * arena-workflow-BASE.html). Orange = LockIn brand #FF3B00.
+ */
+const TONE = {
+  orange: {
+    background:
+      "linear-gradient(135deg, rgba(255,59,0,0.14), rgba(255,59,0,0.03))",
+    border: "1.5px solid rgba(255,59,0,0.5)",
+    accent: "#FF3B00",
+  },
+  violet: {
+    background:
+      "linear-gradient(135deg, rgba(124,92,245,0.16), rgba(124,92,245,0.03))",
+    border: "1.5px solid rgba(124,92,245,0.62)",
+    accent: "#7C5CF5",
+  },
+} as const;
+
 export function JourneyPicker({
   currentLane,
   creatorVerified,
@@ -63,8 +82,11 @@ export function JourneyPicker({
           aria-hidden
           width={92}
           height={92}
-          className="h-[92px] w-[92px] rounded-full border-2 border-accent-border object-cover"
-          style={{ boxShadow: "0 0 22px rgba(255,59,0,0.4)" }}
+          className="h-[92px] w-[92px] rounded-full object-cover"
+          style={{
+            border: "2px solid rgba(255,59,0,0.65)",
+            boxShadow: "0 0 22px rgba(255,59,0,0.4)",
+          }}
         />
       </header>
 
@@ -87,8 +109,12 @@ export function JourneyPicker({
           onClick={continueToFeed}
           disabled={pending}
           aria-busy={busy === "continue"}
-          style={{ animationDelay: "100ms" }}
-          className="practice-deal flex items-center justify-between rounded-xl border border-accent-border bg-accent-soft p-5 text-left transition active:scale-[0.98] disabled:opacity-60"
+          style={{
+            animationDelay: "100ms",
+            background: TONE.orange.background,
+            border: TONE.orange.border,
+          }}
+          className="practice-deal flex items-center justify-between rounded-xl p-5 text-left transition active:scale-[0.98] disabled:opacity-60"
         >
           <span>
             <span className="block text-base font-bold text-accent">
@@ -118,6 +144,7 @@ export function JourneyPicker({
         busy={busy === "beginner"}
         disabled={pending}
         delayMs={190}
+        tone="violet"
         onClick={() => pickLane("beginner")}
       />
 
@@ -129,6 +156,7 @@ export function JourneyPicker({
         busy={busy === "advanced"}
         disabled={pending}
         delayMs={240}
+        tone="orange"
         onClick={() => pickLane("advanced")}
       />
 
@@ -144,6 +172,7 @@ export function JourneyPicker({
         busy={busy === "creator"}
         disabled={pending}
         delayMs={290}
+        tone="violet"
         onClick={goCreator}
       />
 
@@ -155,6 +184,7 @@ export function JourneyPicker({
         busy={busy === "practice"}
         disabled={pending}
         delayMs={340}
+        tone="orange"
         onClick={goPractice}
       />
 
@@ -172,6 +202,7 @@ function JourneyCard({
   busy,
   disabled,
   delayMs,
+  tone,
   onClick,
 }: {
   title: string;
@@ -180,26 +211,30 @@ function JourneyCard({
   busy: boolean;
   disabled: boolean;
   delayMs: number;
+  tone: keyof typeof TONE;
   onClick: () => void;
 }) {
+  const t = TONE[tone];
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
       aria-busy={busy}
-      style={{ animationDelay: `${delayMs}ms` }}
-      className={
-        "practice-deal flex flex-col gap-1 rounded-xl border p-5 text-left transition active:scale-[0.98] disabled:opacity-60 " +
-        (active
-          ? "border-accent-border bg-accent-soft"
-          : "border-border bg-surface-card hover:bg-surface")
-      }
+      style={{
+        animationDelay: `${delayMs}ms`,
+        background: t.background,
+        border: t.border,
+      }}
+      className="practice-deal flex flex-col gap-1 rounded-xl p-5 text-left transition active:scale-[0.98] disabled:opacity-60"
     >
       <span className="flex items-center gap-2 text-base font-bold text-foreground">
         {title}
         {active && (
-          <span className="rounded-full border border-accent-border px-2 py-0.5 text-[10px] font-medium uppercase text-accent">
+          <span
+            className="rounded-full px-2 py-0.5 text-[10px] font-medium uppercase"
+            style={{ border: `1px solid ${t.accent}`, color: t.accent }}
+          >
             Current
           </span>
         )}

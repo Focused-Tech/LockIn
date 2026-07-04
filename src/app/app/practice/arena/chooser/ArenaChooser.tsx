@@ -578,6 +578,7 @@ export function ArenaChooser() {
           text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
           width: 100%;
           line-height: 1;
+          opacity: 0.82;
         }
         .cta:hover {
           background: color-mix(
