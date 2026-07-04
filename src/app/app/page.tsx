@@ -25,14 +25,18 @@ export default async function ExplorePage() {
 
   return (
     <div className="flex flex-col gap-5 p-6">
-      <div className="flex items-end justify-between">
+      <div className="flex flex-col gap-3">
+        {/* Header spans the full width on its own line so the description wraps
+            normally and never gets crushed by the action pills. */}
         <div>
           <h1 className="text-xl font-semibold">Explore</h1>
           <p className="text-sm text-muted">
             Live contests from creators. Pick outcomes, climb the board.
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        {/* Action pills on their own row below (wraps like the category-pill row,
+            so nothing clips at 390–430px). */}
+        <div className="flex flex-wrap items-center gap-2">
           <Link
             href="/app/choose"
             className="rounded border border-accent-border bg-accent-soft px-3 py-1.5 text-sm font-medium text-accent"

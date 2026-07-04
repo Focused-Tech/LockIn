@@ -8,7 +8,6 @@ import { COLLECTIONS, type EntryTierConfig, type SlateStatus } from "@/lib/fireb
 import { FEED_STATUSES, type FeedSlate } from "@/lib/feed";
 import { ENTRY_TIERS, type EntryTier } from "@/lib/constants";
 import { SlateCard } from "@/components/feed/SlateCard";
-import { RushBanner } from "@/components/feed/RushBanner";
 import { recommendSlates, type RecSignals } from "@/lib/recommendations";
 
 const FOR_YOU = "For you";
@@ -117,25 +116,8 @@ export function ExploreFeed({
     return filtered.map((s) => ({ slate: s, reason: null }));
   }, [category, slates, signals]);
 
-  // Live, joinable Card Rushes drive the pulsing banner. Site-wide (ignores the
-  // category/tier filters) since a rush is a platform-wide moment; sorted by
-  // lock time so the banner features the most urgent one.
-  const liveRushes = useMemo(
-    () =>
-      slates.filter(
-        (s) =>
-          s.isCardRush &&
-          s.status === "live" &&
-          (s.maxEntries == null || s.entryCount < s.maxEntries),
-      ),
-    [slates],
-  );
-
   return (
     <div className="flex flex-col gap-4">
-      {/* Pulsing Card Rush banner (only when a rush is active) */}
-      <RushBanner rushes={liveRushes} />
-
       {/* Category pills — wrapping rows of clearly-bordered chips */}
       <div className="flex flex-wrap gap-2">
         {tabs.map((tab) => {

@@ -5,10 +5,10 @@ import { usePathname } from "next/navigation";
 
 /**
  * Persistent bottom tab bar — the app's primary navigation (design: prototype
- * `.bot-nav`). Four steady-state tabs. "Rush" and "Creators" are placeholder
- * destinations for the APK test that reuse existing data (Rush = the feed
- * filtered to Card Rush; Creators = the pick-package marketplace); the dedicated
- * screens are built later as real features.
+ * `.bot-nav`). "Creators" is a placeholder destination for the APK test that
+ * reuses existing data (the pick-package marketplace); the dedicated screen is
+ * built later. (The "Rush" tab was removed — Card Rush surfaces are hidden — but
+ * the /app/rush route is intentionally kept in place, just unlinked.)
  */
 const TABS = [
   { href: "/app", label: "Explore", icon: "◎", match: (p: string) => p === "/app" },
@@ -17,12 +17,6 @@ const TABS = [
     label: "Board",
     icon: "🏅",
     match: (p: string) => p.startsWith("/app/leaderboard"),
-  },
-  {
-    href: "/app/rush",
-    label: "Rush",
-    icon: "⚡",
-    match: (p: string) => p.startsWith("/app/rush"),
   },
   {
     href: "/app/packages",
