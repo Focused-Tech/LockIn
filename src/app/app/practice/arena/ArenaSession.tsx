@@ -108,7 +108,7 @@ export function ArenaSession() {
         <ArenaReveal
           played={played}
           onReplay={replay}
-          onExit={() => router.push("/app/practice")}
+          onExit={() => router.push("/app/practice/arena/chooser")}
           replayPending={false}
         />
       )}

@@ -40,6 +40,21 @@ export interface AiCreator {
 
 export const AI_CREATORS: readonly AiCreator[] = [
   {
+    // House mascot — the default rival across the arena (Practice Dojo, Coliseum).
+    id: "ai_lockinfox",
+    handle: "lockinfox",
+    name: "LockIn Fox",
+    avatar: "🦊",
+    persona: "House AI",
+    blurb: "The house mascot. Balanced reads across every arena — your default rival.",
+    categories: ["NFL", "NBA", "UFC", "MLB", "Soccer", "Crypto"],
+    difficulty: "medium",
+    styleNote: "Balanced reads · house AI",
+    lineStyle:
+      "balanced, fair lines across sports and markets with modest favorites (~55–65%); a well-rounded default opponent",
+    accent: "#FF3B00",
+  },
+  {
     id: "ai_longshot",
     handle: "longshotluna",
     name: "Long-Shot Luna",

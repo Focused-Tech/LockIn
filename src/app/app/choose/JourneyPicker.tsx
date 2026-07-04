@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Logo } from "@/components/Logo";
 import type { JourneyLane } from "@/lib/firebase/types";
 import { setJourneyLane } from "@/app/app/beginner/actions";
 
@@ -50,17 +49,32 @@ export function JourneyPicker({
 
   const goPractice = () => {
     setBusy("practice");
-    router.push("/app/practice");
+    // Hub dissolved: the Practice card opens the arena chooser directly.
+    router.push("/app/practice/arena/chooser");
   };
 
   return (
     <div className="flex flex-col gap-4 p-6">
-      <header className="practice-deal flex flex-col items-center gap-3 pt-1">
-        <Logo />
+      <header className="practice-deal flex flex-col items-center gap-2 pt-1">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/arena/fox-crest.png"
+          alt=""
+          aria-hidden
+          width={92}
+          height={92}
+          className="h-[92px] w-[92px] rounded-full border-2 border-accent-border object-cover"
+          style={{ boxShadow: "0 0 22px rgba(255,59,0,0.4)" }}
+        />
       </header>
 
       <div className="practice-deal text-center" style={{ animationDelay: "50ms" }}>
-        <h1 className="text-2xl font-semibold">Your journeys</h1>
+        <h1
+          className="text-3xl font-extrabold tracking-wide text-accent"
+          style={{ textShadow: "0 0 18px rgba(255,59,0,0.45)" }}
+        >
+          The Fox Pit
+        </h1>
         <p className="mt-1 text-sm text-muted">
           Jump back into your feed, or switch lanes — your choice, any time.
         </p>
