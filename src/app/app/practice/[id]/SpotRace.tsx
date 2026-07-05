@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AiBadge } from "@/components/practice/AiBadge";
 import { PRACTICE_CONFIG } from "@/lib/practice/config";
 import { playSound } from "@/lib/practice/sound";
@@ -66,6 +66,29 @@ export function SpotRace({
     }
   }, [now, startAt, lockAt]);
 
+  // FIX 2: transient "lock in now" nudge — non-blocking, ~2s, auto-dismiss.
+  const [nudge, setNudge] = useState(false);
+  const nudgeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const firedTimeout = useRef(false);
+  const fireNudge = useCallback(() => {
+    setNudge(true);
+    if (nudgeTimer.current) clearTimeout(nudgeTimer.current);
+    nudgeTimer.current = setTimeout(() => setNudge(false), 2000);
+  }, []);
+  // (b) a short delay after switching to a new slate (seed changes).
+  useEffect(() => {
+    firedTimeout.current = false;
+    const t = setTimeout(fireNudge, 1200);
+    return () => clearTimeout(t);
+  }, [seed, fireNudge]);
+  // (a) when the spots-locking counter times out.
+  useEffect(() => {
+    if (now != null && now >= lockAt && !firedTimeout.current) {
+      firedTimeout.current = true;
+      fireNudge();
+    }
+  }, [now, lockAt, fireNudge]);
+
   if (now == null) return null; // avoid SSR drift
 
   const remaining = Math.max(0, lockAt - now);
@@ -86,12 +109,17 @@ export function SpotRace({
   // Bots that have locked in so far — newest first. Each mounts once (keyed by
   // spot), so a fresh bot "enters → flashes → collapses" into the running list.
   const lockedInBots = schedule.filter(({ spot }) => spot <= filled).reverse();
-  const yourBonusPct = best
-    ? Math.round(((U.spotBonus[best - 1] ?? 1) - 1) * 100)
-    : 0;
 
   return (
     <>
+      {nudge && (
+        <div className="pointer-events-none fixed inset-x-0 bottom-24 z-50 flex justify-center px-4">
+          <div className="rounded-full border border-live/40 bg-[rgba(20,15,4,0.95)] px-4 py-2 text-sm font-semibold text-live shadow-lg backdrop-blur">
+            Top spots are filling fast — Lock in now!
+          </div>
+        </div>
+      )}
+
       {/* PINNED timer bar — stays at the top of the screen while the slate scrolls
           underneath it. Solid background so content passes cleanly below. */}
       <div
@@ -106,7 +134,8 @@ export function SpotRace({
           {locked ? "Spots locked" : "Spots locking"}
         </span>
         <span className="flex items-center gap-1.5 text-sm">
-          <span className="text-muted">⏳ locks in</span>
+          <ClockRing frac={frac} urgent={urgent} />
+          <span className="text-muted">locks in</span>
           {pulse ? (
             <span
               className="practice-lock-pulse inline-block font-bold tabular-nums text-live"
@@ -133,11 +162,6 @@ export function SpotRace({
               </span>
               Lock in now → claim spot #{best}
             </span>
-            {yourBonusPct > 0 && (
-              <span className="shrink-0 text-xs font-bold text-accent">
-                +{yourBonusPct}%
-              </span>
-            )}
           </div>
         ) : (
           <div className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-muted">
@@ -161,9 +185,6 @@ export function SpotRace({
                   <AiBadge />
                   <span className="text-xs">locked in</span>
                 </span>
-                <span className="shrink-0 text-xs font-semibold text-muted">
-                  +{Math.round(((U.spotBonus[spot - 1] ?? 1) - 1) * 100)}%
-                </span>
               </li>
             ))}
           </ul>
@@ -176,5 +197,46 @@ export function SpotRace({
         </p>
       </div>
     </>
+  );
+}
+
+/**
+ * FIX 1: circular clock RING that fills empty → full as the countdown runs out
+ * (driven by `frac`, the elapsed fraction 0→1 of the same countdown). Replaces
+ * the old ⏳ hourglass emoji; the digital "0:48" readout stays next to it.
+ */
+function ClockRing({ frac, urgent }: { frac: number; urgent: boolean }) {
+  const r = 6;
+  const c = 2 * Math.PI * r;
+  const filled = Math.max(0, Math.min(1, frac));
+  return (
+    <span
+      aria-hidden
+      className={"inline-flex " + (urgent ? "text-live" : "text-foreground")}
+    >
+      <svg width="15" height="15" viewBox="0 0 16 16" className="block">
+        <circle
+          cx="8"
+          cy="8"
+          r={r}
+          fill="none"
+          stroke="currentColor"
+          strokeOpacity={0.25}
+          strokeWidth={2.5}
+        />
+        <circle
+          cx="8"
+          cy="8"
+          r={r}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2.5}
+          strokeLinecap="round"
+          strokeDasharray={c}
+          strokeDashoffset={c * (1 - filled)}
+          transform="rotate(-90 8 8)"
+        />
+      </svg>
+    </span>
   );
 }
