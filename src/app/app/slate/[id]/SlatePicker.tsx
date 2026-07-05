@@ -9,6 +9,7 @@ import { COLLECTIONS, type EntryPick } from "@/lib/firebase/types";
 import { Button, Card, Pill } from "@/components/ui";
 import { computeSlateMetrics } from "@/lib/contest";
 import { CardRushMeta } from "@/components/CardRushMeta";
+import { categoryTint, type Tint } from "@/lib/practice/tints";
 import {
   EXCLUDED_STATES,
   FREE_ENTRY_COIN_COST,
@@ -48,6 +49,7 @@ export function SlatePicker({
 }) {
   const router = useRouter();
   const { predictions } = slate;
+  const tint = categoryTint(slate.category);
 
   const availableTiers = useMemo(
     () =>
@@ -285,7 +287,7 @@ export function SlatePicker({
         data-tour="prediction-options"
       >
         {predictions.map((p) => (
-          <Card key={p.id}>
+          <Card key={p.id} style={{ borderColor: tint.border }}>
             <div className="mb-2 flex items-center justify-between">
               <p className="text-sm font-medium">{p.question}</p>
               <Pill tone="ai">AI odds</Pill>
@@ -295,12 +297,14 @@ export function SlatePicker({
                 label={p.optionA}
                 prob={p.probA}
                 selected={picks[p.id] === "a"}
+                tint={tint}
                 onClick={() => setPicks((x) => ({ ...x, [p.id]: "a" }))}
               />
               <OptionButton
                 label={p.optionB}
                 prob={p.probB}
                 selected={picks[p.id] === "b"}
+                tint={tint}
                 onClick={() => setPicks((x) => ({ ...x, [p.id]: "b" }))}
               />
             </div>
@@ -420,11 +424,13 @@ function OptionButton({
   label,
   prob,
   selected,
+  tint,
   onClick,
 }: {
   label: string;
   prob: number;
   selected: boolean;
+  tint: Tint;
   onClick: () => void;
 }) {
   return (
@@ -434,13 +440,22 @@ function OptionButton({
       aria-pressed={selected}
       className={
         "flex flex-col gap-1 rounded border px-3 py-2.5 text-left transition-colors " +
-        (selected
-          ? "border-accent-border bg-accent-soft"
-          : "border-border bg-surface hover:bg-[#161b25]")
+        (selected ? "cat-pick-selected" : "border-border bg-surface hover:bg-[#161b25]")
+      }
+      style={
+        selected
+          ? ({
+              backgroundColor: tint.soft,
+              "--cat": tint.color,
+            } as React.CSSProperties)
+          : undefined
       }
     >
       <span className="text-sm font-medium text-foreground">{label}</span>
-      <span className={selected ? "text-xs text-accent" : "text-xs text-muted"}>
+      <span
+        className={"text-xs " + (selected ? "" : "text-muted")}
+        style={selected ? { color: tint.color } : undefined}
+      >
         {prob}%
       </span>
     </button>

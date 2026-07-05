@@ -207,7 +207,12 @@ export function PracticeContest({
 
           {/* Legs scroll as a list; picking a side swipes the card away under a
               closing lock (LegPicker). Picks flow up to drive lock-in. */}
-          <LegPicker legs={view.legs} onChange={setPicks} disabled={sealing} />
+          <LegPicker
+            legs={view.legs}
+            category={view.category}
+            onChange={setPicks}
+            disabled={sealing}
+          />
           {error && <p className="text-sm text-loss">{error}</p>}
           <Button
             variant="accent"

@@ -277,6 +277,7 @@ export function ArenaPlay({
           <LegPicker
             key={current.key}
             legs={gen.legs}
+            category={current.category}
             onChange={setPicks}
             disabled={submitting}
           />

@@ -30,6 +30,7 @@ export function SlateCard({
   const config = tierConfig(slate, tier);
   const locked = slate.status === "locked";
   const prediction = slate.predictions[0];
+  const tint = categoryTint(slate.category);
 
   const metrics = config
     ? computeSlateMetrics(
@@ -44,7 +45,7 @@ export function SlateCard({
     <Card
       data-tour="event-card"
       className="flex flex-col gap-3"
-      style={{ borderColor: categoryTint(slate.category).border }}
+      style={{ borderColor: tint.border }}
     >
       {reason && (
         <p className="flex items-center gap-1 text-xs font-medium text-ai">
@@ -54,7 +55,16 @@ export function SlateCard({
       )}
 
       <div className="flex items-center justify-between">
-        <Pill tone="accent">{slate.category}</Pill>
+        <span
+          className="rounded-full border px-2.5 py-0.5 text-xs font-semibold"
+          style={{
+            backgroundColor: tint.soft,
+            borderColor: tint.border,
+            color: tint.color,
+          }}
+        >
+          {slate.category}
+        </span>
         {locked ? (
           <Pill tone="neutral">Locked</Pill>
         ) : (

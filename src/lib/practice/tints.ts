@@ -41,29 +41,24 @@ export function tintFromHue(hex: string): Tint {
  * absent (reserved for brand). Falls back to a neutral steel for unknowns.
  */
 const CATEGORY_HUE: Record<string, string> = {
-  NASCAR: "#F97316", // orange
-  Esports: "#A855F7", // purple
-  UFC: "#EF4444", // red
-  Boxing: "#F43F5E", // rose
-  Tennis: "#84CC16", // lime
-  Golf: "#10B981", // emerald
-  Soccer: "#14B8A6", // teal
-  NFL: "#6366F1", // indigo
-  NBA: "#EC4899", // pink
-  MLB: "#0EA5E9", // sky
-  NHL: "#06B6D4", // cyan
-  Entertainment: "#D946EF", // fuchsia
-  "TV Shows": "#8B5CF6", // violet
-  Music: "#C084FC", // light violet
-  Politics: "#64748B", // slate
-  Geopolitics: "#0D9488", // deep teal
-  Crypto: "#EAB308", // gold
-  Economics: "#22C55E", // green
-  Weather: "#38BDF8", // light blue
-  Viral: "#FB7185", // coral-rose
+  // Category → color key (from the slate art + arena-workflow-BASE prototype).
+  // THE single source of truth for every slate/pick card's outline, header bar,
+  // and selection glow, app-wide. Any category not listed → NEUTRAL_HUE fallback.
+  NFL: "#E0703C",
+  NBA: "#E04C6E",
+  UFC: "#E85454",
+  Soccer: "#3CCB7F",
+  Crypto: "#F5A623",
+  Music: "#B06FCE",
+  Esports: "#7C5CF5",
+  MLB: "#4F8FE8",
+  NHL: "#5BC0DE",
+  Politics: "#E85454",
+  Weather: "#4FC3E8",
+  Awards: "#E8C24F",
 };
 
-const NEUTRAL_HUE = "#6B7A8E";
+const NEUTRAL_HUE = "#2E6BF0";
 
 /** Category → outline/soft tint. Distinct per sport/topic; neutral fallback. */
 export function categoryTint(category: string): Tint {

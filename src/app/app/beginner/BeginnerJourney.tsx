@@ -236,13 +236,23 @@ function ExploreScreen({
         </div>
       )}
 
-      {feed.cards.map((c) => (
+      {feed.cards.map((c) => {
+        const t = categoryTint(c.headline.category);
+        return (
         <div
           key={`${c.creatorId ?? "house"}-${c.headline.predictionId}`}
           className="rounded-2xl border bg-surface-card p-4"
-          style={{ borderColor: categoryTint(c.headline.category).border }}
+          style={{ borderColor: t.border, "--cat": t.color } as React.CSSProperties}
         >
-          <CreatorRow card={c} />
+          <div className="flex items-center justify-between gap-2">
+            <CreatorRow card={c} />
+            <span
+              className="shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold"
+              style={{ backgroundColor: t.soft, borderColor: t.border, color: t.color }}
+            >
+              {c.headline.category}
+            </span>
+          </div>
           <p className="my-3 text-base font-bold leading-snug">
             {c.headline.question}
           </p>
@@ -267,7 +277,8 @@ function ExploreScreen({
             </span>
           </div>
         </div>
-      ))}
+        );
+      })}
       <p className="text-center text-xs text-[#3A4A5C]">Tap a pick to try it →</p>
     </div>
   );

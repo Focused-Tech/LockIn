@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { LockGlyph } from "@/components/practice/LockGlyph";
 import { PRACTICE_CONFIG } from "@/lib/practice/config";
+import { categoryTint } from "@/lib/practice/tints";
 import { playSound, playLegAdded } from "@/lib/practice/sound";
 import type { Choice } from "@/lib/practice/scoring";
 import type { PracticeLeg } from "@/lib/firebase/types";
@@ -22,13 +23,17 @@ const SWIPE_MS = 360;
  */
 export function LegPicker({
   legs,
+  category,
   onChange,
   disabled = false,
 }: {
   legs: PracticeLeg[];
+  /** Slate category — drives the shared category outline + selection glow. */
+  category: string;
   onChange?: (picks: Record<string, Choice>) => void;
   disabled?: boolean;
 }) {
+  const tint = categoryTint(category);
   const [picks, setPicks] = useState<Record<string, Choice>>({});
   // Legs mid-swipe (picked, animation still running). They render as the full
   // card with the lock overlay until the timer drops them into the summary.
@@ -95,11 +100,14 @@ export function LegPicker({
               "relative flex flex-col gap-2 rounded-lg border border-l-4 p-3 " +
               (isSwiping ? "leg-swiping" : "practice-deal")
             }
-            style={{
-              animationDelay: isSwiping ? undefined : `${i * 40}ms`,
-              borderColor: "#1E2A38",
-              borderLeftColor: dc.color,
-            }}
+            style={
+              {
+                animationDelay: isSwiping ? undefined : `${i * 40}ms`,
+                borderColor: tint.border,
+                borderLeftColor: tint.color,
+                "--cat": tint.color,
+              } as React.CSSProperties
+            }
           >
             {/* Lock glyph snaps shut over the card as it swipes away. */}
             {isSwiping && (
@@ -138,15 +146,17 @@ export function LegPicker({
                     className={
                       "flex flex-col gap-0.5 rounded border px-3 py-2 text-left transition duration-100 active:scale-[0.97] " +
                       (on
-                        ? "practice-pick-pop border-accent-border bg-accent-soft"
+                        ? "practice-pick-pop cat-pick-selected"
                         : "border-border bg-surface hover:bg-surface-card")
                     }
+                    style={on ? { backgroundColor: tint.soft } : undefined}
                   >
                     <span className="flex items-center justify-between gap-1">
                       <span className="text-sm font-medium">{label}</span>
                       {on && (
                         <span
-                          className="practice-check-pop text-sm font-bold text-accent"
+                          className="practice-check-pop text-sm font-bold"
+                          style={{ color: tint.color }}
                           aria-hidden
                         >
                           ✓
@@ -154,7 +164,8 @@ export function LegPicker({
                       )}
                     </span>
                     <span
-                      className={"text-xs " + (on ? "text-accent" : "text-muted")}
+                      className={"text-xs " + (on ? "" : "text-muted")}
+                      style={on ? { color: tint.color } : undefined}
                     >
                       {prob}%
                     </span>

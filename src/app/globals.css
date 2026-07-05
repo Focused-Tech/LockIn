@@ -212,6 +212,21 @@
 }
 .practice-leg-glow { animation: practice-leg-glow 0.4s ease-out; }
 
+/* SHARED slate/pick SELECTION — a slow pulse + glow in the card's CATEGORY color
+   (var --cat). ONE animation used by every mode's pick card + Beginner/Advanced,
+   so a selected pick reads the same everywhere (not an instant flash). */
+@keyframes cat-pick-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
+  50% { box-shadow: 0 0 20px 2px var(--cat, #2E6BF0); }
+}
+.cat-pick-selected {
+  border-color: var(--cat, #2E6BF0);
+  animation: cat-pick-glow 1.7s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cat-pick-selected { animation: none; box-shadow: 0 0 12px 1px var(--cat, #2E6BF0); }
+}
+
 /* ── SLATE LOCK-IN — the decisive commit: every leg snaps shut, then a sweep ── */
 
 /* Each leg "seals" — a quick crush + accent ring flash (staggered per leg). */
