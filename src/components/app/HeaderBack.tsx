@@ -5,16 +5,19 @@ import { usePathname, useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
 
 /**
- * Top-left of the shared header. On the four TOP-LEVEL TAB screens (which own
- * the bottom nav) it shows the LockIn logo (home link). On every other /app
- * screen it shows a BACK control that returns to the logical previous screen
- * (history back, with a sane fallback when there's no in-app history).
+ * Top-left of the shared header. The LockIn logo is a persistent HOME affordance
+ * → The Fox Pit (/app/choose) on EVERY /app screen (tap the wordmark to go home).
+ *
+ * A back control (‹) appears only on deep screens. The top-level tab screens and
+ * the two lane screens (Beginner /app/beginner, Advanced /app) show NO back
+ * button — the logo is the way home, and changing lane happens at the Fox Pit,
+ * not via an in-page control.
  */
-const TOP_LEVEL = new Set<string>([
-  "/app", // Explore
-  "/app/beginner", // Beginner feed (Explore tab redirects beginners here)
+const NO_BACK = new Set<string>([
+  "/app", // Explore (Advanced lane)
+  "/app/beginner", // Beginner lane
   "/app/leaderboard", // Board
-  "/app/rush", // Rush
+  "/app/rush", // Rush (route kept, unlinked)
   "/app/packages", // Creators
 ]);
 
@@ -22,30 +25,33 @@ export function HeaderBack() {
   const pathname = usePathname();
   const router = useRouter();
 
-  if (TOP_LEVEL.has(pathname)) {
-    return (
-      <Link href="/app" aria-label="LockIn home">
-        <Logo />
-      </Link>
-    );
-  }
-
+  const showBack = !NO_BACK.has(pathname);
   const back = () => {
     if (typeof window !== "undefined" && window.history.length > 1) router.back();
-    else router.push("/app");
+    else router.push("/app/choose");
   };
 
   return (
-    <button
-      type="button"
-      onClick={back}
-      aria-label="Back"
-      className="flex items-center gap-1.5 text-muted transition-colors hover:text-foreground"
-    >
-      <span aria-hidden className="text-xl leading-none">
-        ‹
-      </span>
-      <Logo />
-    </button>
+    <div className="flex items-center gap-1.5">
+      {showBack && (
+        <button
+          type="button"
+          onClick={back}
+          aria-label="Back"
+          className="text-muted transition-colors hover:text-foreground"
+        >
+          <span aria-hidden className="text-xl leading-none">
+            ‹
+          </span>
+        </button>
+      )}
+      <Link
+        href="/app/choose"
+        aria-label="LockIn — home"
+        className="transition-opacity hover:opacity-80"
+      >
+        <Logo />
+      </Link>
+    </div>
   );
 }

@@ -59,10 +59,12 @@ export async function fetchBeginnerFeed(
   const toPick = (
     slateId: string,
     lockTimeMs: number,
+    category: string,
     p: { id: string; question: string; optionA: string; optionB: string; probA: number; probB: number },
   ): BeginnerPick => ({
     slateId,
     predictionId: p.id,
+    category,
     question: p.question,
     optionA: p.optionA,
     optionB: p.optionB,
@@ -77,7 +79,7 @@ export async function fetchBeginnerFeed(
     const profile = isHouse ? undefined : profiles.get(key);
     // Flatten this creator's open picks across their live slates.
     const allPicks: BeginnerPick[] = group.flatMap((s) =>
-      s.predictions.map((p) => toPick(s.id, s.lockTimeMs, p)),
+      s.predictions.map((p) => toPick(s.id, s.lockTimeMs, s.category, p)),
     );
     if (allPicks.length === 0) continue;
 

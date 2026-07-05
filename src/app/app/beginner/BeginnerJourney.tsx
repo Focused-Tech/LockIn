@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui";
 import { toggleFollowCreator } from "@/components/feed/followActions";
 import {
@@ -20,7 +19,8 @@ import {
   resultFor,
   winUpTo,
 } from "@/lib/beginner/payoutModel";
-import { lockBeginnerEntry, setJourneyLane } from "./actions";
+import { lockBeginnerEntry } from "./actions";
+import { categoryTint } from "@/lib/practice/tints";
 
 const COIN = "🪙";
 const coins = (n: number) => `${COIN} ${n}`;
@@ -44,7 +44,6 @@ export function BeginnerJourney({
   feed: BeginnerFeed;
   coinBalance: number;
 }) {
-  const router = useRouter();
   const [balance, setBalance] = useState(coinBalance);
   const [screen, setScreen] = useState<Screen>("explore");
   const [card, setCard] = useState<BeginnerCard | null>(null);
@@ -67,13 +66,6 @@ export function BeginnerJourney({
     setStake(DEFAULT_STAKE);
     setError(null);
     setScreen("pick");
-  }
-
-  function switchToAdvanced() {
-    startTransition(async () => {
-      await setJourneyLane("advanced");
-      router.push("/app");
-    });
   }
 
   function flipLeg(idx: number) {
@@ -165,13 +157,7 @@ export function BeginnerJourney({
       )}
 
       {screen === "explore" && (
-        <ExploreScreen
-          feed={feed}
-          nowMs={nowMs}
-          onPick={startPick}
-          onAdvanced={switchToAdvanced}
-          pending={pending}
-        />
+        <ExploreScreen feed={feed} nowMs={nowMs} onPick={startPick} />
       )}
       {screen === "pick" && card && (
         <PickScreen
@@ -236,37 +222,13 @@ function ExploreScreen({
   feed,
   nowMs,
   onPick,
-  onAdvanced,
-  pending,
 }: {
   feed: BeginnerFeed;
   nowMs: number;
   onPick: (c: BeginnerCard, choice: "a" | "b") => void;
-  onAdvanced: () => void;
-  pending: boolean;
 }) {
   return (
     <div className="flex flex-col gap-3">
-      {/* lane toggle — both lanes active */}
-      <div className="flex gap-1.5 rounded-xl border border-border bg-surface-card p-1">
-        <div className="flex-1 rounded-lg border border-accent-border bg-accent-soft px-3 py-2 text-center text-xs font-bold text-accent">
-          Beginner
-          <span className="block text-[8px] font-semibold opacity-70">
-            SIMPLE &amp; GUIDED
-          </span>
-        </div>
-        <button
-          type="button"
-          onClick={onAdvanced}
-          disabled={pending}
-          className="flex-1 rounded-lg px-3 py-2 text-center text-xs font-bold text-muted disabled:opacity-50"
-        >
-          Advanced
-          <span className="block text-[8px] font-semibold opacity-70">
-            FULL MARKET
-          </span>
-        </button>
-      </div>
 
       {feed.cards.length === 0 && (
         <div className="rounded-2xl border border-border bg-surface-card p-4 text-sm text-muted">
@@ -277,7 +239,8 @@ function ExploreScreen({
       {feed.cards.map((c) => (
         <div
           key={`${c.creatorId ?? "house"}-${c.headline.predictionId}`}
-          className="rounded-2xl border border-border bg-surface-card p-4"
+          className="rounded-2xl border bg-surface-card p-4"
+          style={{ borderColor: categoryTint(c.headline.category).border }}
         >
           <CreatorRow card={c} />
           <p className="my-3 text-base font-bold leading-snug">

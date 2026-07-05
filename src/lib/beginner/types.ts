@@ -7,6 +7,8 @@
 export interface BeginnerPick {
   slateId: string;
   predictionId: string;
+  /** The slate's category — drives the card's category-colored outline. */
+  category: string;
   question: string;
   /** "Yes" side label (optionA) and "No" side label (optionB). */
   optionA: string;

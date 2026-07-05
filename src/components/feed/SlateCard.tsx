@@ -3,6 +3,7 @@
 import { Card, Pill } from "@/components/ui";
 import { CardRushMeta } from "@/components/CardRushMeta";
 import { computeSlateMetrics } from "@/lib/contest";
+import { categoryTint } from "@/lib/practice/tints";
 import type { EntryTier } from "@/lib/constants";
 import type { FeedSlate } from "@/lib/feed";
 import { formatCents, formatMultiple } from "@/lib/utils";
@@ -42,10 +43,8 @@ export function SlateCard({
   return (
     <Card
       data-tour="event-card"
-      className={
-        "flex flex-col gap-3 " +
-        (slate.isCardRush ? "border-rush-border bg-rush-soft" : "")
-      }
+      className="flex flex-col gap-3"
+      style={{ borderColor: categoryTint(slate.category).border }}
     >
       {reason && (
         <p className="flex items-center gap-1 text-xs font-medium text-ai">
