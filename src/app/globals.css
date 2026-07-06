@@ -227,6 +227,32 @@
   .cat-pick-selected { animation: none; box-shadow: 0 0 12px 1px var(--cat, #2E6BF0); }
 }
 
+/* LOCKIN LOCK — shackle slides straight DOWN into the base + base bumps (ported
+   from the lock-animation mockup; keyhole variant). */
+.lockin-shackle {
+  transform-box: fill-box;
+  animation: lockin-slide-down 0.9s cubic-bezier(0.45, 0, 0.25, 1) forwards;
+}
+@keyframes lockin-slide-down {
+  0% { transform: translateY(-34px); }
+  82% { transform: translateY(0); }
+  90% { transform: translateY(3px); }
+  100% { transform: translateY(0); }
+}
+.lockin-base {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: lockin-bump 0.9s ease forwards;
+}
+@keyframes lockin-bump {
+  0%, 80% { transform: scale(1); }
+  88% { transform: scale(1.045); }
+  100% { transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lockin-shackle, .lockin-base { animation: none; }
+}
+
 /* ── SLATE LOCK-IN — the decisive commit: every leg snaps shut, then a sweep ── */
 
 /* Each leg "seals" — a quick crush + accent ring flash (staggered per leg). */

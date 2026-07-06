@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AiBadge } from "@/components/practice/AiBadge";
+import { LockAnimation } from "@/components/LockAnimation";
 import { PRACTICE_CONFIG } from "@/lib/practice/config";
 import { playSound } from "@/lib/practice/sound";
 import {
@@ -68,6 +69,7 @@ export function SpotRace({
 
   // FIX 2: transient "lock in now" nudge — non-blocking, ~2s, auto-dismiss.
   const [nudge, setNudge] = useState(false);
+  const [showLock, setShowLock] = useState(false);
   const nudgeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const firedTimeout = useRef(false);
   const fireNudge = useCallback(() => {
@@ -78,14 +80,16 @@ export function SpotRace({
   // (b) a short delay after switching to a new slate (seed changes).
   useEffect(() => {
     firedTimeout.current = false;
+    setShowLock(false);
     const t = setTimeout(fireNudge, 1200);
     return () => clearTimeout(t);
   }, [seed, fireNudge]);
-  // (a) when the spots-locking counter times out.
+  // (a) when the spots-locking counter times out: nudge + the lock slams shut.
   useEffect(() => {
     if (now != null && now >= lockAt && !firedTimeout.current) {
       firedTimeout.current = true;
       fireNudge();
+      setShowLock(true);
     }
   }, [now, lockAt, fireNudge]);
 
@@ -117,6 +121,12 @@ export function SpotRace({
           <div className="rounded-full border border-live/40 bg-[rgba(20,15,4,0.95)] px-4 py-2 text-sm font-semibold text-live shadow-lg backdrop-blur">
             Top spots are filling fast — Lock in now!
           </div>
+        </div>
+      )}
+
+      {showLock && (
+        <div className="pointer-events-none fixed inset-0 z-[60] flex items-center justify-center">
+          <LockAnimation size={128} onDone={() => setShowLock(false)} />
         </div>
       )}
 

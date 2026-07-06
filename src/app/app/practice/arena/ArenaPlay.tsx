@@ -5,6 +5,7 @@ import { Button } from "@/components/ui";
 import { AiBadge } from "@/components/practice/AiBadge";
 import { LegPicker } from "@/components/practice/LegPicker";
 import { SpotRace } from "../[id]/SpotRace";
+import { LockAnimation } from "@/components/LockAnimation";
 import { createPracticeContest, submitPracticePicks } from "../actions";
 import { PRACTICE_CONFIG } from "@/lib/practice/config";
 import { PRACTICE_DEFAULT_STAKE, scorePractice, type Choice } from "@/lib/practice/scoring";
@@ -82,6 +83,7 @@ export function ArenaPlay({
   const [gen, setGen] = useState<Gen | null>(null);
   const [picks, setPicks] = useState<Record<string, Choice>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [lockAnim, setLockAnim] = useState(false);
   const [cdSecs, setCdSecs] = useState(0);
   const playedRef = useRef<ArenaPlayed[]>([]);
   const genCache = useRef<Map<string, Promise<Gen>>>(new Map());
@@ -138,6 +140,7 @@ export function ArenaPlay({
 
   async function lockIn() {
     if (!gen || !current) return;
+    setLockAnim(true); // the lock slams shut on lock-in
     setSubmitting(true);
     playSound("lockin");
     const ordered = gen.legs.map((l) => picks[l.id]!) as Choice[];
@@ -208,6 +211,11 @@ export function ArenaPlay({
     const next = round[index + 1];
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+        {lockAnim && (
+          <div className="pointer-events-none fixed inset-0 z-[60] flex items-center justify-center">
+            <LockAnimation size={128} onDone={() => setLockAnim(false)} />
+          </div>
+        )}
         <p className="text-xs uppercase tracking-[0.2em] text-muted">
           Slate locked · next up
         </p>
@@ -226,6 +234,12 @@ export function ArenaPlay({
 
   return (
     <div className="flex flex-col gap-4">
+      {lockAnim && (
+        <div className="pointer-events-none fixed inset-0 z-[60] flex items-center justify-center">
+          <LockAnimation size={128} onDone={() => setLockAnim(false)} />
+        </div>
+      )}
+
       {/* Round progress */}
       <div className="flex items-center justify-between text-xs text-muted">
         <span>
