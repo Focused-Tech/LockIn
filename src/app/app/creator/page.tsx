@@ -36,12 +36,13 @@ export default async function CreatorDashboardPage({
 
   return (
     <div className="flex flex-col gap-5 p-6">
-      <div className="flex items-end justify-between">
+      {/* Header spans the full width on its own row; actions sit below. */}
+      <div className="flex flex-col gap-3">
         <div>
           <h1 className="text-xl font-semibold">Creator</h1>
           <p className="text-sm text-muted">Your contests and earnings.</p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Link
             href="/app/refer"
             className="rounded border border-border px-3 py-1.5 text-sm font-medium text-muted hover:text-foreground"
@@ -50,7 +51,7 @@ export default async function CreatorDashboardPage({
           </Link>
           <Link
             href="/app/create"
-            className="rounded border border-accent-border bg-accent-soft px-3 py-1.5 text-sm font-medium text-accent"
+            className="rounded border border-accent-border px-3 py-1.5 text-sm font-medium text-accent"
           >
             + New contest
           </Link>

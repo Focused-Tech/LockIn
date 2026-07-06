@@ -88,9 +88,6 @@ export function SlateBuilder({ categories }: { categories: Category[] }) {
     10: { enabled: false, fee: DEFAULT_HOSTING_DOLLARS[10] },
     25: { enabled: false, fee: DEFAULT_HOSTING_DOLLARS[25] },
   });
-  const [cardRush, setCardRush] = useState(false);
-  const [rushMult, setRushMult] = useState<2 | 3>(2);
-  const [maxEntries, setMaxEntries] = useState("");
 
   // AI-suggest (calls POST /api/slate/generate).
   const [topic, setTopic] = useState("");
@@ -219,10 +216,9 @@ export function SlateBuilder({ categories }: { categories: Category[] }) {
         lockTimeMs,
         predictions: builtPredictions,
         tiers: selectedTiers,
-        cardRush,
-        rushMultiplier: cardRush ? rushMult : undefined,
-        maxEntries:
-          cardRush && maxEntries ? parseInt(maxEntries, 10) || null : null,
+        cardRush: false,
+        rushMultiplier: undefined,
+        maxEntries: null,
       });
       if (result.ok) router.push(`/app/slate/${result.slateId}`);
       else setError(result.error);
@@ -469,65 +465,6 @@ export function SlateBuilder({ categories }: { categories: Category[] }) {
         </p>
       </Card>
 
-      {/* Card Rush */}
-      <Card
-        className={
-          "flex flex-col gap-3 " +
-          (cardRush ? "border-rush-border bg-rush-soft" : "")
-        }
-      >
-        <label className="flex items-center gap-2.5 text-sm">
-          <input
-            type="checkbox"
-            className="accent-rush"
-            checked={cardRush}
-            onChange={(e) => setCardRush(e.target.checked)}
-          />
-          <span className="font-medium text-rush">⚡ Card Rush</span>
-          <span className="text-xs text-muted">
-            Time-limited, boosted prizes
-          </span>
-        </label>
-
-        {cardRush && (
-          <>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted">Prize multiplier</span>
-              <div className="flex gap-1.5">
-                {([2, 3] as const).map((x) => (
-                  <button
-                    key={x}
-                    type="button"
-                    onClick={() => setRushMult(x)}
-                    className={
-                      "rounded border px-2.5 py-1 text-sm transition-colors " +
-                      (rushMult === x
-                        ? "border-rush-border bg-rush-soft text-rush"
-                        : "border-border text-muted hover:text-foreground")
-                    }
-                  >
-                    {x}x
-                  </button>
-                ))}
-              </div>
-            </div>
-            <label className="flex flex-col gap-1.5">
-              <span className="text-xs text-muted">Max entries (optional)</span>
-              <Input
-                type="number"
-                inputMode="numeric"
-                value={maxEntries}
-                onChange={(e) => setMaxEntries(e.target.value)}
-                placeholder="e.g. 500"
-              />
-            </label>
-            <p className="text-xs text-muted">
-              LockIn funds the {rushMult}x boost. Entries close at lock time or
-              when the cap fills.
-            </p>
-          </>
-        )}
-      </Card>
 
       {error && (
         <p

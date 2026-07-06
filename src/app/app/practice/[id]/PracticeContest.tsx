@@ -13,6 +13,7 @@ import { AiBadge } from "@/components/practice/AiBadge";
 import { LegPicker } from "@/components/practice/LegPicker";
 import { SpotRace } from "./SpotRace";
 import { submitPracticePicks, createPracticeContest } from "../actions";
+import { LockAnimation } from "@/components/LockAnimation";
 import {
   PracticeResultAnimation,
   type PlayedResult,
@@ -41,6 +42,7 @@ export function PracticeContest({
   const [picks, setPicks] = useState<Record<string, Choice>>({});
   const [anim, setAnim] = useState<PlayedResult | null>(null);
   const [sealing, setSealing] = useState(false); // whole-slate lock-in flourish
+  const [lockAnim, setLockAnim] = useState(false);
 
   const played = view.myEntry !== null;
   const allPicked = view.legs.every((l) => picks[l.id]);
@@ -68,6 +70,7 @@ export function PracticeContest({
     // The decisive commit: seal the whole slate (legs snap + sweep + sound),
     // hold the flourish a beat, then hand off to the settlement reveal.
     setSealing(true);
+    setLockAnim(true); // the keyhole lock slams shut on lock-in
     playSound("lockin");
     const startedAt = performance.now();
     startTransition(async () => {
@@ -123,6 +126,11 @@ export function PracticeContest({
 
   return (
     <div className="flex flex-col gap-4">
+      {lockAnim && (
+        <div className="pointer-events-none fixed inset-0 z-[60] flex items-center justify-center">
+          <LockAnimation size={128} onDone={() => setLockAnim(false)} />
+        </div>
+      )}
       <PracticeMusic track="multiplayer" />
       {anim && (
         <PracticeResultAnimation

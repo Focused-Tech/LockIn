@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ArenaIntro } from "./ArenaIntro";
 
 /**
  * CHOOSE YOUR ARENA — the mode-selection carousel (design reference:
@@ -110,6 +111,25 @@ export function ArenaChooser() {
   const [dragging, setDragging] = useState(false);
   const [live, setLive] = useState<number[]>(() => MODES.map((m) => m.live));
 
+  // Boss Fox glass-door intro — plays once per session before the carousel.
+  const [showIntro, setShowIntro] = useState(false);
+  useEffect(() => {
+    try {
+      if (window.sessionStorage.getItem("lockin:arena:intro-seen") !== "1")
+        setShowIntro(true);
+    } catch {
+      /* sessionStorage blocked — skip the intro rather than error */
+    }
+  }, []);
+  function finishIntro() {
+    try {
+      window.sessionStorage.setItem("lockin:arena:intro-seen", "1");
+    } catch {
+      /* non-fatal */
+    }
+    setShowIntro(false);
+  }
+
   const applyTransform = useCallback((i: number, dragDelta = 0) => {
     const track = trackRef.current;
     const carousel = carouselRef.current;
@@ -203,6 +223,8 @@ export function ArenaChooser() {
 
   return (
     <div className="chooser">
+      {showIntro && <ArenaIntro onDone={finishIntro} />}
+
       <header className="ch-header">
         <div className="ch-title">Choose your arena</div>
         <div className="ch-subtitle">

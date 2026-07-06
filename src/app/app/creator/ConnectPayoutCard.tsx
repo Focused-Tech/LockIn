@@ -55,15 +55,15 @@ export function ConnectPayoutCard({
   }
 
   return (
-    <Card className="flex flex-col gap-2 border-accent-border bg-accent-soft">
-      <p className="text-sm font-semibold text-accent">Set up payouts</p>
+    <Card className="flex flex-col gap-2 border-[rgba(59,139,255,0.35)] bg-[rgba(59,139,255,0.10)]">
+      <p className="text-sm font-semibold text-ai">Set up payouts</p>
       <p className="text-sm text-muted">
         Connect a Stripe account to receive your creator earnings. Takes a couple
         of minutes.
       </p>
       {error && <p className="text-sm text-loss">{error}</p>}
       <Button
-        variant="accent"
+        variant="ai"
         size="lg"
         disabled={pending}
         onClick={start}

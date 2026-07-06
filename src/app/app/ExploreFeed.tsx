@@ -133,10 +133,10 @@ export function ExploreFeed({
               onClick={() => setCategory(tab)}
               aria-pressed={active}
               className={
-                "flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors " +
+                "flex shrink-0 items-center gap-1.5 rounded-full border-[1.5px] px-3 py-1.5 text-sm font-medium transition-colors " +
                 (active
                   ? "border-accent-border bg-accent-soft text-accent"
-                  : "border-border bg-surface-card text-foreground hover:border-accent-border hover:text-accent")
+                  : "border-[#2A3D52] bg-surface-card text-foreground hover:border-accent-border hover:text-accent")
               }
             >
               {tab}
