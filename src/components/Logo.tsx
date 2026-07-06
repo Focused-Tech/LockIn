@@ -1,6 +1,10 @@
 import { cn } from "@/lib/utils";
 
-/** LockIn wordmark. The only place all-caps + the solid cayenne color is used. */
+/**
+ * LockIn wordmark image — orange "Lock" with the padlock-as-"o", white "In".
+ * Swapped from the old text wordmark; this single component renders the mark in
+ * every header, auth screen, splash and nav, so pointing it here updates them all.
+ */
 export function Logo({
   className,
   size = "md",
@@ -8,15 +12,15 @@ export function Logo({
   className?: string;
   size?: "md" | "lg";
 }) {
+  const h = size === "lg" ? 42 : 22;
   return (
-    <span
-      className={cn(
-        "font-bold tracking-tight text-accent",
-        size === "lg" ? "text-4xl" : "text-xl",
-        className,
-      )}
-    >
-      LockIn
-    </span>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/wordmark-lockin.png"
+      alt="LockIn"
+      height={h}
+      style={{ height: h, width: "auto" }}
+      className={cn("block", className)}
+    />
   );
 }

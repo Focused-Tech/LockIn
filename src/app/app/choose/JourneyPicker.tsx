@@ -77,16 +77,11 @@ export function JourneyPicker({
       <header className="practice-deal flex flex-col items-center gap-2 pt-1">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/arena/fox-crest.png"
-          alt=""
-          aria-hidden
-          width={92}
-          height={92}
-          className="h-[92px] w-[92px] rounded-full object-cover"
-          style={{
-            border: "2px solid rgba(255,59,0,0.65)",
-            boxShadow: "0 0 22px rgba(255,59,0,0.4)",
-          }}
+          src="/wordmark-lockin.png"
+          alt="LockIn"
+          height={48}
+          style={{ height: 48, width: "auto" }}
+          className="block"
         />
       </header>
 
