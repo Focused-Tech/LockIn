@@ -45,17 +45,30 @@ const CATEGORY_HUE: Record<string, string> = {
   // THE single source of truth for every slate/pick card's outline, header bar,
   // and selection glow, app-wide. Any category not listed → NEUTRAL_HUE fallback.
   NFL: "#E0703C",
-  NBA: "#E04C6E",
+  NBA: "#1D6FE8",
   UFC: "#E85454",
   Soccer: "#3CCB7F",
   Crypto: "#F5A623",
   Music: "#B06FCE",
   Esports: "#7C5CF5",
-  MLB: "#4F8FE8",
+  MLB: "#E8EAED",
   NHL: "#5BC0DE",
-  Politics: "#E85454",
+  Politics: "#9B4DCA",
   Weather: "#4FC3E8",
   Awards: "#E8C24F",
+  Stocks: "#26A69A",
+  Economics: "#3FA796",
+  AI: "#5B8DEF",
+  Forex: "#7FB800",
+  World: "#C99A2E",
+  // NASCAR is specced as a #C0392B→#E67E22 gradient; the tint system uses a single
+  // hue, so we use the orange end here. (Gradient outline is a follow-up.)
+  NASCAR: "#E67E22",
+  Boxing: "#B03060",
+  Tennis: "#B6E13B",
+  Golf: "#2E8B57",
+  Entertainment: "#D6249F",
+  "TV Shows": "#8A5CF6",
 };
 
 const NEUTRAL_HUE = "#2E6BF0";

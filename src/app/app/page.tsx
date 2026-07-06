@@ -34,26 +34,14 @@ export default async function ExplorePage() {
             Live contests from creators. Pick outcomes, climb the board.
           </p>
         </div>
-        {/* Action pills on their own row below (wraps like the category-pill row,
-            so nothing clips at 390–430px). */}
+        {/* Action pills on their own row below. (Switch journey + Host removed —
+            the LockIn logo routes to The Fox Pit; hosting lives on the creator page.) */}
         <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href="/app/choose"
-            className="rounded border border-accent-border bg-accent-soft px-3 py-1.5 text-sm font-medium text-accent"
-          >
-            Switch journey
-          </Link>
           <Link
             href="/app/packages"
             className="rounded border border-border px-3 py-1.5 text-sm font-medium text-muted hover:text-foreground"
           >
             Packages
-          </Link>
-          <Link
-            href="/app/create"
-            className="rounded border border-accent-border bg-accent-soft px-3 py-1.5 text-sm font-medium text-accent"
-          >
-            + Host
           </Link>
         </div>
       </div>

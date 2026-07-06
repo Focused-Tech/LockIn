@@ -6,7 +6,7 @@ import { computeSlateMetrics } from "@/lib/contest";
 import { categoryTint } from "@/lib/practice/tints";
 import type { EntryTier } from "@/lib/constants";
 import type { FeedSlate } from "@/lib/feed";
-import { formatCents, formatMultiple } from "@/lib/utils";
+import { formatCents, formatCentsShort, formatMultiple } from "@/lib/utils";
 
 /** Resolve which tier config to display: the selected tier, else the lowest. */
 function tierConfig(slate: FeedSlate, selected: EntryTier) {
@@ -86,21 +86,21 @@ export function SlateCard({
       {locked || !metrics ? (
         <p className="text-sm text-muted">
           Locked — results pending.{" "}
-          {metrics ? `Final pool ${formatCents(metrics.prizePoolCents)}.` : ""}
+          {metrics ? `Final pool ${formatCentsShort(metrics.prizePoolCents)}.` : ""}
         </p>
       ) : (
         <>
-          <div className="flex items-center justify-between rounded border border-border p-3">
-            <div>
+          <div className="flex items-center justify-between gap-4 rounded border border-border p-3">
+            <div className="min-w-0">
               <p className="text-xs text-muted">Prize pool</p>
               <p className="text-lg font-semibold text-win">
-                {formatCents(metrics.prizePoolCents)}
+                {formatCentsShort(metrics.prizePoolCents)}
               </p>
             </div>
-            <div className="text-right">
+            <div className="min-w-0 text-right">
               <p className="text-xs text-muted">1st place</p>
               <p className="text-lg font-semibold">
-                {formatCents(metrics.firstPlaceCents)}
+                {formatCentsShort(metrics.firstPlaceCents)}
                 <span className="ml-1 text-sm text-muted">
                   {formatMultiple(metrics.firstPlaceMultiple)}
                 </span>

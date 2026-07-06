@@ -22,7 +22,7 @@ const config: Config = {
         border: "#1E2A38",
         // Text
         foreground: "#E8ECF2",
-        muted: "#6B7A8E",
+        muted: "#94A3B4",
         // Accent (cayenne) — solid value only for text/icons; backgrounds use the
         // translucent tokens below. Never apply as a solid bg fill.
         // Cayenne. The translucent fill/border are CSS variables so the
