@@ -18,7 +18,7 @@ import { ArenaReveal } from "./ArenaReveal";
 type Step = "categories" | "slates" | "playing" | "revealing";
 
 /**
- * ARENA — the multi-slate round orchestrator (client-only; composes the existing
+ * ARENA — the Parlay round orchestrator (client-only; composes the existing
  * practice server actions, no new data layer). Flow:
  *   categories (multi) → slates (multi, "Add to round") → play sequentially →
  *   batched reveal in event-time order → consolidated payout.

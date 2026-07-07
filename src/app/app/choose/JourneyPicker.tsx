@@ -75,13 +75,20 @@ export function JourneyPicker({
   return (
     <div className="flex flex-col gap-4 p-6">
       <header className="practice-deal flex flex-col items-center gap-2 pt-1">
+        {/* Boss Fox crest avatar in the body (the wordmark lives only in the top
+            header, via the shared Logo — not duplicated here). */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/wordmark-lockin.png"
-          alt="LockIn"
-          height={48}
-          style={{ height: 48, width: "auto" }}
-          className="block"
+          src="/arena/fox-crest.png"
+          alt=""
+          aria-hidden
+          width={92}
+          height={92}
+          className="h-[92px] w-[92px] rounded-full object-cover"
+          style={{
+            border: "2px solid rgba(255,59,0,0.65)",
+            boxShadow: "0 0 22px rgba(255,59,0,0.4)",
+          }}
         />
       </header>
 

@@ -4,12 +4,12 @@ import { getCurrentUserProfile } from "@/lib/firebase/session";
 import { ArenaSession } from "../ArenaSession";
 
 /**
- * MULTI-SLATE — queue several slates and play them back-to-back vs AI creators.
- * This is the existing ArenaSession flow (categories → slates → play → reveal),
+ * PARLAY — queue several slates and play them back-to-back vs AI creators. This
+ * is the existing ArenaSession flow (categories → slates → play → reveal),
  * rehomed to its own sub-route so the chooser owns /app/practice/arena. Back /
  * reveal-exit return to the chooser.
  */
-export default async function MultiSlatePage() {
+export default async function ParlayPage() {
   const profile = await getCurrentUserProfile();
   if (!profile) redirect("/login");
 

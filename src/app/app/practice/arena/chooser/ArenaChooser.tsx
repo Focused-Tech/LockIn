@@ -10,9 +10,9 @@ import { ArenaIntro } from "./ArenaIntro";
  * React. Chrome (topbar/bottom nav) is supplied by AppFrame, so this ports only
  * the header + carousel + dots + toast.
  *
- * Carousel order (approved): Practice Dojo → Multi-Slate → Coliseum → Creator
+ * Carousel order (approved): Practice Dojo → Parlay → Coliseum → Creator
  * Studio. data-mode names are unchanged from the design: practice / multiplayer
- * (Multi-Slate) / compete (Coliseum) / creator. NO lock/skip this pass — there
+ * (Parlay) / compete (Coliseum) / creator. NO lock/skip this pass — there
  * is no real progression gate designed. Live counts are decorative.
  */
 
@@ -54,7 +54,7 @@ const MODES: Mode[] = [
   {
     key: "multiplayer",
     tag: "Solo · Stacked",
-    title: "Multi-Slate",
+    title: "Parlay",
     desc: "Queue several slates and play them back-to-back vs AI creators.",
     meta: ["Multiple slates", "Back-to-back", "vs AI creators"],
     cta: "Stack slates →",
@@ -63,8 +63,8 @@ const MODES: Mode[] = [
     border: "rgba(55, 138, 221, 0.55)",
     fill: "linear-gradient(90deg, #050117 0%, #07042b 50%, #000539 100%)",
     fillMask: MASK_STD,
-    bg: "/arena/arena-multislate.png",
-    route: "/app/practice/arena/multi",
+    bg: "/arena/arena-parlay.png",
+    route: "/app/practice/arena/parlay",
   },
   {
     key: "compete",
@@ -111,22 +111,21 @@ export function ArenaChooser() {
   const [dragging, setDragging] = useState(false);
   const [live, setLive] = useState<number[]>(() => MODES.map((m) => m.live));
 
-  // Boss Fox glass-door intro — plays once per session before the carousel.
+  // Boss Fox glass-door intro — fires on every FORWARD entry to the chooser, and
+  // is skipped only when returning via back from a mode (the "entering-mode" flag
+  // is set just before we route into a mode, cleared here on the way back).
   const [showIntro, setShowIntro] = useState(false);
   useEffect(() => {
     try {
-      if (window.sessionStorage.getItem("lockin:arena:intro-seen") !== "1")
-        setShowIntro(true);
+      const returning =
+        window.sessionStorage.getItem("lockin:arena:entering-mode") === "1";
+      window.sessionStorage.removeItem("lockin:arena:entering-mode");
+      setShowIntro(!returning);
     } catch {
-      /* sessionStorage blocked — skip the intro rather than error */
+      setShowIntro(true);
     }
   }, []);
   function finishIntro() {
-    try {
-      window.sessionStorage.setItem("lockin:arena:intro-seen", "1");
-    } catch {
-      /* non-fatal */
-    }
     setShowIntro(false);
   }
 
@@ -182,6 +181,9 @@ export function ArenaChooser() {
   function enter(mode: Mode) {
     try {
       window.localStorage.setItem(LAST_MODE_KEY, mode.key);
+      // Mark that we're leaving INTO a mode, so back-navigation to the chooser
+      // skips the intro (and lands on the current carousel, not a replay).
+      window.sessionStorage.setItem("lockin:arena:entering-mode", "1");
     } catch {
       /* storage disabled — non-fatal */
     }

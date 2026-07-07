@@ -146,7 +146,7 @@ export const PRACTICE_CONFIG = {
     tickEveryMs: 1_000,
   },
 
-  /** ARENA — the multi-slate round: select several slates, play them back-to-back,
+  /** ARENA — the Parlay round: select several slates, play them back-to-back,
    *  then a batched reveal in event-time order. All timings tunable here. */
   arena: {
     /** Max slates a single round may bundle (keeps a round bounded + snappy). */

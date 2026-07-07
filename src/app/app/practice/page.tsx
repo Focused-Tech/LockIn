@@ -97,7 +97,7 @@ export default async function PracticeHomePage() {
         refillAt={profile.practiceRefillAt ?? null}
       />
 
-      {/* Arena — the multi-slate round. GREEN (money/play "go"), not orange: the
+      {/* Arena — the Parlay round. GREEN (money/play "go"), not orange: the
           one orange primary on this screen is "Host" below. */}
       <Link
         href="/app/practice/arena"

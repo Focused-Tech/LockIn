@@ -11,7 +11,7 @@ import { createPracticeContest } from "../../actions";
  * PRACTICE DOJO — single-slate warm-up vs the house AI (LockIn Fox). Pick one
  * category; we spin up an AI-hosted practice contest and drop you straight into
  * the real play surface (/app/practice/[id]). "Add another slate" graduates you
- * to Multi-Slate — the on-ramp described in the prototype.
+ * to Parlay — the on-ramp described in the prototype.
  */
 export function ArenaDojo() {
   const router = useRouter();
@@ -46,7 +46,7 @@ export function ArenaDojo() {
         <h1 className="mt-1 text-xl font-semibold">Choose a category</h1>
         <p className="text-sm text-muted">
           Single slate vs <span className="text-foreground">LockIn Fox</span>{" "}
-          (AI). Coaching hints on. Add another slate to graduate to Multi-Slate.
+          (AI). Coaching hints on. Add another slate to graduate to Parlay.
         </p>
       </div>
 
@@ -80,10 +80,10 @@ export function ArenaDojo() {
 
       <button
         type="button"
-        onClick={() => router.push("/app/practice/arena/multi")}
+        onClick={() => router.push("/app/practice/arena/parlay")}
         className="rounded-xl border border-dashed border-[rgba(55,138,221,0.6)] p-3 text-sm font-semibold text-[#378add] transition active:scale-[0.98]"
       >
-        + Add another slate — play Multi-Slate →
+        + Add another slate — play Parlay →
       </button>
 
       {error && (

@@ -1,5 +1,5 @@
 /**
- * ARENA — client-side helpers for the multi-slate round (play-money, SCORE only).
+ * ARENA — client-side helpers for the Parlay round (play-money, SCORE only).
  *
  * Pure + client-safe. The arena orchestrator (ArenaSession) composes the EXISTING
  * per-contest server actions (createPracticeContest / submitPracticePicks) — this
