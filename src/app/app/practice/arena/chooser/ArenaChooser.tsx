@@ -355,9 +355,10 @@ export function ArenaChooser() {
         .ch-header {
           padding: 12px 20px 8px;
           flex-shrink: 0;
+          text-align: center;
         }
         .ch-title {
-          font-size: 22px;
+          font-size: 18px;
           font-weight: 700;
           letter-spacing: -0.5px;
         }

@@ -49,8 +49,13 @@ export function ArenaIntro({ onDone }: { onDone: () => void }) {
       </div>
       <div className="door-seam" />
       <div className="glass-door">
+        <div className="door-welcome">Welcome</div>
         <img className="door-crest-img" src="/arena/intro/crest.png" alt="" />
         <div className="door-crest-tint" />
+        <div className="door-below">
+          <div className="door-tothe">to the</div>
+          <div className="door-foxpit">Fox Pit</div>
+        </div>
       </div>
       <div className="intro-skip">Tap to skip</div>
 
@@ -88,7 +93,7 @@ export function ArenaIntro({ onDone }: { onDone: () => void }) {
         .reveal-reflect {
           position: absolute;
           left: 50%;
-          top: 76%;
+          top: 84%;
           width: 118px;
           transform: translateX(-50%) translateY(10px);
           opacity: 0;
@@ -110,11 +115,12 @@ export function ArenaIntro({ onDone }: { onDone: () => void }) {
           position: absolute;
           top: 26%;
           right: 5%;
-          max-width: 54%;
+          width: max-content;
+          max-width: min(52vw, 210px);
           text-align: right;
           z-index: 4;
           color: #fff;
-          font-size: 23px;
+          font-size: clamp(16px, 5vw, 23px);
           font-weight: 900;
           line-height: 1.12;
           letter-spacing: 0.3px;
@@ -209,6 +215,51 @@ export function ArenaIntro({ onDone }: { onDone: () => void }) {
           box-shadow:
             0 0 12px rgba(255, 255, 255, 0.35),
             0 2px 6px rgba(0, 0, 0, 0.55);
+        }
+        .door-welcome {
+          position: absolute;
+          left: 50%;
+          top: 22%;
+          transform: translate(-50%, calc(-100% - 86px));
+          z-index: 12;
+          text-align: center;
+          white-space: nowrap;
+          pointer-events: none;
+          color: #eef3fb;
+          font-size: 26px;
+          font-weight: 800;
+          letter-spacing: 0.5px;
+          text-shadow:
+            0 0 14px rgba(0, 0, 0, 0.85),
+            0 0 20px rgba(255, 90, 20, 0.3);
+        }
+        .door-below {
+          position: absolute;
+          left: 50%;
+          top: 22%;
+          transform: translate(-50%, 84px);
+          z-index: 12;
+          text-align: center;
+          pointer-events: none;
+        }
+        .door-tothe {
+          color: #dfe7f2;
+          font-size: 15px;
+          font-weight: 600;
+          letter-spacing: 1px;
+          text-shadow: 0 0 12px rgba(0, 0, 0, 0.85);
+        }
+        .door-foxpit {
+          margin-top: 2px;
+          color: #fff;
+          font-size: 46px;
+          font-weight: 900;
+          line-height: 1;
+          letter-spacing: 0.5px;
+          white-space: nowrap;
+          text-shadow:
+            0 0 16px rgba(0, 0, 0, 0.85),
+            0 0 24px rgba(255, 90, 20, 0.4);
         }
         .door-crest-img {
           position: absolute;
