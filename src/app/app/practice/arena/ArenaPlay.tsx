@@ -6,6 +6,7 @@ import { AiBadge } from "@/components/practice/AiBadge";
 import { LegPicker } from "@/components/practice/LegPicker";
 import { SpotRace } from "../[id]/SpotRace";
 import { LockAnimation } from "@/components/LockAnimation";
+import { SlateLockLoader } from "@/components/SlateLockLoader";
 import { createPracticeContest, submitPracticePicks } from "../actions";
 import { PRACTICE_CONFIG } from "@/lib/practice/config";
 import { PRACTICE_DEFAULT_STAKE, scorePractice, type Choice } from "@/lib/practice/scoring";
@@ -269,14 +270,7 @@ export function ArenaPlay({
       </div>
 
       {phase === "generating" || !gen ? (
-        <div className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-surface-card py-14 text-center">
-          <span className="practice-lock-pulse text-2xl" style={{ "--pulse": "0.9s" } as React.CSSProperties}>
-            🃏
-          </span>
-          <p className="text-sm text-muted">
-            Dealing {current.creatorName.split(" ")[0]}&apos;s slate…
-          </p>
-        </div>
+        <SlateLockLoader creatorName={current.creatorName} />
       ) : (
         <>
           {/* Pinned timer + spot race (shared play surface). */}

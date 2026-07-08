@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>LockIn — Transition screen (real lock) mockup</title>
+<style>
+  :root{
+    --bg:#0A0D12; --bar:#0e1319; --card:#12161d; --line:rgba(255,255,255,.08);
+    --orange:#FF3B00; --gold:#efa22a; --green:#5dcaa5; --blue:#57a6ff; --blue-bg:rgba(55,138,221,.14);
+    --txt:#f3f1ec; --muted:#8a8a84; --dim:#5f5e5a;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:#05070a;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  body{display:flex;align-items:center;justify-content:center;padding:16px;}
+  .phone{width:100%;max-width:400px;height:min(860px,94vh);background:var(--bg);border-radius:28px;
+    overflow:hidden;position:relative;display:flex;flex-direction:column;border:1px solid rgba(255,255,255,.05);
+    box-shadow:0 24px 80px rgba(0,0,0,.6);}
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 12px;
+    background:var(--bar);border-bottom:1px solid var(--line);flex-shrink:0;}
+  .lead{display:flex;align-items:center;gap:8px;}
+  .chev{color:var(--muted);font-size:20px;line-height:1;}
+  .wm{font-weight:800;font-size:22px;letter-spacing:-.5px;display:inline-flex;align-items:center;background:#000;padding:2px 8px;border-radius:7px;}
+  .wm .o{color:var(--orange);}
+  .wm .lk{width:15px;height:19px;margin:0 1px;transform:translateY(2px);}
+  .wm .w{color:#fff;}
+  .pills{display:flex;align-items:center;gap:7px;}
+  .pill{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:999px;font-size:14px;font-weight:700;border:1px solid transparent;}
+  .p-coin{color:var(--gold);background:rgba(239,162,42,.10);border-color:rgba(239,162,42,.30);}
+  .p-coin .dot{width:15px;height:15px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffd66b,#e0901c);display:inline-block;}
+  .p-cash{color:var(--green);background:rgba(93,202,165,.10);border-color:rgba(93,202,165,.30);}
+  .ava{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--orange);color:var(--orange);
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;}
+
+  .metarow{display:flex;justify-content:space-between;padding:16px 20px 4px;color:var(--muted);font-size:16px;}
+  .metarow .r{color:var(--dim);}
+
+  .creator{margin:12px 16px 0;padding:12px 14px;border-radius:14px;background:var(--card);
+    border:1px solid var(--line);border-left:3px solid var(--blue);display:flex;align-items:center;gap:10px;}
+  .shield{width:26px;height:30px;flex-shrink:0;}
+  .cname{font-weight:800;font-size:19px;color:#fff;}
+  .tag{margin-left:2px;font-size:12.5px;font-weight:800;letter-spacing:.3px;padding:4px 9px;border-radius:999px;
+    color:var(--blue);background:var(--blue-bg);border:1px solid rgba(55,138,221,.35);}
+  .spacer{flex:1;}
+
+  .stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;}
+  .glow{position:absolute;width:300px;height:300px;border-radius:50%;
+    background:radial-gradient(circle,rgba(255,59,0,.14),rgba(255,59,0,.04) 45%,transparent 70%);}
+  .rig{position:relative;display:flex;align-items:center;justify-content:center;}
+
+  .lock{width:132px;height:158px;filter:drop-shadow(0 6px 16px rgba(255,59,0,.22));}
+  .shackle{transform-box:fill-box;}
+  .lock.animate .shackle{animation:openclose 1.4s cubic-bezier(.45,0,.25,1) forwards;}
+  @keyframes openclose{0%,10%{transform:translateY(0)}32%,58%{transform:translateY(-34px)}90%{transform:translateY(0)}95%{transform:translateY(3px)}100%{transform:translateY(0)}}
+  .lock.animate .base{animation:bump 1.4s ease forwards;transform-box:fill-box;transform-origin:center;}
+  @keyframes bump{0%,86%{transform:scale(1)}92%{transform:scale(1.045)}100%{transform:scale(1)}}
+
+  .lbl{margin-top:26px;font-size:19px;font-weight:700;color:var(--txt);letter-spacing:-.2px;z-index:3;}
+  .dots i{opacity:.25;animation:blink 1.4s infinite;font-style:normal;}
+  .dots i:nth-child(2){animation-delay:.2s;}
+  .dots i:nth-child(3){animation-delay:.4s;}
+  .sub{margin-top:6px;font-size:13px;color:var(--dim);z-index:3;}
+  .replay{margin-top:16px;background:transparent;border:1px solid rgba(255,59,0,.5);color:var(--orange);
+    border-radius:999px;padding:7px 16px;font-size:13px;font-weight:700;cursor:pointer;z-index:3;}
+
+  @keyframes blink{0%,100%{opacity:.25}40%{opacity:1}}
+
+  .disc{text-align:center;color:var(--muted);font-size:15px;line-height:1.5;padding:0 34px 8px;}
+  .bottom{display:flex;justify-content:space-between;align-items:center;padding:10px 22px 26px;flex-shrink:0;}
+  .fab{width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,.03);
+    border:1px solid rgba(255,255,255,.10);display:flex;align-items:center;justify-content:center;}
+  .fab.bolt{color:var(--gold);font-size:26px;}
+  .fab.ai{color:var(--blue);font-weight:800;font-size:20px;}
+
+  @media (prefers-reduced-motion:reduce){.lock.animate .shackle,.lock.animate .base{animation:none;}}
+</style>
+</head>
+<body>
+  <div class="phone">
+
+    <div class="topbar">
+      <div class="lead">
+        <span class="chev">&#8249;</span>
+        <span class="wm"><span class="o">L</span><svg class="lk" viewBox="0 0 24 30"><path d="M6 13V9a6 6 0 0 1 12 0v4" fill="none" stroke="#FF3B00" stroke-width="2.6" stroke-linecap="round"/><rect x="3.5" y="13" width="17" height="14" rx="3" fill="#FF3B00"/><circle cx="12" cy="19.5" r="2" fill="#0A0D12"/></svg><span class="o">ck</span><span class="w">In</span></span>
+      </div>
+      <div class="pills">
+        <span class="pill p-coin"><span class="dot"></span>500</span>
+        <span class="pill p-cash">$0.00</span>
+        <span class="ava">F</span>
+      </div>
+    </div>
+
+    <div class="metarow"><span>Slate 1 of 2</span><span class="r">event 9:30 PM</span></div>
+
+    <div class="creator">
+      <svg class="shield" viewBox="0 0 26 30"><path d="M13 1 2 5v10c0 8 6 12 11 14 5-2 11-6 11-14V5L13 1Z" fill="#c62828" stroke="#fff" stroke-width="1.5"/><path d="M13 1 2 5v10c0 8 6 12 11 14V1Z" fill="#e53935"/></svg>
+      <span class="cname">Chalk Carter</span>
+      <span class="tag">AI</span>
+      <span class="spacer"></span>
+      <span class="tag">NBA</span>
+    </div>
+
+    <div class="stage">
+      <div class="glow"></div>
+      <div class="rig">
+        <svg class="lock animate" id="lock" viewBox="0 0 150 180" xmlns="http://www.w3.org/2000/svg">
+          <path class="shackle" d="M48 150 L48 72 A27 27 0 0 1 102 72 L102 100" fill="none" stroke="#FF3B00" stroke-width="14" stroke-linecap="round"/>
+          <rect class="base" x="30" y="96" width="90" height="76" rx="17" fill="#FF3B00"/>
+          <g transform="translate(75,137) scale(0.2153) translate(-255.5,-328.5)"><path d="M210,265 210,291 215,312 206,324 208,326 198,339 208,345 211,351 223,357 232,367 236,377 249,389 256,392 275,376 277,369 286,358 301,350 300,347 313,339 305,330 303,322 295,312 300,293 301,266 299,265 289,272 272,288 256,284 239,288 224,274Z" fill="#0A0D12" fill-rule="evenodd"/></g>
+        </svg>
+      </div>
+      <div class="lbl">Locking in Chalk&#39;s slate<span class="dots"><i>.</i><i>.</i><i>.</i></span></div>
+      <div class="sub">2 slates &middot; NBA</div>
+      <button class="replay" id="replay">&#9654; Replay lock</button>
+    </div>
+
+    <div class="disc">Skill-based prediction contest platform. Not gambling. Not sports betting. 18+.</div>
+
+    <div class="bottom">
+      <div class="fab bolt">&#9889;</div>
+      <div class="fab ai">AI</div>
+    </div>
+
+  </div>
+
+<script>
+  const OPEN_B64="SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjYwLjE2LjEwMAAAAAAAAAAAAAAA//t0wAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAEAAAFoABmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmaZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzP////////////////////////////////8AAAAATGF2YzYwLjMxAAAAAAAAAAAAAAAAJAK3AAAAAAAABaD3/BKZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//t0xAAADSl9HhTEAApQrG1/GMAAmZosMDBQdgQER0liWTz+AkAAwXnBwDQPKLFxQxJcXPeBc9//h9ETd4Fz73FxcXgXF7/3cxE3d7IBuLvCIm5iS7vejv+7vu98IiaIn7+7u/puKGV//6IifpXLvf7u/CJpUvwiaJXLvcFj7q4eYeXiLd4VfsyWSAEAST9ICA5js3o9lJM7YrDobKVzZUUHNfc0kAENyebac84eMOjq81aXFnUcTnqj4GV1oT5t8zjp6VMtJTcGzbe1hyzl1nZCVkqhb271PXfPb986jjPQSuQ/nPmZnemmz1/jpW8OTLjyZuazWZ2u9PTPXmadSfUHrzq1h9q7tXYMtKo3//9Dw4qZWXKZeZaESWOpxhAQ//t0xAaAEJVlcfiVgAIFLu7/HoACgAAiXR6nnboQS6WAIOsrcAfA00m2ezhPuTVFncrG5NS/7cfq2E91wpLrnb2cNz+OxrXOuv/mmSwkExQ5uRY7jr/8+q40MB0Nl3PDjb///39oEwvYw3P6UnYRNWtb////2ck3Om5+oZfouHiIedUe//8EHf/5YGiTuzs0wrqasaskZbTRSKRZClwwTKtxSUXEZmJvEMEWwxDnQ8Og+ewAgeRQ1CKo0Oxij1soRw4BpMrE62YZIeAoLJ9brgy5dCg7EdzHjlYJr3f9EPiJni59fr5e6exTEWTxv//UX13p/FypSlqL3f//6x/+iV/++9XLzGYc/////6w7vu66uIZ6SGgAMFoSoyjqjm8c//t0xAkAEIVlcfz0AAoIs2m49BlIxKi2sp+kJQ1Oq2C4A1g8AKKgBQUhCJR4qEI00YDY4Ol1pVVVZrS7VZFrKv1hvFrJHSaMFRCD5xU2BaFKD44WGm2KyKrRy7WUdamxdfH/F/XxcrXX/7LwzfUVrUXzXzX+tzWShzNDTXJrL8TcYLho0FxRRV5NshCUAAA5ikk+SypXKhISTFTqw6+wwERN7JE1GjkmI5Vqrd7eZnNbZaUaLQ3DSKitq5aKe3/7fkknlIpJQUt6+86ljddzYJIHLetnGx/yW5/6tGp1Hu2v5mak3PjkVbWvnNx5mKrdzEW1rIqASVffjcodKUHdi3Z3zf3z7FVfK1USf7WA4Auy0BQAGDQpOSeCRYBCRKBJ//t0xAsAT/mbNWGkxEIdMuAAFhp5zZlkiRLfWu6M5KPdE6jc/eZYunNU8mkcOJAyXp57bLaaAQnBQ6EiPIkSJaNaclVEigp6eXKJTObOU5umq7abM/9/3mWS/7zn/eWp2rtVJdqBsvOclMy7UxJLZlyPNKXM163/9qYkAkyKqENfzI0wkxGhHvHKVYqW9aM5TMP0+uW+u9aa2hcXUMiSXFZ6urlHlsD7tvWwxfkLhaEEOhqJ6A88csXgTPu1TRmKwnJn4r8u2uVxclcPjkgOJFoJPlScVeUXCQKKKTjc2afZyrlqIms5VqWiSFHw5VonXUxUts1RcLRqSQk9BKW02EjrROLEkkxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVV";
+  const CLOSE_B64="SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjYwLjE2LjEwMAAAAAAAAAAAAAAA//t0wAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAEAAAFoABmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmaZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzP////////////////////////////////8AAAAATGF2YzYwLjMxAAAAAAAAAAAAAAAAJAOeAAAAAAAABaAHjhmeAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//t0xAAADdWTFDSUAAItqy8/HrACAKEOuFwDgDDZQAYGydIgFBJiMBQGg5xd4qRQUTd3tBc+9ESpRERErdBRKksXPQG58CgNA8FKLDwUqbhE0FBQxN3v/0RP//9ETl3fd3/+Url39Hd30RKTl39P3e////hHf/+Hd//+vcsXeBcXd+D8u7IioiKrojGdipDIZDAZBPyZHcTwISOFWJCMn2GVQa6zFmNDgBzGjwsWWZE9FJo/MfZuCYxRvn/VxsmTCGuhQ+cPvfJw+ZDeft1udNQypt/CaJPgvnqNrH9Tb/o3VcaJFhuWVDY3O/4rm/nv5th9nEt5qW/9//15MXYcPqHHHAdCwqGiv//+8p//6YzLvpZCGMAAAA7Bfi9aS2n4//t0xAiAUKV5U/z0AAoZsyd6mIAAeJAS+ss50vXA5o210bJp9SSrQLHM7HMLLD1HNcN9wcNoaKjBYGw9YZSTRlwzSUzSKrRQsKoHQfHFCwNrhwamjAXC1yxXFw3RJq1x8Kq881E7OsWpsmrFw18w1/6ztrXstFHKsWSU6k1ryzSbAtYqy6jyQoaaukQqCQAAdGD8asTi3wVDyPQSuGLCRio5GF4FBYfTqPpjpNVG0Yk1VYp1IHiorAgjihDGA2ERRIJqPAcaYVCCpAgjh4sDwfRI5SGEYaK1vUjB7aUaLUKvlO5gwrpaahY6xVb24hrrWF4W7oo6L49L45r5mrjZrqVZ5YWeePjX+KjbqGnj7LXfXW+7Tffz12KNZoRCrL4g//t0xAgAENFjc7mFgBobM6b3kIAA50Snu2oYFRfuk4DuDwMX1NKOHSUO6lpHsdpBgnOR22kSACIRHbSjV2nDhiP4Jh3bSL62xnLHQ0+TETv/9/8nx0GlGhxvJqaxNMUjmWVXs5ON28tqf//9puOis4yqe2uW/7f///95kfg0NDQkGhMPlY62/SC/SKAFnu0sTAAAH/6qrHCCDU0VD1QUsLDVKFpgW9f2Zq+LpnFSTSrVf/UlVooFQCoAUFo5hZmYkOQagKg1NgOgbA1D0VFQag1BqHqByDUGoNQ9FRUVXVVVVVWv+Ga2ZmZihYWWGtRU2ihUVNXhr/9VrZVWoYWFmXhm/hahma1JKFjr/5////4KOtWZ/zOYVDDiQwJ0VpVL//t0xAaDzr2c+gENm0l6ps7AMI9JrzUThh5vCkAnMwUlVVXtKrtxtj6Aw1AnAQES1VlLCjMoY+NDqrF+k3AxfwwomKspNV4a9KNaWWFJlqMxw1hfXp3a7WvW2s2y2atWxXCU2WpnpnVvYuXXiAsBpkRNxK7EFd/RUL8QrHKKysDBWPAQMEDlR5LLKlkssssllllkssspEZH+f//n/2WW9lllsssstllllsWWWWxZZQQMHFBAwQMIDBxQQOVKDlVQZXTTDpqqqqrppppqqqqrpt/8////+//TTRVVVEVMQU1FMy4xMDBVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV";
+  let actx=null, openBuf=null, closeBuf=null;
+  function b64buf(b){ const bin=atob(b); const u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i); return u.buffer; }
+  function initAudio(){ if(actx) return; try{ actx=new (window.AudioContext||window.webkitAudioContext)();
+    actx.decodeAudioData(b64buf(OPEN_B64), b=>openBuf=b); actx.decodeAudioData(b64buf(CLOSE_B64), b=>closeBuf=b);}catch(e){} }
+  function unlock(){ initAudio(); if(actx && actx.state==="suspended") actx.resume(); }
+  document.addEventListener("pointerdown",unlock); document.addEventListener("click",unlock);
+  function sched(buf,when){ if(!actx||!buf) return; const sx=actx.createBufferSource(); sx.buffer=buf; sx.connect(actx.destination); sx.start(when); }
+  function play(){ unlock();
+    const el=document.getElementById("lock"); el.classList.remove("animate"); void el.getBoundingClientRect(); el.classList.add("animate");
+    const t=actx?actx.currentTime:0; sched(openBuf,t+0.15); sched(closeBuf,t+1.26); }
+  document.getElementById('replay').onclick=play;
+  window.addEventListener('load',()=>setTimeout(play,400));
+</script>
+</body>
+</html>
