@@ -10,6 +10,7 @@ import {
   type ArenaPlayed,
   type ArenaSlatePreview,
 } from "@/lib/practice/arena";
+import { applyPracticeArenaNet } from "../actions";
 import { CategorySelect } from "./CategorySelect";
 import { SlateSelect } from "./SlateSelect";
 import { ArenaPlay } from "./ArenaPlay";
@@ -68,6 +69,20 @@ export function ArenaSession() {
   function onPlayDone(results: ArenaPlayed[]) {
     setPlayed(results);
     setStep("revealing");
+
+    // Real slates already persisted their coin delta server-side during play
+    // (submitPracticePicks). Persist the client-scored LOCAL fallback slates
+    // here, then refresh so every server component that reads the practice coin
+    // balance (the top-bar coin pill included) re-renders with the new total —
+    // the same reactivity single-bet mode gets from PracticeContest's refresh.
+    const localNet = results
+      .filter((p) => p.source === "local")
+      .reduce((s, p) => s + p.net, 0);
+    const persisted =
+      localNet !== 0
+        ? applyPracticeArenaNet(localNet).catch(() => {})
+        : Promise.resolve();
+    persisted.finally(() => router.refresh());
   }
 
   function replay() {

@@ -381,6 +381,47 @@ export async function submitPracticePicks(
 }
 
 /**
+ * Persist the coin delta from client-scored ARENA (parlay) slates — the LOCAL
+ * fallback used when the AI engine can't generate a slate. Those slates are
+ * scored client-side and never reach {@link submitPracticePicks}, so their net
+ * would otherwise be lost. Real slates in the same round already persisted
+ * during play, so ONLY the local portion is passed here. Applies the net to the
+ * player's PRACTICE balance the same way the rest of the economy does (Firestore
+ * user doc, transactional), clamped at 0. Returns the new balance.
+ */
+export async function applyPracticeArenaNet(
+  netDelta: number,
+): Promise<{ ok: boolean; balance: number }> {
+  const profile = await getCurrentUserProfile();
+  if (!profile) return { ok: false, balance: 0 };
+
+  const delta = Math.round(netDelta);
+  if (!Number.isFinite(delta) || delta === 0) {
+    return { ok: true, balance: practiceBalance(profile) };
+  }
+
+  const userRef = adminDb().collection(COLLECTIONS.users).doc(profile.id);
+  const balance = await adminDb().runTransaction(async (tx) => {
+    const snap = await tx.get(userRef);
+    const user = (snap.data() as UserDoc | undefined) ?? ({} as UserDoc);
+    const after = Math.max(0, practiceBalance(user) + delta);
+    tx.set(
+      userRef,
+      {
+        practiceCoins: after,
+        // Lifetime tracks gross winnings (drives rank/difficulty) — only gains.
+        practiceLifetimeCoins:
+          (user.practiceLifetimeCoins ?? 0) + Math.max(0, delta),
+      },
+      { merge: true },
+    );
+    return after;
+  });
+
+  return { ok: true, balance };
+}
+
+/**
  * Claim the FREE DAILY refill (not instant): only tops up to 500 once the
  * busted player's cooldown has elapsed. Never sells coins for real money.
  * Returns the (possibly unchanged) balance + the next refill time for the UI.

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { PwaSetup } from "@/components/pwa/PwaSetup";
+import { BootSplash } from "@/components/splash/BootSplash";
 import { ACCENT_VARIANT } from "@/lib/theme";
 
 export const metadata: Metadata = {
@@ -32,6 +33,7 @@ export default function RootLayout({
     <html lang="en" data-accent={ACCENT_VARIANT}>
       <body className="min-h-screen bg-background text-foreground antialiased">
         {children}
+        <BootSplash />
         <PwaSetup />
       </body>
     </html>
