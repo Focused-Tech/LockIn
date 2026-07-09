@@ -100,36 +100,13 @@ export function JourneyPicker({
           The Fox Pit
         </h1>
         <p className="mt-1 text-sm text-muted">
-          Jump back into your feed, or switch lanes — your choice, any time.
+          Use your skills to Lock In and win up to{" "}
+          <span className="text-accent">1000x</span> in payouts.
         </p>
       </div>
 
-      {/* Continue — only when a lane is already set (no forced re-pick) */}
-      {currentLane && (
-        <button
-          type="button"
-          onClick={continueToFeed}
-          disabled={pending}
-          aria-busy={busy === "continue"}
-          style={{
-            animationDelay: "100ms",
-            background: TONE.orange.background,
-            border: TONE.orange.border,
-          }}
-          className="practice-deal flex items-center justify-between rounded-xl p-5 text-left transition active:scale-[0.98] disabled:opacity-60"
-        >
-          <span>
-            <span className="block text-base font-bold text-accent">
-              Continue to my feed
-            </span>
-            <span className="block text-sm text-muted">
-              Back to your{" "}
-              {currentLane === "beginner" ? "Beginner" : "Advanced"} journey
-            </span>
-          </span>
-          <span className="text-xl text-accent">→</span>
-        </button>
-      )}
+      {/* Resume lives on the "Current" badge below (the single way back) — the
+          separate "Continue to my feed" button was redundant and was removed. */}
 
       <p
         className="practice-deal pt-1 text-xs font-medium uppercase tracking-wide text-muted"
@@ -148,18 +125,20 @@ export function JourneyPicker({
         delayMs={190}
         tone="violet"
         onClick={() => pickLane("beginner")}
+        onResume={continueToFeed}
       />
 
       {/* Advanced */}
       <JourneyCard
         title="Advanced — full market"
-        body="Every contest, odds, and parlays. The complete Explore feed."
+        body="Here knowledge reigns supreme. Every contest, odds and parlays. Lockin to win."
         active={currentLane === "advanced"}
         busy={busy === "advanced"}
         disabled={pending}
         delayMs={240}
         tone="orange"
         onClick={() => pickLane("advanced")}
+        onResume={continueToFeed}
       />
 
       {/* Creator — first-class entry (a role, not a lane) */}
@@ -181,7 +160,7 @@ export function JourneyPicker({
       {/* Practice — play-money multiplayer (coins are score; nothing cashable) */}
       <JourneyCard
         title="Practice arena — play with friends"
-        body="Play-money contests for coins, rank & bragging rights. Host AI or manual slates, invite friends, climb the tiers. No real money, ever."
+        body="Compete for coins (no real money) and leaderboard rank. Climb the tiers and sharpen your skills."
         active={false}
         busy={busy === "practice"}
         disabled={pending}
@@ -206,6 +185,7 @@ function JourneyCard({
   delayMs,
   tone,
   onClick,
+  onResume,
 }: {
   title: string;
   body: string;
@@ -215,6 +195,9 @@ function JourneyCard({
   delayMs: number;
   tone: keyof typeof TONE;
   onClick: () => void;
+  /** Tapping the "Current" badge resumes the user's last session. Only the
+   *  active card renders the badge, so only it uses this. */
+  onResume?: () => void;
 }) {
   const t = TONE[tone];
   return (
@@ -234,7 +217,21 @@ function JourneyCard({
         {title}
         {active && (
           <span
-            className="rounded-full px-2 py-0.5 text-[10px] font-medium uppercase"
+            role="button"
+            tabIndex={0}
+            aria-label="Resume where you left off"
+            onClick={(e) => {
+              e.stopPropagation();
+              onResume?.();
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                e.stopPropagation();
+                onResume?.();
+              }
+            }}
+            className="cursor-pointer rounded-full px-2 py-0.5 text-[10px] font-medium uppercase transition hover:bg-white/10 active:scale-95"
             style={{ border: `1px solid ${t.accent}`, color: t.accent }}
           >
             Current

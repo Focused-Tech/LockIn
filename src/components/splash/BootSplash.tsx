@@ -64,29 +64,36 @@ export function BootSplash() {
       s.start(when);
     };
 
-    // One-shot: restart the CSS animation and (re)schedule the two sounds from
-    // the audio clock — mirrors the mockup's play(). Audio is gesture-gated, so
-    // the first tap is what makes the sounds audible.
-    const play = () => {
-      if (actx && actx.state === "suspended") actx.resume().catch(() => {});
-      const el = lockRef.current;
-      if (el) {
-        el.classList.remove("animate");
-        void el.getBoundingClientRect(); // reflow so the animation replays
-        el.classList.add("animate");
-      }
+    // Fire the shackle open/close once, scheduled off the audio clock. This is
+    // the ONLY thing that plays the lock sound here — no per-interaction replay.
+    const playSounds = () => {
       const t = actx ? actx.currentTime : 0;
       sched(openBuf, t + 0.15);
       sched(closeBuf, t + 1.26);
     };
 
-    // Initial run once decode has had a beat; silent if the context is suspended.
-    timers.push(window.setTimeout(play, 250));
+    // The lock animation runs on mount (the SVG carries `animate` in its markup).
+    // Try the sounds immediately; if audio is still gesture-locked they're
+    // inaudible and the single unlock below replays them once.
+    timers.push(window.setTimeout(playSounds, 250));
 
-    // First user gesture unlocks audio and replays the one-shot with sound.
-    const onGesture = () => play();
-    window.addEventListener("pointerdown", onGesture);
-    window.addEventListener("click", onGesture);
+    // ONE-SHOT gesture unlock. CRITICAL: this must detach after firing (and be
+    // force-removed when the splash ends) — a lingering global listener is what
+    // made the lock sound play on every scroll/tap across the whole app. It
+    // resumes the audio context and replays the one-shot a single time, nothing
+    // more (no animation restart, no re-arm).
+    function removeUnlock() {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("click", unlock);
+    }
+    function unlock() {
+      removeUnlock();
+      if (actx && actx.state === "suspended") {
+        actx.resume().then(playSounds).catch(() => {});
+      }
+    }
+    window.addEventListener("pointerdown", unlock);
+    window.addEventListener("click", unlock);
 
     // Hand off from the native splash to this web splash.
     if (isNativePlatform()) {
@@ -95,12 +102,18 @@ export function BootSplash() {
         .catch(() => {});
     }
 
-    timers.push(window.setTimeout(() => setGone(true), SPLASH_MS));
+    // End the splash. The component returns null but never unmounts, so the
+    // return cleanup can't be relied on — detach the unlock listeners here too.
+    timers.push(
+      window.setTimeout(() => {
+        setGone(true);
+        removeUnlock();
+      }, SPLASH_MS),
+    );
 
     return () => {
       timers.forEach((t) => clearTimeout(t));
-      window.removeEventListener("pointerdown", onGesture);
-      window.removeEventListener("click", onGesture);
+      removeUnlock();
       try {
         actx?.close();
       } catch {

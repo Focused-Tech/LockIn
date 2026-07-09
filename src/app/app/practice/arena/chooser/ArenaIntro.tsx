@@ -251,7 +251,9 @@ export function ArenaIntro({ onDone }: { onDone: () => void }) {
         }
         .door-foxpit {
           margin-top: 2px;
-          color: #fff;
+          /* LockIn brand orange — same accent (#FF3B00) as the wordmark "Lock"
+             and the coin count (Tailwind accent.DEFAULT / .dot.active here). */
+          color: #ff3b00;
           font-size: 46px;
           font-weight: 900;
           line-height: 1;
