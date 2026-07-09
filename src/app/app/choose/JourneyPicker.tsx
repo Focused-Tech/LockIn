@@ -101,7 +101,7 @@ export function JourneyPicker({
         </h1>
         <p className="mt-1 text-sm text-muted">
           Use your skills to Lock In and win up to{" "}
-          <span className="text-accent">1000x</span> in payouts.
+          <span className="text-accent">1000x</span> in cash payouts.
         </p>
       </div>
 

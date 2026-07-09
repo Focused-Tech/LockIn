@@ -177,22 +177,25 @@ export function BootSplash() {
           background: #0a0d12;
           overflow: hidden;
         }
-        /* 502/1080 box scaled to COVER the viewport, centered — reproduces the
-           mockup's coordinate space so the lock % offsets hit the palm. */
+        /* 502/1080 box scaled to CONTAIN (fit) inside the viewport, centered and
+           letterboxed with the #0A0D12 splash bg (seamless on the dark page) —
+           nothing is cropped, so the full "LockIn" wordmark shows even on the
+           Fold's narrow screen. The box keeps the mockup's exact aspect, so the
+           lock % offsets still land on the fox's palm. */
         .boot-stage {
           position: absolute;
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
-          width: max(100vw, calc(100dvh * ${BG_W} / ${BG_H}));
-          height: max(100dvh, calc(100vw * ${BG_H} / ${BG_W}));
+          width: min(100vw, calc(100dvh * ${BG_W} / ${BG_H}));
+          height: min(100dvh, calc(100vw * ${BG_H} / ${BG_W}));
         }
         .boot-bg {
           position: absolute;
           inset: 0;
           width: 100%;
           height: 100%;
-          object-fit: cover;
+          object-fit: contain;
         }
         .boot-lockpos {
           position: absolute;
@@ -254,7 +257,8 @@ export function BootSplash() {
           right: 0;
           bottom: 3.4%;
           text-align: center;
-          color: #d6d6d6;
+          color: #ededed;
+          text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
           letter-spacing: 0.16em;
           font-size: 11px;
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,

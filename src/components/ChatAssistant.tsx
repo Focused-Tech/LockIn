@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ChatMessage } from "@/lib/ai/chat";
 
 const GREETING =
-  "Hey! I'm your LockIn assistant. Ask me about how contests work, your balance, deposits, or anything else.";
+  "I'm the Locksmith 🦊 — your fox guide to picking the lock on a win. Ask me how odds, parlays, or payouts work, about your balance or deposits, or anything else on LockIn.";
 
 export function ChatAssistant() {
   const [open, setOpen] = useState(false);
@@ -81,22 +81,22 @@ export function ChatAssistant() {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        aria-label="Open assistant"
-        className="fixed bottom-[4.5rem] right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full border border-[rgba(59,139,255,0.4)] bg-[rgba(59,139,255,0.15)] text-ai shadow-lg backdrop-blur transition-colors hover:bg-[rgba(59,139,255,0.25)]"
+        aria-label={open ? "Close Locksmith" : "Open Locksmith — your AI guide"}
+        className="fixed bottom-[4.5rem] right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full border border-[rgba(59,139,255,0.4)] bg-[rgba(59,139,255,0.15)] text-lg text-ai shadow-lg backdrop-blur transition-colors hover:bg-[rgba(59,139,255,0.25)]"
       >
-        {open ? "✕" : "AI"}
+        {open ? "✕" : "🦊"}
       </button>
 
       {/* Panel */}
       {open && (
         <div className="fixed bottom-[8.5rem] right-4 z-40 flex h-[24rem] w-[min(92vw,22rem)] flex-col overflow-hidden rounded-xl border border-border bg-surface-card shadow-2xl">
           <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[rgba(59,139,255,0.15)] text-xs font-bold text-ai">
-              AI
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[rgba(59,139,255,0.15)] text-sm">
+              🦊
             </span>
             <div className="leading-tight">
-              <p className="text-sm font-semibold">LockIn assistant</p>
-              <p className="text-xs text-muted">Here to help</p>
+              <p className="text-sm font-semibold">Locksmith</p>
+              <p className="text-xs text-muted">Your fox guide to the win</p>
             </div>
           </div>
 

@@ -72,6 +72,9 @@ export function ArenaIntro({ onDone }: { onDone: () => void }) {
           position: absolute;
           inset: 0;
           overflow: hidden;
+          /* Query container so the arena title scales with the STAGE width (the
+             phone column), not the raw viewport — see .reveal-arena-title. */
+          container-type: inline-size;
           background: radial-gradient(
             ellipse at 50% 42%,
             #2a1746 0%,
@@ -116,11 +119,13 @@ export function ArenaIntro({ onDone }: { onDone: () => void }) {
           top: 26%;
           right: 5%;
           width: max-content;
-          max-width: min(52vw, 210px);
+          max-width: none;
+          /* One line, always — scale to fit the stage instead of wrapping. */
+          white-space: nowrap;
           text-align: right;
           z-index: 4;
           color: #fff;
-          font-size: clamp(16px, 5vw, 23px);
+          font-size: clamp(14px, 6cqw, 24px);
           font-weight: 900;
           line-height: 1.12;
           letter-spacing: 0.3px;
