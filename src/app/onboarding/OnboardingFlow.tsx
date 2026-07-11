@@ -4,11 +4,10 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { Button, Card, Input } from "@/components/ui";
-import { EXCLUDED_STATES } from "@/lib/constants";
 import {
   saveCategories,
   skipKyc,
-  verifyIdentity,
+  startIdentityVerification,
   type KycInput,
 } from "./actions";
 
@@ -157,18 +156,33 @@ function KycStep({ onDone }: { onDone: () => void }) {
   const handleVerify = (form: FormData) =>
     startTransition(async () => {
       setError(null);
-      const input: KycInput = {
-        fullName: String(form.get("fullName") ?? ""),
-        address: String(form.get("address") ?? ""),
-        city: String(form.get("city") ?? ""),
-        state: String(form.get("state") ?? ""),
-        zip: String(form.get("zip") ?? ""),
-        ssnLast4: String(form.get("ssnLast4") ?? ""),
-        phone: String(form.get("phone") ?? ""),
-      };
-      const result = await verifyIdentity(input);
-      if (result.ok) onDone();
-      else setError(result.error);
+      const input: KycInput = { state: String(form.get("state") ?? "") };
+      const result = await startIdentityVerification(input);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      // A real provider session was created (status is now "pending" — NOT
+      // verified). Launch the provider's flow; the signed webhook flips the
+      // status when it confirms. Never mark verified client-side.
+      try {
+        if (result.provider === "stripe") {
+          const pk = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+          if (!pk) throw new Error("Verification isn't configured yet.");
+          const { loadStripe } = await import("@stripe/stripe-js");
+          const stripe = await loadStripe(pk);
+          if (!stripe) throw new Error("Couldn't load the verification module.");
+          const res = await stripe.verifyIdentity(result.clientSecret);
+          if (res.error) throw new Error(res.error.message ?? "Verification cancelled.");
+        }
+        // Mock/sandbox provider: no modal — proceed; status stays pending.
+        onDone();
+      } catch (err) {
+        console.error("[onboarding] verification launch failed", err);
+        setError(
+          err instanceof Error ? err.message : "Couldn't start verification.",
+        );
+      }
     });
 
   if (mode === "prompt") {
@@ -207,53 +221,21 @@ function KycStep({ onDone }: { onDone: () => void }) {
       className="flex flex-1 flex-col gap-4"
     >
       <div className="text-center">
-        <h1 className="text-2xl font-semibold">Identity details</h1>
+        <h1 className="text-2xl font-semibold">Verify your identity</h1>
         <p className="mt-1 text-sm text-muted">
-          Secured by our verification provider.
+          Our secure verification provider collects your ID directly — we never
+          store your documents. First, confirm your state of residence.
         </p>
       </div>
 
       <label className="flex flex-col gap-1.5">
-        <span className="text-sm text-muted">Full legal name</span>
-        <Input name="fullName" autoComplete="name" required />
+        <span className="text-sm text-muted">State of residence</span>
+        <Input name="state" maxLength={2} placeholder="CA" required />
       </label>
-      <label className="flex flex-col gap-1.5">
-        <span className="text-sm text-muted">Street address</span>
-        <Input name="address" autoComplete="street-address" required />
-      </label>
-      <div className="grid grid-cols-3 gap-2">
-        <label className="col-span-1 flex flex-col gap-1.5">
-          <span className="text-sm text-muted">City</span>
-          <Input name="city" autoComplete="address-level2" required />
-        </label>
-        <label className="flex flex-col gap-1.5">
-          <span className="text-sm text-muted">State</span>
-          <Input name="state" maxLength={2} placeholder="CA" required />
-        </label>
-        <label className="flex flex-col gap-1.5">
-          <span className="text-sm text-muted">ZIP</span>
-          <Input name="zip" autoComplete="postal-code" required />
-        </label>
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        <label className="flex flex-col gap-1.5">
-          <span className="text-sm text-muted">SSN (last 4)</span>
-          <Input
-            name="ssnLast4"
-            inputMode="numeric"
-            maxLength={4}
-            placeholder="1234"
-            required
-          />
-        </label>
-        <label className="flex flex-col gap-1.5">
-          <span className="text-sm text-muted">Phone</span>
-          <Input name="phone" type="tel" autoComplete="tel" required />
-        </label>
-      </div>
 
       <p className="text-xs text-muted">
-        Paid contests are unavailable in {EXCLUDED_STATES.join(", ")}.
+        You&apos;ll finish verification with our provider on the next screen.
+        Free contests are always available without verifying.
       </p>
 
       {error && (
@@ -267,7 +249,7 @@ function KycStep({ onDone }: { onDone: () => void }) {
 
       <div className="mt-auto flex flex-col gap-2">
         <Button type="submit" variant="accent" size="lg" disabled={verifying}>
-          {verifying ? "Verifying your identity…" : "Submit for verification"}
+          {verifying ? "Starting verification…" : "Continue to verification"}
         </Button>
         <Button
           type="button"

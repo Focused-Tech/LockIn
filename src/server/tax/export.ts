@@ -14,8 +14,9 @@ export interface AnnualTaxRow extends TaxRollup {
  * anyone else (never silently returns data). Read-only aggregation over the
  * calendar-year rollups; generates no forms.
  *
- * NOTE: the collection-group query on `taxYears` needs a single-field index at
- * collection-group scope (add to firestore.indexes.json before production use).
+ * The collection-group query on `taxYears` uses the `year` single-field index at
+ * collection-group scope declared in firestore.indexes.json (fieldOverrides).
+ * Deploy it with `firebase deploy --only firestore:indexes` before production use.
  */
 export async function exportAnnualTaxData(year: number): Promise<AnnualTaxRow[]> {
   if (!(await isCurrentUserAdmin())) {

@@ -14,8 +14,11 @@ const config: CapacitorConfig = {
   appName: "LockIn",
   webDir: "public",
   server: {
+    // The shell loads the hosted production site (gates run server-side there),
+    // NOT a bundled export. Override per-env with CAP_SERVER_URL.
     url: process.env.CAP_SERVER_URL ?? "https://lockin-three-zeta.vercel.app",
     androidScheme: "https",
+    cleartext: false,
   },
   plugins: {
     FirebaseAuthentication: {
