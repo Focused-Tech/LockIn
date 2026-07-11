@@ -127,6 +127,10 @@ export function SlatePicker({
       router.refresh();
     } else {
       setError(result.error);
+      // Real-money blocked (age/jurisdiction): surface the specific reason and
+      // switch to the practice version so the player can still enter free — no
+      // silent fallback, they choose to lock in the free card.
+      if (result.code === "not_eligible") setMode("free");
     }
   }
 

@@ -72,15 +72,19 @@ const dateOfBirth = z
     message: `You must be ${MIN_AGE} or older to use LockIn`,
   });
 
-/** Full signup form — validated client-side before creating the Firebase user. */
+/**
+ * Full signup form — validated client-side before creating the Firebase user.
+ *
+ * NOTE: age is NOT self-attested via a checkbox anymore. It is DERIVED from
+ * `dateOfBirth` (which enforces `MIN_AGE` above) at signup, and real-money
+ * eligibility is re-checked server-side per jurisdiction at entry time
+ * (`src/lib/eligibility`). The Terms/Privacy consent checkbox stays required.
+ */
 export const signupSchema = z.object({
   username,
   email,
   dateOfBirth,
   password: z.string().min(8, "Password must be at least 8 characters"),
-  ageConfirm: checkbox.refine((v) => v === true, {
-    message: "You must confirm you are 18 or older",
-  }),
   tosConfirm: checkbox.refine((v) => v === true, {
     message: "You must accept the Terms, Privacy, and Responsible Play policies",
   }),

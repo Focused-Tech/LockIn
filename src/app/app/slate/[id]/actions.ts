@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUserId } from "@/lib/firebase/session";
@@ -9,12 +10,14 @@ import {
   type SlateDoc,
   type UserDoc,
 } from "@/lib/firebase/types";
-import {
-  EXCLUDED_STATES,
-  FREE_ENTRY_COIN_COST,
-  type EntryTier,
-} from "@/lib/constants";
+import { FREE_ENTRY_COIN_COST, type EntryTier } from "@/lib/constants";
 import { isSelfExcluded } from "@/server/data/responsiblePlay";
+import {
+  getJurisdiction,
+  isRealMoneyEligible,
+  eligibilityMessage,
+  type EligibilityResult,
+} from "@/lib/eligibility";
 
 export type SubmitEntryInput = {
   slateId: string;
@@ -25,13 +28,16 @@ export type SubmitEntryInput = {
 
 export type SubmitEntryResult =
   | { ok: true; entryId: string }
-  | { ok: false; error: string };
+  | { ok: false; error: string; code?: "not_eligible" };
 
 /**
  * Submit a pick card as a contest entry. Enforces: contest is live + unlocked,
  * picks cover every prediction once, one entry per user (entry doc id = uid),
- * sufficient balance, and — for paid entries — KYC + geo eligibility. Balance
- * debit, slate entry-count bump, and the entry write happen atomically.
+ * sufficient balance, and — for PAID entries — KYC + real-money eligibility
+ * (age derived from DOB + jurisdiction allowlist, `src/lib/eligibility`, the
+ * single source of truth). PRACTICE (free) entries skip the eligibility gate
+ * entirely and always proceed. Balance debit, slate entry-count bump, and the
+ * entry write happen atomically.
  */
 export async function submitEntry(
   input: SubmitEntryInput,
@@ -73,6 +79,15 @@ export async function submitEntry(
   const userRef = db.collection(COLLECTIONS.users).doc(uid);
   const entryRef = slateRef.collection(COLLECTIONS.entries).doc(uid);
 
+  // Resolve the request's jurisdiction from geo headers up front (stable across
+  // transaction retries). PRACTICE entries never touch this. FAIL CLOSED: a null
+  // key means "location unknown" and isRealMoneyEligible() will reject.
+  const jurisdictionKey = input.free
+    ? null
+    : getJurisdiction(await headers());
+  // Captured inside the tx so the specific rejection reason survives the throw.
+  let rejection: EligibilityResult | null = null;
+
   try {
     await db.runTransaction(async (tx) => {
       const [entrySnap, userSnap, freshSlateSnap] = await Promise.all([
@@ -102,11 +117,15 @@ export async function submitEntry(
         });
       } else {
         if (user.kycStatus !== "verified") throw new Error("NEEDS_KYC");
-        if (
-          user.registeredState &&
-          (EXCLUDED_STATES as readonly string[]).includes(user.registeredState)
-        )
-          throw new Error("GEO_BLOCKED");
+        // Authoritative real-money gate: age (from DOB) + jurisdiction allowlist.
+        const eligibility = isRealMoneyEligible({
+          dob: user.dateOfBirth,
+          jurisdictionKey,
+        });
+        if (!eligibility.eligible) {
+          rejection = eligibility;
+          throw new Error("NOT_ELIGIBLE");
+        }
         if (user.cashBalanceCents < entryCostCents) throw new Error("LOW_CASH");
         tx.update(userRef, {
           cashBalanceCents: user.cashBalanceCents - entryCostCents,
@@ -131,6 +150,22 @@ export async function submitEntry(
     });
   } catch (err) {
     const m = err instanceof Error ? err.message : "";
+    // NO silent failure: log every rejection/error. On ANY error we return
+    // ok:false — real-money play never proceeds on an unhandled failure.
+    console.error("[submitEntry] rejected", {
+      slateId: input.slateId,
+      free: input.free,
+      reason: m || err,
+    });
+    // Real-money eligibility rejection — surface the specific, fail-closed reason
+    // and flag it so the client can offer the practice version instead.
+    if (m === "NOT_ELIGIBLE" && rejection) {
+      return {
+        ok: false,
+        error: eligibilityMessage(rejection),
+        code: "not_eligible",
+      };
+    }
     switch (m) {
       case "ALREADY_ENTERED":
         return { ok: false, error: "You've already entered this contest" };
@@ -140,11 +175,6 @@ export async function submitEntry(
         return {
           ok: false,
           error: "Verify your identity to enter paid contests",
-        };
-      case "GEO_BLOCKED":
-        return {
-          ok: false,
-          error: "Paid contests aren't available in your state",
         };
       case "LOW_CASH":
         return { ok: false, error: "Add funds to enter this paid contest" };

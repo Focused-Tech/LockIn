@@ -40,7 +40,6 @@ export function SignupForm({ referralCode }: { referralCode?: string }) {
       email: form.get("email"),
       dateOfBirth: dobResult.iso,
       password: form.get("password"),
-      ageConfirm: form.get("ageConfirm"),
       tosConfirm: form.get("tosConfirm"),
     });
     if (!parsed.success) {
@@ -108,16 +107,11 @@ export function SignupForm({ referralCode }: { referralCode?: string }) {
         />
       </label>
 
-      <label className="flex items-start gap-2.5 text-sm text-foreground">
-        <input
-          type="checkbox"
-          name="ageConfirm"
-          className="mt-0.5 accent-accent"
-          required
-        />
-        <span>I confirm I am 18 years of age or older</span>
-      </label>
-
+      {/*
+        Age is verified from the date of birth above — no self-attestation
+        checkbox. Real-money eligibility (age + jurisdiction) is re-checked
+        server-side at entry time. Only the Terms/Privacy consent remains.
+      */}
       <label className="flex items-start gap-2.5 text-sm text-foreground">
         <input
           type="checkbox"
