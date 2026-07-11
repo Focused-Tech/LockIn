@@ -57,6 +57,12 @@ export const COLLECTIONS = {
    * leaderboard, rec signals, wallet activity) can never sweep up practice play.
    */
   practiceEntries: "practiceEntries",
+  /** Immutable per-contest winnings ledger: winningsLedger/{slateId}_{uid}. */
+  winningsLedger: "winningsLedger",
+  /** Annual tax rollup per user: users/{uid}/taxYears/{year}. */
+  taxYears: "taxYears",
+  /** W-9 tax-info records (stub): w9Forms/{uid}. */
+  w9Forms: "w9Forms",
 } as const;
 
 /** Which Explore lane a user has chosen (set at onboarding, switchable later). */
@@ -100,6 +106,11 @@ export interface UserDoc {
   stripeCustomerId: string | null;
   /** Platform owner/admin. Gates the web admin dashboard (/admin). */
   isAdmin?: boolean;
+  /**
+   * Platform architect/owner. Real-money is ALWAYS allowed for these accounts;
+   * they are never routed through geo/age/KYC/tax verification. Missing = false.
+   */
+  isArchitect?: boolean;
   isCreator: boolean;
   creatorVerified: boolean;
   creatorTier: CreatorTier;

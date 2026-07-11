@@ -146,6 +146,43 @@ export interface PaidGateUser {
   kycStatus: KycStatus;
   dateOfBirth: string | null | undefined;
   kycVerifiedDob: string | null | undefined;
+  /** Architect/admin override — real-money always allowed, no verification. */
+  isArchitect?: boolean;
+  isAdmin?: boolean;
+  /** Pre-KYC out-of-band verification signal (grandfathering). */
+  creatorVerified?: boolean;
+}
+
+/**
+ * Architect/admin override: these accounts are real-money allowed and must NEVER
+ * be routed into geo/age/KYC (or, in PART B, tax/AML) verification. Checked
+ * before any other gate logic.
+ */
+export function isOverrideAccount(user: {
+  isArchitect?: boolean;
+  isAdmin?: boolean;
+}): boolean {
+  return user.isArchitect === true || user.isAdmin === true;
+}
+
+/**
+ * Whether a user counts as identity-verified for gating, INCLUDING the
+ * grandfather rule: live pre-KYC accounts already verified out-of-band
+ * (creatorVerified) are not re-verified. Override accounts are always verified.
+ */
+export function isEffectivelyKycVerified(user: {
+  kycStatus?: KycStatus;
+  creatorVerified?: boolean;
+  isArchitect?: boolean;
+  isAdmin?: boolean;
+}): boolean {
+  if (isOverrideAccount(user)) return true;
+  if (user.kycStatus === "verified") return true;
+  // Grandfather: live pre-KYC accounts already verified out-of-band.
+  return (
+    user.creatorVerified === true &&
+    (!user.kycStatus || user.kycStatus === "unverified")
+  );
 }
 
 /**
@@ -166,12 +203,27 @@ export function evaluatePaidEntry({
   user: PaidGateUser;
   jurisdictionKey: string | null;
 }): PaidGateResult {
-  const kycVerified = user.kycStatus === "verified";
+  // OVERRIDE (checked BEFORE any geo/age/KYC logic): architect/admin accounts are
+  // always allowed and are never routed into verification.
+  if (isOverrideAccount(user)) return { allowed: true };
 
-  // AGE SOURCE SWITCH: once verified, age is computed from the PROVIDER-verified
-  // DOB (kycVerifiedDob), NOT the self-entered signup DOB. Pre-KYC, the
-  // self-entered DOB remains the (weaker) gate. This is the exact switch line.
-  const effectiveDob = kycVerified ? user.kycVerifiedDob : user.dateOfBirth;
+  // Grandfather: live pre-KYC accounts already verified out-of-band are not
+  // re-verified. A creatorVerified account whose kycStatus is absent/unverified
+  // is treated as verified for gating (but keeps using its self-entered DOB,
+  // since no provider-verified DOB exists for it).
+  const grandfathered =
+    user.creatorVerified === true &&
+    (!user.kycStatus || user.kycStatus === "unverified");
+  const genuinelyVerified = user.kycStatus === "verified";
+  const kycVerified = genuinelyVerified || grandfathered;
+
+  // AGE SOURCE SWITCH: a genuinely KYC-verified user's age comes from the
+  // PROVIDER-verified DOB (kycVerifiedDob) — NOT the self-entered signup DOB, and
+  // fail-closed if it's missing. Grandfathered and pre-KYC users fall back to the
+  // self-entered DOB. This is the exact switch line.
+  const effectiveDob = genuinelyVerified
+    ? user.kycVerifiedDob
+    : user.dateOfBirth;
 
   // 1) Jurisdiction + age.
   const elig = isRealMoneyEligible({ dob: effectiveDob, jurisdictionKey });
