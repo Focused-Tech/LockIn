@@ -18,6 +18,9 @@ import {
 import type { FeedSlate } from "@/lib/feed";
 import type { ShadowEarnings } from "@/server/data/shadowEarnings";
 import { AddToParlay } from "@/components/cross-parlay/AddToParlay";
+import { VerifyIdentityButton } from "@/components/kyc/VerifyIdentityButton";
+import type { PaidGateCode } from "@/lib/eligibility";
+import type { KycStatus } from "@/lib/firebase/types";
 import { formatCents, formatMultiple } from "@/lib/utils";
 import { submitEntry } from "./actions";
 
@@ -35,6 +38,7 @@ export function SlatePicker({
   coinBalance,
   cashBalanceCents,
   kycVerified,
+  kycStatus,
   registeredState,
   existingEntry,
   shadowEarnings,
@@ -43,6 +47,7 @@ export function SlatePicker({
   coinBalance: number;
   cashBalanceCents: number;
   kycVerified: boolean;
+  kycStatus: KycStatus;
   registeredState: string | null;
   existingEntry: LockedEntry | null;
   shadowEarnings?: ShadowEarnings | null;
@@ -73,6 +78,7 @@ export function SlatePicker({
     existingEntry,
   );
   const [error, setError] = useState<string | null>(null);
+  const [blockCode, setBlockCode] = useState<PaidGateCode | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   // Live prize pool as entries land.
@@ -110,6 +116,7 @@ export function SlatePicker({
 
   async function onSubmit() {
     setError(null);
+    setBlockCode(null);
     setSubmitting(true);
     const picksArr: EntryPick[] = predictions.map((p) => ({
       predictionId: p.id,
@@ -127,10 +134,17 @@ export function SlatePicker({
       router.refresh();
     } else {
       setError(result.error);
-      // Real-money blocked (age/jurisdiction): surface the specific reason and
-      // switch to the practice version so the player can still enter free — no
-      // silent fallback, they choose to lock in the free card.
-      if (result.code === "not_eligible") setMode("free");
+      setBlockCode(result.code ?? null);
+      // Real-money blocked (geo/age OR identity): surface the specific reason and
+      // offer the practice version — no silent fallback, the player chooses to
+      // lock in the free card. kyc_required/kyc_rejected also render a verify CTA.
+      if (
+        result.code === "not_eligible" ||
+        result.code === "kyc_required" ||
+        result.code === "kyc_rejected"
+      ) {
+        setMode("free");
+      }
     }
   }
 
@@ -395,12 +409,17 @@ export function SlatePicker({
       </Card>
 
       {error && (
-        <p
-          role="alert"
-          className="rounded border border-[rgba(232,84,84,0.25)] bg-[rgba(232,84,84,0.10)] px-3 py-2 text-sm text-loss lg:col-start-2"
-        >
-          {error}
-        </p>
+        <div className="flex flex-col gap-2 lg:col-start-2">
+          <p
+            role="alert"
+            className="rounded border border-[rgba(232,84,84,0.25)] bg-[rgba(232,84,84,0.10)] px-3 py-2 text-sm text-loss"
+          >
+            {error}
+          </p>
+          {(blockCode === "kyc_required" || blockCode === "kyc_rejected") && (
+            <VerifyIdentityButton kycStatus={kycStatus} />
+          )}
+        </div>
       )}
 
       <div data-tour="submit-entry" className="lg:col-start-2">

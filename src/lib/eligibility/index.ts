@@ -9,6 +9,7 @@
 // jurisdiction returns { eligible: false } with a specific reason. Practice
 // (free) play never calls this and is available everywhere.
 import { ageFromDob } from "@/lib/validation";
+import type { KycStatus } from "@/lib/firebase/types";
 import { ELIGIBILITY } from "./config";
 
 /** Specific, machine-readable failure reasons. Never a generic "ineligible". */
@@ -116,4 +117,79 @@ export function eligibilityMessage(result: EligibilityResult): string {
     case "eligible":
       return "";
   }
+}
+
+// ── Real-money gate: eligibility (geo+age) AND identity verification (KYC) ─────
+
+/** User-facing copy for the two KYC outcomes. Specific — never silent. */
+export const KYC_REQUIRED_MESSAGE =
+  "Verify your identity to play for real money. You can play the practice version now.";
+export const KYC_REJECTED_MESSAGE =
+  "We couldn't verify your identity. Try verifying again, or play the practice version.";
+
+/** Distinct blocked outcomes so the client can react specifically. */
+export type PaidGateCode = "not_eligible" | "kyc_required" | "kyc_rejected";
+
+export type PaidGateResult =
+  | { allowed: true }
+  | {
+      allowed: false;
+      code: PaidGateCode;
+      /** Present for not_eligible (the geo/age reason). */
+      reason?: EligibilityReason;
+      message: string;
+      minAge?: number;
+    };
+
+/** Minimal user shape the paid gate needs (decouples from the full UserDoc). */
+export interface PaidGateUser {
+  kycStatus: KycStatus;
+  dateOfBirth: string | null | undefined;
+  kycVerifiedDob: string | null | undefined;
+}
+
+/**
+ * THE real-money gate. A PAID entry is allowed ONLY when BOTH hold:
+ *   1) isRealMoneyEligible === true (jurisdiction + age), AND
+ *   2) kycStatus === "verified".
+ * Every other outcome is a specific, fail-closed block. Practice (free) entries
+ * must NOT call this.
+ *
+ * Order: eligibility (geo/age) is checked first and is independent of KYC — a
+ * user in a blocked region is not_eligible regardless of verification. Only when
+ * geo/age passes do we require identity verification.
+ */
+export function evaluatePaidEntry({
+  user,
+  jurisdictionKey,
+}: {
+  user: PaidGateUser;
+  jurisdictionKey: string | null;
+}): PaidGateResult {
+  const kycVerified = user.kycStatus === "verified";
+
+  // AGE SOURCE SWITCH: once verified, age is computed from the PROVIDER-verified
+  // DOB (kycVerifiedDob), NOT the self-entered signup DOB. Pre-KYC, the
+  // self-entered DOB remains the (weaker) gate. This is the exact switch line.
+  const effectiveDob = kycVerified ? user.kycVerifiedDob : user.dateOfBirth;
+
+  // 1) Jurisdiction + age.
+  const elig = isRealMoneyEligible({ dob: effectiveDob, jurisdictionKey });
+  if (!elig.eligible) {
+    return {
+      allowed: false,
+      code: "not_eligible",
+      reason: elig.reason,
+      message: eligibilityMessage(elig),
+      minAge: elig.minAge,
+    };
+  }
+
+  // 2) Identity verification (provider-authoritative).
+  if (kycVerified) return { allowed: true };
+  if (user.kycStatus === "rejected") {
+    return { allowed: false, code: "kyc_rejected", message: KYC_REJECTED_MESSAGE };
+  }
+  // "unverified" | "pending" → must complete verification.
+  return { allowed: false, code: "kyc_required", message: KYC_REQUIRED_MESSAGE };
 }

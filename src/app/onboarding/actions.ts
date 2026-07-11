@@ -44,6 +44,16 @@ export async function verifyIdentity(input: KycInput): Promise<KycResult> {
   // Simulate the Persona verification round-trip.
   await new Promise((resolve) => setTimeout(resolve, 3000));
 
+  // NOTE: BYPASS — this mock marks the user verified WITHOUT a real provider.
+  // The authoritative KYC path is now the provider session + signed webhook
+  // (src/lib/kyc, /api/webhooks/kyc). This onboarding step should be converted
+  // to launch a provider session rather than instant-verify. Left functional
+  // for existing onboarding UX; kycVerifiedDob here is the self-entered DOB as a
+  // dev stand-in, NOT a provider-verified value.
+  const snap = await adminDb().collection(COLLECTIONS.users).doc(uid).get();
+  const selfDob = (snap.data() as { dateOfBirth?: string } | undefined)
+    ?.dateOfBirth;
+
   await adminDb()
     .collection(COLLECTIONS.users)
     .doc(uid)
@@ -51,7 +61,9 @@ export async function verifyIdentity(input: KycInput): Promise<KycResult> {
       {
         kycStatus: "verified",
         kycVerifiedAt: FieldValue.serverTimestamp(),
-        kycProviderId: `mock_persona_${uid.slice(0, 8)}`,
+        kycProvider: "mock",
+        kycReferenceId: `mock_onboarding_${uid.slice(0, 8)}`,
+        kycVerifiedDob: selfDob ?? null,
         registeredState: input.state.toUpperCase(),
         geoState: input.state.toUpperCase(),
       },

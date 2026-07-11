@@ -62,7 +62,7 @@ export const COLLECTIONS = {
 /** Which Explore lane a user has chosen (set at onboarding, switchable later). */
 export type JourneyLane = "beginner" | "advanced";
 
-export type KycStatus = "none" | "pending" | "verified" | "failed";
+export type KycStatus = "unverified" | "pending" | "verified" | "rejected";
 export type CreatorTier = "basic" | "pro" | "elite" | "partner";
 export type SlateStatus =
   | "draft"
@@ -84,7 +84,16 @@ export interface UserDoc {
   coinBalance: number;
   cashBalanceCents: number;
   kycStatus: KycStatus;
-  kycProviderId: string | null;
+  /** Which KYC vendor produced the current status (e.g. "stripe" | "mock"). */
+  kycProvider: string | null;
+  /** Provider session/verification reference id. NOT PII. */
+  kycReferenceId: string | null;
+  /**
+   * Provider-VERIFIED date of birth (YYYY-MM-DD). Authoritative age source once
+   * kycStatus === "verified" — replaces the self-entered `dateOfBirth` for the
+   * real-money age check. Null until a provider verifies identity.
+   */
+  kycVerifiedDob: string | null;
   kycVerifiedAt: FsTimestamp | null;
   geoState: string | null;
   registeredState: string | null;

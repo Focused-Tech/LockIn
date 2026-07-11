@@ -14,9 +14,8 @@ import { FREE_ENTRY_COIN_COST, type EntryTier } from "@/lib/constants";
 import { isSelfExcluded } from "@/server/data/responsiblePlay";
 import {
   getJurisdiction,
-  isRealMoneyEligible,
-  eligibilityMessage,
-  type EligibilityResult,
+  evaluatePaidEntry,
+  type PaidGateCode,
 } from "@/lib/eligibility";
 
 export type SubmitEntryInput = {
@@ -28,7 +27,17 @@ export type SubmitEntryInput = {
 
 export type SubmitEntryResult =
   | { ok: true; entryId: string }
-  | { ok: false; error: string; code?: "not_eligible" };
+  | { ok: false; error: string; code?: PaidGateCode };
+
+/** Carries the specific block reason/code out of the transaction closure. */
+class PaidBlockedError extends Error {
+  constructor(
+    readonly code: PaidGateCode,
+    readonly blockMessage: string,
+  ) {
+    super("PAID_BLOCKED");
+  }
+}
 
 /**
  * Submit a pick card as a contest entry. Enforces: contest is live + unlocked,
@@ -85,8 +94,6 @@ export async function submitEntry(
   const jurisdictionKey = input.free
     ? null
     : getJurisdiction(await headers());
-  // Captured inside the tx so the specific rejection reason survives the throw.
-  let rejection: EligibilityResult | null = null;
 
   try {
     await db.runTransaction(async (tx) => {
@@ -116,15 +123,10 @@ export async function submitEntry(
           coinBalance: user.coinBalance - FREE_ENTRY_COIN_COST,
         });
       } else {
-        if (user.kycStatus !== "verified") throw new Error("NEEDS_KYC");
-        // Authoritative real-money gate: age (from DOB) + jurisdiction allowlist.
-        const eligibility = isRealMoneyEligible({
-          dob: user.dateOfBirth,
-          jurisdictionKey,
-        });
-        if (!eligibility.eligible) {
-          rejection = eligibility;
-          throw new Error("NOT_ELIGIBLE");
+        // Authoritative real-money gate: jurisdiction + age AND identity (KYC).
+        const gate = evaluatePaidEntry({ user, jurisdictionKey });
+        if (!gate.allowed) {
+          throw new PaidBlockedError(gate.code, gate.message);
         }
         if (user.cashBalanceCents < entryCostCents) throw new Error("LOW_CASH");
         tx.update(userRef, {
@@ -157,25 +159,16 @@ export async function submitEntry(
       free: input.free,
       reason: m || err,
     });
-    // Real-money eligibility rejection — surface the specific, fail-closed reason
-    // and flag it so the client can offer the practice version instead.
-    if (m === "NOT_ELIGIBLE" && rejection) {
-      return {
-        ok: false,
-        error: eligibilityMessage(rejection),
-        code: "not_eligible",
-      };
+    // Real-money block (geo/age OR identity) — surface the specific, fail-closed
+    // reason + code so the client can prompt verification or offer practice.
+    if (err instanceof PaidBlockedError) {
+      return { ok: false, error: err.blockMessage, code: err.code };
     }
     switch (m) {
       case "ALREADY_ENTERED":
         return { ok: false, error: "You've already entered this contest" };
       case "LOW_COINS":
         return { ok: false, error: "Not enough coins for a free entry" };
-      case "NEEDS_KYC":
-        return {
-          ok: false,
-          error: "Verify your identity to enter paid contests",
-        };
       case "LOW_CASH":
         return { ok: false, error: "Add funds to enter this paid contest" };
       case "CLOSED":

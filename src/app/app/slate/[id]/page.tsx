@@ -124,6 +124,7 @@ export default async function SlatePage({
         coinBalance={profile.coinBalance}
         cashBalanceCents={profile.cashBalanceCents}
         kycVerified={profile.kycStatus === "verified"}
+        kycStatus={profile.kycStatus}
         registeredState={profile.registeredState}
         existingEntry={existingEntry}
         shadowEarnings={shadowEarnings}

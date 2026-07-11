@@ -22,8 +22,8 @@ import { parlayMultiplier } from "@/lib/contest/crossParlay";
 import { isSelfExcluded } from "@/server/data/responsiblePlay";
 import {
   getJurisdiction,
-  isRealMoneyEligible,
-  eligibilityMessage,
+  evaluatePaidEntry,
+  type PaidGateCode,
 } from "@/lib/eligibility";
 
 export interface SubmitParlayInput {
@@ -34,7 +34,7 @@ export interface SubmitParlayInput {
 
 export type SubmitParlayResult =
   | { ok: true; parlayId: string }
-  | { ok: false; error: string; code?: "not_eligible" };
+  | { ok: false; error: string; code?: PaidGateCode };
 
 export async function submitCrossParlay(
   input: SubmitParlayInput,
@@ -96,25 +96,22 @@ export async function submitCrossParlay(
     });
   }
 
-  // PAID entries require KYC + real-money eligibility (age from DOB + jurisdiction
-  // allowlist — the same single source of truth as single entries). PRACTICE
-  // (free) parlays skip this entirely. FAIL CLOSED on unknown location/age.
+  // PAID entries require BOTH real-money eligibility (jurisdiction + age) AND
+  // identity verification (KYC) — the same single gate as single entries.
+  // PRACTICE (free) parlays skip this entirely. FAIL CLOSED on unknown
+  // location/age/verification.
   if (!input.free) {
-    if (profile.kycStatus !== "verified") {
-      return { ok: false, error: "Verify your identity to enter paid contests" };
-    }
-    const eligibility = isRealMoneyEligible({
-      dob: profile.dateOfBirth,
+    const gate = evaluatePaidEntry({
+      user: profile,
       jurisdictionKey: getJurisdiction(await headers()),
     });
-    if (!eligibility.eligible) {
+    if (!gate.allowed) {
       // NO silent failure: log the specific reason; surface it; never proceed.
-      console.error("[submitCrossParlay] real-money blocked", eligibility);
-      return {
-        ok: false,
-        error: eligibilityMessage(eligibility),
-        code: "not_eligible",
-      };
+      console.error("[submitCrossParlay] real-money blocked", {
+        code: gate.code,
+        reason: gate.reason,
+      });
+      return { ok: false, error: gate.message, code: gate.code };
     }
   }
 
