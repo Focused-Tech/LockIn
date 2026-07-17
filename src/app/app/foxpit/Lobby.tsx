@@ -120,7 +120,7 @@ export function FoxPitLobby() {
 
       {/* Boss Fox glass-door intro — "Ready Boss Up?" */}
       {phase === "door" && (
-        <ArenaIntro revealTitle="Ready Boss Up?" onDone={() => setPhase("welcome")} />
+        <ArenaIntro revealTitle="Ready to Boss Up?" onDone={() => setPhase("welcome")} />
       )}
 
       {/* WELCOME / step-inside gate (with a Back button) */}
