@@ -132,8 +132,12 @@ function PalmToken({
   title: string;
   onClick: () => void;
 }) {
+  // sit over each of Boss Fox's palms; a fixed-width button so the wide label
+  // (absolutely centered below) never stretches or shifts the token.
   const pos: React.CSSProperties =
-    side === "left" ? { left: "22%" } : { right: "22%" };
+    side === "left"
+      ? { left: "13%", transform: "translateX(-50%)" }
+      : { right: "13%", transform: "translateX(50%)" };
   return (
     <button
       onClick={onClick}
@@ -141,13 +145,12 @@ function PalmToken({
       aria-label={title}
       style={{
         position: "absolute",
-        top: "44%",
+        top: "56%",
         ...pos,
-        transform: "translateX(-50%)",
+        width: 48,
         background: "transparent",
         border: "none",
         cursor: "pointer",
-        textAlign: "center",
         padding: 0,
       }}
     >
@@ -155,13 +158,13 @@ function PalmToken({
       <div
         className="foxpit-token-door"
         style={{
-          width: 46,
-          height: 66,
+          width: 48,
+          height: 68,
           margin: "0 auto",
           borderRadius: "9px 9px 4px 4px",
-          background: `linear-gradient(180deg, ${accent}dd, ${accent}66)`,
+          background: `linear-gradient(180deg, ${accent}, ${accent}88)`,
           border: `2px solid ${accent}`,
-          boxShadow: `0 0 18px ${accent}99, 0 8px 18px rgba(0,0,0,.6)`,
+          boxShadow: `0 0 20px ${accent}, 0 8px 18px rgba(0,0,0,.6)`,
           position: "relative",
         }}
       >
@@ -173,16 +176,20 @@ function PalmToken({
             width: 5,
             height: 5,
             borderRadius: "50%",
-            background: "rgba(255,255,255,.85)",
+            background: "rgba(255,255,255,.9)",
             transform: "translateY(-50%)",
           }}
         />
       </div>
       <div
         style={{
+          position: "absolute",
+          top: "100%",
+          left: "50%",
+          transform: "translateX(-50%)",
           marginTop: 8,
           fontSize: 10,
-          letterSpacing: ".1em",
+          letterSpacing: ".08em",
           color: "#fff",
           fontWeight: 800,
           textShadow: "0 2px 8px #000, 0 0 10px #000",

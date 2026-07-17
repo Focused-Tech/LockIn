@@ -16,10 +16,10 @@ type Phase = "door" | "room" | "table" | "faceoff";
 
 /** table hotspot positions per room (%, on the painted table surface — tune after OTA). */
 const TABLE_POS: Record<number, [number, number][]> = {
-  1: [[50, 72]],
-  3: [[28, 74], [50, 78], [72, 74]],
+  1: [[50, 68]],
+  3: [[34, 68], [50, 71], [66, 68]],
 };
-const PRIZE_KEY_POS: [number, number] = [79, 16]; // floats to the side, clear of the throne back
+const PRIZE_KEY_POS: [number, number] = [50, 42]; // floats in front of the throne, clear of the throne back
 
 export function FoxPitRoom({ roomKey }: { roomKey: FoxPitRoomKey }) {
   const router = useRouter();
@@ -100,8 +100,8 @@ export function FoxPitRoom({ roomKey }: { roomKey: FoxPitRoomKey }) {
                 top: `${y}%`,
                 transform: "translate(-50%,-50%) perspective(360px) rotateX(56deg)",
                 transformStyle: "preserve-3d",
-                width: 132,
-                height: 60,
+                width: 116,
+                height: 54,
                 borderRadius: "50%",
                 background: "rgba(28,107,64,.26)",
                 border: `2px solid ${room.accent}`,

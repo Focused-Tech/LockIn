@@ -165,7 +165,7 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
-                maxWidth: "52%",
+                maxWidth: "74%",
                 padding: "7px 12px",
                 borderRadius: 999,
                 textAlign: "left",
