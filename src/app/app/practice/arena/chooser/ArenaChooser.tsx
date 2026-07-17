@@ -229,9 +229,6 @@ export function ArenaChooser() {
 
       <header className="ch-header">
         <div className="ch-title">Choose your arena</div>
-        <div className="ch-subtitle">
-          Swipe to pick how you want to play. Tap to enter.
-        </div>
       </header>
 
       <div
