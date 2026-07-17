@@ -235,9 +235,6 @@ function WelcomeGate({ onEnter, onBack }: { onEnter: () => void; onBack: () => v
         textAlign: "center",
       }}
     >
-      <button onClick={onBack} style={backBtn} aria-label="Back">
-        ‹ Back
-      </button>
       <div style={{ fontSize: 12, letterSpacing: ".3em", color: "#C8A24B", fontWeight: 800 }}>
         WELCOME TO
       </div>
@@ -258,12 +255,17 @@ function WelcomeGate({ onEnter, onBack }: { onEnter: () => void; onBack: () => v
         Will you follow in the footsteps that made Boss Fox the boss he is
         today?
       </p>
-      <button
-        onClick={onEnter}
-        style={{ ...primaryBtn("#FC3E01"), marginTop: 30, fontSize: 17, padding: "16px 34px" }}
-      >
-        Step inside ›
-      </button>
+      <div style={{ display: "flex", gap: 12, marginTop: 30, justifyContent: "center" }}>
+        <button onClick={onBack} style={{ ...ghostBtn }}>
+          Back
+        </button>
+        <button
+          onClick={onEnter}
+          style={{ ...primaryBtn("#FC3E01"), fontSize: 17, padding: "16px 30px" }}
+        >
+          Step inside ›
+        </button>
+      </div>
     </div>
   );
 }
