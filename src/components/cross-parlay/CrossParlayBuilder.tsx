@@ -27,8 +27,15 @@ export function CrossParlayBuilder() {
   const [done, setDone] = useState(false);
   const pathname = usePathname();
 
-  // Keep the mode picker clean — hide the parlay launcher on the arena chooser.
-  if (!cart || pathname === "/app/practice/arena/chooser") return null;
+  // Show only in the Beginner/Advanced app — hide on the Fox Pit landing +
+  // journey, the arena mode picker/modes, and the Creator dashboard.
+  if (
+    !cart ||
+    ["/app/choose", "/app/foxpit", "/app/practice", "/app/creator"].some((p) =>
+      pathname.startsWith(p),
+    )
+  )
+    return null;
   const { picks, slateCount, open, setOpen, remove, clear } = cart;
 
   const enoughPicks = picks.length >= CROSS_PARLAY_MIN_PICKS;

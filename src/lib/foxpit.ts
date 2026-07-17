@@ -106,8 +106,16 @@ export function markCleared(k: FoxPitRoomKey) {
   localStorage.setItem(CLEARED_KEY, JSON.stringify([...s]));
 }
 
+/**
+ * ARCHITECT OVERRIDE (temporary): every room door is unlocked so the architect
+ * can walk into and review each room. Gate this back to real progression before
+ * launch (e.g. per-account / role check).
+ */
+export const FOXPIT_UNLOCK_ALL = true;
+
 /** A floor is unlocked if it's the Dojo, or the floor below it has been cleared. */
 export function isUnlocked(room: FoxPitRoom, cleared: Set<FoxPitRoomKey>): boolean {
+  if (FOXPIT_UNLOCK_ALL) return true;
   if (room.needsKey === null) return true;
   const below = FOXPIT_ROOMS.find((r) => r.order === room.order - 1);
   return below ? cleared.has(below.key) : false;

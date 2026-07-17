@@ -6,9 +6,11 @@ import {
   FOXPIT_ROOMS,
   LOBBY_MAP_Y,
   KEY_ASSET,
+  ELEVATOR_UNLOCK_AT,
   getCleared,
   isUnlocked,
   keyLabel,
+  roomByKey,
   type FoxPitRoomKey,
 } from "@/lib/foxpit";
 
@@ -32,6 +34,10 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
   const [cleared, setCleared] = useState<Set<FoxPitRoomKey>>(new Set());
   const [hud, setHud] = useState(true);
   const [floorSelect, setFloorSelect] = useState(false);
+  const [elevatorLocked, setElevatorLocked] = useState(false);
+  // Fast-travel elevator activates only once the High Table is CLEARED (beaten),
+  // independent of the architect door-unlock override.
+  const elevatorUnlocked = cleared.has(ELEVATOR_UNLOCK_AT);
 
   // pan/zoom (kept in a ref + applied directly to the DOM — no re-render churn)
   const v = useRef({ scale: 1, tx: 0, ty: 0 });
@@ -229,29 +235,30 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           </span>
         </button>
 
-        {/* elevator (far left) — opens the floor-select panel */}
+        {/* elevator (far left) — locked until the High Table is cleared */}
         <button
-          onClick={() => setFloorSelect(true)}
+          onClick={() => (elevatorUnlocked ? setFloorSelect(true) : setElevatorLocked(true))}
           style={{
             position: "absolute",
             top: "34%",
             left: "1.5%",
-            width: "15%",
+            width: "13%",
             transform: "translateY(-50%)",
-            padding: "8px 4px",
-            borderRadius: 10,
+            padding: "5px 2px",
+            borderRadius: 7,
             textAlign: "center",
-            background: "rgba(3,4,7,.78)",
+            background: "rgba(3,4,7,.8)",
             border: "1px solid rgba(200,162,75,.5)",
             color: "#d8c79b",
-            fontSize: 9,
+            fontSize: 8,
             fontWeight: 800,
-            letterSpacing: ".08em",
-            lineHeight: 1.5,
+            letterSpacing: ".02em",
+            lineHeight: 1.2,
+            whiteSpace: "nowrap",
             cursor: "pointer",
           }}
         >
-          ▤<br />ELEVATOR<br />FLOORS
+          ELEVATORS
         </button>
       </div>
 
@@ -285,15 +292,15 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
         onClick={() => router.push("/app/foxpit")}
         style={{
           position: "fixed",
-          top: 18,
-          left: 18,
+          top: 16,
+          left: 8,
           zIndex: 63,
           border: "1px solid rgba(200,162,75,.5)",
           background: "rgba(3,4,7,.62)",
           color: "#d8c79b",
-          borderRadius: 12,
-          padding: "12px 18px",
-          fontSize: 18,
+          borderRadius: 10,
+          padding: "8px 11px",
+          fontSize: 14,
           fontWeight: 700,
           cursor: "pointer",
         }}
@@ -311,6 +318,62 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
             enter(k);
           }}
         />
+      )}
+
+      {elevatorLocked && (
+        <div
+          onClick={() => setElevatorLocked(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 80,
+            background: "rgba(3,4,7,.82)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 28,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: 360,
+              borderRadius: 16,
+              background: "linear-gradient(180deg,#141821,#0a0d13)",
+              border: "2px solid #C8A24B",
+              boxShadow: "0 0 40px rgba(200,162,75,.35)",
+              padding: 26,
+              textAlign: "center",
+            }}
+          >
+            <div style={{ fontSize: 36 }}>🔒</div>
+            <div style={{ fontFamily: "Georgia, serif", fontSize: 22, color: "#E7E7EB", marginTop: 8 }}>
+              Elevator locked
+            </div>
+            <div style={{ width: 90, height: 2, margin: "12px auto", background: "linear-gradient(90deg,transparent,#C8A24B,transparent)" }} />
+            <p style={{ fontSize: 15, lineHeight: 1.6, color: "#c3cedb" }}>
+              The elevator stays out of service until you reach the{" "}
+              <b style={{ color: "#C8A24B" }}>{roomByKey(ELEVATOR_UNLOCK_AT).name}</b>. Climb the
+              tower and clear the floors below to unlock fast-travel between them.
+            </p>
+            <button
+              onClick={() => setElevatorLocked(false)}
+              style={{
+                marginTop: 22,
+                border: "1px solid #C8A24B",
+                background: "rgba(200,162,75,.15)",
+                color: "#ffe",
+                borderRadius: 12,
+                padding: "12px 28px",
+                fontSize: 15,
+                fontWeight: 800,
+                cursor: "pointer",
+              }}
+            >
+              Got it
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

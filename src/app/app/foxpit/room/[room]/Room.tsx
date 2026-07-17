@@ -32,7 +32,7 @@ export function FoxPitRoom({ roomKey }: { roomKey: FoxPitRoomKey }) {
   // door-unlock intro auto-advances to the room; the slow cut-in then plays
   useEffect(() => {
     if (phase !== "door") return;
-    const t = setTimeout(() => setPhase("room"), 3600);
+    const t = setTimeout(() => setPhase("room"), 6200);
     return () => clearTimeout(t);
   }, [phase]);
   useEffect(() => {
@@ -172,15 +172,15 @@ function DoorIntro({ room, onEnter }: { room: ReturnType<typeof roomByKey>; onEn
   const [open, setOpen] = useState(false);
   const [prompt, setPrompt] = useState(false);
   useEffect(() => {
-    const t1 = setTimeout(() => setOpen(true), 300);   // doors part
-    const t2 = setTimeout(() => setPrompt(true), 2600); // prompt appears as avatar settles back
+    const t1 = setTimeout(() => setOpen(true), 1200);  // hold on the closed doors, then part slowly
+    const t2 = setTimeout(() => setPrompt(true), 3200); // prompt appears as avatar settles back
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, []);
   return (
     <div style={{ position: "absolute", inset: 0, zIndex: 64 }}>
       {/* two door leaves that part to reveal the warm room behind */}
-      <div style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: "50%", background: "linear-gradient(90deg,#1d140b,#0d0906)", borderRight: "3px solid #0b0f15", boxShadow: "inset -30px 0 60px rgba(0,0,0,.6)", transform: open ? "translateX(-100%)" : "translateX(0)", transition: "transform 1.4s cubic-bezier(.6,0,.2,1)" }} />
-      <div style={{ position: "absolute", top: 0, bottom: 0, right: 0, width: "50%", background: "linear-gradient(270deg,#1d140b,#0d0906)", borderLeft: "3px solid #0b0f15", boxShadow: "inset 30px 0 60px rgba(0,0,0,.6)", transform: open ? "translateX(100%)" : "translateX(0)", transition: "transform 1.4s cubic-bezier(.6,0,.2,1)" }} />
+      <div style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: "50%", background: "linear-gradient(90deg,#1d140b,#0d0906)", borderRight: "3px solid #0b0f15", boxShadow: "inset -30px 0 60px rgba(0,0,0,.6)", transform: open ? "translateX(-100%)" : "translateX(0)", transition: "transform 1.6s cubic-bezier(.6,0,.2,1)" }} />
+      <div style={{ position: "absolute", top: 0, bottom: 0, right: 0, width: "50%", background: "linear-gradient(270deg,#1d140b,#0d0906)", borderLeft: "3px solid #0b0f15", boxShadow: "inset 30px 0 60px rgba(0,0,0,.6)", transform: open ? "translateX(100%)" : "translateX(0)", transition: "transform 1.6s cubic-bezier(.6,0,.2,1)" }} />
       {/* warm spill */}
       <div style={{ position: "absolute", inset: 0, background: `radial-gradient(46% 34% at 50% 52%, ${room.accent}44, transparent 72%)`, opacity: open ? 1 : 0, transition: "opacity 1s" }} />
 
@@ -219,7 +219,7 @@ function DoorIntro({ room, onEnter }: { room: ReturnType<typeof roomByKey>; onEn
           maxWidth: "92%",
           objectFit: "contain",
           filter: `drop-shadow(0 0 40px ${room.accent}66)`,
-          animation: open ? "foxpitAvatarUp 1.4s cubic-bezier(.2,.8,.2,1) .2s both" : "none",
+          animation: open ? "foxpitAvatarUp 1.6s cubic-bezier(.2,.8,.2,1) .4s both" : "none",
         }}
       />
 
@@ -315,15 +315,15 @@ function Faceoff({ room, onBack, onClear }: { room: ReturnType<typeof roomByKey>
 
 const hudBack: React.CSSProperties = {
   position: "absolute",
-  top: 18,
-  left: 18,
+  top: 16,
+  left: 8,
   zIndex: 65,
   border: "1px solid rgba(200,162,75,.5)",
   background: "rgba(3,4,7,.6)",
   color: "#d8c79b",
-  borderRadius: 12,
-  padding: "12px 18px",
-  fontSize: 18,
+  borderRadius: 10,
+  padding: "8px 11px",
+  fontSize: 14,
   fontWeight: 700,
   cursor: "pointer",
 };

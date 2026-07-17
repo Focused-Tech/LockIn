@@ -77,8 +77,14 @@ export function ChatAssistant() {
     }
   }
 
-  // Keep the mode picker clean — hide the assistant on the arena chooser.
-  if (pathname === "/app/practice/arena/chooser") return null;
+  // Show only in the Beginner/Advanced app — hide on the Fox Pit landing +
+  // journey, the arena mode picker/modes, and the Creator dashboard.
+  if (
+    ["/app/choose", "/app/foxpit", "/app/practice", "/app/creator"].some((p) =>
+      pathname.startsWith(p),
+    )
+  )
+    return null;
 
   return (
     <>
