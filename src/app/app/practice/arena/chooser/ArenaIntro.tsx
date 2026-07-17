@@ -273,7 +273,7 @@ export function ArenaIntro({ onDone }: { onDone: () => void }) {
           left: 50%;
           top: 22%;
           transform: translate(-50%, -50%);
-          width: 158px;
+          width: 118px;
           z-index: 10;
           opacity: 1;
           filter: drop-shadow(0 0 22px rgba(255, 90, 20, 0.55));
@@ -283,8 +283,8 @@ export function ArenaIntro({ onDone }: { onDone: () => void }) {
           left: 50%;
           top: 22%;
           transform: translate(-50%, -50%);
-          width: 158px;
-          height: 157px;
+          width: 118px;
+          height: 117px;
           z-index: 11;
           background: rgba(24, 32, 50, 0.55);
           pointer-events: none;

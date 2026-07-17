@@ -19,7 +19,7 @@ const TABLE_POS: Record<number, [number, number][]> = {
   1: [[50, 68]],
   3: [[34, 68], [50, 71], [66, 68]],
 };
-const PRIZE_KEY_POS: [number, number] = [50, 42]; // floats in front of the throne, clear of the throne back
+const PRIZE_KEY_POS: [number, number] = [50, 45]; // floats in front of the throne, clear of the throne back
 
 export function FoxPitRoom({ roomKey }: { roomKey: FoxPitRoomKey }) {
   const router = useRouter();
@@ -92,7 +92,7 @@ export function FoxPitRoom({ roomKey }: { roomKey: FoxPitRoomKey }) {
               }}
             />
           </div>
-          <div style={{ position: "absolute", left: `${PRIZE_KEY_POS[0]}%`, top: `${PRIZE_KEY_POS[1] + 11}%`, transform: "translateX(-50%)", fontSize: 10, letterSpacing: ".14em", color: "#e0cf9f", fontWeight: 800, textShadow: "0 2px 6px #000", whiteSpace: "nowrap" }}>
+          <div style={{ position: "absolute", left: `${PRIZE_KEY_POS[0]}%`, top: `${PRIZE_KEY_POS[1] + 7}%`, transform: "translateX(-50%)", fontSize: 10, letterSpacing: ".14em", color: "#e0cf9f", fontWeight: 800, textShadow: "0 2px 6px #000", whiteSpace: "nowrap" }}>
             {KEY_ASSET[room.bossArt].tier.toUpperCase()} KEY
           </div>
 
