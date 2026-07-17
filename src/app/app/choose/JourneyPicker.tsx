@@ -66,12 +66,6 @@ export function JourneyPicker({
     router.push("/app/creator");
   };
 
-  const goPractice = () => {
-    setBusy("practice");
-    // Hub dissolved: the Practice card opens the arena chooser directly.
-    router.push("/app/practice/arena/chooser");
-  };
-
   const goFoxPit = () => {
     setBusy("foxpit");
     router.push("/app/foxpit");
@@ -160,18 +154,6 @@ export function JourneyPicker({
         delayMs={290}
         tone="violet"
         onClick={goCreator}
-      />
-
-      {/* Practice — play-money multiplayer (coins are score; nothing cashable) */}
-      <JourneyCard
-        title="Practice arena — play with friends"
-        body="Compete for coins (no real money) and leaderboard rank. Climb the tiers and sharpen your skills."
-        active={false}
-        busy={busy === "practice"}
-        disabled={pending}
-        delayMs={340}
-        tone="orange"
-        onClick={goPractice}
       />
 
       {/* The Fox Pit — the painted practice-mode journey (lobby → tower → rooms) */}

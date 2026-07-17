@@ -5,16 +5,32 @@ import { useRouter } from "next/navigation";
 
 /**
  * Fox Pit LOBBY — the practice-mode front door (background = lobby-scene.png).
- * Boss Fox stands center, palms out. Over each palm / door arch a floating
- * SLATE-CARD banner: LEFT = "The Lone Fox" (self-paced), RIGHT = "The Boss
- * Journey" (climb the tower). Tapping a banner opens a pop-up; choosing routes:
- * Lone Fox -> room selection, Boss Journey -> the tower map.
+ * Entry sequence: WELCOME gate (Boss Fox welcomes you in) -> lobby. Boss Fox
+ * stands center, palms out; a small bouncing MINI-DOOR token floats over each
+ * palm (LEFT = The Lone Fox, orange; RIGHT = The Boss Journey, brass) so the
+ * painted fox art stays visible. Tapping a token opens the notice card in front
+ * of that door; confirming does a corridor push-in and routes:
+ *   Lone Fox  -> the existing practice arena ("Choose your arena")
+ *   Boss Journey -> the tower map (avatars only).
  */
-type Journey = "lone" | "boss" | null;
+type Journey = "lone" | "boss";
+
+const ROUTES: Record<Journey, string> = {
+  lone: "/app/practice/arena/chooser",
+  boss: "/app/foxpit/map",
+};
 
 export function FoxPitLobby() {
   const router = useRouter();
-  const [popup, setPopup] = useState<Journey>(null);
+  const [welcome, setWelcome] = useState(true);
+  const [popup, setPopup] = useState<Journey | null>(null);
+  const [entering, setEntering] = useState<Journey | null>(null);
+
+  const confirm = (j: Journey) => {
+    setPopup(null);
+    setEntering(j); // corridor push-in, then route
+    window.setTimeout(() => router.push(ROUTES[j]), 620);
+  };
 
   return (
     <div
@@ -26,6 +42,8 @@ export function FoxPitLobby() {
         overflow: "hidden",
       }}
     >
+      <style>{FOXPIT_LOBBY_CSS}</style>
+
       {/* painted lobby scene, full-bleed */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
@@ -69,77 +87,159 @@ export function FoxPitLobby() {
         </div>
       </div>
 
-      {/* LEFT banner — The Lone Fox (over the left palm / fox-emblem door) */}
-      <SlateBanner
-        style={{ left: "5%", top: "39%", width: "34%" }}
-        outline="#FC3E01"
-        kicker="Left door"
-        title="THE LONE FOX"
-        onClick={() => setPopup("lone")}
-      />
+      {/* Phase 2 — small bouncing mini-door tokens in Boss Fox's palms */}
+      <PalmToken side="left" accent="#FC3E01" title="THE LONE FOX" onClick={() => setPopup("lone")} />
+      <PalmToken side="right" accent="#C8A24B" title="THE BOSS JOURNEY" onClick={() => setPopup("boss")} />
 
-      {/* RIGHT banner — The Boss Journey (over the right palm / crown door) */}
-      <SlateBanner
-        style={{ right: "5%", top: "39%", width: "34%" }}
-        outline="#C8A24B"
-        kicker="Right door"
-        title="THE BOSS JOURNEY"
-        onClick={() => setPopup("boss")}
-      />
-
-      {/* pop-up */}
+      {/* reused notice card in front of the chosen door */}
       {popup && (
         <JourneyPopup
           journey={popup}
           onClose={() => setPopup(null)}
-          onChoose={() =>
-            router.push(popup === "lone" ? "/app/foxpit/rooms" : "/app/foxpit/map")
-          }
+          onChoose={() => confirm(popup)}
         />
       )}
+
+      {/* corridor push-in transition */}
+      {entering && (
+        <div
+          className="foxpit-pushin"
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 80,
+            pointerEvents: "none",
+            background: entering === "lone" ? "#160a05" : "#14100a",
+          }}
+        />
+      )}
+
+      {/* WELCOME gate (Boss Fox welcomes you in) */}
+      {welcome && <WelcomeGate onEnter={() => setWelcome(false)} />}
     </div>
   );
 }
 
-function SlateBanner({
-  style,
-  outline,
-  kicker,
+/** A small door-shaped token that floats + gently bounces over a palm. */
+function PalmToken({
+  side,
+  accent,
   title,
   onClick,
 }: {
-  style: React.CSSProperties;
-  outline: string;
-  kicker: string;
+  side: "left" | "right";
+  accent: string;
   title: string;
   onClick: () => void;
 }) {
+  const pos: React.CSSProperties =
+    side === "left" ? { left: "22%" } : { right: "22%" };
   return (
     <button
       onClick={onClick}
+      className="foxpit-token"
+      aria-label={title}
       style={{
         position: "absolute",
-        ...style,
-        padding: "12px 10px",
-        borderRadius: 12,
-        background: "rgba(10,13,18,.82)",
-        border: `2px solid ${outline}`,
-        boxShadow: `0 0 26px ${outline}55, 0 10px 24px rgba(0,0,0,.6)`,
-        color: "#E7E7EB",
-        textAlign: "center",
+        top: "44%",
+        ...pos,
+        transform: "translateX(-50%)",
+        background: "transparent",
+        border: "none",
         cursor: "pointer",
-        backdropFilter: "blur(2px)",
-        animation: "foxpitBob 3.2s ease-in-out infinite",
+        textAlign: "center",
+        padding: 0,
       }}
     >
-      <div style={{ fontSize: 10, letterSpacing: ".18em", color: outline, fontWeight: 800, textTransform: "uppercase" }}>
-        {kicker}
+      {/* the mini door — bounces */}
+      <div
+        className="foxpit-token-door"
+        style={{
+          width: 46,
+          height: 66,
+          margin: "0 auto",
+          borderRadius: "9px 9px 4px 4px",
+          background: `linear-gradient(180deg, ${accent}dd, ${accent}66)`,
+          border: `2px solid ${accent}`,
+          boxShadow: `0 0 18px ${accent}99, 0 8px 18px rgba(0,0,0,.6)`,
+          position: "relative",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            right: 7,
+            top: "50%",
+            width: 5,
+            height: 5,
+            borderRadius: "50%",
+            background: "rgba(255,255,255,.85)",
+            transform: "translateY(-50%)",
+          }}
+        />
       </div>
-      <div style={{ fontFamily: "Georgia, serif", fontSize: 17, fontWeight: 700, letterSpacing: ".04em", marginTop: 3 }}>
+      <div
+        style={{
+          marginTop: 8,
+          fontSize: 10,
+          letterSpacing: ".1em",
+          color: "#fff",
+          fontWeight: 800,
+          textShadow: "0 2px 8px #000, 0 0 10px #000",
+          whiteSpace: "nowrap",
+        }}
+      >
         {title}
       </div>
-      <div style={{ fontSize: 10, color: "#8b98a6", marginTop: 4, letterSpacing: ".1em" }}>TAP</div>
     </button>
+  );
+}
+
+/** Fox Pit WELCOME gate — Boss Fox welcomes you in before the lobby. */
+function WelcomeGate({ onEnter }: { onEnter: () => void }) {
+  return (
+    <div
+      className="foxpit-welcome"
+      style={{
+        position: "absolute",
+        inset: 0,
+        zIndex: 90,
+        background: "rgba(3,4,7,.88)",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 30,
+        textAlign: "center",
+      }}
+    >
+      <div style={{ fontSize: 12, letterSpacing: ".3em", color: "#C8A24B", fontWeight: 800 }}>
+        WELCOME TO
+      </div>
+      <div style={{ fontFamily: "Georgia, serif", fontSize: 40, letterSpacing: ".1em", color: "#E7E7EB", marginTop: 6 }}>
+        THE FOX <span style={{ color: "#FC3E01" }}>PIT</span>
+      </div>
+      <p
+        style={{
+          maxWidth: 340,
+          marginTop: 22,
+          fontSize: 18,
+          lineHeight: 1.6,
+          color: "#d8dee7",
+          fontFamily: "Georgia, serif",
+          fontStyle: "italic",
+        }}
+      >
+        Will you follow in the footsteps that made Boss Fox the boss he is
+        today?
+      </p>
+      <button
+        onClick={onEnter}
+        style={{ ...primaryBtn("#FC3E01"), marginTop: 30, fontSize: 17, padding: "16px 34px" }}
+      >
+        Step inside ›
+      </button>
+    </div>
   );
 }
 
@@ -188,20 +288,29 @@ function JourneyPopup({
         <p style={{ fontSize: 16, lineHeight: 1.55, color: "#c3cedb" }}>
           {lone
             ? "Play at your own pace. Pick any arena, sharpen your skills, and climb the leaderboard on your own terms."
-            : "Follow Boss Fox's rise. Climb the tower floor by floor, beat each boss to earn their key, and win the tournament at the top."}
+            : "Follow Boss Fox's rise. Climb the tower floor by floor, beat each boss to earn their key, and become the next Boss."}
         </p>
         <div style={{ display: "flex", gap: 12, marginTop: 24, justifyContent: "center" }}>
           <button onClick={onClose} style={{ ...ghostBtn }}>
             Back
           </button>
           <button onClick={onChoose} style={{ ...primaryBtn(accent) }}>
-            {lone ? "Choose an arena ›" : "Enter the tower ›"}
+            {lone ? "Choose an arena ›" : "Become the next Boss ›"}
           </button>
         </div>
       </div>
     </div>
   );
 }
+
+const FOXPIT_LOBBY_CSS = `
+@keyframes foxpitTokenBounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+.foxpit-token-door { animation: foxpitTokenBounce 1.8s ease-in-out infinite; }
+@keyframes foxpitPushIn { 0% { transform: scale(1); opacity: 0; } 45% { opacity: .9; } 100% { transform: scale(3.6); opacity: 1; } }
+.foxpit-pushin { transform-origin: 50% 44%; animation: foxpitPushIn .62s ease-in forwards; }
+@keyframes foxpitWelcomeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
+.foxpit-welcome { animation: foxpitWelcomeIn .5s ease-out both; }
+`;
 
 const backBtn: React.CSSProperties = {
   position: "absolute",
