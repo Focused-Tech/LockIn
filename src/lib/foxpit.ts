@@ -33,7 +33,7 @@ export interface FoxPitRoom {
 export const FOXPIT_ROOMS: FoxPitRoom[] = [
   {
     key: "dojo", order: 0, name: "The Dojo", floorLabel: "Basement · Training",
-    boss: "Owl", bossArt: "owl", crest: "O", accent: "#c9873f", needsKey: null, mapY: 0.895,
+    boss: "Owl", bossArt: "owl", crest: "O", accent: "#c9873f", needsKey: null, mapY: 0.83,
     roomImg: "/foxpit/room-dojo.png", avatarImg: "/foxpit/avatar-owl.png", faceoffImg: "/foxpit/faceoff-owl.png",
     tables: 1,
   },
@@ -57,8 +57,8 @@ export const FOXPIT_ROOMS: FoxPitRoom[] = [
   },
 ];
 
-/** The Lobby floor sits between Coliseum and Dojo on the map (street level, a hub, not a room). */
-export const LOBBY_MAP_Y = 0.695;
+/** The Lobby floor sits between Coliseum and Dojo on the map (street level, a hub, not a room). Raised so its label clears the bottom-left Practice icon. */
+export const LOBBY_MAP_Y = 0.6;
 /** The elevator is locked in practice and unlocks once you clear the High Table. */
 export const ELEVATOR_UNLOCK_AT: FoxPitRoomKey = "hightable";
 

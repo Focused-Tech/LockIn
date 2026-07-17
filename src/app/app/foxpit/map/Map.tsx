@@ -7,6 +7,7 @@ import {
   FOXPIT_ROOMS,
   LOBBY_MAP_Y,
   KEY_ASSET,
+  MEMBERSHIP_CARD,
   ELEVATOR_UNLOCK_AT,
   getCleared,
   isUnlocked,
@@ -238,8 +239,7 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
             position: "absolute",
             zIndex: 2,
             top: `${LOBBY_MAP_Y * 100}%`,
-            // right-aligned so it never collides with the fixed bottom-left Practice icon
-            right: "6%",
+            left: "6%",
             transform: "translateY(-50%)",
             display: "flex",
             alignItems: "center",
@@ -358,7 +358,8 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           cursor: "pointer",
         }}
       >
-        <LockGlyph size={22} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={MEMBERSHIP_CARD} alt="" style={{ width: 36, height: "auto", borderRadius: 4, boxShadow: "0 2px 6px rgba(0,0,0,.6)" }} />
         <span style={{ fontSize: 11, fontWeight: 800, color: "#ffb089", letterSpacing: ".05em", lineHeight: 1.1, textAlign: "left" }}>
           Practice
           <br />
