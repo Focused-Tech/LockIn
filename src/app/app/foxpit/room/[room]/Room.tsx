@@ -21,7 +21,13 @@ const TABLE_POS: Record<number, [number, number][]> = {
 };
 const PRIZE_KEY_POS: [number, number] = [50, 45]; // floats in front of the throne, clear of the throne back
 
-export function FoxPitRoom({ roomKey }: { roomKey: FoxPitRoomKey }) {
+export function FoxPitRoom({
+  roomKey,
+  username = "Member",
+}: {
+  roomKey: FoxPitRoomKey;
+  username?: string;
+}) {
   const router = useRouter();
   const room = roomByKey(roomKey);
   const [phase, setPhase] = useState<Phase>("door");
@@ -133,6 +139,7 @@ export function FoxPitRoom({ roomKey }: { roomKey: FoxPitRoomKey }) {
           room={room}
           index={activeTable}
           freeKeycard={isFirstLoneRoom}
+          username={username}
           onClose={() => { setPhase("room"); setActiveTable(null); }}
           onSeat={() => setPhase("faceoff")}
         />
@@ -224,7 +231,7 @@ function DoorIntro({ room, onEnter }: { room: ReturnType<typeof roomByKey>; onEn
       />
 
       {prompt && (
-        <div style={{ position: "absolute", left: 0, right: 0, bottom: 46, textAlign: "center", animation: "foxpitFadeUp .6s ease both" }}>
+        <div style={{ position: "absolute", left: 0, right: 0, bottom: "calc(env(safe-area-inset-bottom, 0px) + 46px)", textAlign: "center", animation: "foxpitFadeUp .6s ease both" }}>
           <div style={{ fontFamily: "Georgia, serif", fontSize: 26, color: "#f5ead0", textShadow: "0 2px 20px #000" }}>
             {room.boss} welcomes you
           </div>
@@ -239,11 +246,12 @@ function DoorIntro({ room, onEnter }: { room: ReturnType<typeof roomByKey>; onEn
 
 /* ---------------- table panel ---------------- */
 function TablePanel({
-  room, index, freeKeycard, onClose, onSeat,
+  room, index, freeKeycard, username, onClose, onSeat,
 }: {
   room: ReturnType<typeof roomByKey>;
   index: number;
   freeKeycard: boolean;
+  username: string;
   onClose: () => void;
   onSeat: () => void;
 }) {
@@ -253,8 +261,22 @@ function TablePanel({
   const diff = ["Rookie", "Contender", "Sharp"][index % 3]!;
   const prize = cost * 8;
   return (
-    <div style={{ position: "absolute", inset: 0, zIndex: 66, display: "flex", alignItems: "flex-end", justifyContent: "center", background: "rgba(3,4,7,.55)", padding: 18 }} onClick={onClose}>
-      <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 480, borderRadius: 18, background: "linear-gradient(180deg,#141821,#0a0d13)", border: `2px solid ${room.accent}`, boxShadow: `0 0 40px ${room.accent}44`, padding: 22, marginBottom: 20 }}>
+    <div
+      onClick={onClose}
+      style={{
+        position: "absolute",
+        inset: 0,
+        zIndex: 66,
+        display: "flex",
+        alignItems: "flex-end",
+        justifyContent: "center",
+        background: "rgba(3,4,7,.55)",
+        // clear the phone's bottom nav / gesture bar
+        padding: "18px 18px calc(env(safe-area-inset-bottom, 0px) + 64px)",
+        overflowY: "auto",
+      }}
+    >
+      <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 480, borderRadius: 18, background: "linear-gradient(180deg,#141821,#0a0d13)", border: `2px solid ${room.accent}`, boxShadow: `0 0 40px ${room.accent}44`, padding: 22 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
           <div style={{ fontFamily: "Georgia, serif", fontSize: 22, color: "#E7E7EB" }}>Table {index + 1} · {cat}</div>
           <button onClick={onClose} style={{ background: "none", border: "none", color: "#8b98a6", fontSize: 24, cursor: "pointer" }}>✕</button>
@@ -265,10 +287,9 @@ function TablePanel({
           <Stat label="Prize" value={`${prize} coins`} />
         </div>
         {freeKeycard && (
-          <div style={{ borderRadius: 12, border: "1px dashed #FC3E01", background: "rgba(252,62,1,.10)", padding: "12px 14px", marginBottom: 14, display: "flex", alignItems: "center", gap: 12 }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={MEMBERSHIP_CARD} alt="Membership keycard" style={{ width: 76, height: "auto", borderRadius: 6, boxShadow: "0 4px 12px rgba(0,0,0,.55)" }} />
-            <div>
+          <div style={{ borderRadius: 12, border: "1px dashed #FC3E01", background: "rgba(252,62,1,.10)", padding: 14, marginBottom: 14, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+            <MembershipCard username={username} width={260} />
+            <div style={{ textAlign: "center" }}>
               <div style={{ color: "#ffb089", fontWeight: 800, fontSize: 14, letterSpacing: ".04em" }}>FREE-ENTRY KEYCARD</div>
               <div style={{ color: "#c3cedb", fontSize: 12 }}>First round&apos;s on the house.</div>
             </div>
@@ -277,6 +298,52 @@ function TablePanel({
         <button onClick={onSeat} style={{ width: "100%", border: `1px solid ${room.accent}`, background: `${room.accent}22`, color: "#ffe", borderRadius: 12, padding: "16px", fontSize: 18, fontWeight: 800, cursor: "pointer" }}>
           Take your seat ›
         </button>
+      </div>
+    </div>
+  );
+}
+
+/** Fox Pit membership card — the member's avatar + name embedded on the art. */
+function MembershipCard({ username, width = 260 }: { username: string; width?: number }) {
+  return (
+    <div style={{ position: "relative", width, aspectRatio: "1251 / 795", flexShrink: 0 }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={MEMBERSHIP_CARD} alt="Fox Pit membership card" style={{ width: "100%", height: "100%", display: "block", borderRadius: 8 }} />
+      {/* avatar badge (upper-left circle) — placeholder Boss Fox head until avatar select ships */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/arena/fox-crest.png"
+        alt=""
+        style={{
+          position: "absolute",
+          left: "18.4%",
+          top: "42%",
+          transform: "translate(-50%,-50%)",
+          width: "18%",
+          aspectRatio: "1",
+          borderRadius: "50%",
+          objectFit: "cover",
+        }}
+      />
+      {/* member name */}
+      <div
+        style={{
+          position: "absolute",
+          left: "50%",
+          top: "77%",
+          transform: "translate(-50%,-50%)",
+          width: "62%",
+          textAlign: "center",
+          color: "#f0d79a",
+          fontFamily: "Georgia, serif",
+          fontWeight: 700,
+          fontSize: Math.round(width * 0.05),
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        }}
+      >
+        {username}
       </div>
     </div>
   );
@@ -302,7 +369,7 @@ function Faceoff({ room, onBack, onClear }: { room: ReturnType<typeof roomByKey>
       <div style={{ position: "absolute", left: 0, right: 0, top: 90, textAlign: "center" }}>
         <div style={{ fontSize: 13, letterSpacing: ".24em", color: room.accent, fontWeight: 800 }}>FACE-OFF · {room.boss.toUpperCase()}</div>
       </div>
-      <div style={{ position: "absolute", left: 0, right: 0, bottom: 42, textAlign: "center" }}>
+      <div style={{ position: "absolute", left: 0, right: 0, bottom: "calc(env(safe-area-inset-bottom, 0px) + 42px)", textAlign: "center" }}>
         <div style={{ fontFamily: "Georgia, serif", fontSize: 40, color: "#f5ead0", letterSpacing: ".06em", textShadow: "0 2px 30px #000" }}>GAME BEGINS</div>
         <div style={{ fontSize: 14, color: "#c3cedb", marginTop: 8, letterSpacing: ".1em" }}>Real gameplay drops in here.</div>
         <button onClick={onClear} style={{ marginTop: 20, border: `1px solid ${room.accent}`, background: `${room.accent}22`, color: "#ffe", borderRadius: 12, padding: "16px 30px", fontSize: 18, fontWeight: 800, cursor: "pointer" }}>

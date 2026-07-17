@@ -75,9 +75,7 @@ export function LegPicker({
                 className="flex items-center justify-between rounded-lg border border-[rgba(34,197,94,0.30)] bg-[rgba(34,197,94,0.08)] px-3 py-2 text-sm"
               >
                 <span className="flex min-w-0 items-center gap-1.5">
-                  <span className="text-win" aria-hidden>
-                    🔒
-                  </span>
+                  <LockGlyph size={15} />
                   <span className="truncate text-muted">{l.question}</span>
                 </span>
                 <span className="shrink-0 pl-2 text-xs font-medium text-win">

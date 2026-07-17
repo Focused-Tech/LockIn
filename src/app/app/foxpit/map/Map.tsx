@@ -2,10 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { LockGlyph } from "@/components/practice/LockGlyph";
 import {
   FOXPIT_ROOMS,
   LOBBY_MAP_Y,
   KEY_ASSET,
+  MEMBERSHIP_CARD,
   ELEVATOR_UNLOCK_AT,
   getCleared,
   isUnlocked,
@@ -126,6 +128,21 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
 
   const enter = (key: FoxPitRoomKey) => router.push(`/app/foxpit/room/${key}`);
 
+  // Membership card → "walk down the stairs" to the Dojo (free practice at the
+  // bottom): smoothly pan the tower down to the very bottom.
+  const walkDownToPractice = () => {
+    const vp = vpRef.current;
+    const c = cRef.current;
+    if (!vp || !c) return;
+    c.style.transition = "transform 1.8s cubic-bezier(.45,.05,.2,1)";
+    v.current.tx = 0;
+    v.current.ty = Math.min(0, vp.clientHeight - c.offsetHeight);
+    apply();
+    window.setTimeout(() => {
+      if (cRef.current) cRef.current.style.transition = "";
+    }, 1900);
+  };
+
   return (
     <div
       ref={vpRef}
@@ -189,15 +206,19 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
                 backdropFilter: "blur(1px)",
               }}
             >
-              <span
-                style={{
-                  fontSize: 13,
-                  lineHeight: 1,
-                  color: done ? "#22C55E" : current ? "#FC3E01" : unlocked ? r.accent : "#c8a24b",
-                }}
-              >
-                {done ? "✓" : current ? "▸" : unlocked ? "•" : "🔒"}
-              </span>
+              {!unlocked ? (
+                <LockGlyph size={14} />
+              ) : (
+                <span
+                  style={{
+                    fontSize: 13,
+                    lineHeight: 1,
+                    color: done ? "#22C55E" : current ? "#FC3E01" : r.accent,
+                  }}
+                >
+                  {done ? "✓" : current ? "▸" : "•"}
+                </span>
+              )}
               <span style={{ fontFamily: "Georgia, serif", fontSize: 15, fontWeight: 700, letterSpacing: ".03em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 {r.name}
               </span>
@@ -235,30 +256,37 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           </span>
         </button>
 
-        {/* elevator (far left) — locked until the High Table is cleared */}
+        {/* elevator (far left) — full-size doors with a center split; locked until the High Table is cleared */}
         <button
           onClick={() => (elevatorUnlocked ? setFloorSelect(true) : setElevatorLocked(true))}
+          aria-label="Elevator"
           style={{
             position: "absolute",
-            top: "34%",
+            top: "33%",
             left: "1.5%",
-            width: "13%",
+            width: "15%",
+            height: "11%",
             transform: "translateY(-50%)",
-            padding: "5px 2px",
-            borderRadius: 7,
-            textAlign: "center",
-            background: "rgba(3,4,7,.8)",
-            border: "1px solid rgba(200,162,75,.5)",
-            color: "#d8c79b",
-            fontSize: 8,
-            fontWeight: 800,
-            letterSpacing: ".02em",
-            lineHeight: 1.2,
-            whiteSpace: "nowrap",
+            borderRadius: 6,
+            border: "1px solid rgba(200,162,75,.55)",
+            background: "linear-gradient(180deg, rgba(40,34,22,.9), rgba(12,14,20,.92))",
             cursor: "pointer",
+            padding: 0,
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "flex-end",
           }}
         >
-          ELEVATORS
+          {/* two elevator doors + the center split line */}
+          <div style={{ position: "absolute", inset: 0, display: "flex" }}>
+            <div style={{ flex: 1, background: "linear-gradient(90deg, rgba(60,66,84,.55), rgba(28,32,44,.55))", borderRight: "1px solid rgba(200,162,75,.6)" }} />
+            <div style={{ flex: 1, background: "linear-gradient(270deg, rgba(60,66,84,.55), rgba(28,32,44,.55))" }} />
+          </div>
+          {/* label plate */}
+          <div style={{ position: "relative", width: "100%", padding: "2px 0", background: "rgba(3,4,7,.74)", color: "#d8c79b", fontSize: 7, fontWeight: 800, letterSpacing: ".05em", textAlign: "center" }}>
+            ELEVATOR
+          </div>
         </button>
       </div>
 
@@ -308,6 +336,34 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
         ‹ Lobby
       </button>
 
+      {/* membership card → walk down the stairs to the Dojo (free practice) */}
+      <button
+        onClick={walkDownToPractice}
+        aria-label="Use your membership card to practice free downstairs"
+        style={{
+          position: "fixed",
+          bottom: "calc(env(safe-area-inset-bottom, 0px) + 16px)",
+          left: 10,
+          zIndex: 63,
+          display: "flex",
+          alignItems: "center",
+          gap: 7,
+          border: "1px solid rgba(252,62,1,.5)",
+          background: "rgba(3,4,7,.72)",
+          borderRadius: 10,
+          padding: "6px 9px",
+          cursor: "pointer",
+        }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={MEMBERSHIP_CARD} alt="" style={{ width: 34, height: "auto", borderRadius: 3, boxShadow: "0 2px 6px rgba(0,0,0,.6)" }} />
+        <span style={{ fontSize: 9, fontWeight: 800, color: "#ffb089", letterSpacing: ".04em", lineHeight: 1.15, textAlign: "left" }}>
+          PRACTICE
+          <br />
+          FREE ↓
+        </span>
+      </button>
+
       {floorSelect && (
         <FloorSelectPanel
           lone={lone}
@@ -346,13 +402,15 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
               textAlign: "center",
             }}
           >
-            <div style={{ fontSize: 36 }}>🔒</div>
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <LockGlyph size={44} />
+            </div>
             <div style={{ fontFamily: "Georgia, serif", fontSize: 22, color: "#E7E7EB", marginTop: 8 }}>
               Elevator locked
             </div>
             <div style={{ width: 90, height: 2, margin: "12px auto", background: "linear-gradient(90deg,transparent,#C8A24B,transparent)" }} />
             <p style={{ fontSize: 15, lineHeight: 1.6, color: "#c3cedb" }}>
-              The elevator stays out of service until you reach the{" "}
+              The elevator stays out of service until you reach{" "}
               <b style={{ color: "#C8A24B" }}>{roomByKey(ELEVATOR_UNLOCK_AT).name}</b>. Climb the
               tower and clear the floors below to unlock fast-travel between them.
             </p>
@@ -502,8 +560,8 @@ function FloorSelectPanel({
                       ENTER ›
                     </div>
                   ) : (
-                    <div style={{ fontSize: 10, letterSpacing: ".06em", color: "#c8a24b", fontWeight: 800, marginTop: 2 }}>
-                      🔒 NEEDS {keyLabel(r.needsKey!)} KEY
+                    <div style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, letterSpacing: ".06em", color: "#c8a24b", fontWeight: 800, marginTop: 2 }}>
+                      <LockGlyph size={11} /> NEEDS {keyLabel(r.needsKey!)} KEY
                     </div>
                   )}
                 </div>

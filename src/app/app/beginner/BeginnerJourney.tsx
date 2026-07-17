@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { Button } from "@/components/ui";
+import { LockGlyph } from "@/components/practice/LockGlyph";
 import { toggleFollowCreator } from "@/components/feed/followActions";
 import {
   closesLabel,
@@ -629,7 +630,9 @@ function LockedScreen({
 }) {
   return (
     <div className="flex flex-col gap-4 text-center">
-      <div className="text-5xl">🔒</div>
+      <div className="flex justify-center">
+        <LockGlyph size={52} />
+      </div>
       <h2 className="text-xl font-extrabold">You&apos;re locked in.</h2>
       <p className="text-sm text-muted">
         Your coins are in. We&apos;ll tell you the moment it settles — nothing else

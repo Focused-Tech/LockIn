@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { isNativePlatform } from "@/lib/platform";
+import { LockGlyph } from "@/components/practice/LockGlyph";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -54,9 +55,7 @@ export function PwaSetup() {
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 flex justify-center p-3">
       <div className="flex w-full max-w-md items-center gap-3 rounded-xl border border-border bg-surface-card p-3 shadow-2xl">
-        <span className="text-2xl" aria-hidden>
-          🔒
-        </span>
+        <LockGlyph size={26} />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold">Install LockIn</p>
           <p className="text-xs text-muted">
