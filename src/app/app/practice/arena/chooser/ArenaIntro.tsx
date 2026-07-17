@@ -15,7 +15,13 @@ import { useEffect, useRef, useState } from "react";
  *   7.1s  done → carousel
  * Tap anywhere to skip.
  */
-export function ArenaIntro({ onDone }: { onDone: () => void }) {
+export function ArenaIntro({
+  onDone,
+  revealTitle = "Choose your arena",
+}: {
+  onDone: () => void;
+  revealTitle?: string;
+}) {
   const [open, setOpen] = useState(false);
   const [backed, setBacked] = useState(false);
   const doneRef = useRef(onDone);
@@ -45,7 +51,7 @@ export function ArenaIntro({ onDone }: { onDone: () => void }) {
         <div className="reveal-reflect">
           <img className="reveal-wordmark" src="/arena/intro/wordmark.png" alt="" />
         </div>
-        <div className="reveal-arena-title">Choose your arena</div>
+        <div className="reveal-arena-title">{revealTitle}</div>
       </div>
       <div className="door-seam" />
       <div className="glass-door">

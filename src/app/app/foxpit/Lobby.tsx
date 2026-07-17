@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ArenaIntro } from "@/app/app/practice/arena/chooser/ArenaIntro";
 
 /**
  * Fox Pit LOBBY — the practice-mode front door (background = lobby-scene.png).
@@ -22,7 +23,8 @@ const ROUTES: Record<Journey, string> = {
 
 export function FoxPitLobby() {
   const router = useRouter();
-  const [welcome, setWelcome] = useState(true);
+  // entry sequence: Boss Fox glass-door intro -> welcome/step-inside -> lobby
+  const [phase, setPhase] = useState<"door" | "welcome" | "lobby">("door");
   const [popup, setPopup] = useState<Journey | null>(null);
   const [entering, setEntering] = useState<Journey | null>(null);
 
@@ -68,14 +70,16 @@ export function FoxPitLobby() {
         }}
       />
 
-      {/* back to journey hub */}
-      <button
-        onClick={() => router.push("/app/choose")}
-        style={backBtn}
-        aria-label="Back"
-      >
-        ‹ Back
-      </button>
+      {/* back to journey hub (lobby only) */}
+      {phase === "lobby" && (
+        <button
+          onClick={() => router.push("/app/choose")}
+          style={backBtn}
+          aria-label="Back"
+        >
+          ‹ Back
+        </button>
+      )}
 
       {/* title */}
       <div style={{ position: "absolute", top: 62, left: 0, right: 0, textAlign: "center" }}>
@@ -114,8 +118,18 @@ export function FoxPitLobby() {
         />
       )}
 
-      {/* WELCOME gate (Boss Fox welcomes you in) */}
-      {welcome && <WelcomeGate onEnter={() => setWelcome(false)} />}
+      {/* Boss Fox glass-door intro — "Ready Boss Up?" */}
+      {phase === "door" && (
+        <ArenaIntro revealTitle="Ready Boss Up?" onDone={() => setPhase("welcome")} />
+      )}
+
+      {/* WELCOME / step-inside gate (with a Back button) */}
+      {phase === "welcome" && (
+        <WelcomeGate
+          onEnter={() => setPhase("lobby")}
+          onBack={() => router.push("/app/choose")}
+        />
+      )}
     </div>
   );
 }
@@ -203,8 +217,8 @@ function PalmToken({
   );
 }
 
-/** Fox Pit WELCOME gate — Boss Fox welcomes you in before the lobby. */
-function WelcomeGate({ onEnter }: { onEnter: () => void }) {
+/** Fox Pit WELCOME gate — the step-inside choice after the door animation. */
+function WelcomeGate({ onEnter, onBack }: { onEnter: () => void; onBack: () => void }) {
   return (
     <div
       className="foxpit-welcome"
@@ -221,6 +235,9 @@ function WelcomeGate({ onEnter }: { onEnter: () => void }) {
         textAlign: "center",
       }}
     >
+      <button onClick={onBack} style={backBtn} aria-label="Back">
+        ‹ Back
+      </button>
       <div style={{ fontSize: 12, letterSpacing: ".3em", color: "#C8A24B", fontWeight: 800 }}>
         WELCOME TO
       </div>
@@ -322,15 +339,15 @@ const FOXPIT_LOBBY_CSS = `
 
 const backBtn: React.CSSProperties = {
   position: "absolute",
-  top: 18,
-  left: 18,
-  zIndex: 65,
+  top: 16,
+  left: 8,
+  zIndex: 95,
   border: "1px solid rgba(200,162,75,.5)",
-  background: "rgba(3,4,7,.6)",
+  background: "rgba(3,4,7,.62)",
   color: "#d8c79b",
-  borderRadius: 12,
-  padding: "12px 18px",
-  fontSize: 18,
+  borderRadius: 10,
+  padding: "8px 11px",
+  fontSize: 14,
   fontWeight: 700,
   cursor: "pointer",
 };
