@@ -71,6 +71,23 @@ export function keyLabel(a: BossArt): string {
   return a.toUpperCase();
 }
 
+/**
+ * Tiered PRIZE-KEY art — the key you win by clearing each boss's room.
+ * Dojo/Owl→bronze, Coliseum/Wolf→silver, High Table/Raven→gold, Suite/Fox→platinum.
+ * Used for the floating room prize key AND the elevator's "keys won" panel.
+ */
+export const KEY_ASSET: Record<BossArt, { src: string; tier: string }> = {
+  owl: { src: "/foxpit/key-owl-bronze.png", tier: "Bronze" },
+  wolf: { src: "/foxpit/key-wolf-silver.png", tier: "Silver" },
+  raven: { src: "/foxpit/key-raven-gold.png", tier: "Gold" },
+  fox: { src: "/foxpit/key-bossfox-platinum.png", tier: "Platinum" },
+};
+
+/** The neon fox emblem painted on the room door. */
+export const DOOR_EMBLEM = "/foxpit/emblem-fox-neon.png";
+/** The membership card art (free-entry keycard + member profile card). */
+export const MEMBERSHIP_CARD = "/foxpit/membership-card.png";
+
 // ---- client-side progression (practice demo persists in localStorage) ----
 const CLEARED_KEY = "foxpit.cleared.v1";
 

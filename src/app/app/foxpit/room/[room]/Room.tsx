@@ -6,17 +6,20 @@ import {
   roomByKey,
   markCleared,
   FOXPIT_ROOMS,
+  KEY_ASSET,
+  DOOR_EMBLEM,
+  MEMBERSHIP_CARD,
   type FoxPitRoomKey,
 } from "@/lib/foxpit";
 
 type Phase = "door" | "room" | "table" | "faceoff";
 
-/** table hotspot positions per room (%, over the painted art — tune after OTA). */
+/** table hotspot positions per room (%, on the painted table surface — tune after OTA). */
 const TABLE_POS: Record<number, [number, number][]> = {
-  1: [[50, 66]],
-  3: [[30, 70], [50, 74], [70, 70]],
+  1: [[50, 72]],
+  3: [[28, 74], [50, 78], [72, 74]],
 };
-const PRIZE_KEY_POS: [number, number] = [50, 26]; // over the boss dais
+const PRIZE_KEY_POS: [number, number] = [79, 16]; // floats to the side, clear of the throne back
 
 export function FoxPitRoom({ roomKey }: { roomKey: FoxPitRoomKey }) {
   const router = useRouter();
@@ -62,33 +65,31 @@ export function FoxPitRoom({ roomKey }: { roomKey: FoxPitRoomKey }) {
       {/* ---------- ROOM phase: table hotspots + spinning prize key ---------- */}
       {(phase === "room" || phase === "table") && (
         <>
-          {/* spinning prize key at the boss dais (room goal) */}
+          {/* floating tiered PRIZE KEY — off to the side, clear of the throne back */}
           <div
             style={{
               position: "absolute",
               left: `${PRIZE_KEY_POS[0]}%`,
               top: `${PRIZE_KEY_POS[1]}%`,
               transform: "translate(-50%,-50%)",
-              width: 84,
-              height: 84,
-              borderRadius: "50%",
+              width: 88,
+              height: 88,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              background: "radial-gradient(circle at 50% 30%,#f0d79a,#c8a24b 40%,#5f4a22)",
-              boxShadow: `0 0 40px ${room.accent}88`,
               animation: "foxpitKeySpin 3.6s ease-in-out infinite, foxpitBob 3.6s ease-in-out infinite",
-              border: "2px solid #4a3a1c",
+              filter: `drop-shadow(0 0 26px ${room.accent}aa)`,
             }}
             aria-label="Prize key"
           >
-            <span style={{ fontFamily: "Georgia, serif", fontSize: 34, color: "#3a2a10", fontWeight: 700 }}>{room.crest}</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={KEY_ASSET[room.bossArt].src} alt={`${room.boss} prize key`} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
           </div>
-          <div style={{ position: "absolute", left: `${PRIZE_KEY_POS[0]}%`, top: `${PRIZE_KEY_POS[1] + 5}%`, transform: "translateX(-50%)", fontSize: 11, letterSpacing: ".14em", color: "#e0cf9f", fontWeight: 800, textShadow: "0 2px 6px #000" }}>
-            PRIZE KEY
+          <div style={{ position: "absolute", left: `${PRIZE_KEY_POS[0]}%`, top: `${PRIZE_KEY_POS[1] + 7}%`, transform: "translateX(-50%)", fontSize: 10, letterSpacing: ".14em", color: "#e0cf9f", fontWeight: 800, textShadow: "0 2px 6px #000", whiteSpace: "nowrap" }}>
+            {KEY_ASSET[room.bossArt].tier.toUpperCase()} KEY
           </div>
 
-          {/* table hotspots */}
+          {/* table hotspots — tilted flat onto the table surface */}
           {tables.map(([x, y], i) => (
             <button
               key={i}
@@ -97,11 +98,12 @@ export function FoxPitRoom({ roomKey }: { roomKey: FoxPitRoomKey }) {
                 position: "absolute",
                 left: `${x}%`,
                 top: `${y}%`,
-                transform: "translate(-50%,-50%)",
-                width: 120,
-                height: 74,
+                transform: "translate(-50%,-50%) perspective(360px) rotateX(56deg)",
+                transformStyle: "preserve-3d",
+                width: 132,
+                height: 60,
                 borderRadius: "50%",
-                background: "rgba(28,107,64,.28)",
+                background: "rgba(28,107,64,.26)",
                 border: `2px solid ${room.accent}`,
                 boxShadow: `0 0 26px ${room.accent}88`,
                 color: "#fff",
@@ -175,6 +177,27 @@ function DoorIntro({ room, onEnter }: { room: ReturnType<typeof roomByKey>; onEn
       {/* warm spill */}
       <div style={{ position: "absolute", inset: 0, background: `radial-gradient(46% 34% at 50% 52%, ${room.accent}44, transparent 72%)`, opacity: open ? 1 : 0, transition: "opacity 1s" }} />
 
+      {/* neon fox emblem on the closed doors (fades as the doors part) */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={DOOR_EMBLEM}
+        alt=""
+        aria-hidden
+        style={{
+          position: "absolute",
+          left: "50%",
+          top: "44%",
+          transform: "translate(-50%,-50%)",
+          width: 176,
+          maxWidth: "46%",
+          objectFit: "contain",
+          opacity: open ? 0 : 1,
+          transition: "opacity .7s ease",
+          filter: "drop-shadow(0 0 24px rgba(252,62,1,.5))",
+          zIndex: 1,
+        }}
+      />
+
       {/* THAT boss's standing avatar slides up in front of the doorway */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
@@ -235,8 +258,9 @@ function TablePanel({
           <Stat label="Prize" value={`${prize} coins`} />
         </div>
         {freeKeycard && (
-          <div style={{ borderRadius: 12, border: "1px dashed #FC3E01", background: "rgba(252,62,1,.10)", padding: "12px 14px", marginBottom: 14, display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontSize: 22 }}>🎟️</span>
+          <div style={{ borderRadius: 12, border: "1px dashed #FC3E01", background: "rgba(252,62,1,.10)", padding: "12px 14px", marginBottom: 14, display: "flex", alignItems: "center", gap: 12 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={MEMBERSHIP_CARD} alt="Membership keycard" style={{ width: 76, height: "auto", borderRadius: 6, boxShadow: "0 4px 12px rgba(0,0,0,.55)" }} />
             <div>
               <div style={{ color: "#ffb089", fontWeight: 800, fontSize: 14, letterSpacing: ".04em" }}>FREE-ENTRY KEYCARD</div>
               <div style={{ color: "#c3cedb", fontSize: 12 }}>First round&apos;s on the house.</div>
