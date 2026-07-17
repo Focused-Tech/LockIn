@@ -74,16 +74,23 @@ export function FoxPitRoom({ roomKey }: { roomKey: FoxPitRoomKey }) {
               transform: "translate(-50%,-50%)",
               width: 88,
               height: 88,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              animation: "foxpitKeySpin 3.6s ease-in-out infinite, foxpitBob 3.6s ease-in-out infinite",
               filter: `drop-shadow(0 0 26px ${room.accent}aa)`,
             }}
             aria-label="Prize key"
           >
+            {/* animation lives on the img so it never overrides the container's centering */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={KEY_ASSET[room.bossArt].src} alt={`${room.boss} prize key`} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+            <img
+              src={KEY_ASSET[room.bossArt].src}
+              alt={`${room.boss} prize key`}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                display: "block",
+                animation: "foxpitKeySpin 3.6s ease-in-out infinite, foxpitBob 3.6s ease-in-out infinite",
+              }}
+            />
           </div>
           <div style={{ position: "absolute", left: `${PRIZE_KEY_POS[0]}%`, top: `${PRIZE_KEY_POS[1] + 11}%`, transform: "translateX(-50%)", fontSize: 10, letterSpacing: ".14em", color: "#e0cf9f", fontWeight: 800, textShadow: "0 2px 6px #000", whiteSpace: "nowrap" }}>
             {KEY_ASSET[room.bossArt].tier.toUpperCase()} KEY
