@@ -39,26 +39,26 @@ export const FOXPIT_ROOMS: FoxPitRoom[] = [
   },
   {
     key: "coliseum", order: 1, name: "The Coliseum", floorLabel: "Level 2 · Indoor Stadium",
-    boss: "Wolf", bossArt: "wolf", crest: "W", accent: "#c22b22", needsKey: "owl", mapY: 0.485,
+    boss: "Wolf", bossArt: "wolf", crest: "W", accent: "#c22b22", needsKey: "owl", mapY: 0.42,
     roomImg: "/foxpit/room-coliseum.png", avatarImg: "/foxpit/avatar-wolf.png", faceoffImg: "/foxpit/faceoff-wolf.png",
     tables: 3,
   },
   {
     key: "hightable", order: 2, name: "The High Table", floorLabel: "Level 3 · VIP Lounge",
-    boss: "Raven", bossArt: "raven", crest: "R", accent: "#8a4dff", needsKey: "wolf", mapY: 0.27,
+    boss: "Raven", bossArt: "raven", crest: "R", accent: "#8a4dff", needsKey: "wolf", mapY: 0.22,
     roomImg: "/foxpit/room-hightable.png", avatarImg: "/foxpit/avatar-raven.png", faceoffImg: "/foxpit/faceoff-raven.png",
     tables: 3,
   },
   {
     key: "suite", order: 3, name: "Boss Fox's Suite", floorLabel: "Penthouse · Private 1v1",
-    boss: "Boss Fox", bossArt: "fox", crest: "※", accent: "#c8a24b", needsKey: "raven", mapY: 0.09,
+    boss: "Boss Fox", bossArt: "fox", crest: "※", accent: "#c8a24b", needsKey: "raven", mapY: 0.05,
     roomImg: "/foxpit/room-suite.png", avatarImg: "/foxpit/avatar-fox.png", faceoffImg: "/foxpit/faceoff-fox.png",
     tables: 1,
   },
 ];
 
 /** The Lobby floor sits between Coliseum and Dojo on the map (street level, a hub, not a room). Raised so its label clears the bottom-left Practice icon. */
-export const LOBBY_MAP_Y = 0.6;
+export const LOBBY_MAP_Y = 0.64;
 /** The elevator is locked in practice and unlocks once you clear the High Table. */
 export const ELEVATOR_UNLOCK_AT: FoxPitRoomKey = "hightable";
 

@@ -200,7 +200,8 @@ export function BootSplash() {
         .boot-lockpos {
           position: absolute;
           left: 52.79%;
-          top: 33.79%;
+          /* raised a touch so the fox's fingertips show under the lock's base */
+          top: 33%;
           width: 25.9%;
         }
         .boot-lock {
