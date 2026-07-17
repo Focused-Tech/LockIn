@@ -186,7 +186,8 @@ function PalmToken({
           position: "absolute",
           top: "100%",
           left: "50%",
-          transform: "translateX(-50%)",
+          // bias each label toward screen center so the long ones don't clip the edge
+          transform: side === "left" ? "translateX(-34%)" : "translateX(-66%)",
           marginTop: 8,
           fontSize: 9,
           letterSpacing: ".02em",
