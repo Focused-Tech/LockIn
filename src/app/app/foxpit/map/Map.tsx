@@ -258,6 +258,35 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           </span>
         </button>
 
+        {/* Practice Here — affixed to the lobby floor (scrolls with the tower); walks down to the Dojo */}
+        <button
+          onClick={walkDownToPractice}
+          aria-label="Practice free at the Dojo"
+          style={{
+            position: "absolute",
+            zIndex: 2,
+            top: "72%",
+            left: "14%",
+            transform: "translateY(-50%)",
+            display: "flex",
+            alignItems: "center",
+            gap: 7,
+            border: "1px solid rgba(252,62,1,.55)",
+            background: "rgba(3,4,7,.82)",
+            borderRadius: 12,
+            padding: "7px 12px",
+            cursor: "pointer",
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={MEMBERSHIP_CARD} alt="" style={{ width: 36, height: "auto", borderRadius: 4, boxShadow: "0 2px 6px rgba(0,0,0,.6)" }} />
+          <span style={{ fontSize: 11, fontWeight: 800, color: "#ffb089", letterSpacing: ".05em", lineHeight: 1.1, textAlign: "left" }}>
+            Practice
+            <br />
+            Here ↓
+          </span>
+        </button>
+
         {/* elevator (far left) — full-size doors with a center split; locked until the High Table is cleared */}
         <button
           onClick={() => (elevatorUnlocked ? setFloorSelect(true) : setElevatorLocked(true))}
@@ -337,34 +366,6 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
         }}
       >
         ‹ Lobby
-      </button>
-
-      {/* "lock in" to free practice — walks down the stairs to the Dojo */}
-      <button
-        onClick={walkDownToPractice}
-        aria-label="Practice free at the Dojo"
-        style={{
-          position: "fixed",
-          bottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)",
-          left: 10,
-          zIndex: 63,
-          display: "flex",
-          alignItems: "center",
-          gap: 7,
-          border: "1px solid rgba(252,62,1,.55)",
-          background: "rgba(3,4,7,.82)",
-          borderRadius: 12,
-          padding: "7px 12px",
-          cursor: "pointer",
-        }}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={MEMBERSHIP_CARD} alt="" style={{ width: 36, height: "auto", borderRadius: 4, boxShadow: "0 2px 6px rgba(0,0,0,.6)" }} />
-        <span style={{ fontSize: 11, fontWeight: 800, color: "#ffb089", letterSpacing: ".05em", lineHeight: 1.1, textAlign: "left" }}>
-          Practice
-          <br />
-          Here ↓
-        </span>
       </button>
 
       {floorSelect && (
