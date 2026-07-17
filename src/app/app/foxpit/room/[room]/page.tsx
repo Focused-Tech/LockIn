@@ -19,6 +19,7 @@ export default async function FoxPitRoomPage({
       <FoxPitRoom
         roomKey={room as FoxPitRoomKey}
         username={profile?.username ?? "Member"}
+        avatarUrl={profile?.avatarUrl ?? null}
       />
     </>
   );

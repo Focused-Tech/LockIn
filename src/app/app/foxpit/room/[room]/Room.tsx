@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { LockGlyph } from "@/components/practice/LockGlyph";
 import {
   roomByKey,
   markCleared,
@@ -24,14 +25,17 @@ const PRIZE_KEY_POS: [number, number] = [50, 45]; // floats in front of the thro
 export function FoxPitRoom({
   roomKey,
   username = "Member",
+  avatarUrl = null,
 }: {
   roomKey: FoxPitRoomKey;
   username?: string;
+  avatarUrl?: string | null;
 }) {
   const router = useRouter();
   const room = roomByKey(roomKey);
   const [phase, setPhase] = useState<Phase>("door");
   const [activeTable, setActiveTable] = useState<number | null>(null);
+  const [beaten, setBeaten] = useState<Set<number>>(new Set());
   const [zoom, setZoom] = useState(false);
   const isFirstLoneRoom = room.key === "dojo";
 
@@ -48,6 +52,11 @@ export function FoxPitRoom({
   }, [phase]);
 
   const tables: [number, number][] = TABLE_POS[room.tables] ?? [[50, 66]];
+  // Single-table rooms (Owl/Dojo, Boss Fox/Suite) seat you straight at the boss.
+  // Multi-table rooms require beating every regular table first.
+  const singleTable = tables.length === 1;
+  const allBeaten = tables.every((_, i) => beaten.has(i));
+  const bossReady = singleTable || allBeaten;
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 60, background: "#0A0D12", overflow: "hidden" }}>
@@ -102,34 +111,78 @@ export function FoxPitRoom({
             {KEY_ASSET[room.bossArt].tier.toUpperCase()} KEY
           </div>
 
-          {/* table hotspots — tilted flat onto the table surface */}
-          {tables.map(([x, y], i) => (
+          {/* multi-table rooms: the boss waits on the throne — locked until every table is beaten */}
+          {!singleTable && (
             <button
-              key={i}
-              onClick={() => { setActiveTable(i); setPhase("table"); }}
+              onClick={() => bossReady && setPhase("faceoff")}
+              disabled={!bossReady}
               style={{
                 position: "absolute",
-                left: `${x}%`,
-                top: `${y}%`,
-                transform: "translate(-50%,-50%) perspective(360px) rotateX(56deg)",
-                transformStyle: "preserve-3d",
-                width: 116,
-                height: 54,
-                borderRadius: "50%",
-                background: "rgba(28,107,64,.26)",
-                border: `2px solid ${room.accent}`,
-                boxShadow: `0 0 26px ${room.accent}88`,
-                color: "#fff",
+                left: "50%",
+                top: "29%",
+                transform: "translate(-50%,-50%)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 3,
+                padding: "8px 14px",
+                borderRadius: 12,
+                background: bossReady ? "rgba(20,10,4,.82)" : "rgba(3,4,7,.8)",
+                border: `2px solid ${bossReady ? room.accent : "#3a4653"}`,
+                boxShadow: bossReady ? `0 0 26px ${room.accent}aa` : "none",
+                color: bossReady ? "#ffe" : "#c8a24b",
                 fontSize: 12,
                 fontWeight: 800,
-                letterSpacing: ".08em",
-                cursor: "pointer",
-                animation: "foxpitGlow 2.4s ease-in-out infinite",
+                letterSpacing: ".06em",
+                cursor: bossReady ? "pointer" : "not-allowed",
+                filter: bossReady ? "none" : "grayscale(.4)",
+                animation: bossReady ? "foxpitGlow 2.4s ease-in-out infinite" : "none",
+                whiteSpace: "nowrap",
+                textAlign: "center",
               }}
             >
-              TABLE {i + 1}
+              {bossReady ? (
+                `CHALLENGE ${room.boss.toUpperCase()} ›`
+              ) : (
+                <>
+                  <LockGlyph size={18} />
+                  <span>BEAT ALL {tables.length} TABLES</span>
+                </>
+              )}
             </button>
-          ))}
+          )}
+
+          {/* table hotspots — tilted flat onto the table surface */}
+          {tables.map(([x, y], i) => {
+            const done = beaten.has(i);
+            return (
+              <button
+                key={i}
+                onClick={() => { setActiveTable(i); setPhase("table"); }}
+                style={{
+                  position: "absolute",
+                  left: `${x}%`,
+                  top: `${y}%`,
+                  transform: "translate(-50%,-50%) perspective(360px) rotateX(56deg)",
+                  transformStyle: "preserve-3d",
+                  width: 116,
+                  height: 54,
+                  borderRadius: "50%",
+                  background: done ? "rgba(34,197,94,.30)" : "rgba(28,107,64,.26)",
+                  border: `2px solid ${done ? "#22C55E" : room.accent}`,
+                  boxShadow: `0 0 26px ${done ? "#22C55E" : room.accent}88`,
+                  color: "#fff",
+                  fontSize: 12,
+                  fontWeight: 800,
+                  letterSpacing: ".08em",
+                  cursor: "pointer",
+                  animation: done ? "none" : "foxpitGlow 2.4s ease-in-out infinite",
+                }}
+              >
+                {singleTable ? `SIT · ${room.boss.toUpperCase()}` : done ? `✓ TABLE ${i + 1}` : `TABLE ${i + 1}`}
+              </button>
+            );
+          })}
         </>
       )}
 
@@ -140,8 +193,18 @@ export function FoxPitRoom({
           index={activeTable}
           freeKeycard={isFirstLoneRoom}
           username={username}
+          avatarUrl={avatarUrl}
+          bossTable={singleTable}
           onClose={() => { setPhase("room"); setActiveTable(null); }}
-          onSeat={() => setPhase("faceoff")}
+          onConfirm={() => {
+            if (singleTable) {
+              setPhase("faceoff");
+            } else {
+              setBeaten((prev) => new Set(prev).add(activeTable!));
+              setPhase("room");
+              setActiveTable(null);
+            }
+          }}
         />
       )}
 
@@ -246,14 +309,16 @@ function DoorIntro({ room, onEnter }: { room: ReturnType<typeof roomByKey>; onEn
 
 /* ---------------- table panel ---------------- */
 function TablePanel({
-  room, index, freeKeycard, username, onClose, onSeat,
+  room, index, freeKeycard, username, avatarUrl, bossTable, onClose, onConfirm,
 }: {
   room: ReturnType<typeof roomByKey>;
   index: number;
   freeKeycard: boolean;
   username: string;
+  avatarUrl: string | null;
+  bossTable: boolean;
   onClose: () => void;
-  onSeat: () => void;
+  onConfirm: () => void;
 }) {
   const cats = ["Politics", "Crypto", "Weather"];
   const cat = cats[index % cats.length]!;
@@ -288,15 +353,15 @@ function TablePanel({
         </div>
         {freeKeycard && (
           <div style={{ borderRadius: 12, border: "1px dashed #FC3E01", background: "rgba(252,62,1,.10)", padding: 14, marginBottom: 14, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-            <MembershipCard username={username} width={260} />
+            <MembershipCard username={username} avatarUrl={avatarUrl} width={260} />
             <div style={{ textAlign: "center" }}>
               <div style={{ color: "#ffb089", fontWeight: 800, fontSize: 14, letterSpacing: ".04em" }}>FREE-ENTRY KEYCARD</div>
               <div style={{ color: "#c3cedb", fontSize: 12 }}>First round&apos;s on the house.</div>
             </div>
           </div>
         )}
-        <button onClick={onSeat} style={{ width: "100%", border: `1px solid ${room.accent}`, background: `${room.accent}22`, color: "#ffe", borderRadius: 12, padding: "16px", fontSize: 18, fontWeight: 800, cursor: "pointer" }}>
-          Take your seat ›
+        <button onClick={onConfirm} style={{ width: "100%", border: `1px solid ${room.accent}`, background: `${room.accent}22`, color: "#ffe", borderRadius: 12, padding: "16px", fontSize: 18, fontWeight: 800, cursor: "pointer" }}>
+          {bossTable ? `Take your seat vs ${room.boss} ›` : "Play this table ›"}
         </button>
       </div>
     </div>
@@ -304,15 +369,15 @@ function TablePanel({
 }
 
 /** Fox Pit membership card — the member's avatar + name embedded on the art. */
-function MembershipCard({ username, width = 260 }: { username: string; width?: number }) {
+function MembershipCard({ username, avatarUrl, width = 260 }: { username: string; avatarUrl: string | null; width?: number }) {
   return (
     <div style={{ position: "relative", width, aspectRatio: "1251 / 795", flexShrink: 0 }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={MEMBERSHIP_CARD} alt="Fox Pit membership card" style={{ width: "100%", height: "100%", display: "block", borderRadius: 8 }} />
-      {/* avatar badge (upper-left circle) — placeholder Boss Fox head until avatar select ships */}
+      {/* avatar badge (upper-left circle) — the member's own avatar, Boss Fox head as fallback */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/arena/fox-crest.png"
+        src={avatarUrl || "/arena/fox-crest.png"}
         alt=""
         style={{
           position: "absolute",
