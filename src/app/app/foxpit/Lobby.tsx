@@ -145,7 +145,7 @@ function PalmToken({
       aria-label={title}
       style={{
         position: "absolute",
-        top: "56%",
+        top: "50%",
         ...pos,
         width: 48,
         background: "transparent",
@@ -188,8 +188,8 @@ function PalmToken({
           left: "50%",
           transform: "translateX(-50%)",
           marginTop: 8,
-          fontSize: 10,
-          letterSpacing: ".08em",
+          fontSize: 9,
+          letterSpacing: ".02em",
           color: "#fff",
           fontWeight: 800,
           textShadow: "0 2px 8px #000, 0 0 10px #000",

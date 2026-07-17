@@ -85,7 +85,7 @@ export function FoxPitRoom({ roomKey }: { roomKey: FoxPitRoomKey }) {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={KEY_ASSET[room.bossArt].src} alt={`${room.boss} prize key`} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
           </div>
-          <div style={{ position: "absolute", left: `${PRIZE_KEY_POS[0]}%`, top: `${PRIZE_KEY_POS[1] + 7}%`, transform: "translateX(-50%)", fontSize: 10, letterSpacing: ".14em", color: "#e0cf9f", fontWeight: 800, textShadow: "0 2px 6px #000", whiteSpace: "nowrap" }}>
+          <div style={{ position: "absolute", left: `${PRIZE_KEY_POS[0]}%`, top: `${PRIZE_KEY_POS[1] + 11}%`, transform: "translateX(-50%)", fontSize: 10, letterSpacing: ".14em", color: "#e0cf9f", fontWeight: 800, textShadow: "0 2px 6px #000", whiteSpace: "nowrap" }}>
             {KEY_ASSET[room.bossArt].tier.toUpperCase()} KEY
           </div>
 
