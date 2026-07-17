@@ -145,7 +145,7 @@ function PalmToken({
       aria-label={title}
       style={{
         position: "absolute",
-        top: "50%",
+        top: "47%",
         ...pos,
         width: 48,
         background: "transparent",
@@ -312,8 +312,8 @@ function JourneyPopup({
 }
 
 const FOXPIT_LOBBY_CSS = `
-@keyframes foxpitTokenBounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
-.foxpit-token-door { animation: foxpitTokenBounce 1.8s ease-in-out infinite; }
+@keyframes foxpitTokenBounce { 0% { transform: translateY(-22px); animation-timing-function: cubic-bezier(.5,0,.9,.4); } 46% { transform: translateY(0); animation-timing-function: cubic-bezier(.12,.7,.35,1); } 100% { transform: translateY(-22px); } }
+.foxpit-token-door { animation: foxpitTokenBounce 1.4s infinite; }
 @keyframes foxpitPushIn { 0% { transform: scale(1); opacity: 0; } 45% { opacity: .9; } 100% { transform: scale(3.6); opacity: 1; } }
 .foxpit-pushin { transform-origin: 50% 44%; animation: foxpitPushIn .62s ease-in forwards; }
 @keyframes foxpitWelcomeIn { 0% { opacity: 0; } 100% { opacity: 1; } }

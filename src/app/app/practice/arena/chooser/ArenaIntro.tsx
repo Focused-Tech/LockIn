@@ -50,7 +50,7 @@ export function ArenaIntro({ onDone }: { onDone: () => void }) {
       <div className="door-seam" />
       <div className="glass-door">
         <div className="door-welcome">Welcome</div>
-        <img className="door-crest-img" src="/arena/intro/crest.png" alt="" />
+        <img className="door-crest-img" src="/foxpit/emblem-fox-neon.png" alt="" />
         <div className="door-crest-tint" />
         <div className="door-below">
           <div className="door-tothe">to the</div>
@@ -288,8 +288,8 @@ export function ArenaIntro({ onDone }: { onDone: () => void }) {
           z-index: 11;
           background: rgba(24, 32, 50, 0.55);
           pointer-events: none;
-          -webkit-mask: url("/arena/intro/crest.png") center / contain no-repeat;
-          mask: url("/arena/intro/crest.png") center / contain no-repeat;
+          -webkit-mask: url("/foxpit/emblem-fox-neon.png") center / contain no-repeat;
+          mask: url("/foxpit/emblem-fox-neon.png") center / contain no-repeat;
         }
         .door-scene.open .glass-door {
           transform: rotateY(-118deg);
