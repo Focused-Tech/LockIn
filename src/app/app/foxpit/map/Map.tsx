@@ -7,7 +7,6 @@ import {
   FOXPIT_ROOMS,
   LOBBY_MAP_Y,
   KEY_ASSET,
-  MEMBERSHIP_CARD,
   ELEVATOR_UNLOCK_AT,
   getCleared,
   isUnlocked,
@@ -182,6 +181,7 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
               disabled={!unlocked}
               style={{
                 position: "absolute",
+                zIndex: 2,
                 top: `${r.mapY * 100}%`,
                 left: "6%",
                 transform: "translateY(-50%)",
@@ -236,6 +236,7 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           onClick={() => router.push("/app/foxpit")}
           style={{
             position: "absolute",
+            zIndex: 2,
             top: `${LOBBY_MAP_Y * 100}%`,
             left: "6%",
             transform: "translateY(-50%)",
@@ -262,6 +263,7 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           aria-label="Elevator"
           style={{
             position: "absolute",
+            zIndex: 0,
             top: "33%",
             left: "1.5%",
             width: "15%",
@@ -336,31 +338,30 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
         ‹ Lobby
       </button>
 
-      {/* membership card → walk down the stairs to the Dojo (free practice) */}
+      {/* "lock in" to free practice — walks down the stairs to the Dojo */}
       <button
         onClick={walkDownToPractice}
-        aria-label="Use your membership card to practice free downstairs"
+        aria-label="Practice free at the Dojo"
         style={{
           position: "fixed",
-          bottom: "calc(env(safe-area-inset-bottom, 0px) + 16px)",
+          bottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)",
           left: 10,
           zIndex: 63,
           display: "flex",
           alignItems: "center",
           gap: 7,
-          border: "1px solid rgba(252,62,1,.5)",
-          background: "rgba(3,4,7,.72)",
-          borderRadius: 10,
-          padding: "6px 9px",
+          border: "1px solid rgba(252,62,1,.55)",
+          background: "rgba(3,4,7,.82)",
+          borderRadius: 12,
+          padding: "7px 12px",
           cursor: "pointer",
         }}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={MEMBERSHIP_CARD} alt="" style={{ width: 34, height: "auto", borderRadius: 3, boxShadow: "0 2px 6px rgba(0,0,0,.6)" }} />
-        <span style={{ fontSize: 9, fontWeight: 800, color: "#ffb089", letterSpacing: ".04em", lineHeight: 1.15, textAlign: "left" }}>
-          PRACTICE
+        <LockGlyph size={22} />
+        <span style={{ fontSize: 11, fontWeight: 800, color: "#ffb089", letterSpacing: ".05em", lineHeight: 1.1, textAlign: "left" }}>
+          Practice
           <br />
-          FREE ↓
+          Here ↓
         </span>
       </button>
 

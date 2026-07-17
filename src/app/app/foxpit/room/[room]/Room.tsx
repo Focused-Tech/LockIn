@@ -6,6 +6,7 @@ import { LockGlyph } from "@/components/practice/LockGlyph";
 import {
   roomByKey,
   markCleared,
+  getCleared,
   FOXPIT_ROOMS,
   KEY_ASSET,
   DOOR_EMBLEM,
@@ -36,8 +37,14 @@ export function FoxPitRoom({
   const [phase, setPhase] = useState<Phase>("door");
   const [activeTable, setActiveTable] = useState<number | null>(null);
   const [beaten, setBeaten] = useState<Set<number>>(new Set());
+  const [roomCleared, setRoomCleared] = useState(false);
   const [zoom, setZoom] = useState(false);
   const isFirstLoneRoom = room.key === "dojo";
+
+  // already-cleared rooms skip the table grind (the boss is available straight away)
+  useEffect(() => {
+    setRoomCleared(getCleared().has(room.key));
+  }, [room.key]);
 
   // door-unlock intro auto-advances to the room; the slow cut-in then plays
   useEffect(() => {
@@ -56,7 +63,7 @@ export function FoxPitRoom({
   // Multi-table rooms require beating every regular table first.
   const singleTable = tables.length === 1;
   const allBeaten = tables.every((_, i) => beaten.has(i));
-  const bossReady = singleTable || allBeaten;
+  const bossReady = singleTable || allBeaten || roomCleared;
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 60, background: "#0A0D12", overflow: "hidden" }}>
@@ -154,7 +161,7 @@ export function FoxPitRoom({
 
           {/* table hotspots — tilted flat onto the table surface */}
           {tables.map(([x, y], i) => {
-            const done = beaten.has(i);
+            const done = roomCleared || beaten.has(i);
             return (
               <button
                 key={i}

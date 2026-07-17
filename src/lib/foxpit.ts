@@ -91,13 +91,23 @@ export const MEMBERSHIP_CARD = "/foxpit/membership-card.png";
 // ---- client-side progression (practice demo persists in localStorage) ----
 const CLEARED_KEY = "foxpit.cleared.v1";
 
+/**
+ * ARCHITECT OVERRIDE (temporary): the architect's account is treated as having
+ * cleared every room EXCEPT Boss Fox's Suite, so the full journey plays out —
+ * keys won (owl/wolf/raven), the elevator unlocked, only the final boss left.
+ * Remove / gate to real progression before launch.
+ */
+const ARCHITECT_CLEARED: FoxPitRoomKey[] = ["dojo", "coliseum", "hightable"];
+
 export function getCleared(): Set<FoxPitRoomKey> {
-  if (typeof window === "undefined") return new Set();
+  const s = new Set<FoxPitRoomKey>(ARCHITECT_CLEARED);
+  if (typeof window === "undefined") return s;
   try {
-    return new Set(JSON.parse(localStorage.getItem(CLEARED_KEY) || "[]"));
+    (JSON.parse(localStorage.getItem(CLEARED_KEY) || "[]") as FoxPitRoomKey[]).forEach((k) => s.add(k));
   } catch {
-    return new Set();
+    /* ignore malformed storage */
   }
+  return s;
 }
 export function markCleared(k: FoxPitRoomKey) {
   if (typeof window === "undefined") return;
