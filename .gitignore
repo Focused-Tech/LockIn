@@ -44,3 +44,7 @@ serviceAccountKey.json
 
 # Firebase Android config (contains project keys; provide per-environment)
 android/app/google-services.json
+
+# Fox Pit batch backups
+*.pre-batch.bak
+*.pre-foxpit.bak
