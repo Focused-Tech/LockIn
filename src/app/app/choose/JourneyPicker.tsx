@@ -72,6 +72,11 @@ export function JourneyPicker({
     router.push("/app/practice/arena/chooser");
   };
 
+  const goFoxPit = () => {
+    setBusy("foxpit");
+    router.push("/app/foxpit");
+  };
+
   return (
     <div className="flex flex-col gap-4 p-6">
       <header className="practice-deal flex flex-col items-center gap-2 pt-1">
@@ -167,6 +172,18 @@ export function JourneyPicker({
         delayMs={340}
         tone="orange"
         onClick={goPractice}
+      />
+
+      {/* The Fox Pit — the painted practice-mode journey (lobby → tower → rooms) */}
+      <JourneyCard
+        title="The Fox Pit — practice journey"
+        body="Walk into the Pit. Choose the Lone Fox or the Boss Journey, climb the tower, and beat each boss to win their key."
+        active={false}
+        busy={busy === "foxpit"}
+        disabled={pending}
+        delayMs={390}
+        tone="orange"
+        onClick={goFoxPit}
       />
 
       {pending && (
