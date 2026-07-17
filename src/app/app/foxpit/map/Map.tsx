@@ -238,7 +238,8 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
             position: "absolute",
             zIndex: 2,
             top: `${LOBBY_MAP_Y * 100}%`,
-            left: "6%",
+            // right-aligned so it never collides with the fixed bottom-left Practice icon
+            right: "6%",
             transform: "translateY(-50%)",
             display: "flex",
             alignItems: "center",
