@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui";
 import {
@@ -24,8 +25,10 @@ export function CrossParlayBuilder() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const pathname = usePathname();
 
-  if (!cart) return null;
+  // Keep the mode picker clean — hide the parlay launcher on the arena chooser.
+  if (!cart || pathname === "/app/practice/arena/chooser") return null;
   const { picks, slateCount, open, setOpen, remove, clear } = cart;
 
   const enoughPicks = picks.length >= CROSS_PARLAY_MIN_PICKS;

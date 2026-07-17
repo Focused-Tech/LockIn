@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import type { ChatMessage } from "@/lib/ai/chat";
 
 const GREETING =
@@ -14,6 +15,7 @@ export function ChatAssistant() {
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
@@ -75,6 +77,9 @@ export function ChatAssistant() {
     }
   }
 
+  // Keep the mode picker clean — hide the assistant on the arena chooser.
+  if (pathname === "/app/practice/arena/chooser") return null;
+
   return (
     <>
       {/* Launcher */}
@@ -84,15 +89,21 @@ export function ChatAssistant() {
         aria-label={open ? "Close Locksmith" : "Open Locksmith — your AI guide"}
         className="fixed bottom-[4.5rem] right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full border border-[rgba(59,139,255,0.4)] bg-[rgba(59,139,255,0.15)] text-lg text-ai shadow-lg backdrop-blur transition-colors hover:bg-[rgba(59,139,255,0.25)]"
       >
-        {open ? "✕" : "🦊"}
+        {open ? (
+          "✕"
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src="/arena/fox-crest.png" alt="" className="h-9 w-9 rounded-full object-cover" />
+        )}
       </button>
 
       {/* Panel */}
       {open && (
         <div className="fixed bottom-[8.5rem] right-4 z-40 flex h-[24rem] w-[min(92vw,22rem)] flex-col overflow-hidden rounded-xl border border-border bg-surface-card shadow-2xl">
           <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[rgba(59,139,255,0.15)] text-sm">
-              🦊
+            <span className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full bg-[rgba(59,139,255,0.15)] text-sm">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/arena/fox-crest.png" alt="" className="h-full w-full rounded-full object-cover" />
             </span>
             <div className="leading-tight">
               <p className="text-sm font-semibold">Locksmith</p>
