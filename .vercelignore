@@ -1,0 +1,17 @@
+# Keep the Vercel upload lean and under the 100MB/file limit.
+# None of these are used by the Next.js build or runtime.
+
+# Session export archive (124MB single file — busts Vercel's 100MB/file limit)
+FOXPIT_SESSION_EXPORT.zip
+
+# Editing backups
+*.bak
+*.pre-*.bak
+
+# Design references / prototypes (not served by the app)
+design/
+design-preview/
+files/
+index.html
+index.html.bak..html
+choose-arena-v6_11.html
