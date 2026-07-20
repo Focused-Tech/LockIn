@@ -68,32 +68,19 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
     v.current.ty = Math.max(Math.min(0, vh - ch), Math.min(0, v.current.ty));
   };
 
-  // The stairs tower plate is only 1:2 (w:h). On tall phones a fit-width render is
-  // SHORTER than the screen, so there is nothing to scroll (the old map was ~1:3.15
-  // and overflowed). Zoom so the tower stands ~1.2× the viewport tall → the vertical
-  // climb scrolls again. The extra width is pannable (centred to start).
-  const fitTower = () => {
-    const vp = vpRef.current;
-    const c = cRef.current;
-    if (!vp || !c) return;
-    const vw = vp.clientWidth;
-    const vh = vp.clientHeight;
-    const naturalH = c.offsetHeight; // layout height at scale 1 (≈ 2× width)
-    if (!naturalH) return;
-    const scale = Math.max(1, Math.min(2.2, (vh * 1.2) / naturalH));
-    v.current.scale = scale;
-    v.current.tx = (vw - vw * scale) / 2; // centre the tower horizontally
-    v.current.ty = vh - naturalH * scale; // start at the bottom (the Dojo)
-    apply();
-  };
-
   useEffect(() => {
     setCleared(getCleared());
-    // fit + start at the bottom (the Dojo) — you climb up
-    requestAnimationFrame(fitTower);
+    // start at the bottom (the Dojo) — you climb up
+    requestAnimationFrame(() => {
+      const vp = vpRef.current;
+      const c = cRef.current;
+      if (vp && c) {
+        v.current.ty = Math.min(0, vp.clientHeight - c.offsetHeight);
+        apply();
+      }
+    });
     const t = window.setTimeout(() => setHud(false), 4000);
     return () => window.clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const onStart = (e: React.TouchEvent) => {
@@ -148,8 +135,8 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
     const c = cRef.current;
     if (!vp || !c) return;
     c.style.transition = "transform 1.8s cubic-bezier(.45,.05,.2,1)";
-    v.current.tx = (vp.clientWidth - c.offsetWidth * v.current.scale) / 2;
-    v.current.ty = vp.clientHeight - c.offsetHeight * v.current.scale;
+    v.current.tx = 0;
+    v.current.ty = Math.min(0, vp.clientHeight - c.offsetHeight);
     apply();
     window.setTimeout(() => {
       if (cRef.current) cRef.current.style.transition = "";
@@ -180,7 +167,6 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           src="/foxpit/map/tower-map-stairs.png"
           alt="The Fox Pit tower"
           draggable={false}
-          onLoad={fitTower}
           style={{ width: "100%", display: "block" }}
         />
 
@@ -301,36 +287,38 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           </span>
         </button>
 
-        {/* elevator CAR — Frank's canonical asset (elevator_car.png, same car as the
-            door frames). Travels the shaft band; tap to call the floor-select.
-            Locked until the High Table is cleared (parked + dimmed). */}
+        {/* elevator (far left) — full-size doors with a center split; locked until the High Table is cleared */}
         <button
           onClick={() => (elevatorUnlocked ? setFloorSelect(true) : setElevatorLocked(true))}
           aria-label="Elevator"
           style={{
             position: "absolute",
-            zIndex: 1,
-            top: "85%",
-            left: "0.5%",
-            width: "13%",
+            zIndex: 0,
+            top: "33%",
+            left: "1.5%",
+            width: "15%",
+            height: "11%",
             transform: "translateY(-50%)",
-            border: "none",
-            background: "transparent",
-            padding: 0,
+            borderRadius: 6,
+            border: "1px solid rgba(200,162,75,.55)",
+            background: "linear-gradient(180deg, rgba(40,34,22,.9), rgba(12,14,20,.92))",
             cursor: "pointer",
-            filter: elevatorUnlocked ? "none" : "grayscale(.55) brightness(.6)",
-            animation: elevatorUnlocked
-              ? "foxpitElevatorTravel 11s ease-in-out infinite"
-              : "none",
+            padding: 0,
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "flex-end",
           }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/foxpit/elevator/elevator_car.png"
-            alt="Elevator"
-            draggable={false}
-            style={{ width: "100%", height: "auto", display: "block", filter: "drop-shadow(0 6px 14px rgba(0,0,0,.6))" }}
-          />
+          {/* two elevator doors + the center split line */}
+          <div style={{ position: "absolute", inset: 0, display: "flex" }}>
+            <div style={{ flex: 1, background: "linear-gradient(90deg, rgba(60,66,84,.55), rgba(28,32,44,.55))", borderRight: "1px solid rgba(200,162,75,.6)" }} />
+            <div style={{ flex: 1, background: "linear-gradient(270deg, rgba(60,66,84,.55), rgba(28,32,44,.55))" }} />
+          </div>
+          {/* label plate */}
+          <div style={{ position: "relative", width: "100%", padding: "2px 0", background: "rgba(3,4,7,.74)", color: "#d8c79b", fontSize: 7, fontWeight: 800, letterSpacing: ".05em", textAlign: "center" }}>
+            ELEVATOR
+          </div>
         </button>
       </div>
 

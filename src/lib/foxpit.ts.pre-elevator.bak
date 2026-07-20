@@ -23,7 +23,7 @@ export interface FoxPitRoom {
   accent: string;
   /** the boss-key this floor's door needs to unlock (from the boss one below); null = always open. */
   needsKey: BossArt | null;
-  /** vertical center on map/tower-map-stairs.png, as a fraction of image height. */
+  /** vertical center on map-tower.png, as a fraction of image height. */
   mapY: number;
   roomImg: string;
   avatarImg: string;
@@ -34,7 +34,7 @@ export interface FoxPitRoom {
 export const FOXPIT_ROOMS: FoxPitRoom[] = [
   {
     key: "dojo", order: 0, name: "The Dojo", floorLabel: "Basement · Training",
-    boss: "Owl", bossArt: "owl", crest: "O", accent: "#c9873f", needsKey: null, mapY: 0.91,
+    boss: "Owl", bossArt: "owl", crest: "O", accent: "#c9873f", needsKey: null, mapY: 0.90,
     roomImg: "/foxpit/room-dojo.png", avatarImg: "/foxpit/avatar-owl.png", faceoffImg: "/foxpit/faceoff-owl.png",
     tables: 1,
   },
@@ -46,20 +46,20 @@ export const FOXPIT_ROOMS: FoxPitRoom[] = [
   },
   {
     key: "hightable", order: 2, name: "The High Table", floorLabel: "Level 3 · VIP Lounge",
-    boss: "Raven", bossArt: "raven", crest: "R", accent: "#8a4dff", needsKey: "wolf", mapY: 0.235,
+    boss: "Raven", bossArt: "raven", crest: "R", accent: "#8a4dff", needsKey: "wolf", mapY: 0.25,
     roomImg: "/foxpit/room-hightable.png", avatarImg: "/foxpit/avatar-raven.png", faceoffImg: "/foxpit/faceoff-raven.png",
     tables: 3,
   },
   {
     key: "suite", order: 3, name: "Boss Fox's Suite", floorLabel: "Penthouse · Private 1v1",
-    boss: "Boss Fox", bossArt: "fox", crest: "※", accent: "#c8a24b", needsKey: "raven", mapY: 0.08,
+    boss: "Boss Fox", bossArt: "fox", crest: "※", accent: "#c8a24b", needsKey: "raven", mapY: 0.095,
     roomImg: "/foxpit/room-suite.png", avatarImg: "/foxpit/avatar-fox.png", faceoffImg: "/foxpit/faceoff-fox.png",
     tables: 1,
   },
 ];
 
 /** The Lobby floor sits between Coliseum and Dojo on the map (street level, a hub, not a room). Measured off the stairs-only tower plate (bar room with the red neon fox). */
-export const LOBBY_MAP_Y = 0.75;
+export const LOBBY_MAP_Y = 0.74;
 /** The elevator is locked in practice and unlocks once you clear the High Table. */
 export const ELEVATOR_UNLOCK_AT: FoxPitRoomKey = "hightable";
 
