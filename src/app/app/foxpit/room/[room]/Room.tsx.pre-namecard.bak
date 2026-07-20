@@ -23,15 +23,6 @@ const TABLE_POS: Record<number, [number, number][]> = {
 };
 const PRIZE_KEY_POS: [number, number] = [50, 45]; // floats in front of the throne, clear of the throne back
 
-/** Host intro blurb — shown on the boss name-card when the doors open. The boss is
- *  the HOST of the room (not necessarily the first challenger). */
-const ROOM_BLURB: Record<FoxPitRoomKey, string> = {
-  dojo: "The Owl runs the training floor. Sharpen your reads before you climb.",
-  coliseum: "Alpha Wolf hosts the Coliseum — five tables, one roaring crowd. Fight your way to his throne.",
-  hightable: "Raven presides over the High Table. Refined, ruthless, watching every pick.",
-  suite: "Boss Fox's private suite. The last door — beat him and the Pit is yours.",
-};
-
 export function FoxPitRoom({
   roomKey,
   username = "Member",
@@ -331,25 +322,14 @@ function DoorIntro({ room, onEnter }: { room: ReturnType<typeof roomByKey>; onEn
         />
       </div>
 
-      {/* HOST name-card — pops up once the boss is revealed: name + "host of" +
-          the room's blurb + the enter CTA. */}
       {prompt && (
-        <div style={{ position: "absolute", left: 0, right: 0, bottom: "calc(env(safe-area-inset-bottom, 0px) + 40px)", display: "flex", justifyContent: "center", padding: "0 18px", animation: "foxpitFadeUp .7s ease both" }}>
-          <div style={{ width: "100%", maxWidth: 380, borderRadius: 16, background: "linear-gradient(180deg, rgba(14,10,6,.88), rgba(6,7,11,.92))", border: `1.5px solid ${room.accent}`, boxShadow: `0 0 34px ${room.accent}55, 0 10px 30px rgba(0,0,0,.6)`, padding: "16px 18px 18px", textAlign: "center", backdropFilter: "blur(2px)" }}>
-            <div style={{ fontSize: 11, letterSpacing: ".22em", color: room.accent, fontWeight: 800 }}>
-              HOST · {room.floorLabel.toUpperCase()}
-            </div>
-            <div style={{ fontFamily: "Georgia, serif", fontSize: 30, color: "#f5ead0", lineHeight: 1.1, marginTop: 4, textShadow: "0 2px 18px #000" }}>
-              {room.boss}
-            </div>
-            <div style={{ width: 70, height: 2, margin: "10px auto", background: `linear-gradient(90deg,transparent,${room.accent},transparent)` }} />
-            <p style={{ fontSize: 13.5, lineHeight: 1.5, color: "#cdd6e2", margin: 0 }}>
-              {ROOM_BLURB[room.key]}
-            </p>
-            <button onClick={onEnter} style={{ marginTop: 16, width: "100%", border: `1px solid ${room.accent}`, background: `${room.accent}22`, color: "#ffe", borderRadius: 12, padding: "14px 26px", fontSize: 17, fontWeight: 800, cursor: "pointer" }}>
-              Enter {room.name} ›
-            </button>
+        <div style={{ position: "absolute", left: 0, right: 0, bottom: "calc(env(safe-area-inset-bottom, 0px) + 46px)", textAlign: "center", animation: "foxpitFadeUp .6s ease both" }}>
+          <div style={{ fontFamily: "Georgia, serif", fontSize: 26, color: "#f5ead0", textShadow: "0 2px 20px #000" }}>
+            {room.boss} welcomes you
           </div>
+          <button onClick={onEnter} style={{ marginTop: 16, border: `1px solid ${room.accent}`, background: `${room.accent}22`, color: "#ffe", borderRadius: 12, padding: "14px 26px", fontSize: 18, fontWeight: 800, cursor: "pointer" }}>
+            Enter {room.name} ›
+          </button>
         </div>
       )}
     </div>
