@@ -1,0 +1,1 @@
+PLATES IN THIS FOLDER SUPERSEDE any ballroom-plate images in 01_source_generations. Use ONLY these for the rooms — they have no baked-in tables/chairs (table + avatar are separate cutouts). Coliseum/Raven plates kept their source filenames (22-26); Claude could not visually confirm which is which room this session — Frank to label by room.
