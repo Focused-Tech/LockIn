@@ -9,19 +9,19 @@ export function FoxPitStyles() {
       @keyframes foxpitDoorL { to { transform: translateX(-100%);} }
       @keyframes foxpitDoorR { to { transform: translateX(100%);} }
       @keyframes foxpitFadeUp { from{ opacity:0; transform: translateY(14px);} to{ opacity:1; transform: translateY(0);} }
-      /* the elevator car dwells at each floor's LANDING (floor level, not room centre):
-         Dojo 95 → Lobby 81 → Coliseum 65 → High Table 32 → Suite 14, then back down.
-         Reaches true top + bottom so the stops can be verified floor-for-floor. */
+      /* the elevator car travels the shaft, DWELLING at each floor stop (car centre =
+         the room mapY): Dojo 91 → Lobby 75 → Coliseum 50 → High Table 23.5 → Suite 8,
+         then back down. Reaches the true top + bottom so stops can be verified. */
       @keyframes foxpitElevatorStops {
-        0%,5%    { top:95%; }
-        11%,16%  { top:81%; }
-        22%,29%  { top:65%; }
-        35%,40%  { top:32%; }
-        46%,54%  { top:14%; }
-        60%,65%  { top:32%; }
-        71%,78%  { top:65%; }
-        84%,89%  { top:81%; }
-        95%,100% { top:95%; }
+        0%,5%    { top:91%; }
+        11%,16%  { top:75%; }
+        22%,29%  { top:50%; }
+        35%,40%  { top:23.5%; }
+        46%,54%  { top:8%; }
+        60%,65%  { top:23.5%; }
+        71%,78%  { top:50%; }
+        84%,89%  { top:75%; }
+        95%,100% { top:91%; }
       }
     `}</style>
   );

@@ -310,9 +310,9 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           style={{
             position: "absolute",
             zIndex: 1,
-            top: "95%",
+            top: "91%",
             left: "0.5%",
-            width: "8%",
+            width: "13%",
             transform: "translateY(-50%)",
             border: "none",
             background: "transparent",
@@ -333,13 +333,6 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           />
         </button>
       </div>
-
-      {/* SAFE-AREA masks — the stretched full-bleed tower runs edge-to-edge (the old
-          map art had baked dark padding that the trim removed). These opaque strips
-          reclaim the Android status-bar (top) + nav (bottom) zones so no room bleeds
-          under the system bars, and give the top/bottom rooms breathing room. */}
-      <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: "calc(env(safe-area-inset-top, 0px) + 10px)", background: "#0A0D12", zIndex: 62, pointerEvents: "none" }} />
-      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, height: "calc(env(safe-area-inset-bottom, 0px) + 12px)", background: "#0A0D12", zIndex: 62, pointerEvents: "none" }} />
 
       {/* fixed HUD — appears on entry, fades out after 4s */}
       <div
