@@ -17,7 +17,7 @@ import {
 } from "@/lib/foxpit";
 
 /**
- * Fox Pit TOWER MAP (background = map/tower-map-stairs.png, stairs-only) — a tall vertical climb with
+ * Fox Pit TOWER MAP (background = map-tower.png) — a tall vertical climb with
  * pinch-to-zoom + pan. Floors are slim PLAQUES (the painted room art shows
  * behind them). The header appears on entry and fades out after 4s. The
  * elevator (far left) opens a FLOOR-SELECT panel: the four room cards, each
@@ -164,7 +164,7 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/foxpit/map/tower-map-stairs.png"
+          src="/foxpit/map-tower.png"
           alt="The Fox Pit tower"
           draggable={false}
           style={{ width: "100%", display: "block" }}
@@ -265,7 +265,7 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           style={{
             position: "absolute",
             zIndex: 2,
-            top: "82%",
+            top: "72%",
             left: "14%",
             transform: "translateY(-50%)",
             display: "flex",
