@@ -1,26 +1,24 @@
-# Room → Plate mapping — FRANK TO FILL
+# Fox Pit room plates — usage model (per Frank, 2026-07-20)
 
 These plates came from `05_ballroom_plates_FINAL/` and SUPERSEDE every older room plate.
-They are table-free backdrops (table + avatar are separate cutouts composited on top).
+Table-free backdrops (table + avatar are separate cutouts composited on top).
 
-The `coliseum_or_raven_22..26` set is **not yet labeled by room**. Neither the prior
-session nor this one could visually confirm which plate is which room, so nothing is
-asserted here. Fill the right-hand column, then I'll wire each into `src/lib/foxpit.ts`
-(the `roomImg` fields) and rename the files to match.
+## Plates are an INTERCHANGEABLE POOL — not one-plate-per-room
+- `coliseum_or_raven_22..26.png` are a **rotating pool of arena backdrops**. Alternate
+  them across ROUNDS — do NOT pin one plate to one room.
+- **Played once (fixed boss encounter):** Boss **Raven** (High Table) and Alpha **Wolf**
+  (Coliseum). Everything else is interchangeable and cycles.
+- `plate_dojo.png` / `plate_fox_den.png` are the named Dojo / Fox's Den plates
+  (still only 611×611 — placeholders vs the 1264 arena plates; flag if you want them wide).
 
-| file                      | dimensions  | orientation | → ROOM (fill in) |
-|---------------------------|-------------|-------------|------------------|
-| coliseum_or_raven_22.png  | 1264×1264   | square      |                  |
-| coliseum_or_raven_23.png  | 1264×1264   | square      |                  |
-| coliseum_or_raven_24.png  | 1264×1264   | square      |                  |
-| coliseum_or_raven_25.png  | 1264×1264   | square      |                  |
-| coliseum_or_raven_26.png  | 1056×1504   | portrait    |                  |
-| plate_dojo.png            | 611×611     | square      | Dojo (named)     |
-| plate_fox_den.png         | 611×611     | square      | Fox's Den (named)|
+Implementation note: a round should pick the next plate from the pool (round-robin /
+shuffle-without-repeat), reusing the same backdrop set — so a room shown twice can look
+different across rounds.
 
-NOTE: plate_dojo / plate_fox_den are only 611×611 (low-res vs the 1264 coliseum/raven
-plates). Audit PART 4 listed Dojo + Fox's Den wide 16:9 backdrops as still owed — these
-611px squares read as placeholders. Flag if you want them re-generated wide.
+## Opponent win-rate bounds (interchangeable opponents)
+Win rates VARY per opponent but are clamped:
+- **Upper bound:** never higher than **Grim** (2nd boss) or **Nyx** (3rd ranked).
+- **Lower bound:** never lower than **5% of the Owl's** ranking win %.
+(Owl = 1st boss / Dojo is the floor of the scale.)
 
-Rooms currently wired in src/lib/foxpit.ts point at the OLD /foxpit/room-*.png set —
-those are untouched until this map is filled.
+Wire these when the brain/strength indicator (3c) + opponent config land.
