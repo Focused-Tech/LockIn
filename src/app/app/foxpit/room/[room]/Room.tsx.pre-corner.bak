@@ -250,9 +250,6 @@ export function FoxPitRoom({
 function DoorIntro({ room, onEnter }: { room: ReturnType<typeof roomByKey>; onEnter: () => void }) {
   const [open, setOpen] = useState(false);
   const [prompt, setPrompt] = useState(false);
-  // Owl + Raven reveal in the right corner (clear of their throne); Alpha Wolf +
-  // Boss Fox reveal centered.
-  const cornerReveal = room.bossArt === "owl" || room.bossArt === "raven";
   useEffect(() => {
     const t1 = setTimeout(() => setOpen(true), 1600);  // hold on the closed doors, then part slowly
     const t2 = setTimeout(() => setPrompt(true), 6400); // prompt appears once the boss reveal has settled
@@ -288,39 +285,25 @@ function DoorIntro({ room, onEnter }: { room: ReturnType<typeof roomByKey>; onEn
       />
 
       {/* THAT boss is REVEALED only after the doors part — hidden behind the closed
-          doors, then rises into view (a reveal, not a pre-placed figure). Position
-          alternates by boss: Owl + Raven reveal in the RIGHT CORNER (clear of their
-          throne in the art); Alpha Wolf + Boss Fox reveal CENTERED. A positioned
-          wrapper owns the horizontal placement so the rise animation (translateY)
-          can't fight it. */}
-      <div
+          doors, then rises into the lit doorway (a reveal, not a pre-placed figure). */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={room.avatarImg}
+        alt={`${room.boss} standing`}
         style={{
           position: "absolute",
+          left: "50%",
           bottom: 0,
-          height: cornerReveal ? "70%" : "82%",
-          pointerEvents: "none",
-          ...(cornerReveal
-            ? { right: "2%" }
-            : { left: "50%", transform: "translateX(-50%)" }),
+          transform: "translateX(-50%)",
+          height: "82%",
+          maxWidth: "92%",
+          objectFit: "contain",
+          filter: `drop-shadow(0 0 40px ${room.accent}66)`,
+          // hidden until the doors are open; the rise is delayed to land AFTER they part
+          opacity: open ? undefined : 0,
+          animation: open ? "foxpitAvatarUp 2.2s cubic-bezier(.2,.8,.2,1) 2.4s both" : "none",
         }}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={room.avatarImg}
-          alt={`${room.boss} standing`}
-          style={{
-            height: "100%",
-            width: "auto",
-            maxWidth: "94vw",
-            objectFit: "contain",
-            display: "block",
-            filter: `drop-shadow(0 0 40px ${room.accent}66)`,
-            // hidden until the doors are open; the rise is delayed to land AFTER they part
-            opacity: open ? undefined : 0,
-            animation: open ? "foxpitAvatarUp 2.2s cubic-bezier(.2,.8,.2,1) 2.4s both" : "none",
-          }}
-        />
-      </div>
+      />
 
       {prompt && (
         <div style={{ position: "absolute", left: 0, right: 0, bottom: "calc(env(safe-area-inset-bottom, 0px) + 46px)", textAlign: "center", animation: "foxpitFadeUp .6s ease both" }}>
