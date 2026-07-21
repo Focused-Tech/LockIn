@@ -210,7 +210,7 @@ export function FoxPitRoom({
                   position: "absolute",
                   left: `${x}%`,
                   top: `${y}%`,
-                  transform: `translate(-50%,-50%) translate(${flyX}%, ${flyY}%)${isSel ? " scale(1.12)" : ""}`,
+                  transform: `translate(-50%,-50%) translate(${flyX}%, ${flyY}%)${isSel ? " scale(1.12)" : ""} perspective(420px) rotateX(50deg)`,
                   opacity: fly ? 0 : 1,
                   transition: "transform .55s cubic-bezier(.35,0,.2,1), opacity .5s ease",
                   width: singleTable ? 150 : 108,
