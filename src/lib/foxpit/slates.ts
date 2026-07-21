@@ -144,12 +144,20 @@ function buildSlate(room: FoxPitRoomKey, category: FoxPitCategory): FoxSlate {
   };
 }
 
-/** Deal the round's 5 slates for a room. */
-export function dealFoxSlates(room: FoxPitRoomKey): FoxSlate[] {
-  const cats = categoriesFor(room);
+/**
+ * Deal the round's 5 slates for a room.
+ *
+ * `hedged` = the categories the player picked in the category-select beat. When
+ * present the draw is restricted to them (that IS the hedge); empty/omitted falls
+ * back to the room's full pool, which is what Boss Fox gets since he has no hedge.
+ */
+export function dealFoxSlates(room: FoxPitRoomKey, hedged: FoxPitCategory[] = []): FoxSlate[] {
+  const pool = categoriesFor(room);
+  const cats = hedged.length ? hedged.filter((c) => pool.includes(c)) : pool;
+  const draw = cats.length ? cats : pool;
   const out: FoxSlate[] = [];
   for (let i = 0; i < SLATES_PER_ROUND; i++) {
-    out.push(buildSlate(room, cats[Math.floor(Math.random() * cats.length)]!));
+    out.push(buildSlate(room, draw[Math.floor(Math.random() * draw.length)]!));
   }
   return out;
 }

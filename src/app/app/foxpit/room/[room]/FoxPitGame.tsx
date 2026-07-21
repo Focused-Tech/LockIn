@@ -11,8 +11,8 @@ import { useEffect, useRef, useState } from "react";
 import { LockGlyph } from "@/components/practice/LockGlyph";
 import { categoryTint } from "@/lib/practice/tints";
 import { roomByKey, type FoxPitRoomKey } from "@/lib/foxpit";
-import { ROOM_RULES, keepNFor, SLATES_PER_ROUND, REDEALS_PER_ROUND, FOXPIT_BUILD_VERSION, CATEGORY_TINT_KEY, TIMERS } from "@/lib/foxpit/rules";
-import { dealFoxSlates, roundScore, bossRoundScore, slateWon, type FoxSlate } from "@/lib/foxpit/slates";
+import { ROOM_RULES, keepNFor, SLATES_PER_ROUND, REDEALS_PER_ROUND, FOXPIT_BUILD_VERSION, CATEGORY_TINT_KEY, TIMERS, CATEGORY_HEDGE, FOXPIT_CATEGORIES, type FoxPitCategory } from "@/lib/foxpit/rules";
+import { dealFoxSlates, categoriesFor, roundScore, bossRoundScore, slateWon, type FoxSlate } from "@/lib/foxpit/slates";
 
 /** Design-system semantic colors (win green / loss red), referenced by name. */
 const COLOR_WIN = "#22C55E";
@@ -27,7 +27,20 @@ function slateTint(s: FoxSlate) {
   return categoryTint(CATEGORY_TINT_KEY[s.category]);
 }
 
-type Phase = "dealing" | "deal" | "play" | "reveal" | "announce" | "roomResult";
+/**
+ * Round beats, in order. CATEGORY and TIP run BEFORE any card exists — the deal is
+ * no longer done at mount, it happens on entry to `dealing` once both beats resolve.
+ *   category → tip → dealing → deal (keep-N + one redeal) → play → reveal → announce
+ */
+type Phase =
+  | "category"
+  | "tip"
+  | "dealing"
+  | "deal"
+  | "play"
+  | "reveal"
+  | "announce"
+  | "roomResult";
 
 /** Coin-drop audio for the announcement. Never silent-fails — logs instead. */
 function playCoinDrop(won: boolean): void {
@@ -65,9 +78,13 @@ export function FoxPitGame({
   const room = roomByKey(roomKey);
   const accent = room.accent;
 
-  const [phase, setPhase] = useState<Phase>("dealing");
+  const [phase, setPhase] = useState<Phase>("category");
   const [roundIndex, setRoundIndex] = useState(0);
-  const [slates, setSlates] = useState<FoxSlate[]>(() => dealFoxSlates(roomKey));
+  // NOTE: no deal at mount. Cards only exist once `dealRound()` runs, which happens
+  // after the category-select (and tip) beats have resolved.
+  const [slates, setSlates] = useState<FoxSlate[]>([]);
+  /** Categories the player hedged into this round (empty until the beat resolves). */
+  const [pickedCats, setPickedCats] = useState<FoxPitCategory[]>([]);
   const [kept, setKept] = useState<Set<string>>(new Set());
   const [redealsLeft, setRedealsLeft] = useState(REDEALS_PER_ROUND);
   const [picks, setPicks] = useState<Record<string, "a" | "b">>({});
@@ -88,7 +105,7 @@ export function FoxPitGame({
 
   const redeal = () => {
     if (redealsLeft <= 0) return;
-    const fresh = dealFoxSlates(roomKey);
+    const fresh = dealFoxSlates(roomKey, pickedCats);
     let fi = 0;
     setSlates((prev) => prev.map((s) => (kept.has(s.id) ? s : fresh[fi++]!)));
     setRedealsLeft((r) => r - 1);
@@ -119,18 +136,31 @@ export function FoxPitGame({
     setPhase("reveal"); // cards reveal first, then the Locksmith calls it
   };
 
+  /** The ONLY place a round's cards are created. Runs on entry to `dealing`. */
+  const dealRound = (cats: FoxPitCategory[]) => {
+    setSlates(dealFoxSlates(roomKey, cats));
+    setPhase("dealing");
+  };
+
+  /** Beat 1 done → beat 2 (tip). Fox has no hedge, so it resolves straight through. */
+  const confirmCategories = (cats: FoxPitCategory[]) => {
+    setPickedCats(cats);
+    setPhase("tip");
+  };
+
   const nextRound = () => {
     if (roundIndex + 1 >= rules.rounds) {
       setPhase("roomResult");
       return;
     }
     setRoundIndex((r) => r + 1);
-    setSlates(dealFoxSlates(roomKey));
+    setSlates([]);
+    setPickedCats([]);
     setKept(new Set());
     setRedealsLeft(REDEALS_PER_ROUND);
     setPicks({});
     setLast(null);
-    setPhase("dealing");
+    setPhase("category");
   };
 
   const cleared = roundsWon > rules.rounds / 2;
@@ -155,6 +185,21 @@ export function FoxPitGame({
           <div>{FOXPIT_BUILD_VERSION}</div>
         </div>
       </div>
+
+      {phase === "category" && (
+        <CategorySelectPhase
+          roomKey={roomKey}
+          accent={accent}
+          onConfirm={confirmCategories}
+        />
+      )}
+
+      {/* Beat 2 — the Locksmith's tip. The lockpick store isn't built yet, so this
+          resolves straight through to the deal; it exists as its own beat so the
+          spend lands here and not inside the deal. */}
+      {phase === "tip" && (
+        <TipPhase accent={accent} onDone={() => dealRound(pickedCats)} />
+      )}
 
       {phase === "dealing" && (
         <DealingTable
@@ -237,6 +282,99 @@ export function FoxPitGame({
 }
 
 /* ---------------- dealing: cards dealt out on the Locksmith table ---------------- */
+/* ---------------- BEAT 1 — category select ----------------
+ * The hedge decays with difficulty (CATEGORY_HEDGE): Owl picks 5, Wolf 3, Raven 2,
+ * Boss Fox gets no hedge at all (everything is dealt). This is SEPARATE from keep-N,
+ * which is the mulligan floor applied after the cards land. */
+function CategorySelectPhase({
+  roomKey, accent, onConfirm,
+}: {
+  roomKey: FoxPitRoomKey;
+  accent: string;
+  onConfirm: (cats: FoxPitCategory[]) => void;
+}) {
+  const pool = categoriesFor(roomKey);
+  const hedge = CATEGORY_HEDGE[roomKey];
+  const noHedge = hedge.dealt === "all";
+  const pick = Math.min(hedge.pick, pool.length);
+  const [chosen, setChosen] = useState<FoxPitCategory[]>([]);
+
+  // Boss Fox: no choice to make — everything is dealt, so don't stall the round.
+  useEffect(() => {
+    if (noHedge) onConfirm(pool);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [noHedge]);
+  if (noHedge) return null;
+
+  const toggle = (c: FoxPitCategory) =>
+    setChosen((prev) =>
+      prev.includes(c) ? prev.filter((x) => x !== c) : prev.length >= pick ? prev : [...prev, c],
+    );
+
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center gap-5 p-6">
+      <div className="text-center">
+        <div className="text-xs font-extrabold tracking-widest" style={{ color: accent }}>
+          CATEGORY SELECT
+        </div>
+        <div className="mt-1 font-serif text-2xl text-foreground">Pick your ground</div>
+        <div className="mt-1 text-[13px] text-muted">
+          Choose {pick} of {pool.length} — the round deals from these only.
+        </div>
+      </div>
+
+      <div className="flex w-full max-w-sm flex-wrap justify-center gap-2">
+        {pool.map((c) => {
+          const on = chosen.includes(c);
+          const tint = categoryTint(CATEGORY_TINT_KEY[c]);
+          return (
+            <button
+              key={c}
+              onClick={() => toggle(c)}
+              className="rounded-xl border px-4 py-3 text-sm font-bold capitalize transition"
+              style={{
+                borderColor: on ? tint.color : "var(--border)",
+                background: on ? tint.soft : "transparent",
+                color: on ? tint.color : "var(--muted)",
+              }}
+            >
+              {c}
+            </button>
+          );
+        })}
+      </div>
+
+      <button
+        disabled={chosen.length < pick}
+        onClick={() => onConfirm(chosen)}
+        className="w-full max-w-sm rounded-xl border px-6 py-4 text-base font-extrabold disabled:opacity-40"
+        style={{ borderColor: accent, background: `${accent}22`, color: "var(--foreground)" }}
+      >
+        {chosen.length < pick ? `Pick ${pick - chosen.length} more` : "Lock the hedge ›"}
+      </button>
+    </div>
+  );
+}
+
+/* ---------------- BEAT 2 — the Locksmith's tip ----------------
+ * Placeholder beat: the lockpick store + inventory are not built yet, so there is
+ * nothing to spend. It advances immediately rather than faking a purchase. */
+function TipPhase({ accent, onDone }: { accent: string; onDone: () => void }) {
+  const done = useRef(onDone);
+  done.current = onDone;
+  useEffect(() => {
+    const t = window.setTimeout(() => done.current(), 0);
+    return () => window.clearTimeout(t);
+  }, []);
+  return (
+    <div className="flex flex-1 items-center justify-center p-8 text-center">
+      <div className="text-xs font-extrabold tracking-widest" style={{ color: accent }}>
+        …
+      </div>
+    </div>
+  );
+}
+
 function DealingTable({
   roomKey, accent, bossFirst, onDone,
 }: {
