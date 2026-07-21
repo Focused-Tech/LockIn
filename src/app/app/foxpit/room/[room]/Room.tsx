@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LockGlyph } from "@/components/practice/LockGlyph";
+import { LegPicker } from "@/components/practice/LegPicker";
+import type { PracticeLeg } from "@/lib/firebase/types";
+import type { Choice } from "@/lib/practice/scoring";
 import {
   roomByKey,
   markCleared,
@@ -14,7 +17,16 @@ import {
   type FoxPitRoomKey,
 } from "@/lib/foxpit";
 
-type Phase = "door" | "room" | "table" | "faceoff";
+type Phase = "door" | "room" | "table" | "faceoff" | "play";
+
+/** Practice slate dealt at a Fox Pit table — the SAME leg column advanced/beginner
+ *  players see (via LegPicker), so nothing is new when they move to real money. */
+const DEMO_LEGS: PracticeLeg[] = [
+  { id: "fp1", question: "Will Bitcoin close above $72k this week?", optionA: "Above", optionB: "Below", probA: 57, probB: 43, type: "binary", line: null, difficulty: "medium" },
+  { id: "fp2", question: "Chiefs vs. Bills — who wins outright?", optionA: "Chiefs", optionB: "Bills", probA: 52, probB: 48, type: "binary", line: null, difficulty: "medium" },
+  { id: "fp3", question: "Total points in the primetime game", optionA: "Over 47.5", optionB: "Under 47.5", probA: 50, probB: 50, type: "over_under", line: 47.5, difficulty: "hard" },
+  { id: "fp4", question: "Will the Fed hold rates at the next meeting?", optionA: "Hold", optionB: "Cut", probA: 64, probB: 36, type: "binary", line: null, difficulty: "easy" },
+];
 
 /** The transparent round PLAYER-table cutout (tables only, no dealer) — one per
  *  selectable table, replacing the old green ellipse hotspots. */
@@ -289,9 +301,20 @@ export function FoxPitRoom({
           avatarUrl={avatarUrl}
           bossTable={singleTable}
           onClose={() => { setPhase("room"); setActiveTable(null); }}
-          onConfirm={() => {
+          onConfirm={() => setPhase("play")}
+        />
+      )}
+
+      {/* ---------- PLAY: the dealt slate as the shared LegPicker column (same as
+           advanced/beginner) — "Deal me in" drops you straight into it ---------- */}
+      {phase === "play" && (
+        <PlaySlate
+          room={room}
+          bossTable={singleTable}
+          onDone={() => {
             if (singleTable) {
-              setPhase("faceoff");
+              markCleared(room.key);
+              router.push("/app/foxpit/map");
             } else {
               setBeaten((prev) => new Set(prev).add(activeTable!));
               setPhase("room");
@@ -578,6 +601,68 @@ function Faceoff({ room, onBack, onClear }: { room: ReturnType<typeof roomByKey>
           {next ? `Clear room · win the ${room.boss} key ›` : "Win the tournament ›"}
         </button>
       </div>
+    </div>
+  );
+}
+
+/* ---------------- PLAY: the dealt slate as the shared LegPicker column ---------------- */
+function PlaySlate({ room, bossTable, onDone }: { room: ReturnType<typeof roomByKey>; bossTable: boolean; onDone: () => void }) {
+  const [dealt, setDealt] = useState(false);
+  const [picks, setPicks] = useState<Record<string, Choice>>({});
+  const [result, setResult] = useState<number | null>(null);
+  const legs = DEMO_LEGS;
+  const allPicked = Object.keys(picks).length === legs.length;
+
+  // brief "cards dealt" beat, then reveal the slate column (LegPicker)
+  useEffect(() => {
+    const t = setTimeout(() => setDealt(true), 900);
+    return () => clearTimeout(t);
+  }, []);
+
+  const lockIn = () => {
+    let correct = 0;
+    for (const leg of legs) {
+      const outcome: Choice = leg.probA >= leg.probB ? "a" : "b"; // favorite settles (local demo)
+      if (picks[leg.id] === outcome) correct++;
+    }
+    setResult(correct);
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 67, background: "#0A0D12", overflowY: "auto", display: "flex", flexDirection: "column" }}>
+      <div style={{ position: "sticky", top: 0, zIndex: 2, background: "linear-gradient(180deg,#0A0D12,rgba(10,13,18,.85))", padding: "16px 16px 10px", textAlign: "center" }}>
+        <div style={{ fontSize: 12, letterSpacing: ".22em", color: room.accent, fontWeight: 800 }}>
+          {bossTable ? `${room.boss.toUpperCase()} · YOUR SLATE` : "YOUR SLATE"}
+        </div>
+        <div style={{ fontFamily: "Georgia, serif", fontSize: 20, color: "#E7E7EB", marginTop: 2 }}>Lock in your picks</div>
+      </div>
+
+      {!dealt ? (
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#c3cedb", fontFamily: "Georgia, serif", fontSize: 20, letterSpacing: ".08em" }}>
+          Dealing…
+        </div>
+      ) : result === null ? (
+        <div style={{ padding: "6px 14px 120px" }}>
+          <LegPicker legs={legs} category="Sports" onChange={setPicks} />
+          <button
+            onClick={lockIn}
+            disabled={!allPicked}
+            style={{ position: "fixed", left: 16, right: 16, bottom: "calc(env(safe-area-inset-bottom, 0px) + 18px)", zIndex: 3, border: `1px solid ${room.accent}`, background: allPicked ? room.accent : "rgba(20,10,4,.7)", color: "#fff", opacity: allPicked ? 1 : 0.5, borderRadius: 14, padding: "16px", fontSize: 18, fontWeight: 800, cursor: allPicked ? "pointer" : "not-allowed" }}
+          >
+            {allPicked ? "Lock in slate ›" : `Pick all ${legs.length} to lock in`}
+          </button>
+        </div>
+      ) : (
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 28, textAlign: "center" }}>
+          <div style={{ fontFamily: "Georgia, serif", fontSize: 40, color: "#f5ead0", textShadow: "0 2px 20px #000" }}>{result} / {legs.length}</div>
+          <div style={{ fontSize: 14, color: "#c3cedb", marginTop: 8, letterSpacing: ".08em" }}>
+            {result === legs.length ? "Perfect slate!" : result >= Math.ceil(legs.length / 2) ? "Nice reads." : "Keep sharpening."}
+          </div>
+          <button onClick={onDone} style={{ marginTop: 24, border: `1px solid ${room.accent}`, background: `${room.accent}22`, color: "#ffe", borderRadius: 12, padding: "15px 30px", fontSize: 17, fontWeight: 800, cursor: "pointer" }}>
+            {bossTable ? "Claim the room ›" : "Back to the tables ›"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
