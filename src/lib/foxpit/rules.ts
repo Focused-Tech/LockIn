@@ -28,6 +28,20 @@ export type FoxPitCategory = (typeof FOXPIT_CATEGORIES)[number];
 /** Prediction / real-data slates enter at Raven; the full mix arrives at Fox. */
 export const REAL_DATA_ENTERS_AT: FoxPitRoomKey = "hightable";
 
+/**
+ * Fox Pit category → the app-wide slate COLOR CANON key (`categoryTint` in
+ * src/lib/practice/tints.ts is the single source of truth for slate outlines).
+ * Sports here is the World Cup, so it maps to the Soccer hue.
+ */
+export const CATEGORY_TINT_KEY: Record<FoxPitCategory, string> = {
+  music: "Music",
+  entertainment: "Entertainment",
+  sports: "Soccer",
+  politics: "Politics",
+  crypto: "Crypto",
+  weather: "Weather",
+};
+
 export interface RoomRules {
   boss: string;
   floor: number;

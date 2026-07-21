@@ -8,9 +8,20 @@
  * slate engine — no real-money / Explore / practice-arena data.
  */
 import { useEffect, useState } from "react";
+import { LockGlyph } from "@/components/practice/LockGlyph";
+import { categoryTint } from "@/lib/practice/tints";
 import { roomByKey, type FoxPitRoomKey } from "@/lib/foxpit";
-import { ROOM_RULES, keepNFor, SLATES_PER_ROUND, REDEALS_PER_ROUND, FOXPIT_BUILD_VERSION } from "@/lib/foxpit/rules";
+import { ROOM_RULES, keepNFor, SLATES_PER_ROUND, REDEALS_PER_ROUND, FOXPIT_BUILD_VERSION, CATEGORY_TINT_KEY } from "@/lib/foxpit/rules";
 import { dealFoxSlates, roundScore, bossRoundScore, type FoxSlate } from "@/lib/foxpit/slates";
+
+/** A slate is LOCKED once it's staked and every question is answered. */
+function isLocked(s: FoxSlate, picks: Record<string, "a" | "b">): boolean {
+  return s.stake != null && s.questions.every((q) => picks[q.id] != null);
+}
+/** The app-wide category color canon for a Fox Pit slate. */
+function slateTint(s: FoxSlate) {
+  return categoryTint(CATEGORY_TINT_KEY[s.category]);
+}
 
 type Phase = "deal" | "play" | "roundResult" | "roomResult";
 
@@ -200,27 +211,31 @@ function DealPhase({
       </div>
       {slates.map((s) => {
         const keep = kept.has(s.id);
+        const tint = slateTint(s); // app-wide category color canon
         return (
           <button
             key={s.id}
             onClick={() => onToggle(s.id)}
-            className="flex items-center justify-between rounded-xl border p-4 text-left"
-            style={{ borderColor: keep ? accent : "var(--border, #1E2A38)", background: keep ? `${accent}18` : "transparent" }}
+            className="flex items-center justify-between rounded-xl border-2 p-4 text-left transition"
+            style={{ borderColor: keep ? tint.color : tint.border, background: keep ? tint.soft : "transparent" }}
           >
             <div>
-              <div className="text-[10px] font-bold uppercase tracking-wide text-muted">
+              <div className="text-[10px] font-bold uppercase tracking-wide" style={{ color: tint.color }}>
                 {s.category}{s.realData ? " · real data" : ""}
               </div>
               <div className="font-serif text-lg text-foreground">{s.title}</div>
               <div className="text-xs text-muted">{s.questions.length} questions</div>
             </div>
-            <div className="text-xs font-extrabold" style={{ color: keep ? accent : "#6B7A8E" }}>
+            <div className="text-xs font-extrabold" style={{ color: keep ? tint.color : "#6B7A8E" }}>
               {keep ? "KEEP ✓" : "discard"}
             </div>
           </button>
         );
       })}
-      <div className="fixed inset-x-0 bottom-0 z-10 flex gap-2 border-t border-border bg-background/95 p-3">
+      <div
+        className="fixed inset-x-0 bottom-0 z-10 flex gap-2 border-t border-border bg-background/95 p-3"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 14px)" }}
+      >
         <button
           onClick={onRedeal}
           disabled={redealsLeft <= 0 || kept.size === slates.length}
@@ -272,13 +287,32 @@ function PlayPhase({
         {expired ? "TIME" : `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`}
       </div>
 
-      {slates.map((s, i) => (
-        <div key={s.id} className="rounded-xl border border-border p-4">
+      {slates.map((s, i) => {
+        const tint = slateTint(s); // app-wide category color canon
+        const locked = isLocked(s, picks);
+        return (
+        <div
+          key={s.id}
+          className={`rounded-xl border-2 p-4 transition ${locked ? "border-accent bg-accent/10" : ""}`}
+          style={locked ? undefined : { borderColor: tint.border }}
+        >
           <div className="mb-2 flex items-center justify-between">
             <div>
-              <div className="text-[10px] font-bold uppercase tracking-wide text-muted">{s.category}</div>
+              <div
+                className={`text-[10px] font-bold uppercase tracking-wide ${locked ? "text-accent" : ""}`}
+                style={locked ? undefined : { color: tint.color }}
+              >
+                {s.category}
+              </div>
               <div className="font-serif text-base text-foreground">Slate {i + 1} · {s.title}</div>
             </div>
+            {/* locked-in: orange + the lock snaps shut and STAYS shut */}
+            {locked && (
+              <div className="flex items-center gap-1 text-[10px] font-extrabold text-accent">
+                <LockGlyph size={24} />
+                LOCKED
+              </div>
+            )}
           </div>
           {/* stake tier */}
           <div className="mb-3 flex flex-wrap gap-2">
@@ -317,9 +351,13 @@ function PlayPhase({
             ))}
           </div>
         </div>
-      ))}
+        );
+      })}
 
-      <div className="fixed inset-x-0 bottom-0 z-10 border-t border-border bg-background/95 p-3">
+      <div
+        className="fixed inset-x-0 bottom-0 z-10 border-t border-border bg-background/95 p-3"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 14px)" }}
+      >
         <button
           onClick={onLock}
           disabled={!canLock && !expired}
