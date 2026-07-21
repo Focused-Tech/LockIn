@@ -29,38 +29,6 @@ const pinchDist = (t: React.TouchList) => {
   return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
 };
 
-/* ---------------- elevator landings ----------------
- * The car must stop on the SAME lines the plaques sit on, so the stops are
- * derived from the canonical coords (FOXPIT_ROOMS[].mapY + LOBBY_MAP_Y) rather
- * than hand-written percentages — those had drifted (car stopped at 100/90/71/32/14
- * while the real landings are 91/75/50/23.5/8, i.e. between floors).
- *
- * A plaque is centred on its line (translateY(-50%)); the car hangs its BOTTOM on
- * the same line (translateY(-100%)), so both share `top: mapY%`. */
-const ELEVATOR_LANDINGS = [
-  ...FOXPIT_ROOMS.map((r) => r.mapY),
-  LOBBY_MAP_Y,
-].sort((a, b) => b - a); // bottom of the tower → top
-
-/** One full loop: ride up through every landing, then back down. */
-const ELEVATOR_ROUTE = [
-  ...ELEVATOR_LANDINGS,
-  ...ELEVATOR_LANDINGS.slice(0, -1).reverse(),
-];
-
-/** Build `@keyframes foxpitElevatorStops` — each landing gets a DWELL (doors-open
- *  beat) and the gaps between them are the travel. */
-function elevatorStopsKeyframes(dwell = 5): string {
-  const n = ELEVATOR_ROUTE.length;
-  const travel = (100 - dwell * n) / (n - 1);
-  const steps = ELEVATOR_ROUTE.map((y, i) => {
-    const from = i * (dwell + travel);
-    const to = Math.min(from + dwell, 100);
-    return `${from.toFixed(3)}%,${to.toFixed(3)}% { top:${(y * 100).toFixed(2)}%; }`;
-  });
-  return `@keyframes foxpitElevatorStops { ${steps.join(" ")} }`;
-}
-
 export function FoxPitMap({ lone = false }: { lone?: boolean }) {
   const router = useRouter();
   const vpRef = useRef<HTMLDivElement>(null);
@@ -213,8 +181,6 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
         touchAction: "none",
       }}
     >
-      {/* car stops, generated from the canonical landing coords (see above) */}
-      <style>{elevatorStopsKeyframes()}</style>
       <div
         ref={cRef}
         style={{ position: "relative", width: "100%", transformOrigin: "0 0", willChange: "transform" }}
