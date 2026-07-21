@@ -25,8 +25,9 @@ const PLAYER_TABLE = "/foxpit/tables/table_player_round.png";
 const TABLE_POS: Record<number, [number, number][]> = {
   1: [[50, 66]],
   3: [[34, 68], [50, 71], [66, 68]],
-  // 5 tables in a ring (point-down pentagon) — the top gap keeps the throne key clear.
-  5: [[32, 49], [68, 49], [22, 68], [78, 68], [50, 80]],
+  // 5 tables in a TIGHT cluster, numbered closest-first: table 1 nearest the
+  // viewer (bottom), 4 & 5 farthest (top). Kept close but non-overlapping.
+  5: [[50, 77], [30, 67], [70, 67], [37, 56], [63, 56]],
 };
 const PRIZE_KEY_POS: [number, number] = [50, 38]; // on the throne, above the table ring so it stays uncovered
 
@@ -213,7 +214,7 @@ export function FoxPitRoom({
                   transform: `translate(-50%,-50%) translate(${flyX}%, ${flyY}%)${isSel ? " scale(1.12)" : ""} perspective(420px) rotateX(50deg)`,
                   opacity: fly ? 0 : 1,
                   transition: "transform .55s cubic-bezier(.35,0,.2,1), opacity .5s ease",
-                  width: singleTable ? 150 : 108,
+                  width: singleTable ? 150 : 92,
                   border: "none",
                   background: "transparent",
                   padding: 0,
