@@ -23,7 +23,19 @@ function slateTint(s: FoxSlate) {
   return categoryTint(CATEGORY_TINT_KEY[s.category]);
 }
 
-type Phase = "deal" | "play" | "roundResult" | "roomResult";
+type Phase = "dealing" | "deal" | "play" | "roundResult" | "roomResult";
+
+/** Per-room floor tile — the base the dealer table sits on. */
+const FLOOR_IMG: Record<FoxPitRoomKey, string> = {
+  dojo: "/foxpit/floors/floor_dojo.png",
+  coliseum: "/foxpit/floors/floor_coliseum.png",
+  hightable: "/foxpit/floors/floor_ravensnest.png",
+  suite: "/foxpit/floors/floor_foxden.png",
+};
+/** Top-down dealer table (Locksmith seated, chips + tray + deck baked in). */
+const LOCKSMITH_TABLE = "/foxpit/tables/locksmith_player_table.png";
+/** The LockIn card face every slate is drawn on. */
+const CARD_FRONT = "/foxpit/cards/card_front_single.png";
 
 export function FoxPitGame({
   roomKey,
@@ -38,7 +50,7 @@ export function FoxPitGame({
   const room = roomByKey(roomKey);
   const accent = room.accent;
 
-  const [phase, setPhase] = useState<Phase>("deal");
+  const [phase, setPhase] = useState<Phase>("dealing");
   const [roundIndex, setRoundIndex] = useState(0);
   const [slates, setSlates] = useState<FoxSlate[]>(() => dealFoxSlates(roomKey));
   const [kept, setKept] = useState<Set<string>>(new Set());
@@ -103,7 +115,7 @@ export function FoxPitGame({
     setRedealsLeft(REDEALS_PER_ROUND);
     setPicks({});
     setLast(null);
-    setPhase("deal");
+    setPhase("dealing");
   };
 
   const cleared = roundsWon > rules.rounds / 2;
@@ -128,6 +140,16 @@ export function FoxPitGame({
           <div>{FOXPIT_BUILD_VERSION}</div>
         </div>
       </div>
+
+      {phase === "dealing" && (
+        <DealingTable
+          roomKey={roomKey}
+          accent={accent}
+          /* lead alternates each round: round 1 boss deals first, round 2 player. */
+          bossFirst={roundIndex % 2 === 0}
+          onDone={() => setPhase("deal")}
+        />
+      )}
 
       {phase === "deal" && (
         <DealPhase
@@ -194,6 +216,108 @@ export function FoxPitGame({
   );
 }
 
+/* ---------------- dealing: cards dealt out on the Locksmith table ---------------- */
+function DealingTable({
+  roomKey, accent, bossFirst, onDone,
+}: {
+  roomKey: FoxPitRoomKey;
+  accent: string;
+  bossFirst: boolean;
+  onDone: () => void;
+}) {
+  const TOTAL = SLATES_PER_ROUND * 2; // five to the boss, five to you
+  const [dealt, setDealt] = useState(0);
+
+  useEffect(() => {
+    if (dealt >= TOTAL) {
+      const t = setTimeout(onDone, 850);
+      return () => clearTimeout(t);
+    }
+    const t = setTimeout(() => setDealt((d) => d + 1), 210);
+    return () => clearTimeout(t);
+  }, [dealt, TOTAL, onDone]);
+
+  // spades-style: the lead side gets the first card, then strictly alternating.
+  const cards = Array.from({ length: TOTAL }, (_, i) => {
+    const toBoss = bossFirst ? i % 2 === 0 : i % 2 === 1;
+    const slot = Math.floor(i / 2); // 0..4 across each fan
+    return { i, toBoss, x: 24 + slot * 13, y: toBoss ? 25 : 70 };
+  });
+
+  return (
+    <div className="relative flex flex-1 items-center justify-center overflow-hidden">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={FLOOR_IMG[roomKey]} alt="" className="absolute inset-0 h-full w-full object-cover opacity-90" />
+      <div className="absolute inset-0" style={{ background: "radial-gradient(70% 55% at 50% 50%, transparent, rgba(3,4,7,.78))" }} />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={LOCKSMITH_TABLE} alt="The Locksmith deals" className="relative z-[1] max-h-[78%] w-auto max-w-[96%] object-contain" />
+
+      {cards.map((c) => {
+        const out = c.i < dealt;
+        return (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            key={c.i}
+            src={CARD_FRONT}
+            alt=""
+            className="absolute z-[2] w-[11%] max-w-[62px]"
+            style={{
+              left: out ? `${c.x}%` : "50%",
+              top: out ? `${c.y}%` : "33%",
+              transform: `translate(-50%,-50%) rotate(${out ? (c.toBoss ? -6 : 6) : 0}deg) scale(${out ? 1 : 0.65})`,
+              opacity: out ? 1 : 0,
+              transition: "left .34s cubic-bezier(.2,.8,.2,1), top .34s cubic-bezier(.2,.8,.2,1), transform .34s, opacity .16s",
+              filter: "drop-shadow(0 6px 12px rgba(0,0,0,.7))",
+            }}
+          />
+        );
+      })}
+
+      <div className="absolute bottom-5 left-0 right-0 text-center text-xs font-extrabold tracking-widest" style={{ color: accent }}>
+        {dealt >= TOTAL ? "PICK UP YOUR HAND" : `DEALING · ${bossFirst ? "BOSS" : "YOU"} FIRST`}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- a slate drawn on the LockIn card face ---------------- */
+function SlateCardFace({
+  slate, keep, tint, stakes, onClick,
+}: {
+  slate: FoxSlate;
+  keep: boolean;
+  tint: { color: string; soft: string; border: string };
+  stakes: number[];
+  onClick: () => void;
+}) {
+  return (
+    <button onClick={onClick} className="relative w-[31%] min-w-[100px]">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={CARD_FRONT} alt="" className="block h-auto w-full" />
+      {/* content sits under the LockIn mark printed on the face */}
+      <div className="absolute inset-0 flex flex-col px-2 pb-2 pt-[30%] text-left">
+        <div className="text-[8px] font-bold uppercase leading-tight" style={{ color: tint.color }}>
+          {slate.category}
+        </div>
+        <div className="font-serif text-[11px] leading-tight text-foreground">{slate.title}</div>
+        <div className="mt-auto text-[8px] text-muted">
+          {slate.questions.length}Q · {stakes[0]}–{stakes[stakes.length - 1]} ⛃
+        </div>
+      </div>
+      {/* category outline; brightens + fills when kept */}
+      <div
+        className="pointer-events-none absolute inset-0 rounded-[10px] border-2"
+        style={{ borderColor: keep ? tint.color : tint.border, background: keep ? tint.soft : "transparent" }}
+      />
+      {keep && (
+        <div className="absolute right-1 top-1 rounded px-1 text-[8px] font-extrabold" style={{ color: tint.color, background: "rgba(3,4,7,.7)" }}>
+          KEEP ✓
+        </div>
+      )}
+    </button>
+  );
+}
+
 /* ---------------- deal / keep-N phase ---------------- */
 function DealPhase({
   slates, kept, keepN, redealsLeft, accent, stakes, onToggle, onRedeal, onPlay, onAutoPlay,
@@ -233,31 +357,19 @@ function DealPhase({
       <div className="text-center text-sm text-muted">
         Keep at least <span className="font-extrabold" style={{ color: accent }}>{keepN}</span> — discard the rest for one redeal, then play all {slates.length}.
       </div>
-      {slates.map((s) => {
-        const keep = kept.has(s.id);
-        const tint = slateTint(s); // app-wide category color canon
-        return (
-          <button
+      {/* your hand — each slate drawn on the LockIn card face */}
+      <div className="flex flex-wrap justify-center gap-2">
+        {slates.map((s) => (
+          <SlateCardFace
             key={s.id}
+            slate={s}
+            keep={kept.has(s.id)}
+            tint={slateTint(s)}
+            stakes={stakes}
             onClick={() => onToggle(s.id)}
-            className="flex items-center justify-between rounded-xl border-2 p-4 text-left transition"
-            style={{ borderColor: keep ? tint.color : tint.border, background: keep ? tint.soft : "transparent" }}
-          >
-            <div>
-              <div className="text-[10px] font-bold uppercase tracking-wide" style={{ color: tint.color }}>
-                {s.category}{s.realData ? " · real data" : ""}
-              </div>
-              <div className="font-serif text-lg text-foreground">{s.title}</div>
-              <div className="text-xs text-muted">
-                {s.questions.length} questions · worth {stakes[0]}–{stakes[stakes.length - 1]} ⛃
-              </div>
-            </div>
-            <div className="text-xs font-extrabold" style={{ color: keep ? tint.color : "#6B7A8E" }}>
-              {keep ? "KEEP ✓" : "discard"}
-            </div>
-          </button>
-        );
-      })}
+          />
+        ))}
+      </div>
       <div
         className="fixed inset-x-0 bottom-0 z-10 flex gap-2 border-t border-border bg-background/95 p-3"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 14px)" }}
