@@ -90,7 +90,7 @@ export function FoxPitRoom({
   // lets an eager player skip ahead sooner).
   useEffect(() => {
     if (phase !== "door") return;
-    const t = setTimeout(() => setPhase("room"), 14000);
+    const t = setTimeout(() => setPhase("room"), 16500);
     return () => clearTimeout(t);
   }, [phase]);
   useEffect(() => {
@@ -346,8 +346,10 @@ function DoorIntro({ room, onEnter }: { room: ReturnType<typeof roomByKey>; onEn
   useEffect(() => {
     // Hold on the Locksmith usher + closed doors for ~3.4s so she's clearly seen
     // BEFORE the doors part and the boss is revealed.
-    const t1 = setTimeout(() => setOpen(true), 3400);  // usher visible, then the doors part slowly
-    const t2 = setTimeout(() => setPrompt(true), 8400); // prompt appears once the boss reveal has settled
+    // Beat map: usher holds ~3.4s -> doors part (2.6s transition, fully open ~6.0s)
+    // -> ONE BEAT (2s) on the revealed room -> boss rises ~8.0s -> name-card after.
+    const t1 = setTimeout(() => setOpen(true), 3400);   // usher visible, then the doors part slowly
+    const t2 = setTimeout(() => setPrompt(true), 10600); // prompt once the boss reveal has settled
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, []);
   return (
@@ -435,7 +437,8 @@ function DoorIntro({ room, onEnter }: { room: ReturnType<typeof roomByKey>; onEn
             filter: `drop-shadow(0 0 40px ${room.accent}66)`,
             // hidden until the doors are open; the rise is delayed to land AFTER they part
             opacity: open ? undefined : 0,
-            animation: open ? "foxpitAvatarUp 2.2s cubic-bezier(.2,.8,.2,1) 2.4s both" : "none",
+            // 4.6s delay off `open` = doors fully open (2.6s) + a 2s beat on the room.
+            animation: open ? "foxpitAvatarUp 2.2s cubic-bezier(.2,.8,.2,1) 4.6s both" : "none",
           }}
         />
       </div>
