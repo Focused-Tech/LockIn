@@ -12,7 +12,11 @@ import { LockGlyph } from "@/components/practice/LockGlyph";
 import { categoryTint } from "@/lib/practice/tints";
 import { roomByKey, type FoxPitRoomKey } from "@/lib/foxpit";
 import { ROOM_RULES, keepNFor, SLATES_PER_ROUND, REDEALS_PER_ROUND, FOXPIT_BUILD_VERSION, CATEGORY_TINT_KEY, TIMERS } from "@/lib/foxpit/rules";
-import { dealFoxSlates, roundScore, bossRoundScore, type FoxSlate } from "@/lib/foxpit/slates";
+import { dealFoxSlates, roundScore, bossRoundScore, slateWon, type FoxSlate } from "@/lib/foxpit/slates";
+
+/** Design-system semantic colors (win green / loss red), referenced by name. */
+const COLOR_WIN = "#22C55E";
+const COLOR_LOSS = "#E85454";
 
 /** A slate is LOCKED once it's staked and every question is answered. */
 function isLocked(s: FoxSlate, picks: Record<string, "a" | "b">): boolean {
@@ -23,7 +27,18 @@ function slateTint(s: FoxSlate) {
   return categoryTint(CATEGORY_TINT_KEY[s.category]);
 }
 
-type Phase = "dealing" | "deal" | "play" | "roundResult" | "roomResult";
+type Phase = "dealing" | "deal" | "play" | "reveal" | "announce" | "roomResult";
+
+/** Coin-drop audio for the announcement. Never silent-fails — logs instead. */
+function playCoinDrop(won: boolean): void {
+  try {
+    const a = new Audio(won ? "/sounds/2-win-big-bag.mp3" : "/sounds/1-loss-rake.mp3");
+    a.volume = 0.75;
+    void a.play().catch((err) => console.error("[foxpit] coin-drop audio blocked:", err));
+  } catch (err) {
+    console.error("[foxpit] coin-drop audio failed:", err);
+  }
+}
 
 /** Per-room floor tile — the base the dealer table sits on. */
 const FLOOR_IMG: Record<FoxPitRoomKey, string> = {
@@ -101,7 +116,7 @@ export function FoxPitGame({
     const won = you >= boss;
     setLast({ you, boss, won });
     if (won) setRoundsWon((w) => w + 1);
-    setPhase("roundResult");
+    setPhase("reveal"); // cards reveal first, then the Locksmith calls it
   };
 
   const nextRound = () => {
@@ -180,13 +195,18 @@ export function FoxPitGame({
         />
       )}
 
-      {phase === "roundResult" && last && (
-        <ResultCard
-          title={last.won ? "Round won" : "Round lost"}
+      {phase === "reveal" && last && (
+        <RevealPhase slates={slates} picks={picks} accent={accent} onDone={() => setPhase("announce")} />
+      )}
+
+      {phase === "announce" && last && (
+        <AnnouncePhase
+          roomKey={roomKey}
           accent={accent}
+          won={last.won}
           you={last.you}
           boss={last.boss}
-          note={`Boss reads at ${rules.bossWinPct}%`}
+          note={`${rules.boss} reads at ${rules.bossWinPct}%`}
           cta={roundIndex + 1 >= rules.rounds ? "See the tally ›" : "Next round ›"}
           onCta={nextRound}
         />
@@ -523,36 +543,122 @@ function PlayPhase({
   );
 }
 
-/* ---------------- shared result card ---------------- */
-function ResultCard({
-  title, accent, you, boss, note, cta, onCta,
+/* ---------------- reveal: outcomes overlaid on the card fronts ---------------- */
+function RevealPhase({
+  slates, picks, accent, onDone,
 }: {
-  title: string;
+  slates: FoxSlate[];
+  picks: Record<string, "a" | "b">;
   accent: string;
+  onDone: () => void;
+}) {
+  return (
+    <div className="flex flex-1 flex-col gap-3 p-4 pb-28">
+      <div className="text-center text-sm font-extrabold tracking-widest" style={{ color: accent }}>
+        THE CARDS COME OVER
+      </div>
+      <div className="flex flex-wrap justify-center gap-2">
+        {slates.map((s) => {
+          const tint = slateTint(s);
+          const won = slateWon(s, picks);
+          return (
+            <div key={s.id} className="relative w-[31%] min-w-[100px]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={CARD_FRONT} alt="" className="block h-auto w-full" />
+              <div className="absolute inset-0 flex flex-col px-2 pb-2 pt-[28%] text-left">
+                <div className="text-[8px] font-bold uppercase" style={{ color: tint.color }}>{s.category}</div>
+                <div className="font-serif text-[10px] leading-tight text-foreground">{s.title}</div>
+                <div className="mt-1 flex flex-col gap-[1px]">
+                  {s.questions.map((q) => {
+                    const hit = picks[q.id] === q.outcome;
+                    return (
+                      <div key={q.id} className="truncate text-[8px] font-bold" style={{ color: hit ? COLOR_WIN : COLOR_LOSS }}>
+                        {hit ? "✓" : "✗"} {q.outcome === "a" ? q.optionA : q.optionB}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="mt-auto text-[9px] font-extrabold" style={{ color: won ? COLOR_WIN : COLOR_LOSS }}>
+                  {won ? `WON ${s.stake ?? 0} ⛃` : "LOST"}
+                </div>
+              </div>
+              <div className="pointer-events-none absolute inset-0 rounded-[10px] border-2" style={{ borderColor: won ? COLOR_WIN : COLOR_LOSS }} />
+            </div>
+          );
+        })}
+      </div>
+      <div
+        className="fixed inset-x-0 bottom-0 z-10 border-t border-border bg-background/95 p-3"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 14px)" }}
+      >
+        <button onClick={onDone} className="w-full rounded-xl py-4 text-lg font-extrabold text-white" style={{ background: accent }}>
+          Hear the call ›
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- announce: the Locksmith calls it at the table + coin drop ---------------- */
+function AnnouncePhase({
+  roomKey, accent, won, you, boss, note, cta, onCta,
+}: {
+  roomKey: FoxPitRoomKey;
+  accent: string;
+  won: boolean;
   you: number;
   boss: number;
   note: string;
   cta: string;
   onCta: () => void;
 }) {
+  useEffect(() => { playCoinDrop(won); }, [won]);
+  // Her raised arm points at the WINNING seat: right = you, left = the boss.
+  const announce = won
+    ? "/foxpit/locksmith/locksmith_announce_right.png"
+    : "/foxpit/locksmith/locksmith_announce_left.png";
+
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
-      <div className="font-serif text-3xl" style={{ color: accent }}>{title}</div>
-      <div className="flex items-center gap-6 text-foreground">
-        <div>
-          <div className="text-[11px] tracking-widest text-muted">YOU</div>
-          <div className="text-3xl font-extrabold">{you}</div>
+    <div className="relative flex flex-1 flex-col items-center justify-center overflow-hidden">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={FLOOR_IMG[roomKey]} alt="" className="absolute inset-0 h-full w-full object-cover opacity-90" />
+      <div className="absolute inset-0" style={{ background: "radial-gradient(70% 55% at 50% 50%, transparent, rgba(3,4,7,.8))" }} />
+      {/* back at the same table */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={LOCKSMITH_TABLE} alt="" className="relative z-[1] max-h-[58%] w-auto max-w-[92%] object-contain" />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={announce} alt="The Locksmith announces the winner" className="absolute z-[3] max-h-[40%] w-auto" style={{ top: "4%" }} />
+
+      {/* coin drop onto the table */}
+      {Array.from({ length: 9 }, (_, i) => (
+        <div
+          key={i}
+          className="absolute z-[2] rounded-full"
+          style={{
+            left: `${20 + i * 7.5}%`,
+            top: `${54 + (i % 3) * 5}%`,
+            width: 18,
+            height: 18,
+            background: "radial-gradient(circle at 35% 30%, #ffe9a8, #d9a521 60%, #8a6410)",
+            boxShadow: "0 2px 6px rgba(0,0,0,.6)",
+            animation: `foxpitCoinDrop .9s cubic-bezier(.3,1.2,.4,1) ${i * 0.07}s both`,
+          }}
+        />
+      ))}
+
+      <div
+        className="absolute bottom-0 left-0 right-0 z-[4] flex flex-col items-center gap-1 p-5"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 18px)" }}
+      >
+        <div className="font-serif text-3xl" style={{ color: won ? COLOR_WIN : accent }}>
+          {won ? "You take the round" : "The boss takes it"}
         </div>
-        <div className="text-muted">vs</div>
-        <div>
-          <div className="text-[11px] tracking-widest text-muted">BOSS</div>
-          <div className="text-3xl font-extrabold">{boss}</div>
-        </div>
+        <div className="text-sm font-bold text-foreground">YOU {you} · BOSS {boss}</div>
+        <div className="text-xs text-muted">{note}</div>
+        <button onClick={onCta} className="mt-3 w-full max-w-sm rounded-xl py-4 text-lg font-extrabold text-white" style={{ background: accent }}>
+          {cta}
+        </button>
       </div>
-      <div className="text-xs text-muted">{note}</div>
-      <button onClick={onCta} className="mt-4 rounded-xl border px-8 py-4 text-lg font-extrabold text-foreground" style={{ borderColor: accent, background: `${accent}22` }}>
-        {cta}
-      </button>
     </div>
   );
 }

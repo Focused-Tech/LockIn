@@ -13,6 +13,14 @@ export function FoxPitStyles() {
       /* Practice-Here: the card bounces + the down-arrow flashes once every 7s. */
       @keyframes foxpitPracticeBounce { 0%,80%,100%{ transform: translateY(0);} 86%{ transform: translateY(-11px);} 92%{ transform: translateY(-3px);} 96%{ transform: translateY(0);} }
       @keyframes foxpitArrowFlash { 0%,78%,100%{ opacity:.9;} 84%{ opacity:.12;} 90%{ opacity:1;} 95%{ opacity:.5;} }
+      /* Coin drop on the winner announcement — coins fall onto the table and settle. */
+      @keyframes foxpitCoinDrop {
+        0%   { transform: translateY(-140%) scale(.7) rotate(0deg); opacity: 0; }
+        12%  { opacity: 1; }
+        70%  { transform: translateY(0) scale(1) rotate(180deg); }
+        82%  { transform: translateY(-12%) scale(1) rotate(200deg); }
+        100% { transform: translateY(0) scale(1) rotate(220deg); opacity: 1; }
+      }
       /* the elevator car dwells at each floor's LANDING (floor level, not room centre):
          Dojo 95 → Lobby 81 → Coliseum 65 → High Table 32 → Suite 14, then back down.
          Reaches true top + bottom so the stops can be verified floor-for-floor. */
