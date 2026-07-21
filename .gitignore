@@ -46,5 +46,5 @@ serviceAccountKey.json
 android/app/google-services.json
 
 # Fox Pit batch backups
-*.pre-batch.bak
-*.pre-foxpit.bak
+# per-file safety copies taken before a risky edit — working files, never committed
+*.bak

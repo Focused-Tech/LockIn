@@ -21,20 +21,9 @@ export function FoxPitStyles() {
         82%  { transform: translateY(-12%) scale(1) rotate(200deg); }
         100% { transform: translateY(0) scale(1) rotate(220deg); opacity: 1; }
       }
-      /* the elevator car dwells at each floor's LANDING (floor level, not room centre):
-         Dojo 95 → Lobby 81 → Coliseum 65 → High Table 32 → Suite 14, then back down.
-         Reaches true top + bottom so the stops can be verified floor-for-floor. */
-      @keyframes foxpitElevatorStops {
-        0%,5%    { top:100%; }
-        11%,16%  { top:90%; }
-        22%,29%  { top:71%; }
-        35%,40%  { top:32%; }
-        46%,54%  { top:14%; }
-        60%,65%  { top:32%; }
-        71%,78%  { top:71%; }
-        84%,89%  { top:90%; }
-        95%,100% { top:100%; }
-      }
+      /* NOTE: foxpitElevatorStops lives in map/Map.tsx — it is GENERATED from the
+         canonical landing coords (FOXPIT_ROOMS[].mapY + LOBBY_MAP_Y) so the car can
+         never drift off the plaques the way a hand-written keyframe list did. */
     `}</style>
   );
 }

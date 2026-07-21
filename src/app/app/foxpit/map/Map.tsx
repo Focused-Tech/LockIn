@@ -29,6 +29,38 @@ const pinchDist = (t: React.TouchList) => {
   return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
 };
 
+/* ---------------- elevator landings ----------------
+ * The car must stop on the SAME lines the plaques sit on, so the stops are
+ * derived from the canonical coords (FOXPIT_ROOMS[].mapY + LOBBY_MAP_Y) rather
+ * than hand-written percentages — those had drifted (car stopped at 100/90/71/32/14
+ * while the real landings are 91/75/50/23.5/8, i.e. between floors).
+ *
+ * A plaque is centred on its line (translateY(-50%)); the car hangs its BOTTOM on
+ * the same line (translateY(-100%)), so both share `top: mapY%`. */
+const ELEVATOR_LANDINGS = [
+  ...FOXPIT_ROOMS.map((r) => r.mapY),
+  LOBBY_MAP_Y,
+].sort((a, b) => b - a); // bottom of the tower → top
+
+/** One full loop: ride up through every landing, then back down. */
+const ELEVATOR_ROUTE = [
+  ...ELEVATOR_LANDINGS,
+  ...ELEVATOR_LANDINGS.slice(0, -1).reverse(),
+];
+
+/** Build `@keyframes foxpitElevatorStops` — each landing gets a DWELL (doors-open
+ *  beat) and the gaps between them are the travel. */
+function elevatorStopsKeyframes(dwell = 5): string {
+  const n = ELEVATOR_ROUTE.length;
+  const travel = (100 - dwell * n) / (n - 1);
+  const steps = ELEVATOR_ROUTE.map((y, i) => {
+    const from = i * (dwell + travel);
+    const to = Math.min(from + dwell, 100);
+    return `${from.toFixed(3)}%,${to.toFixed(3)}% { top:${(y * 100).toFixed(2)}%; }`;
+  });
+  return `@keyframes foxpitElevatorStops { ${steps.join(" ")} }`;
+}
+
 export function FoxPitMap({ lone = false }: { lone?: boolean }) {
   const router = useRouter();
   const vpRef = useRef<HTMLDivElement>(null);
@@ -181,6 +213,8 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
         touchAction: "none",
       }}
     >
+      {/* car stops, generated from the canonical landing coords (see above) */}
+      <style>{elevatorStopsKeyframes()}</style>
       <div
         ref={cRef}
         style={{ position: "relative", width: "100%", transformOrigin: "0 0", willChange: "transform" }}
@@ -326,8 +360,9 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           style={{ position: "absolute", zIndex: 3, top: 0, bottom: 0, left: 0, width: "12%", border: "none", background: "transparent", padding: 0, cursor: "pointer" }}
         />
 
-        {/* elevator CABLE — a taut cable running the shaft; the car rides it.
-            Centered on the car (car left 0.5% + half its 8% width ≈ 4.5%). */}
+        {/* elevator CABLE — a taut BRASS cable running the shaft; the car rides it.
+            Centered on the car (car left 0.5% + half its 8% width ≈ 4.5%). The
+            gradient reads as a round cord: dark brass edges, lit gold core. */}
         <div
           aria-hidden
           style={{
@@ -338,8 +373,8 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
             left: "4.5%",
             width: 3,
             transform: "translateX(-50%)",
-            background: "linear-gradient(90deg, rgba(120,120,130,.12), rgba(205,210,220,.9) 45%, rgba(120,120,130,.12))",
-            boxShadow: "0 0 5px rgba(0,0,0,.6)",
+            background: "linear-gradient(90deg, rgba(90,64,18,.15), rgba(200,162,75,.95) 45%, rgba(245,224,160,1) 55%, rgba(90,64,18,.15))",
+            boxShadow: "0 0 6px rgba(200,162,75,.45), 0 0 3px rgba(0,0,0,.6)",
             pointerEvents: "none",
           }}
         />
