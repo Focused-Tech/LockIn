@@ -277,14 +277,15 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           </span>
         </button>
 
-        {/* Practice Here — affixed to the lobby floor (scrolls with the tower); walks down to the Dojo */}
+        {/* Practice Here — glued to the LOBBY landing at the end of the staircase
+            (rides with the tower so it never drifts off its floor). */}
         <button
           onClick={walkDownToPractice}
           aria-label="Practice free at the Dojo"
           style={{
             position: "absolute",
             zIndex: 2,
-            top: "82%",
+            top: `${LOBBY_MAP_Y * 100 + 3}%`,
             left: "14%",
             transform: "translateY(-50%)",
             display: "flex",

@@ -25,9 +25,10 @@ const PLAYER_TABLE = "/foxpit/tables/table_player_round.png";
 const TABLE_POS: Record<number, [number, number][]> = {
   1: [[50, 66]],
   3: [[34, 68], [50, 71], [66, 68]],
-  5: [[30, 60], [50, 56], [70, 60], [39, 74], [61, 74]],
+  // 5 tables in a ring (point-down pentagon) — the top gap keeps the throne key clear.
+  5: [[32, 49], [68, 49], [22, 68], [78, 68], [50, 80]],
 };
-const PRIZE_KEY_POS: [number, number] = [50, 42]; // sits on the throne's cushion seat
+const PRIZE_KEY_POS: [number, number] = [50, 38]; // on the throne, above the table ring so it stays uncovered
 
 /** Host intro blurb — shown on the boss name-card when the doors open. The boss is
  *  the HOST of the room (not necessarily the first challenger). */
@@ -192,7 +193,14 @@ export function FoxPitRoom({
           {tables.map(([x, y], i) => {
             const done = roomCleared || beaten.has(i);
             const isCurrent = i === currentTableIdx;
-            const ringColor = done ? "#22C55E" : isCurrent ? "#FF3B00" : room.accent;
+            // when a table is picked, the others disperse OUTWARD (radially, in the
+            // direction they sit) and fade; the picked one nudges up in scale.
+            const selecting = activeTable !== null;
+            const isSel = i === activeTable;
+            const fly = selecting && !isSel;
+            const ddx = x - 50, ddy = y - 64, dlen = Math.hypot(ddx, ddy) || 1;
+            const flyX = fly ? (ddx / dlen) * 360 : 0;
+            const flyY = fly ? (ddy / dlen) * 360 : 0;
             return (
               <button
                 key={i}
@@ -202,14 +210,16 @@ export function FoxPitRoom({
                   position: "absolute",
                   left: `${x}%`,
                   top: `${y}%`,
-                  transform: "translate(-50%,-50%)",
+                  transform: `translate(-50%,-50%) translate(${flyX}%, ${flyY}%)${isSel ? " scale(1.12)" : ""}`,
+                  opacity: fly ? 0 : 1,
+                  transition: "transform .55s cubic-bezier(.35,0,.2,1), opacity .5s ease",
                   width: singleTable ? 150 : 108,
                   border: "none",
                   background: "transparent",
                   padding: 0,
                   cursor: "pointer",
                   filter: done ? "grayscale(.45) brightness(.72)" : "none",
-                  animation: isCurrent ? "foxpitBob 2.6s ease-in-out infinite" : "none",
+                  animation: isCurrent && !selecting ? "foxpitBob 2.6s ease-in-out infinite" : "none",
                 }}
               >
                 <div style={{ position: "relative", width: "100%" }}>
