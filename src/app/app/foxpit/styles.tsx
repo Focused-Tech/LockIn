@@ -1,3 +1,5 @@
+import { ELEVATOR_STOP_PCT as S } from "@/lib/foxpit/rules";
+
 /** Shared Fox Pit keyframes (client-injected so we don't touch globals.css). */
 export function FoxPitStyles() {
   return (
@@ -21,19 +23,19 @@ export function FoxPitStyles() {
         82%  { transform: translateY(-12%) scale(1) rotate(200deg); }
         100% { transform: translateY(0) scale(1) rotate(220deg); opacity: 1; }
       }
-      /* the elevator car dwells at each floor's LANDING (floor level, not room centre):
-         Dojo 95 → Lobby 81 → Coliseum 65 → High Table 32 → Suite 14, then back down.
-         Reaches true top + bottom so the stops can be verified floor-for-floor. */
+      /* The car's BOTTOM rests on each landing drawn into the tower art — the stop
+         percentages are ELEVATOR_STOP_PCT (see rules.ts for how they were read).
+         Ride order: Dojo → Lobby → Coliseum → High Table → Suite, then back down. */
       @keyframes foxpitElevatorStops {
-        0%,5%    { top:100%; }
-        11%,16%  { top:90%; }
-        22%,29%  { top:71%; }
-        35%,40%  { top:32%; }
-        46%,54%  { top:14%; }
-        60%,65%  { top:32%; }
-        71%,78%  { top:71%; }
-        84%,89%  { top:90%; }
-        95%,100% { top:100%; }
+        0%,5%    { top:${S.dojo}%; }
+        11%,16%  { top:${S.lobby}%; }
+        22%,29%  { top:${S.coliseum}%; }
+        35%,40%  { top:${S.hightable}%; }
+        46%,54%  { top:${S.suite}%; }
+        60%,65%  { top:${S.hightable}%; }
+        71%,78%  { top:${S.coliseum}%; }
+        84%,89%  { top:${S.lobby}%; }
+        95%,100% { top:${S.dojo}%; }
       }
     `}</style>
   );

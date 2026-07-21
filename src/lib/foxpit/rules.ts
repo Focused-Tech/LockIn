@@ -77,6 +77,25 @@ export const CATEGORY_HEDGE: Record<FoxPitRoomKey, { pick: number; dealt: number
   suite: { pick: FOXPIT_CATEGORIES.length, dealt: "all" },
 };
 
+/**
+ * ELEVATOR STOPS — where the car's BOTTOM rests at each landing, as a % down the
+ * tower. Read off the landings drawn into public/foxpit/map/tower-elevator-reference.png
+ * (1536x3072, 1:1 with the live map): each stop is a door sill in the shaft, and the
+ * bottom two are corroborated by the wooden landing ledges at the same rows.
+ *
+ * Coliseum opens onto the GALLERY, not the arena floor — which is why the old 71%
+ * (the arena floor line) parked the car between floors.
+ *
+ * hightable/suite were already correct and are deliberately left as they were.
+ */
+export const ELEVATOR_STOP_PCT: Record<FoxPitRoomKey | "lobby", number> = {
+  dojo: 95.9,
+  lobby: 81.71,
+  coliseum: 48.18,
+  hightable: 32,
+  suite: 14,
+};
+
 /** Timers (seconds). */
 export const TIMERS = {
   questionDefault: 15,   // Owl
