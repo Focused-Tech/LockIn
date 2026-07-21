@@ -13,7 +13,7 @@ import { CATEGORIES } from "@/lib/categories";
 import type { FoxPitRoomKey } from "@/lib/foxpit";
 
 /** Regenerate the pool on this cadence; the prior batch is archived, not deleted. */
-export const TRIVIA_REGEN_INTERVAL_DAYS = 42;
+export const TRIVIA_REGEN_INTERVAL_DAYS = 22;
 
 /** How many questions to generate per (category × tier) cell. */
 export const TRIVIA_PER_CELL = 12;
