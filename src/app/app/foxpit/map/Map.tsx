@@ -306,9 +306,28 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           </span>
         </button>
 
+        {/* elevator CABLE — a taut cable running the shaft; the car rides it.
+            Centered on the car (car left 0.5% + half its 8% width ≈ 4.5%). */}
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            zIndex: 0,
+            top: 0,
+            bottom: 0,
+            left: "4.5%",
+            width: 3,
+            transform: "translateX(-50%)",
+            background: "linear-gradient(90deg, rgba(120,120,130,.12), rgba(205,210,220,.9) 45%, rgba(120,120,130,.12))",
+            boxShadow: "0 0 5px rgba(0,0,0,.6)",
+            pointerEvents: "none",
+          }}
+        />
+
         {/* elevator CAR — Frank's canonical asset (elevator_car.png, same car as the
             door frames). Travels the shaft band; tap to call the floor-select.
-            Locked until the High Table is cleared (parked + dimmed). */}
+            The car's BOTTOM rests on each landing (translateY(-100%) anchors bottom
+            to the top:% line). Locked until the High Table is cleared (parked + dimmed). */}
         <button
           onClick={() => (elevatorUnlocked ? setFloorSelect(true) : setElevatorLocked(true))}
           aria-label="Elevator"
@@ -318,7 +337,7 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
             top: "95%",
             left: "0.5%",
             width: "8%",
-            transform: "translateY(-50%)",
+            transform: "translateY(-100%)",
             border: "none",
             background: "transparent",
             padding: 0,
