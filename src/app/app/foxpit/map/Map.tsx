@@ -37,6 +37,7 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
   const [hud, setHud] = useState(true);
   const [floorSelect, setFloorSelect] = useState(false);
   const [elevatorLocked, setElevatorLocked] = useState(false);
+  const [elevatorRide, setElevatorRide] = useState(false);
   // Fast-travel elevator activates only once the High Table is CLEARED (beaten),
   // independent of the architect door-unlock override.
   const elevatorUnlocked = cleared.has(ELEVATOR_UNLOCK_AT);
@@ -330,7 +331,7 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
             The car's BOTTOM rests on each landing (translateY(-100%) anchors bottom
             to the top:% line). Locked until the High Table is cleared (parked + dimmed). */}
         <button
-          onClick={() => (elevatorUnlocked ? setFloorSelect(true) : setElevatorLocked(true))}
+          onClick={() => (elevatorUnlocked ? setElevatorRide(true) : setElevatorLocked(true))}
           aria-label="Elevator"
           style={{
             position: "absolute",
@@ -424,6 +425,15 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
             setFloorSelect(false);
             enter(k);
           }}
+        />
+      )}
+
+      {elevatorRide && (
+        <ElevatorRide
+          lone={lone}
+          cleared={cleared}
+          onClose={() => setElevatorRide(false)}
+          onArrive={(k) => { setElevatorRide(false); enter(k); }}
         />
       )}
 
@@ -638,6 +648,102 @@ function FloorSelectPanel({
         >
           Close
         </button>
+      </div>
+    </div>
+  );
+}
+
+/** Door-open frame sequence (closed → open); reversed to close. */
+const ELEVATOR_FRAMES = [
+  "/foxpit/elevator/door-closed.png",
+  "/foxpit/elevator/door-mid1.png",
+  "/foxpit/elevator/door-mid2.png",
+  "/foxpit/elevator/door-open.png",
+];
+
+/**
+ * Elevator interior + ride. Click the car → the ornate doors slide OPEN to the
+ * brass interior → pick a floor → doors CLOSE → the car travels → arrive (routes
+ * into that room's usher→boss door sequence).
+ */
+function ElevatorRide({
+  lone,
+  cleared,
+  onClose,
+  onArrive,
+}: {
+  lone: boolean;
+  cleared: Set<FoxPitRoomKey>;
+  onClose: () => void;
+  onArrive: (k: FoxPitRoomKey) => void;
+}) {
+  const [phase, setPhase] = useState<"opening" | "select" | "closing" | "riding">("opening");
+  const [frame, setFrame] = useState(0);
+  const [dest, setDest] = useState<FoxPitRoomKey | null>(null);
+
+  // doors open: 0 → last
+  useEffect(() => {
+    if (phase !== "opening") return;
+    if (frame < ELEVATOR_FRAMES.length - 1) {
+      const t = setTimeout(() => setFrame((f) => f + 1), 240);
+      return () => clearTimeout(t);
+    }
+    const t = setTimeout(() => setPhase("select"), 350);
+    return () => clearTimeout(t);
+  }, [phase, frame]);
+
+  // doors close: last → 0
+  useEffect(() => {
+    if (phase !== "closing") return;
+    if (frame > 0) {
+      const t = setTimeout(() => setFrame((f) => f - 1), 240);
+      return () => clearTimeout(t);
+    }
+    const t = setTimeout(() => setPhase("riding"), 300);
+    return () => clearTimeout(t);
+  }, [phase, frame]);
+
+  // travel, then arrive at the floor
+  useEffect(() => {
+    if (phase !== "riding" || !dest) return;
+    const t = setTimeout(() => onArrive(dest), 1700);
+    return () => clearTimeout(t);
+  }, [phase, dest, onArrive]);
+
+  const pick = (k: FoxPitRoomKey) => { setDest(k); setPhase("closing"); };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 85, background: "#05070b", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      {phase === "select" && (
+        <button onClick={onClose} aria-label="Close" style={{ position: "absolute", top: 16, right: 14, zIndex: 3, border: "1px solid rgba(200,162,75,.5)", background: "rgba(3,4,7,.6)", color: "#d8c79b", borderRadius: 10, padding: "6px 12px", fontSize: 18, fontWeight: 700, cursor: "pointer" }}>✕</button>
+      )}
+
+      <div style={{ position: "relative", height: "92%", aspectRatio: "1 / 1", maxWidth: "100%" }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={ELEVATOR_FRAMES[frame]} alt="Elevator" draggable={false} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", filter: "drop-shadow(0 0 44px rgba(200,162,75,.22))" }} />
+
+        {phase === "select" && (
+          <div style={{ position: "absolute", left: "50%", top: "45%", transform: "translate(-50%,-50%)", width: "60%", display: "flex", flexDirection: "column", gap: 8, animation: "foxpitFadeUp .5s ease both" }}>
+            <div style={{ textAlign: "center", fontSize: 11, letterSpacing: ".18em", color: "#e0cf9f", fontWeight: 800, textShadow: "0 2px 6px #000" }}>SELECT A FLOOR</div>
+            {FOXPIT_ROOMS.slice().reverse().map((r) => {
+              const unlocked = lone || isUnlocked(r, cleared);
+              const done = cleared.has(r.key);
+              return (
+                <button key={r.key} onClick={() => unlocked && pick(r.key)} disabled={!unlocked}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "9px 12px", borderRadius: 10, cursor: unlocked ? "pointer" : "not-allowed", background: "rgba(6,8,12,.82)", border: `1.5px solid ${done ? "#22C55E" : unlocked ? r.accent : "#3a4653"}`, color: "#E7E7EB", filter: unlocked ? "none" : "grayscale(.5) brightness(.7)" }}>
+                  <span style={{ fontFamily: "Georgia, serif", fontSize: 14, fontWeight: 700 }}>{r.name}</span>
+                  <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: ".06em", color: done ? "#22C55E" : unlocked ? r.accent : "#c8a24b" }}>{done ? "✓" : unlocked ? "GO ›" : `${keyLabel(r.needsKey!)} KEY`}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {phase === "riding" && (
+          <div style={{ position: "absolute", left: "50%", top: "45%", transform: "translate(-50%,-50%)", textAlign: "center", animation: "foxpitFadeUp .4s ease both" }}>
+            <div style={{ fontFamily: "Georgia, serif", fontSize: 22, color: "#f5ead0", letterSpacing: ".1em", textShadow: "0 2px 12px #000" }}>Traveling…</div>
+          </div>
+        )}
       </div>
     </div>
   );
