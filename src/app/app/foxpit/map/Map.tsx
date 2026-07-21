@@ -317,6 +317,15 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           <span style={{ fontSize: 20, fontWeight: 900, color: "#ffb089", lineHeight: 1, textShadow: "0 2px 6px #000, 0 0 8px #000", animation: "foxpitArrowFlash 7s ease-in-out infinite" }}>↓</span>
         </button>
 
+        {/* SHAFT tap zone — the entire elevator column is tappable so the floor
+            picker opens even while the car is mid-travel (you never have to land a
+            tap on the moving car). */}
+        <button
+          onClick={() => (elevatorUnlocked ? setElevatorRide(true) : setElevatorLocked(true))}
+          aria-label="Use the elevator"
+          style={{ position: "absolute", zIndex: 3, top: 0, bottom: 0, left: 0, width: "12%", border: "none", background: "transparent", padding: 0, cursor: "pointer" }}
+        />
+
         {/* elevator CABLE — a taut cable running the shaft; the car rides it.
             Centered on the car (car left 0.5% + half its 8% width ≈ 4.5%). */}
         <div

@@ -17,15 +17,15 @@ export function FoxPitStyles() {
          Dojo 95 → Lobby 81 → Coliseum 65 → High Table 32 → Suite 14, then back down.
          Reaches true top + bottom so the stops can be verified floor-for-floor. */
       @keyframes foxpitElevatorStops {
-        0%,5%    { top:99%; }
-        11%,16%  { top:87%; }
+        0%,5%    { top:100%; }
+        11%,16%  { top:90%; }
         22%,29%  { top:71%; }
         35%,40%  { top:32%; }
         46%,54%  { top:14%; }
         60%,65%  { top:32%; }
         71%,78%  { top:71%; }
-        84%,89%  { top:87%; }
-        95%,100% { top:99%; }
+        84%,89%  { top:90%; }
+        95%,100% { top:100%; }
       }
     `}</style>
   );
