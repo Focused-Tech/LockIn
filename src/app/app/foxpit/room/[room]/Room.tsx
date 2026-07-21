@@ -56,8 +56,10 @@ const FLOOR_IMG: Record<FoxPitRoomKey, string> = {
   hightable: "/foxpit/floors/floor_ravensnest.png",
   suite: "/foxpit/floors/floor_foxden.png",
 };
-/** Face-down deck dealt on the felt. */
-const CARD_DECK = "/foxpit/cards/card_back_deck_stack.png";
+/** Locksmith DEALER tables (top-down: she's seated at the edge, chip stacks, tray,
+ *  and the LockIn deck all baked in) — the table that pulls up when you sit. */
+const LOCKSMITH_PLAYER_TABLE = "/foxpit/tables/locksmith_player_table.png";
+const LOCKSMITH_BOSS_TABLE = "/foxpit/tables/locksmith_boss_table.png";
 
 export function FoxPitRoom({
   roomKey,
@@ -486,15 +488,15 @@ function TablePanel({
         </div>
       </div>
 
-      {/* the DEAL — the Locksmith PLAYER TABLE pulls up on the floor (you're now
-          seated at it); no standing figure. Deck waits on the felt. */}
-      <div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", width: "92%", maxWidth: 460 }}>
-        <div style={{ position: "relative", width: "100%", animation: "foxpitTablePull .6s cubic-bezier(.2,.8,.2,1) both" }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={PLAYER_TABLE} alt="Player table" style={{ width: "100%", height: "auto", display: "block", transform: "perspective(760px) rotateX(28deg)", filter: "drop-shadow(0 24px 34px rgba(0,0,0,.65))" }} />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={CARD_DECK} alt="" style={{ position: "absolute", left: "50%", top: "44%", transform: "translate(-50%,-50%) perspective(760px) rotateX(28deg)", width: "22%", height: "auto", filter: "drop-shadow(0 6px 10px rgba(0,0,0,.7))" }} />
-        </div>
+      {/* the DEAL — the Locksmith DEALER table (her seated at the edge, chips + tray +
+          deck baked in) pulls up on the floor; you're seated across from her. */}
+      <div style={{ position: "absolute", left: "50%", top: "51%", transform: "translate(-50%,-50%)", height: "82%", width: "96%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={bossTable ? LOCKSMITH_BOSS_TABLE : LOCKSMITH_PLAYER_TABLE}
+          alt="The Locksmith deals"
+          style={{ height: "100%", width: "auto", maxWidth: "100%", objectFit: "contain", display: "block", filter: "drop-shadow(0 22px 34px rgba(0,0,0,.7))", animation: "foxpitTablePull .6s cubic-bezier(.2,.8,.2,1) both" }}
+        />
       </div>
 
       {freeKeycard && (

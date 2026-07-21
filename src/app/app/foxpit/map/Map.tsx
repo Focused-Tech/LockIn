@@ -311,10 +311,10 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
             cursor: "pointer",
           }}
         >
-          {/* just the membership card + a down arrow (no label) */}
+          {/* just the membership card (bounces) + a down arrow (flashes) — every 7s */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={MEMBERSHIP_CARD} alt="Practice" style={{ width: 56, height: "auto", borderRadius: 5, boxShadow: "0 3px 10px rgba(0,0,0,.7)" }} />
-          <span style={{ fontSize: 20, fontWeight: 900, color: "#ffb089", lineHeight: 1, textShadow: "0 2px 6px #000, 0 0 8px #000" }}>↓</span>
+          <img src={MEMBERSHIP_CARD} alt="Practice" style={{ width: 56, height: "auto", borderRadius: 5, boxShadow: "0 3px 10px rgba(0,0,0,.7)", animation: "foxpitPracticeBounce 7s ease-in-out infinite" }} />
+          <span style={{ fontSize: 20, fontWeight: 900, color: "#ffb089", lineHeight: 1, textShadow: "0 2px 6px #000, 0 0 8px #000", animation: "foxpitArrowFlash 7s ease-in-out infinite" }}>↓</span>
         </button>
 
         {/* elevator CABLE — a taut cable running the shaft; the car rides it.

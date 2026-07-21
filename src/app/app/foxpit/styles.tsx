@@ -10,19 +10,22 @@ export function FoxPitStyles() {
       @keyframes foxpitDoorR { to { transform: translateX(100%);} }
       @keyframes foxpitFadeUp { from{ opacity:0; transform: translateY(14px);} to{ opacity:1; transform: translateY(0);} }
       @keyframes foxpitTablePull { 0%{ opacity:0; transform: translateY(46%) scale(.55);} 70%{ opacity:1;} 100%{ opacity:1; transform: translateY(0) scale(1);} }
+      /* Practice-Here: the card bounces + the down-arrow flashes once every 7s. */
+      @keyframes foxpitPracticeBounce { 0%,80%,100%{ transform: translateY(0);} 86%{ transform: translateY(-11px);} 92%{ transform: translateY(-3px);} 96%{ transform: translateY(0);} }
+      @keyframes foxpitArrowFlash { 0%,78%,100%{ opacity:.9;} 84%{ opacity:.12;} 90%{ opacity:1;} 95%{ opacity:.5;} }
       /* the elevator car dwells at each floor's LANDING (floor level, not room centre):
          Dojo 95 → Lobby 81 → Coliseum 65 → High Table 32 → Suite 14, then back down.
          Reaches true top + bottom so the stops can be verified floor-for-floor. */
       @keyframes foxpitElevatorStops {
-        0%,5%    { top:95%; }
-        11%,16%  { top:81%; }
-        22%,29%  { top:65%; }
+        0%,5%    { top:99%; }
+        11%,16%  { top:87%; }
+        22%,29%  { top:71%; }
         35%,40%  { top:32%; }
         46%,54%  { top:14%; }
         60%,65%  { top:32%; }
-        71%,78%  { top:65%; }
-        84%,89%  { top:81%; }
-        95%,100% { top:95%; }
+        71%,78%  { top:71%; }
+        84%,89%  { top:87%; }
+        95%,100% { top:99%; }
       }
     `}</style>
   );
