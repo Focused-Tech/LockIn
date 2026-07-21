@@ -368,7 +368,9 @@ function DoorIntro({ room, onEnter }: { room: ReturnType<typeof roomByKey>; onEn
           position: "absolute",
           bottom: 0,
           left: "3%",
-          height: "84%",
+          // sized against the boss avatars (70–82%); she's a shorter character, so
+          // she lands just under them instead of reading as a door ornament.
+          height: "74%",
           width: "auto",
           maxWidth: "62vw",
           objectFit: "contain",
