@@ -78,24 +78,21 @@ export const CATEGORY_HEDGE: Record<FoxPitRoomKey, { pick: number; dealt: number
 };
 
 /**
- * ELEVATOR STOPS — where the car's BOTTOM rests at each landing, as a % down the
- * tower. The car stops at the WOODEN LEDGE drawn into
- * public/foxpit/map/tower-elevator-reference.png (1536x3072, 1:1 with the live map)
- * — the ledge is the floor you step out onto. NOT the door sill and NOT the room's
- * floor seam, both of which sit below the ledge.
+ * ELEVATOR STOPS — the car's BOTTOM edge position at each landing, as a % of map
+ * height. These are Frank's measured values off the CORRECT reference map
+ * (public/foxpit/map/tower-elevator-reference.png — white-trim, 1536x3072, with the
+ * elevator cars baked into the left shaft).
  *
- * Each value is the ledge's lit TOP surface, found as the brightness step where the
- * dark shaft wall meets the plank (same detection for all three, x just right of the
- * shaft): Coliseum y1908, Lobby y2508, Dojo y2955.
- *
- * hightable/suite were already correct and are deliberately left as they were.
+ * Do NOT re-derive these from the artwork. Earlier passes measured floor seams, then
+ * door sills, then ledges off an OLD reference map, and every one of them parked the
+ * car off the landing. The numbers below are the source of truth.
  */
 export const ELEVATOR_STOP_PCT: Record<FoxPitRoomKey | "lobby", number> = {
-  dojo: 96.19,
-  lobby: 81.64,
-  coliseum: 62.11,
-  hightable: 32,
-  suite: 14,
+  suite: 17.32,
+  hightable: 32.75,
+  coliseum: 65.53,
+  lobby: 80.99,
+  dojo: 95.9,
 };
 
 /** Timers (seconds). */
