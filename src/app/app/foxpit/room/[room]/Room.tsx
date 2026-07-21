@@ -32,6 +32,15 @@ const ROOM_BLURB: Record<FoxPitRoomKey, string> = {
   suite: "Boss Fox's private suite. The last door — beat him and the Pit is yours.",
 };
 
+/** Locksmith welcomes you in as the usher — stands at the door BEFORE it opens. */
+const LOCKSMITH_USHER = "/foxpit/locksmith/locksmith_usher.png";
+
+/** Door-reveal figure override: the Coliseum reveals GHOST (its second-tier boss)
+ *  standing, the way Raven's Nest reveals its own. Falls back to the room's avatar. */
+const REVEAL_IMG: Partial<Record<FoxPitRoomKey, string>> = {
+  coliseum: "/foxpit/greeters/ghost_standing.png",
+};
+
 export function FoxPitRoom({
   roomKey,
   username = "Member",
@@ -275,6 +284,30 @@ function DoorIntro({ room, onEnter }: { room: ReturnType<typeof roomByKey>; onEn
       {/* warm spill */}
       <div style={{ position: "absolute", inset: 0, background: `radial-gradient(46% 34% at 50% 52%, ${room.accent}44, transparent 72%)`, opacity: open ? 1 : 0, transition: "opacity 1.8s ease 1s" }} />
 
+      {/* LOCKSMITH usher — stands at the door and welcomes you IN before it opens;
+          she steps aside / fades as the doors part and the boss is revealed. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={LOCKSMITH_USHER}
+        alt="The Locksmith ushers you in"
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: "3%",
+          height: "84%",
+          width: "auto",
+          maxWidth: "62vw",
+          objectFit: "contain",
+          display: "block",
+          opacity: open ? 0 : 1,
+          transform: open ? "translateX(-14%)" : "translateX(0)",
+          transition: "opacity 1s ease, transform 1.8s cubic-bezier(.6,0,.2,1)",
+          filter: "drop-shadow(0 0 30px rgba(252,62,1,.35))",
+          zIndex: 2,
+          pointerEvents: "none",
+        }}
+      />
+
       {/* neon fox emblem on the closed doors (fades as the doors part) */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
@@ -315,7 +348,7 @@ function DoorIntro({ room, onEnter }: { room: ReturnType<typeof roomByKey>; onEn
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={room.avatarImg}
+          src={REVEAL_IMG[room.key] ?? room.avatarImg}
           alt={`${room.boss} standing`}
           style={{
             height: "100%",
