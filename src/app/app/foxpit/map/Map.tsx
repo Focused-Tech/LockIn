@@ -286,26 +286,23 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           style={{
             position: "absolute",
             zIndex: 2,
-            top: `${LOBBY_MAP_Y * 100 + 3}%`,
+            top: `${LOBBY_MAP_Y * 100 + 7}%`,
             left: "14%",
             transform: "translateY(-50%)",
             display: "flex",
+            flexDirection: "column",
             alignItems: "center",
-            gap: 7,
-            border: "1px solid rgba(252,62,1,.55)",
-            background: "rgba(3,4,7,.82)",
-            borderRadius: 12,
-            padding: "7px 12px",
+            gap: 1,
+            border: "none",
+            background: "transparent",
+            padding: 0,
             cursor: "pointer",
           }}
         >
+          {/* just the membership card + a down arrow (no label) */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={MEMBERSHIP_CARD} alt="" style={{ width: 36, height: "auto", borderRadius: 4, boxShadow: "0 2px 6px rgba(0,0,0,.6)" }} />
-          <span style={{ fontSize: 11, fontWeight: 800, color: "#ffb089", letterSpacing: ".05em", lineHeight: 1.1, textAlign: "left" }}>
-            Practice
-            <br />
-            Here ↓
-          </span>
+          <img src={MEMBERSHIP_CARD} alt="Practice" style={{ width: 56, height: "auto", borderRadius: 5, boxShadow: "0 3px 10px rgba(0,0,0,.7)" }} />
+          <span style={{ fontSize: 20, fontWeight: 900, color: "#ffb089", lineHeight: 1, textShadow: "0 2px 6px #000, 0 0 8px #000" }}>↓</span>
         </button>
 
         {/* elevator CABLE — a taut cable running the shaft; the car rides it.
