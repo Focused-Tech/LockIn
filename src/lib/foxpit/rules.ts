@@ -65,7 +65,7 @@ export const ROOM_RULES: Record<FoxPitRoomKey, RoomRules> = {
   dojo: { boss: "Sensei Owl", floor: 1, tables: 1, rounds: 2, keepN: [1, 2], bossWinPct: 25, stakes: [5, 10, 15], secondsPerQuestion: 15 },
   coliseum: { boss: "Alpha Wolf", floor: 3, tables: 5, rounds: 3, keepN: [1, 2, 3], bossWinPct: 45, stakes: [5, 10, 15], secondsPerQuestion: 20 },
   hightable: { boss: "Boss Raven", floor: 4, tables: 4, rounds: 4, keepN: [1, 2, 3, 3], bossWinPct: 65, stakes: [5, 10, 15, 25], secondsPerQuestion: 45, note: "4th table = double-or-nothing" },
-  suite: { boss: "Boss Fox", floor: 5, tables: 1, rounds: 5, keepN: [3, 3, 3, 4, 4], bossWinPct: 85, stakes: [5, 10, 15, 25, 50], secondsPerQuestion: 12, note: "winner-take-all" },
+  suite: { boss: "Boss Fox", floor: 5, tables: 1, rounds: 5, keepN: [3, 3, 3, 4, 4], bossWinPct: 85, stakes: [15, 25, 50], secondsPerQuestion: 12, note: "winner-take-all" },
 };
 
 /** Category-hedge decay by difficulty: how many categories the player gets to pick,

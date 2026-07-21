@@ -7,11 +7,11 @@
  * on won slates) and compared to the boss's simulated score. Uses only the Fox Pit
  * slate engine — no real-money / Explore / practice-arena data.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { LockGlyph } from "@/components/practice/LockGlyph";
 import { categoryTint } from "@/lib/practice/tints";
 import { roomByKey, type FoxPitRoomKey } from "@/lib/foxpit";
-import { ROOM_RULES, keepNFor, SLATES_PER_ROUND, REDEALS_PER_ROUND, FOXPIT_BUILD_VERSION, CATEGORY_TINT_KEY } from "@/lib/foxpit/rules";
+import { ROOM_RULES, keepNFor, SLATES_PER_ROUND, REDEALS_PER_ROUND, FOXPIT_BUILD_VERSION, CATEGORY_TINT_KEY, TIMERS } from "@/lib/foxpit/rules";
 import { dealFoxSlates, roundScore, bossRoundScore, type FoxSlate } from "@/lib/foxpit/slates";
 
 /** A slate is LOCKED once it's staked and every question is answered. */
@@ -67,8 +67,10 @@ export function FoxPitGame({
     setRedealsLeft((r) => r - 1);
   };
 
-  const startPlay = () => {
-    if (kept.size < keepN) return;
+  /** `force` = the decision clock ran out: whatever is in hand locks in and the
+   *  game begins (no keep-N gate at that point). */
+  const startPlay = (force = false) => {
+    if (!force && kept.size < keepN) return;
     setPhase("play");
   };
 
@@ -134,9 +136,11 @@ export function FoxPitGame({
           keepN={keepN}
           redealsLeft={redealsLeft}
           accent={accent}
+          stakes={rules.stakes}
           onToggle={toggleKeep}
           onRedeal={redeal}
-          onPlay={startPlay}
+          onPlay={() => startPlay()}
+          onAutoPlay={() => startPlay(true)}
         />
       )}
 
@@ -192,20 +196,40 @@ export function FoxPitGame({
 
 /* ---------------- deal / keep-N phase ---------------- */
 function DealPhase({
-  slates, kept, keepN, redealsLeft, accent, onToggle, onRedeal, onPlay,
+  slates, kept, keepN, redealsLeft, accent, stakes, onToggle, onRedeal, onPlay, onAutoPlay,
 }: {
   slates: FoxSlate[];
   kept: Set<string>;
   keepN: number;
   redealsLeft: number;
   accent: string;
+  stakes: number[];
   onToggle: (id: string) => void;
   onRedeal: () => void;
   onPlay: () => void;
+  onAutoPlay: () => void;
 }) {
   const enough = kept.size >= keepN;
+
+  // Decision clock: if it runs out, the hand you're holding LOCKS IN and the
+  // game begins (no keep/discard penalty prompt).
+  const [left, setLeft] = useState<number>(TIMERS.discardDecision);
+  const fired = useRef(false);
+  useEffect(() => {
+    if (left <= 0) {
+      if (!fired.current) { fired.current = true; onAutoPlay(); }
+      return;
+    }
+    const t = setTimeout(() => setLeft((l) => l - 1), 1000);
+    return () => clearTimeout(t);
+  }, [left, onAutoPlay]);
+
   return (
     <div className="flex flex-1 flex-col gap-3 p-4 pb-28">
+      <div className="self-center rounded-full border px-4 py-1 text-sm font-extrabold"
+        style={{ borderColor: accent, color: left <= 5 ? "#E85454" : accent }}>
+        {left}s
+      </div>
       <div className="text-center text-sm text-muted">
         Keep at least <span className="font-extrabold" style={{ color: accent }}>{keepN}</span> — discard the rest for one redeal, then play all {slates.length}.
       </div>
@@ -224,7 +248,9 @@ function DealPhase({
                 {s.category}{s.realData ? " · real data" : ""}
               </div>
               <div className="font-serif text-lg text-foreground">{s.title}</div>
-              <div className="text-xs text-muted">{s.questions.length} questions</div>
+              <div className="text-xs text-muted">
+                {s.questions.length} questions · worth {stakes[0]}–{stakes[stakes.length - 1]} ⛃
+              </div>
             </div>
             <div className="text-xs font-extrabold" style={{ color: keep ? tint.color : "#6B7A8E" }}>
               {keep ? "KEEP ✓" : "discard"}
@@ -279,6 +305,15 @@ function PlayPhase({
     return () => clearTimeout(t);
   }, [left]);
   const expired = left <= 0;
+
+  // Clock out: whatever is in hand LOCKS IN and the round settles automatically.
+  const fired = useRef(false);
+  useEffect(() => {
+    if (left <= 0 && !fired.current) {
+      fired.current = true;
+      onLock();
+    }
+  }, [left, onLock]);
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 pb-28">
