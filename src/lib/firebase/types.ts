@@ -51,6 +51,12 @@ export const COLLECTIONS = {
   beginnerEntries: "beginnerEntries",
   /** Multiplayer PRACTICE contests (play-money): practiceContests/{contestId}. */
   practiceContests: "practiceContests",
+  /** Fox Pit practice trivia — one doc per question: triviaQuestions/{id}. */
+  triviaQuestions: "triviaQuestions",
+  /** Fox Pit trivia batch records (active + archived): triviaBatches/{batchId}. */
+  triviaBatches: "triviaBatches",
+  /** Questions a player has already been dealt: users/{uid}/triviaSeen/{questionId}. */
+  triviaSeen: "triviaSeen", // subcollection of users/{uid}
   /**
    * PRACTICE entries: practiceContests/{id}/practiceEntries/{uid}. Deliberately
    * NOT named "entries" so collectionGroup("entries") scans (the REAL-money
