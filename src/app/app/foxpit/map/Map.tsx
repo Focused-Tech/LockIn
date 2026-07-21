@@ -172,6 +172,11 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
         ref={cRef}
         style={{ position: "relative", width: "100%", transformOrigin: "0 0", willChange: "transform" }}
       >
+        {/* TOP MATTE — pushes the Suite (top room) down clear of the ‹ Lobby button. */}
+        <div style={{ height: "18vw", background: "#0A0D12" }} />
+        {/* TOWER WRAP — the image + every absolute overlay live in here so their
+            top:% stays relative to the image, not the matte-padded outer container. */}
+        <div style={{ position: "relative", width: "100%" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         {/* TOWER_H = fixed vertical scale: 315vw ≈ the old map's on-screen height,
             so rooms read at a comfortable size and the climb scrolls. Tune this one
@@ -332,6 +337,9 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
             style={{ width: "100%", height: "auto", display: "block", filter: "drop-shadow(0 6px 14px rgba(0,0,0,.6))" }}
           />
         </button>
+        </div>{/* /TOWER WRAP */}
+        {/* BOTTOM MATTE — lifts the Dojo + the full elevator car clear of the nav bar. */}
+        <div style={{ height: "20vw", background: "#0A0D12" }} />
       </div>
 
       {/* SAFE-AREA masks — the stretched full-bleed tower runs edge-to-edge (the old
