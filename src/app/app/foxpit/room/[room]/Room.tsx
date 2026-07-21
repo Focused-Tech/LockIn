@@ -49,6 +49,16 @@ const REVEAL_IMG: Partial<Record<FoxPitRoomKey, string>> = {
   coliseum: "/foxpit/greeters/ghost_standing.png",
 };
 
+/** Per-room floor tile — the base of the top-down deal scene. */
+const FLOOR_IMG: Record<FoxPitRoomKey, string> = {
+  dojo: "/foxpit/floors/floor_dojo.png",
+  coliseum: "/foxpit/floors/floor_coliseum.png",
+  hightable: "/foxpit/floors/floor_ravensnest.png",
+  suite: "/foxpit/floors/floor_foxden.png",
+};
+/** Face-down deck dealt on the felt. */
+const CARD_DECK = "/foxpit/cards/card_back_deck_stack.png";
+
 export function FoxPitRoom({
   roomKey,
   username = "Member",
@@ -458,48 +468,45 @@ function TablePanel({
   onClose: () => void;
   onConfirm: () => void;
 }) {
-  const cats = ["Politics", "Crypto", "Weather"];
-  const cat = cats[index % cats.length]!;
-  const cost = [500, 1000, 2000][index % 3]!;
-  const diff = ["Rookie", "Contender", "Sharp"][index % 3]!;
-  const prize = cost * 8;
   return (
-    <div
-      onClick={onClose}
-      style={{
-        position: "absolute",
-        inset: 0,
-        zIndex: 66,
-        display: "flex",
-        alignItems: "flex-end",
-        justifyContent: "center",
-        background: "rgba(3,4,7,.55)",
-        // clear the phone's bottom nav / gesture bar
-        padding: "18px 18px calc(env(safe-area-inset-bottom, 0px) + 64px)",
-        overflowY: "auto",
-      }}
-    >
-      <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 480, borderRadius: 18, background: "linear-gradient(180deg,#141821,#0a0d13)", border: `2px solid ${room.accent}`, boxShadow: `0 0 40px ${room.accent}44`, padding: 22 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-          <div style={{ fontFamily: "Georgia, serif", fontSize: 22, color: "#E7E7EB" }}>Table {index + 1} · {cat}</div>
-          <button onClick={onClose} style={{ background: "none", border: "none", color: "#8b98a6", fontSize: 24, cursor: "pointer" }}>✕</button>
+    <div style={{ position: "absolute", inset: 0, zIndex: 66, background: "#05070b", overflow: "hidden", animation: "foxpitFadeUp .35s ease both" }}>
+      {/* the room's FLOOR tile — the base of the top-down deal */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={FLOOR_IMG[room.key]} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0.92 }} />
+      <div style={{ position: "absolute", inset: 0, background: "radial-gradient(72% 60% at 50% 48%, transparent, rgba(3,4,7,.74))" }} />
+
+      <button onClick={onClose} style={hudBack}>‹ Back</button>
+
+      <div style={{ position: "absolute", top: 62, left: 0, right: 0, textAlign: "center" }}>
+        <div style={{ fontSize: 12, letterSpacing: ".24em", color: room.accent, fontWeight: 800 }}>
+          {bossTable ? "BOSS TABLE" : `TABLE ${index + 1}`}
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, margin: "16px 0" }}>
-          <Stat label="Entry" value={`${cost} coins`} />
-          <Stat label="Difficulty" value={diff} />
-          <Stat label="Prize" value={`${prize} coins`} />
+        <div style={{ fontFamily: "Georgia, serif", fontSize: 22, color: "#E7E7EB", marginTop: 2, textShadow: "0 2px 12px #000" }}>
+          Dealt by the Locksmith
         </div>
-        {freeKeycard && (
-          <div style={{ borderRadius: 12, border: "1px dashed #FC3E01", background: "rgba(252,62,1,.10)", padding: 14, marginBottom: 14, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-            <MembershipCard username={username} avatarUrl={avatarUrl} width={260} />
-            <div style={{ textAlign: "center" }}>
-              <div style={{ color: "#ffb089", fontWeight: 800, fontSize: 14, letterSpacing: ".04em" }}>FREE-ENTRY KEYCARD</div>
-              <div style={{ color: "#c3cedb", fontSize: 12 }}>First round&apos;s on the house.</div>
-            </div>
-          </div>
-        )}
-        <button onClick={onConfirm} style={{ width: "100%", border: `1px solid ${room.accent}`, background: `${room.accent}22`, color: "#ffe", borderRadius: 12, padding: "16px", fontSize: 18, fontWeight: 800, cursor: "pointer" }}>
-          {bossTable ? `Take your seat vs ${room.boss} ›` : "Play this table ›"}
+      </div>
+
+      {/* the DEAL — Locksmith dealer at the far edge, the player table top-down, deck on the felt */}
+      <div style={{ position: "absolute", left: "50%", top: "52%", transform: "translate(-50%,-50%)", width: "86%", maxWidth: 420, display: "flex", flexDirection: "column", alignItems: "center" }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={LOCKSMITH_USHER} alt="The Locksmith deals" style={{ height: 172, width: "auto", marginBottom: -30, filter: "drop-shadow(0 10px 22px rgba(0,0,0,.7))", zIndex: 2 }} />
+        <div style={{ position: "relative", width: "100%" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={PLAYER_TABLE} alt="" style={{ width: "100%", height: "auto", display: "block", transform: "perspective(680px) rotateX(34deg)", filter: "drop-shadow(0 22px 30px rgba(0,0,0,.6))" }} />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={CARD_DECK} alt="" style={{ position: "absolute", left: "50%", top: "44%", transform: "translate(-50%,-50%) perspective(680px) rotateX(34deg)", width: "24%", height: "auto", filter: "drop-shadow(0 6px 10px rgba(0,0,0,.7))" }} />
+        </div>
+      </div>
+
+      {freeKeycard && (
+        <div style={{ position: "absolute", left: 0, right: 0, bottom: "calc(env(safe-area-inset-bottom, 0px) + 100px)", display: "flex", justifyContent: "center" }}>
+          <MembershipCard username={username} avatarUrl={avatarUrl} width={170} />
+        </div>
+      )}
+
+      <div style={{ position: "absolute", left: 0, right: 0, bottom: "calc(env(safe-area-inset-bottom, 0px) + 28px)", display: "flex", justifyContent: "center", padding: "0 18px" }}>
+        <button onClick={onConfirm} style={{ width: "100%", maxWidth: 380, border: `1px solid ${room.accent}`, background: `${room.accent}22`, color: "#ffe", borderRadius: 12, padding: "16px", fontSize: 18, fontWeight: 800, cursor: "pointer" }}>
+          {bossTable ? `Take your seat vs ${room.boss} ›` : "Deal me in ›"}
         </button>
       </div>
     </div>
@@ -551,15 +558,6 @@ function MembershipCard({ username, avatarUrl, width = 260 }: { username: string
     </div>
   );
 }
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div style={{ borderRadius: 10, background: "rgba(255,255,255,.04)", border: "1px solid #22303c", padding: "10px 8px", textAlign: "center" }}>
-      <div style={{ fontSize: 10, letterSpacing: ".12em", color: "#8b98a6", fontWeight: 700 }}>{label.toUpperCase()}</div>
-      <div style={{ fontSize: 14, color: "#E7E7EB", fontWeight: 800, marginTop: 3 }}>{value}</div>
-    </div>
-  );
-}
-
 /* ---------------- face-off: the room's own boss seated across the table ---------------- */
 function Faceoff({ room, onBack, onClear }: { room: ReturnType<typeof roomByKey>; onBack: () => void; onClear: () => void }) {
   const next = FOXPIT_ROOMS.find((r) => r.order === room.order + 1);
