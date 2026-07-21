@@ -315,8 +315,8 @@ function DoorIntro({ room, onEnter }: { room: ReturnType<typeof roomByKey>; onEn
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={room.avatarImg}
-          alt={`${room.boss} standing`}
+          src={room.doorGreeter}
+          alt={`${room.secondTier ?? room.boss} standing`}
           style={{
             height: "100%",
             width: "auto",
