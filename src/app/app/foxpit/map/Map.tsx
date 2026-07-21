@@ -320,7 +320,7 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
         >
           <span style={{ fontSize: 12 }}>⌂</span>
           <span style={{ fontFamily: "Georgia, serif", fontSize: 14, fontWeight: 700, letterSpacing: ".04em", whiteSpace: "nowrap" }}>
-            The Lobby
+            Lobby
           </span>
         </button>
 
@@ -524,7 +524,7 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
             </div>
             <div style={{ width: 90, height: 2, margin: "12px auto", background: "linear-gradient(90deg,transparent,#C8A24B,transparent)" }} />
             <p style={{ fontSize: 15, lineHeight: 1.6, color: "#c3cedb" }}>
-              The elevator stays out of service until you reach{" "}
+              The elevator stays out of service until you reach the{" "}
               <b style={{ color: "#C8A24B" }}>{roomByKey(ELEVATOR_UNLOCK_AT).name}</b>. Climb the
               tower and clear the floors below to unlock fast-travel between them.
             </p>

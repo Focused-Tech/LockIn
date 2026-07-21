@@ -459,7 +459,9 @@ function DoorIntro({ room, onEnter }: { room: ReturnType<typeof roomByKey>; onEn
               {ROOM_BLURB[room.key]}
             </p>
             <button onClick={onEnter} style={{ marginTop: 16, width: "100%", border: `1px solid ${room.accent}`, background: `${room.accent}22`, color: "#ffe", borderRadius: 12, padding: "14px 26px", fontSize: 17, fontWeight: 800, cursor: "pointer" }}>
-              Enter {room.name} ›
+              {/* names lost their leading "The" (plaques read cleaner) — put the
+                  article back in prose, except the possessive "Boss Fox's Suite". */}
+              Enter {room.key === "suite" ? "" : "the "}{room.name} ›
             </button>
           </div>
         </div>

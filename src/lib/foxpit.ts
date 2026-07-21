@@ -33,19 +33,19 @@ export interface FoxPitRoom {
 
 export const FOXPIT_ROOMS: FoxPitRoom[] = [
   {
-    key: "dojo", order: 0, name: "The Dojo", floorLabel: "Basement · Training",
+    key: "dojo", order: 0, name: "Dojo", floorLabel: "Basement · Training",
     boss: "Owl", bossArt: "owl", crest: "O", accent: "#c9873f", needsKey: null, mapY: 0.91,
     roomImg: "/foxpit/room-dojo.png", avatarImg: "/foxpit/avatar-owl.png", faceoffImg: "/foxpit/faceoff-owl.png",
     tables: 1,
   },
   {
-    key: "coliseum", order: 1, name: "The Coliseum", floorLabel: "Level 2 · Indoor Stadium",
+    key: "coliseum", order: 1, name: "Coliseum", floorLabel: "Level 2 · Indoor Stadium",
     boss: "Wolf", bossArt: "wolf", crest: "W", accent: "#c22b22", needsKey: "owl", mapY: 0.50,
     roomImg: "/foxpit/room-coliseum.png", avatarImg: "/foxpit/avatar-wolf.png", faceoffImg: "/foxpit/faceoff-wolf.png",
     tables: 5,
   },
   {
-    key: "hightable", order: 2, name: "The High Table", floorLabel: "Level 3 · VIP Lounge",
+    key: "hightable", order: 2, name: "High Table", floorLabel: "Level 3 · VIP Lounge",
     boss: "Raven", bossArt: "raven", crest: "R", accent: "#8a4dff", needsKey: "wolf", mapY: 0.235,
     roomImg: "/foxpit/room-hightable.png", avatarImg: "/foxpit/avatar-raven.png", faceoffImg: "/foxpit/faceoff-raven.png",
     tables: 3,
