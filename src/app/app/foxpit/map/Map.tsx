@@ -33,6 +33,7 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
   const router = useRouter();
   const vpRef = useRef<HTMLDivElement>(null);
   const cRef = useRef<HTMLDivElement>(null);
+  const towerRef = useRef<HTMLDivElement>(null);
   const [cleared, setCleared] = useState<Set<FoxPitRoomKey>>(new Set());
   const [hud, setHud] = useState(true);
   const [floorSelect, setFloorSelect] = useState(false);
@@ -78,10 +79,21 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
   const fitTower = () => {
     const vp = vpRef.current;
     const c = cRef.current;
+    const tw = towerRef.current;
     if (!vp || !c) return;
     v.current.scale = 1;
     v.current.tx = 0;
-    v.current.ty = Math.min(0, vp.clientHeight - c.offsetHeight); // start at the bottom (the Dojo)
+    const minTy = Math.min(0, vp.clientHeight - c.offsetHeight);
+    // Open centered on the player's CURRENT floor (the first not-yet-cleared room
+    // in climb order) rather than dumping them at the bottom/lobby.
+    const cl = getCleared();
+    const current = FOXPIT_ROOMS.find((r) => !cl.has(r.key)) ?? FOXPIT_ROOMS[0];
+    if (tw && current) {
+      const roomY = tw.offsetTop + current.mapY * tw.offsetHeight; // content-space y
+      v.current.ty = Math.max(minTy, Math.min(0, vp.clientHeight / 2 - roomY));
+    } else {
+      v.current.ty = minTy; // fallback: the bottom (the Dojo)
+    }
     apply();
   };
 
@@ -177,7 +189,7 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
         <div style={{ height: "18vw", background: "#0A0D12" }} />
         {/* TOWER WRAP — the image + every absolute overlay live in here so their
             top:% stays relative to the image, not the matte-padded outer container. */}
-        <div style={{ position: "relative", width: "100%" }}>
+        <div ref={towerRef} style={{ position: "relative", width: "100%" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         {/* TOWER_H = fixed vertical scale: 315vw ≈ the old map's on-screen height,
             so rooms read at a comfortable size and the climb scrolls. Tune this one
