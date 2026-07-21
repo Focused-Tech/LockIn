@@ -241,7 +241,9 @@ function DealingTable({
   const cards = Array.from({ length: TOTAL }, (_, i) => {
     const toBoss = bossFirst ? i % 2 === 0 : i % 2 === 1;
     const slot = Math.floor(i / 2); // 0..4 across each fan
-    return { i, toBoss, x: 24 + slot * 13, y: toBoss ? 25 : 70 };
+    // Both fans land ON the green felt (which runs roughly 46%–77% of the frame):
+    // the boss's across the far side clear of the dealer, yours nearest the viewer.
+    return { i, toBoss, x: 26 + slot * 12, y: toBoss ? 55 : 70 };
   });
 
   return (
@@ -273,7 +275,10 @@ function DealingTable({
         );
       })}
 
-      <div className="absolute bottom-5 left-0 right-0 text-center text-xs font-extrabold tracking-widest" style={{ color: accent }}>
+      <div
+        className="absolute left-0 right-0 text-center text-xs font-extrabold tracking-widest"
+        style={{ color: accent, bottom: "calc(env(safe-area-inset-bottom, 0px) + 18px)" }}
+      >
         {dealt >= TOTAL ? "PICK UP YOUR HAND" : `DEALING · ${bossFirst ? "BOSS" : "YOU"} FIRST`}
       </div>
     </div>
