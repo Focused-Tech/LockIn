@@ -27,7 +27,7 @@ const TABLE_POS: Record<number, [number, number][]> = {
   3: [[34, 68], [50, 71], [66, 68]],
   5: [[30, 60], [50, 56], [70, 60], [39, 74], [61, 74]],
 };
-const PRIZE_KEY_POS: [number, number] = [50, 30]; // raised so it reads as sitting IN the throne (clear of the baked chair)
+const PRIZE_KEY_POS: [number, number] = [50, 42]; // sits on the throne's cushion seat
 
 /** Host intro blurb — shown on the boss name-card when the doors open. The boss is
  *  the HOST of the room (not necessarily the first challenger). */
