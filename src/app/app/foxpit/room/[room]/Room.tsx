@@ -21,7 +21,7 @@ const TABLE_POS: Record<number, [number, number][]> = {
   1: [[50, 68]],
   3: [[34, 68], [50, 71], [66, 68]],
 };
-const PRIZE_KEY_POS: [number, number] = [50, 45]; // floats in front of the throne, clear of the throne back
+const PRIZE_KEY_POS: [number, number] = [50, 30]; // raised so it reads as sitting IN the throne (clear of the baked chair)
 
 /** Host intro blurb — shown on the boss name-card when the doors open. The boss is
  *  the HOST of the room (not necessarily the first challenger). */
@@ -69,7 +69,7 @@ export function FoxPitRoom({
   // lets an eager player skip ahead sooner).
   useEffect(() => {
     if (phase !== "door") return;
-    const t = setTimeout(() => setPhase("room"), 11000);
+    const t = setTimeout(() => setPhase("room"), 14000);
     return () => clearTimeout(t);
   }, [phase]);
   useEffect(() => {
@@ -272,8 +272,10 @@ function DoorIntro({ room, onEnter }: { room: ReturnType<typeof roomByKey>; onEn
   // Boss Fox reveal centered.
   const cornerReveal = room.bossArt === "owl" || room.bossArt === "raven";
   useEffect(() => {
-    const t1 = setTimeout(() => setOpen(true), 1600);  // hold on the closed doors, then part slowly
-    const t2 = setTimeout(() => setPrompt(true), 6400); // prompt appears once the boss reveal has settled
+    // Hold on the Locksmith usher + closed doors for ~3.4s so she's clearly seen
+    // BEFORE the doors part and the boss is revealed.
+    const t1 = setTimeout(() => setOpen(true), 3400);  // usher visible, then the doors part slowly
+    const t2 = setTimeout(() => setPrompt(true), 8400); // prompt appears once the boss reveal has settled
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, []);
   return (
