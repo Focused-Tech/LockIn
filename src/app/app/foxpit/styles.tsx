@@ -9,6 +9,7 @@ export function FoxPitStyles() {
       @keyframes foxpitDoorL { to { transform: translateX(-100%);} }
       @keyframes foxpitDoorR { to { transform: translateX(100%);} }
       @keyframes foxpitFadeUp { from{ opacity:0; transform: translateY(14px);} to{ opacity:1; transform: translateY(0);} }
+      @keyframes foxpitTablePull { 0%{ opacity:0; transform: translateY(46%) scale(.55);} 70%{ opacity:1;} 100%{ opacity:1; transform: translateY(0) scale(1);} }
       /* the elevator car dwells at each floor's LANDING (floor level, not room centre):
          Dojo 95 → Lobby 81 → Coliseum 65 → High Table 32 → Suite 14, then back down.
          Reaches true top + bottom so the stops can be verified floor-for-floor. */
