@@ -16,10 +16,16 @@ import {
 
 type Phase = "door" | "room" | "table" | "faceoff";
 
-/** table hotspot positions per room (%, on the painted table surface — tune after OTA). */
+/** The transparent round PLAYER-table cutout (tables only, no dealer) — one per
+ *  selectable table, replacing the old green ellipse hotspots. */
+const PLAYER_TABLE = "/foxpit/tables/table_player_round.png";
+
+/** table positions per room (%, on the floor — one cutout per playable table;
+ *  the count matches the room, e.g. Coliseum = 5. Tune on-device. */
 const TABLE_POS: Record<number, [number, number][]> = {
-  1: [[50, 68]],
+  1: [[50, 66]],
   3: [[34, 68], [50, 71], [66, 68]],
+  5: [[30, 60], [50, 56], [70, 60], [39, 74], [61, 74]],
 };
 const PRIZE_KEY_POS: [number, number] = [50, 30]; // raised so it reads as sitting IN the throne (clear of the baked chair)
 
@@ -84,6 +90,8 @@ export function FoxPitRoom({
   const singleTable = tables.length === 1;
   const allBeaten = tables.every((_, i) => beaten.has(i));
   const bossReady = singleTable || allBeaten || roomCleared;
+  // the table you're currently on = the first not-yet-beaten one (highlighted orange).
+  const currentTableIdx = roomCleared ? -1 : tables.findIndex((_, i) => !beaten.has(i));
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 60, background: "#0A0D12", overflow: "hidden" }}>
@@ -179,34 +187,69 @@ export function FoxPitRoom({
             </button>
           )}
 
-          {/* table hotspots — tilted flat onto the table surface */}
+          {/* PLAYER TABLES — one round-table cutout per playable table (count matches
+              the room). Beaten = dimmed + ✓; the table you're on = lock-in orange. */}
           {tables.map(([x, y], i) => {
             const done = roomCleared || beaten.has(i);
+            const isCurrent = i === currentTableIdx;
+            const ringColor = done ? "#22C55E" : isCurrent ? "#FF3B00" : room.accent;
             return (
               <button
                 key={i}
                 onClick={() => { setActiveTable(i); setPhase("table"); }}
+                aria-label={singleTable ? `Sit vs ${room.boss}` : `Table ${i + 1}`}
                 style={{
                   position: "absolute",
                   left: `${x}%`,
                   top: `${y}%`,
-                  transform: "translate(-50%,-50%) perspective(360px) rotateX(56deg)",
-                  transformStyle: "preserve-3d",
-                  width: 116,
-                  height: 54,
-                  borderRadius: "50%",
-                  background: done ? "rgba(34,197,94,.30)" : "rgba(28,107,64,.26)",
-                  border: `2px solid ${done ? "#22C55E" : room.accent}`,
-                  boxShadow: `0 0 26px ${done ? "#22C55E" : room.accent}88`,
-                  color: "#fff",
-                  fontSize: 12,
-                  fontWeight: 800,
-                  letterSpacing: ".08em",
+                  transform: "translate(-50%,-50%)",
+                  width: singleTable ? 150 : 108,
+                  border: "none",
+                  background: "transparent",
+                  padding: 0,
                   cursor: "pointer",
-                  animation: done ? "none" : "foxpitGlow 2.4s ease-in-out infinite",
+                  filter: done ? "grayscale(.45) brightness(.72)" : "none",
+                  animation: isCurrent ? "foxpitBob 2.6s ease-in-out infinite" : "none",
                 }}
               >
-                {singleTable ? `SIT · ${room.boss.toUpperCase()}` : done ? `✓ TABLE ${i + 1}` : `TABLE ${i + 1}`}
+                <div style={{ position: "relative", width: "100%" }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={PLAYER_TABLE}
+                    alt=""
+                    draggable={false}
+                    style={{
+                      width: "100%",
+                      height: "auto",
+                      display: "block",
+                      filter: isCurrent
+                        ? "drop-shadow(0 0 14px #FF3B00) drop-shadow(0 0 6px #FF3B00)"
+                        : done
+                          ? "drop-shadow(0 0 8px #22C55E88)"
+                          : "drop-shadow(0 6px 12px rgba(0,0,0,.6))",
+                    }}
+                  />
+                  {/* state label centered on the felt */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: singleTable ? 13 : 11,
+                      fontWeight: 800,
+                      letterSpacing: ".06em",
+                      color: done ? "#22C55E" : isCurrent ? "#FF3B00" : "#E7E7EB",
+                      textShadow: "0 2px 6px #000, 0 0 8px #000",
+                      textAlign: "center",
+                      lineHeight: 1.1,
+                      pointerEvents: "none",
+                    }}
+                  >
+                    {singleTable ? `SIT · ${room.boss.toUpperCase()}` : done ? `✓ ${i + 1}` : `TABLE ${i + 1}`}
+                  </div>
+                </div>
               </button>
             );
           })}

@@ -42,7 +42,7 @@ export const FOXPIT_ROOMS: FoxPitRoom[] = [
     key: "coliseum", order: 1, name: "The Coliseum", floorLabel: "Level 2 · Indoor Stadium",
     boss: "Wolf", bossArt: "wolf", crest: "W", accent: "#c22b22", needsKey: "owl", mapY: 0.50,
     roomImg: "/foxpit/room-coliseum.png", avatarImg: "/foxpit/avatar-wolf.png", faceoffImg: "/foxpit/faceoff-wolf.png",
-    tables: 3,
+    tables: 5,
   },
   {
     key: "hightable", order: 2, name: "The High Table", floorLabel: "Level 3 · VIP Lounge",
