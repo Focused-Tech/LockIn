@@ -29,62 +29,32 @@ export interface FoxPitRoom {
   avatarImg: string;
   faceoffImg: string;
   tables: number;
-  /** Round-scene plates: opponent already SEATED at the table, room boss on the
-   *  throne behind (baked in). Opponents ROTATE round-to-round from this pool. */
-  roundPlates: string[];
-  /** Standing cutout shown at the DOOR REVEAL to introduce the round. For arena
-   *  rooms this is the SECOND-TIER boss (Ghost / Grim) per the flow. */
-  doorGreeter: string;
-  /** Second-tier boss name (seated opponent, baked into the plates); null = none. */
-  secondTier: string | null;
-}
-
-/** rotation pools sliced from the arena contact sheets (scripts/slice-foxpit-plates.mjs). */
-const COLISEUM_PLATES = [1, 2, 3, 4, 5, 6, 7, 8].map((n) => `/foxpit/rooms/sliced/coliseum_${String(n).padStart(2, "0")}.png`);
-const RAVENSNEST_PLATES = [1, 2, 3, 4, 5, 6, 7, 8].map((n) => `/foxpit/rooms/sliced/ravensnest_${String(n).padStart(2, "0")}.png`);
-
-/** pick the round plate for a given round index (round-robin through the pool). */
-export function roundPlate(room: FoxPitRoom, roundIndex: number): string {
-  const pool = room.roundPlates;
-  return pool[roundIndex % pool.length] ?? room.roomImg;
 }
 
 export const FOXPIT_ROOMS: FoxPitRoom[] = [
   {
     key: "dojo", order: 0, name: "The Dojo", floorLabel: "Basement · Training",
     boss: "Owl", bossArt: "owl", crest: "O", accent: "#c9873f", needsKey: null, mapY: 0.91,
-    roomImg: "/foxpit/rooms/plate_dojo.png", avatarImg: "/foxpit/avatar-owl.png", faceoffImg: "/foxpit/faceoff-owl.png",
+    roomImg: "/foxpit/room-dojo.png", avatarImg: "/foxpit/avatar-owl.png", faceoffImg: "/foxpit/faceoff-owl.png",
     tables: 1,
-    roundPlates: ["/foxpit/rooms/sliced/dojo_boss.png"],
-    doorGreeter: "/foxpit/avatar-owl.png",
-    secondTier: null,
   },
   {
     key: "coliseum", order: 1, name: "The Coliseum", floorLabel: "Level 2 · Indoor Stadium",
     boss: "Wolf", bossArt: "wolf", crest: "W", accent: "#c22b22", needsKey: "owl", mapY: 0.50,
-    roomImg: "/foxpit/rooms/sliced/coliseum_01.png", avatarImg: "/foxpit/avatar-wolf.png", faceoffImg: "/foxpit/faceoff-wolf.png",
+    roomImg: "/foxpit/room-coliseum.png", avatarImg: "/foxpit/avatar-wolf.png", faceoffImg: "/foxpit/faceoff-wolf.png",
     tables: 3,
-    roundPlates: COLISEUM_PLATES,
-    doorGreeter: "/foxpit/greeters/ghost_standing.png",
-    secondTier: "Ghost",
   },
   {
     key: "hightable", order: 2, name: "The High Table", floorLabel: "Level 3 · VIP Lounge",
     boss: "Raven", bossArt: "raven", crest: "R", accent: "#8a4dff", needsKey: "wolf", mapY: 0.235,
-    roomImg: "/foxpit/rooms/sliced/ravensnest_01.png", avatarImg: "/foxpit/avatar-raven.png", faceoffImg: "/foxpit/faceoff-raven.png",
+    roomImg: "/foxpit/room-hightable.png", avatarImg: "/foxpit/avatar-raven.png", faceoffImg: "/foxpit/faceoff-raven.png",
     tables: 3,
-    roundPlates: RAVENSNEST_PLATES,
-    doorGreeter: "/foxpit/greeters/grim.png",
-    secondTier: "Grim",
   },
   {
     key: "suite", order: 3, name: "Boss Fox's Suite", floorLabel: "Penthouse · Private 1v1",
     boss: "Boss Fox", bossArt: "fox", crest: "※", accent: "#c8a24b", needsKey: "raven", mapY: 0.08,
-    roomImg: "/foxpit/rooms/plate_fox_den.png", avatarImg: "/foxpit/avatar-fox.png", faceoffImg: "/foxpit/faceoff-fox.png",
+    roomImg: "/foxpit/room-suite.png", avatarImg: "/foxpit/avatar-fox.png", faceoffImg: "/foxpit/faceoff-fox.png",
     tables: 1,
-    roundPlates: ["/foxpit/rooms/sliced/foxden_boss.png"],
-    doorGreeter: "/foxpit/avatar-fox.png",
-    secondTier: null,
   },
 ];
 
