@@ -78,22 +78,55 @@ export const CATEGORY_HEDGE: Record<FoxPitRoomKey, { pick: number; dealt: number
 };
 
 /**
- * ELEVATOR STOPS — the car's BOTTOM edge position at each landing, as a % of map
- * height. These are Frank's measured values off the CORRECT reference map
- * (public/foxpit/map/tower-elevator-reference.png — white-trim, 1536x3072, with the
- * elevator cars baked into the left shaft).
+ * ELEVATOR STOPS — where the car's BOTTOM EDGE parks at each landing, as a % of
+ * the BUILD MAP height (public/foxpit/map/tower_map_clean.png, 1620x4500).
  *
- * Do NOT re-derive these from the artwork. Earlier passes measured floor seams, then
- * door sills, then ledges off an OLD reference map, and every one of them parked the
- * car off the landing. The numbers below are the source of truth.
+ * These are Frank's measured stop lines: the TOP EDGE of each pale marker band he
+ * drew on tower_map_elevator_markup.png (1620x4500, reference only — never shipped).
+ * TOP edge, not bottom, not middle: the car's bottom edge rests on the band's top
+ * edge so the avatar steps off level onto the landing.
+ *
+ * SEVEN stops top→bottom — the double-height Coliseum has two (upper + lower). Do
+ * NOT re-derive from artwork or layer a second table on top of this: this is the
+ * only stop table in the codebase (every plaque/seam/ledge set was deleted).
  */
-export const ELEVATOR_STOP_PCT: Record<FoxPitRoomKey | "lobby", number> = {
-  suite: 17.32,
-  hightable: 32.75,
-  coliseum: 65.53,
-  lobby: 80.99,
-  dojo: 95.9,
-};
+export type ElevatorStopId =
+  | "winners"
+  | "suite"
+  | "hightable"
+  | "coliseumUpper"
+  | "coliseumLower"
+  | "lobby"
+  | "dojo";
+
+export interface ElevatorStop {
+  id: ElevatorStopId;
+  /** The room this stop serves. "lobby" = hub (no play); "winners" = rooftop PvP. */
+  room: FoxPitRoomKey | "lobby" | "winners";
+  label: string;
+  /** Car BOTTOM-edge park position = top edge of Frank's marker band, % of map height. */
+  pct: number;
+}
+
+export const ELEVATOR_STOPS: ElevatorStop[] = [
+  { id: "winners", room: "winners", label: "Winner's Lounge", pct: 26.844 }, // STOP_1
+  { id: "suite", room: "suite", label: "Boss Fox's Suite", pct: 37.111 }, // STOP_2
+  { id: "hightable", room: "hightable", label: "High Table", pct: 49.711 }, // STOP_3
+  { id: "coliseumUpper", room: "coliseum", label: "Coliseum — upper", pct: 64.044 }, // STOP_4
+  { id: "coliseumLower", room: "coliseum", label: "Coliseum — lower", pct: 75.178 }, // STOP_5
+  { id: "lobby", room: "lobby", label: "Lobby", pct: 87.333 }, // STOP_6
+  { id: "dojo", room: "dojo", label: "Dojo", pct: 97.222 }, // STOP_7
+];
+
+/** STOP_1 — the top of the shaft (Winner's Lounge). The car runs the FULL height to here. */
+export const ELEVATOR_TOP_STOP_PCT = ELEVATOR_STOPS[0]!.pct;
+/** STOP_7 — the bottom of the shaft (Dojo). The car's idle rest position. */
+export const ELEVATOR_BOTTOM_STOP_PCT = ELEVATOR_STOPS[ELEVATOR_STOPS.length - 1]!.pct;
+
+/** Stop-by-id lookup, for keyframe generation + the ride target. */
+export const ELEVATOR_STOP_BY_ID: Record<ElevatorStopId, number> = Object.fromEntries(
+  ELEVATOR_STOPS.map((s) => [s.id, s.pct]),
+) as Record<ElevatorStopId, number>;
 
 /** Timers (seconds). */
 export const TIMERS = {
@@ -113,7 +146,7 @@ export const ECONOMY = {
 } as const;
 
 /** Shown in-app + in build output (bump per build). */
-export const FOXPIT_BUILD_VERSION = "fp-journey-1";
+export const FOXPIT_BUILD_VERSION = "fp-tower-1";
 
 /** Keep-N for a given room + round index (0-based), clamped to the round table. */
 export function keepNFor(room: FoxPitRoomKey, roundIndex: number): number {

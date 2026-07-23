@@ -1,4 +1,4 @@
-import { ELEVATOR_STOP_PCT as S } from "@/lib/foxpit/rules";
+import { ELEVATOR_STOP_BY_ID as S } from "@/lib/foxpit/rules";
 
 /** Shared Fox Pit keyframes (client-injected so we don't touch globals.css). */
 export function FoxPitStyles() {
@@ -23,19 +23,26 @@ export function FoxPitStyles() {
         82%  { transform: translateY(-12%) scale(1) rotate(200deg); }
         100% { transform: translateY(0) scale(1) rotate(220deg); opacity: 1; }
       }
-      /* The car's BOTTOM rests on each landing drawn into the tower art — the stop
-         percentages are ELEVATOR_STOP_PCT (see rules.ts for how they were read).
-         Ride order: Dojo → Lobby → Coliseum → High Table → Suite, then back down. */
+      /* The car's BOTTOM edge parks on each landing. 'top' is the car's bottom-edge
+         position (the car element carries translateY(-100%)), so 'top' === the stop
+         pct straight from ELEVATOR_STOPS (rules.ts). SEVEN stops: the double-height
+         Coliseum has two (upper + lower). Full-height climb to STOP_1 and back.
+         Ride order up: Dojo → Lobby → Coliseum(lower) → Coliseum(upper) → High Table
+         → Suite → Winner's Lounge, then back down. */
       @keyframes foxpitElevatorStops {
-        0%,5%    { top:${S.dojo}%; }
-        11%,16%  { top:${S.lobby}%; }
-        22%,29%  { top:${S.coliseum}%; }
-        35%,40%  { top:${S.hightable}%; }
-        46%,54%  { top:${S.suite}%; }
-        60%,65%  { top:${S.hightable}%; }
-        71%,78%  { top:${S.coliseum}%; }
-        84%,89%  { top:${S.lobby}%; }
-        95%,100% { top:${S.dojo}%; }
+        0%,4%    { top:${S.dojo}%; }
+        9%,13%   { top:${S.lobby}%; }
+        18%,22%  { top:${S.coliseumLower}%; }
+        27%,31%  { top:${S.coliseumUpper}%; }
+        36%,40%  { top:${S.hightable}%; }
+        45%,49%  { top:${S.suite}%; }
+        54%,62%  { top:${S.winners}%; }
+        67%,71%  { top:${S.suite}%; }
+        76%,80%  { top:${S.hightable}%; }
+        84%,87%  { top:${S.coliseumUpper}%; }
+        90%,92%  { top:${S.coliseumLower}%; }
+        95%,97%  { top:${S.lobby}%; }
+        100%     { top:${S.dojo}%; }
       }
     `}</style>
   );

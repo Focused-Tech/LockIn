@@ -9,15 +9,19 @@ import {
   KEY_ASSET,
   MEMBERSHIP_CARD,
   ELEVATOR_UNLOCK_AT,
+  WINNERS_LOUNGE,
+  winnersUnlocked,
   getCleared,
   isUnlocked,
   keyLabel,
   roomByKey,
   type FoxPitRoomKey,
 } from "@/lib/foxpit";
+import { ELEVATOR_BOTTOM_STOP_PCT } from "@/lib/foxpit/rules";
 
 /**
- * Fox Pit TOWER MAP (background = map/tower-map-stairs.png, stairs-only) — a tall vertical climb with
+ * Fox Pit TOWER MAP (build map = map/tower_map_clean.png 1620x4500, natural aspect;
+ * night sky + baked staircase overlaid as their own layers) — a tall vertical climb with
  * pinch-to-zoom + pan. Floors are slim PLAQUES (the painted room art shows
  * behind them). The header appears on entry and fades out after 4s. The
  * elevator (far left) opens a FLOOR-SELECT panel: the four room cards, each
@@ -190,16 +194,37 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
         {/* TOWER WRAP — the image + every absolute overlay live in here so their
             top:% stays relative to the image, not the matte-padded outer container. */}
         <div ref={towerRef} style={{ position: "relative", width: "100%" }}>
+        {/* NIGHT SKY — a SEPARATE, swappable layer (not baked into the map bitmap) that
+            continues the skyline painted inside the Winner's Lounge windows up over the
+            empty top of the map, so rooftop + room read as one continuous night. Sits
+            BEHIND the map (zIndex 0); the map's painted top overlaps it. Swap <NightSky>
+            for a day variant later. */}
+        <NightSky />
+
+        {/* BUILD MAP — tower_map_clean.png (1620x4500), natural aspect (no distort). The
+            elevator stops + every overlay are % of THIS image's height. relative/z1 so
+            it paints over the night sky where the art is opaque. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        {/* TOWER_H = fixed vertical scale: 315vw ≈ the old map's on-screen height,
-            so rooms read at a comfortable size and the climb scrolls. Tune this one
-            number to taste (bigger = taller rooms + more scroll). */}
         <img
-          src="/foxpit/map/tower-map-stairs.png"
+          src="/foxpit/map/tower_map_clean.png"
           alt="The Fox Pit tower"
           draggable={false}
           onLoad={fitTower}
-          style={{ width: "100%", height: "315vw", objectFit: "fill", display: "block" }}
+          style={{ position: "relative", zIndex: 1, width: "100%", height: "auto", display: "block" }}
+        />
+
+        {/* STAIRCASE — ONE baked piece (tower_staircase_clean.png, 1620x4500, transparent),
+            back railings already baked in. Overlaid 1:1 on the map (same dimensions). The
+            loose newel/rail pieces (public/foxpit/map/stair_pieces/) form the walk-through
+            slot IN FRONT of a walking avatar — that sandwich lands with the avatar-walk
+            feature; here the baked piece is the tower's staircase. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/foxpit/map/tower_staircase_clean.png"
+          alt=""
+          aria-hidden
+          draggable={false}
+          style={{ position: "absolute", zIndex: 1, top: 0, left: 0, width: "100%", height: "auto", display: "block", pointerEvents: "none" }}
         />
 
         {/* floor plaques — slim, so the painted room art shows behind them */}
@@ -263,6 +288,41 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
             </button>
           );
         })}
+
+        {/* WINNER'S LOUNGE plaque — the rooftop reward floor (STOP_1). HIDDEN entirely
+            (not dimmed) until Boss Fox is beaten; then it appears in the directory. It is
+            PvP, not a boss room, so it has no key/lock row — it's a destination, not a
+            grind. Interior build is a separate task. */}
+        {winnersUnlocked(cleared) && (
+          <div
+            style={{
+              position: "absolute",
+              zIndex: 2,
+              top: `${WINNERS_LOUNGE.mapY * 100}%`,
+              left: "14%",
+              transform: "translateY(-50%)",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              maxWidth: "74%",
+              padding: "7px 12px",
+              borderRadius: 999,
+              color: "#1a140a",
+              background: "rgba(245,197,66,.9)",
+              border: `1.5px solid ${WINNERS_LOUNGE.accent}`,
+              boxShadow: "0 0 22px rgba(245,197,66,.5)",
+              backdropFilter: "blur(1px)",
+            }}
+          >
+            <span style={{ fontSize: 13, lineHeight: 1 }}>✦</span>
+            <span style={{ fontFamily: "Georgia, serif", fontSize: 15, fontWeight: 800, letterSpacing: ".03em", whiteSpace: "nowrap" }}>
+              {WINNERS_LOUNGE.name}
+            </span>
+            <span style={{ fontSize: 10, color: "#5a4408", fontWeight: 800, letterSpacing: ".04em", whiteSpace: "nowrap" }}>
+              PvP
+            </span>
+          </div>
+        )}
 
         {/* lobby landmark (street level, a hub — tap to return to the lobby) */}
         <button
@@ -355,7 +415,10 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           style={{
             position: "absolute",
             zIndex: 1,
-            top: "95%",
+            // Idle rest = STOP_7 (Dojo, bottom of shaft). 'top' is the car's BOTTOM edge
+            // (translateY(-100%) anchors bottom to the top:% line), so it equals the stop
+            // pct directly. When unlocked, foxpitElevatorStops drives the full-height climb.
+            top: `${ELEVATOR_BOTTOM_STOP_PCT}%`,
             left: "0.5%",
             width: "8%",
             transform: "translateY(-100%)",
@@ -365,7 +428,7 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
             cursor: "pointer",
             filter: elevatorUnlocked ? "none" : "grayscale(.55) brightness(.6)",
             animation: elevatorUnlocked
-              ? "foxpitElevatorStops 24s ease-in-out infinite"
+              ? "foxpitElevatorStops 34s ease-in-out infinite"
               : "none",
           }}
         >
@@ -517,6 +580,54 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
   );
 }
 
+/**
+ * NIGHT SKY — the rooftop backdrop as its OWN swappable layer (never baked into the
+ * map bitmap). It continues the city-at-night painted inside the Winner's Lounge
+ * windows up across the empty top of the map, so the rooftop and the room read as one
+ * continuous night. Swap this whole component for a <DaySky> later. Colours are named
+ * locals (zenith → city-glow horizon) so no bare hex drives the layout intent.
+ */
+function NightSky() {
+  const NIGHT_ZENITH = "#04060c"; // darkest, straight up
+  const NIGHT_SKY = "#0b1322"; // the body of the sky
+  const CITY_GLOW = "#1b2942"; // haze just above the distant skyline (matches the window art)
+  // Fixed star positions (no Math.random — stable across SSR/hydration).
+  const stars = [
+    [12, 18], [24, 40], [33, 12], [46, 28], [58, 8], [67, 34],
+    [74, 20], [82, 46], [88, 14], [19, 55], [52, 52], [71, 60],
+  ];
+  return (
+    <div
+      aria-hidden
+      style={{ position: "absolute", zIndex: 0, top: 0, left: 0, right: 0, height: "30%", pointerEvents: "none", overflow: "hidden" }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: `linear-gradient(180deg, ${NIGHT_ZENITH} 0%, ${NIGHT_SKY} 60%, ${CITY_GLOW} 100%)`,
+        }}
+      />
+      {stars.map(([x, y], i) => (
+        <span
+          key={i}
+          style={{
+            position: "absolute",
+            left: `${x}%`,
+            top: `${y}%`,
+            width: i % 3 === 0 ? 2.5 : 1.5,
+            height: i % 3 === 0 ? 2.5 : 1.5,
+            borderRadius: "50%",
+            background: "#dfe7f5",
+            opacity: i % 2 === 0 ? 0.85 : 0.5,
+            boxShadow: "0 0 3px rgba(223,231,245,.7)",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 /** The elevator's floor-select — the four room cards + the tiered keys you've won. */
 function FloorSelectPanel({
   lone,
@@ -585,6 +696,35 @@ function FloorSelectPanel({
             ))
           )}
         </div>
+
+        {/* WINNER'S LOUNGE — appears in the directory only once Boss Fox is beaten. Not a
+            boss room: PvP, no key row. Interior + routing land with the Lounge build. */}
+        {winnersUnlocked(cleared) && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 10,
+              marginBottom: 12,
+              padding: "12px 16px",
+              borderRadius: 14,
+              background: "rgba(245,197,66,.12)",
+              border: `2px solid ${WINNERS_LOUNGE.accent}`,
+              boxShadow: "0 0 18px rgba(245,197,66,.3)",
+            }}
+          >
+            <div style={{ textAlign: "left" }}>
+              <div style={{ fontFamily: "Georgia, serif", fontSize: 17, color: "#f5e3ac", fontWeight: 800 }}>
+                {WINNERS_LOUNGE.name}
+              </div>
+              <div style={{ fontSize: 10, letterSpacing: ".08em", color: "#c8a24b", fontWeight: 700, marginTop: 2 }}>
+                {WINNERS_LOUNGE.floorLabel.toUpperCase()}
+              </div>
+            </div>
+            <span style={{ fontSize: 20 }}>✦</span>
+          </div>
+        )}
 
         {/* the four room cards */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>

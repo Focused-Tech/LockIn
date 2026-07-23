@@ -3,9 +3,10 @@
  *
  * The painted assets live in /public/foxpit/. Each boss owns its OWN art
  * (owl/wolf/raven/fox) — no substitution. Map floor positions are vertical
- * centers as a % of map/tower-map-stairs.png (1536x3072, stairs-only tower,
- * top = Suite/penthouse, bottom = Dojo/basement). Measured off the plate's
- * floor bands. Client-only UI data — no server dependency.
+ * centers as a % of map/tower_map_clean.png (1620x4500, the BUILD MAP, top =
+ * Winner's Lounge rooftop, bottom = Dojo/basement). Each room sits at its
+ * ELEVATOR_STOPS landing (rules.ts) — the single source of truth for vertical
+ * placement, so plaques and the elevator car line up. Client-only UI data.
  */
 
 export type FoxPitRoomKey = "dojo" | "coliseum" | "hightable" | "suite";
@@ -23,7 +24,8 @@ export interface FoxPitRoom {
   accent: string;
   /** the boss-key this floor's door needs to unlock (from the boss one below); null = always open. */
   needsKey: BossArt | null;
-  /** vertical center on map/tower-map-stairs.png, as a fraction of image height. */
+  /** vertical center on map/tower_map_clean.png (fraction of height) — the room's
+   *  ELEVATOR_STOPS landing (Coliseum = midpoint of its two stops). */
   mapY: number;
   roomImg: string;
   avatarImg: string;
@@ -34,34 +36,57 @@ export interface FoxPitRoom {
 export const FOXPIT_ROOMS: FoxPitRoom[] = [
   {
     key: "dojo", order: 0, name: "Dojo", floorLabel: "Basement · Training",
-    boss: "Owl", bossArt: "owl", crest: "O", accent: "#c9873f", needsKey: null, mapY: 0.91,
+    boss: "Owl", bossArt: "owl", crest: "O", accent: "#c9873f", needsKey: null, mapY: 0.9722,
     roomImg: "/foxpit/room-dojo.png", avatarImg: "/foxpit/avatar-owl.png", faceoffImg: "/foxpit/faceoff-owl.png",
     tables: 1,
   },
   {
     key: "coliseum", order: 1, name: "Coliseum", floorLabel: "Level 2 · Indoor Stadium",
-    boss: "Wolf", bossArt: "wolf", crest: "W", accent: "#c22b22", needsKey: "owl", mapY: 0.50,
+    boss: "Wolf", bossArt: "wolf", crest: "W", accent: "#c22b22", needsKey: "owl", mapY: 0.696,
     roomImg: "/foxpit/room-coliseum.png", avatarImg: "/foxpit/avatar-wolf.png", faceoffImg: "/foxpit/faceoff-wolf.png",
     tables: 5,
   },
   {
     key: "hightable", order: 2, name: "High Table", floorLabel: "Level 3 · VIP Lounge",
-    boss: "Raven", bossArt: "raven", crest: "R", accent: "#8a4dff", needsKey: "wolf", mapY: 0.235,
+    boss: "Raven", bossArt: "raven", crest: "R", accent: "#8a4dff", needsKey: "wolf", mapY: 0.49711,
     roomImg: "/foxpit/room-hightable.png", avatarImg: "/foxpit/avatar-raven.png", faceoffImg: "/foxpit/faceoff-raven.png",
     tables: 3,
   },
   {
     key: "suite", order: 3, name: "Boss Fox's Suite", floorLabel: "Penthouse · Private 1v1",
-    boss: "Boss Fox", bossArt: "fox", crest: "※", accent: "#c8a24b", needsKey: "raven", mapY: 0.08,
+    boss: "Boss Fox", bossArt: "fox", crest: "※", accent: "#c8a24b", needsKey: "raven", mapY: 0.37111,
     roomImg: "/foxpit/room-suite.png", avatarImg: "/foxpit/avatar-fox.png", faceoffImg: "/foxpit/faceoff-fox.png",
     tables: 1,
   },
 ];
 
-/** The Lobby floor sits between Coliseum and Dojo on the map (street level, a hub, not a room). Measured off the stairs-only tower plate (bar room with the red neon fox). */
-export const LOBBY_MAP_Y = 0.75;
+/** The Lobby floor sits between Coliseum and Dojo (street level, a hub, not a room) — STOP_6 landing. */
+export const LOBBY_MAP_Y = 0.87333;
 /** The elevator is locked in practice and unlocks once you clear the High Table. */
 export const ELEVATOR_UNLOCK_AT: FoxPitRoomKey = "hightable";
+
+/**
+ * THE WINNER'S LOUNGE — the rooftop REWARD floor (STOP_1). NOT a boss room: it is
+ * PvP (player-vs-player, not vs the house) and DEALER-LESS (no Locksmith up here).
+ * It stays LOCKED AND HIDDEN — not dimmed, not shown — until BOSS FOX is beaten in
+ * the Suite directly below. Beating Boss Fox (platinum) reveals it: the plaque
+ * appears in the directory and the elevator's top stop becomes reachable. The Lounge
+ * INTERIOR build (octagon electronic tables, player slots) is a separate task.
+ */
+export const WINNERS_LOUNGE = {
+  key: "winners" as const,
+  name: "Winner's Lounge",
+  floorLabel: "Rooftop · Player vs Player",
+  accent: "#f5c542",
+  /** STOP_1 landing — top of the shaft. */
+  mapY: 0.26844,
+  roomImg: "/foxpit/room-winners.png",
+};
+/** The Lounge unlocks only after Boss Fox (the Suite) is cleared. */
+export const WINNERS_UNLOCK_AFTER: FoxPitRoomKey = "suite";
+export function winnersUnlocked(cleared: Set<FoxPitRoomKey>): boolean {
+  return cleared.has(WINNERS_UNLOCK_AFTER);
+}
 
 export function roomByKey(k: FoxPitRoomKey): FoxPitRoom {
   return FOXPIT_ROOMS.find((r) => r.key === k)!;
