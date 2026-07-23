@@ -13,10 +13,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
  * 1620x4500). Feet are anchored on the point: the figure sits 86.4% down its 611² canvas
  * (13.6% transparent below), so we translate the FEET onto the waypoint, not the box.
  *
- * SEED_WP is a first-pass GUESS — I'm blind to the new art's stair geometry. Turn on
+ * CLIMB_WAYPOINTS is a first-pass GUESS — I'm blind to the new art's stair geometry. Turn on
  * CALIBRATE (the ⚙ button), drag the numbered dots onto the real treads/landings, then
- * copy the dumped JSON back so I can bake it. The FRONT-RAIL overlay is placed from the
- * loose pieces' EXACT cut coordinates (_INDEX.txt), so calibrate the path to line up with it.
+ * copy the dumped JSON back so I can bake it. The front-rail SLOT sprites (LandingRails, below)
+ * anchor to the SAME landing waypoints, so calibrating the path also positions the rails.
  */
 
 // ── design tokens (named) ──
@@ -41,8 +41,9 @@ export interface Waypoint {
 }
 
 /** SEED switchback path (bottom → top), % of the 1620x4500 build map. Landings align to
- *  ELEVATOR_STOPS. GUESS — calibrate on device. */
-const SEED_WP: Waypoint[] = [
+ *  ELEVATOR_STOPS. GUESS — calibrate on device, then paste JSON back to bake. Exported so
+ *  the front-rail sprites anchor to the SAME (calibrated) landing coordinates. */
+export const CLIMB_WAYPOINTS: Waypoint[] = [
   { x: 34, y: 97.0, label: "Dojo floor" },
   { x: 55, y: 92.0 },
   { x: 30, y: 87.3, landing: true, label: "Lobby landing" },
@@ -58,46 +59,62 @@ const SEED_WP: Waypoint[] = [
   { x: 36, y: 26.8, landing: true, label: "Winner's Lounge landing" },
 ];
 
-// ── FRONT-RAIL overlay: loose posts + rails at their EXACT cut position on the
-// 1620x4500 sheet (_INDEX.txt records position as at(y,x)). These sit IN FRONT of the
-// avatar so he walks through the open landing front edge — the "slot". ──
-const SHEET_W = 1620;
-const SHEET_H = 4500;
-interface Piece { name: string; x: number; y: number; w: number }
-const FRONT_PIECES: Piece[] = [
-  { name: "post_01", x: 473, y: 1025, w: 36 }, { name: "post_02", x: 718, y: 1030, w: 36 },
-  { name: "post_03", x: 805, y: 1492, w: 36 }, { name: "post_04", x: 767, y: 1854, w: 37 },
-  { name: "post_05", x: 851, y: 1854, w: 37 }, { name: "post_06", x: 805, y: 2092, w: 36 },
-  { name: "post_07", x: 1460, y: 2354, w: 37 }, { name: "post_08", x: 1070, y: 2407, w: 36 },
-  { name: "post_09", x: 1040, y: 2675, w: 37 }, { name: "post_10", x: 1346, y: 2898, w: 34 },
-  { name: "post_11", x: 996, y: 2905, w: 36 }, { name: "post_12", x: 1162, y: 3197, w: 35 },
-  { name: "post_13", x: 1272, y: 3421, w: 36 }, { name: "post_14", x: 989, y: 3439, w: 36 },
-  { name: "post_15", x: 1284, y: 3723, w: 39 }, { name: "post_16", x: 1338, y: 3971, w: 37 },
-  { name: "post_17", x: 1028, y: 3988, w: 38 }, { name: "post_18", x: 954, y: 4234, w: 36 },
-  { name: "rail_01", x: 587, y: 1564, w: 169 }, { name: "rail_02", x: 909, y: 1895, w: 173 },
-  { name: "rail_03", x: 1122, y: 1897, w: 200 }, { name: "rail_04", x: 1359, y: 1900, w: 197 },
-  { name: "rail_05", x: 1172, y: 2087, w: 221 }, { name: "rail_06", x: 882, y: 2093, w: 255 },
-  { name: "rail_07", x: 1431, y: 2125, w: 187 }, { name: "rail_08", x: 1152, y: 2348, w: 182 },
-  { name: "rail_09", x: 1152, y: 2546, w: 200 }, { name: "rail_10", x: 1084, y: 2957, w: 181 },
-  { name: "rail_11", x: 927, y: 3244, w: 154 }, { name: "rail_12", x: 1046, y: 3482, w: 200 },
-  { name: "rail_13", x: 1055, y: 3779, w: 163 }, { name: "rail_14", x: 1111, y: 4038, w: 212 },
-  { name: "rail_15", x: 1080, y: 4264, w: 163 },
+// ── FRONT-RAIL SLOT — the Z-depth sandwich ──
+// A slot is NOT a gap in a fence. Per landing it is three render layers, back → front:
+//   LAYER 1  the map art (immutable — includes the baked BACK rail)
+//   LAYER 2  the AVATAR sprite
+//   LAYER 3  ONE front-rail SPRITE, z-index ABOVE the avatar
+// The avatar reads as standing BETWEEN the back rail and the front rail. The map bitmap is
+// finished, immutable art — NOTHING is ever baked onto it. Each landing gets exactly ONE piece
+// file, loaded as its own sprite: no composites, no stitched fences, no invented/mirrored pieces.
+interface LandingRail {
+  /** index into CLIMB_WAYPOINTS — MUST be a landing entry */
+  wp: number;
+  /** the ONE stair-piece file for this landing (no composites) */
+  piece: string;
+  /** on-screen width as a fraction of map width — scale-to-fit ONLY (no reshape/recolor) */
+  widthVw: number;
+}
+
+// One DISTINCT piece per landing. Piece choices + widths are FIRST-PASS — matching a piece to
+// each landing by on-screen size needs Frank's calibration; confirm or swap once the JSON lands.
+// Positions are NOT here — they come from CLIMB_WAYPOINTS[wp] (calibrated), never hardcoded.
+const LANDING_RAILS: LandingRail[] = [
+  { wp: 2, piece: "rail_02", widthVw: 22 }, // Lobby landing
+  { wp: 4, piece: "rail_03", widthVw: 22 }, // Coliseum · lower
+  { wp: 6, piece: "rail_05", widthVw: 22 }, // Coliseum · upper
+  { wp: 8, piece: "rail_08", widthVw: 22 }, // High Table landing
+  { wp: 10, piece: "rail_12", widthVw: 22 }, // Suite landing
+  { wp: 12, piece: "rail_14", widthVw: 22 }, // Winner's Lounge landing
 ];
 
-/** Front-rail overlay — render ABOVE the avatar so landings form a walk-through slot. */
-export function FrontRails() {
+/**
+ * FRONT-RAIL layer — ONE sprite per landing, z-index ABOVE the avatar (avatar z5 < rails z6),
+ * anchored (bottom-center) to that landing's waypoint. This is LAYER 3 of the slot sandwich:
+ * a runtime sprite, never baked into the map, never blocking the walkway. Position is driven by
+ * CLIMB_WAYPOINTS (calibrated on device) — no hardcoded coordinates.
+ */
+export function LandingRails() {
   return (
     <div aria-hidden style={{ position: "absolute", inset: 0, zIndex: 6, pointerEvents: "none" }}>
-      {FRONT_PIECES.map((p) => (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          key={p.name}
-          src={`/foxpit/map/stair_pieces/${p.name}.png`}
-          alt=""
-          draggable={false}
-          style={{ position: "absolute", left: `${(p.x / SHEET_W) * 100}%`, top: `${(p.y / SHEET_H) * 100}%`, width: `${(p.w / SHEET_W) * 100}%`, height: "auto" }}
-        />
-      ))}
+      {LANDING_RAILS.map((lr) => {
+        const p = CLIMB_WAYPOINTS[lr.wp];
+        if (!p || !p.landing) {
+          // No silent catch — a bad landing mapping surfaces in the console.
+          console.error(`[LandingRails] CLIMB_WAYPOINTS[${lr.wp}] is not a landing`);
+          return null;
+        }
+        return (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            key={lr.piece}
+            src={`/foxpit/map/stair_pieces/${lr.piece}.png`}
+            alt=""
+            draggable={false}
+            style={{ position: "absolute", left: `${p.x}%`, top: `${p.y}%`, width: `${lr.widthVw}vw`, height: "auto", transform: "translate(-50%,-100%)" }}
+          />
+        );
+      })}
     </div>
   );
 }
@@ -109,8 +126,8 @@ const easeInOut = (t: number) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2,
  * a screenshot. ⚙ toggles CALIBRATE: drag the dots, copy the JSON.
  */
 export function StairClimber() {
-  const [wp, setWp] = useState<Waypoint[]>(SEED_WP);
-  const [pos, setPos] = useState({ x: SEED_WP[0]!.x, y: SEED_WP[0]!.y, facing: 1 });
+  const [wp, setWp] = useState<Waypoint[]>(CLIMB_WAYPOINTS);
+  const [pos, setPos] = useState({ x: CLIMB_WAYPOINTS[0]!.x, y: CLIMB_WAYPOINTS[0]!.y, facing: 1 });
   const [moving, setMoving] = useState(false);
   const [calibrate, setCalibrate] = useState(false);
   const [error, setError] = useState<string | null>(null);
