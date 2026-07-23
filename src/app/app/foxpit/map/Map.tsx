@@ -19,6 +19,7 @@ import {
   type FoxPitRoomKey,
 } from "@/lib/foxpit";
 import { ELEVATOR_BOTTOM_STOP_PCT } from "@/lib/foxpit/rules";
+import { StairClimber, FrontRails } from "./StairClimber";
 
 /**
  * Fox Pit TOWER MAP (build map = map/tower_map_clean.png 1620x4500, natural aspect;
@@ -226,6 +227,13 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           draggable={false}
           style={{ position: "absolute", zIndex: 1, top: 0, left: 0, width: "100%", height: "auto", display: "block", pointerEvents: "none" }}
         />
+
+        {/* AVATAR CLIMB (Phase A) — the player walks the switchback stairs. Layer order:
+            map + baked back rail (staircase_clean) → AVATAR (z5) → FRONT-RAIL overlay (z6),
+            so at a landing he walks THROUGH the open front edge (the slot). Waypoints are
+            first-pass; the ⚙ calibrate tool dumps corrected numbers. */}
+        <StairClimber />
+        <FrontRails />
 
         {/* floor plaques — slim, so the painted room art shows behind them */}
         {FOXPIT_ROOMS.map((r) => {

@@ -5,6 +5,8 @@ export function FoxPitStyles() {
   return (
     <style>{`
       @keyframes foxpitBob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(-6px);} }
+      /* Stair-climb bob — the single walk pose bobs while moving between waypoints. */
+      @keyframes foxpitClimberBob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(-2.2%);} }
       @keyframes foxpitKeySpin { 0%{ transform: rotateY(0deg) translateY(0);} 50%{ transform: rotateY(180deg) translateY(-10px);} 100%{ transform: rotateY(360deg) translateY(0);} }
       @keyframes foxpitGlow { 0%,100%{ box-shadow: 0 0 24px rgba(252,62,1,.35);} 50%{ box-shadow: 0 0 54px rgba(252,62,1,.7);} }
       @keyframes foxpitAvatarUp { 0%{ transform: translateY(100%); opacity:.2;} 60%{ transform: translateY(0); opacity:1;} 100%{ transform: translateY(0); opacity:1;} }
