@@ -214,23 +214,14 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           style={{ position: "relative", zIndex: 1, width: "100%", height: "auto", display: "block" }}
         />
 
-        {/* STAIRCASE — ONE baked piece (tower_staircase_clean.png, 1620x4500, transparent),
-            back railings already baked in. Overlaid 1:1 on the map (same dimensions). The
-            loose newel/rail pieces (public/foxpit/map/stair_pieces/) form the walk-through
-            slot IN FRONT of a walking avatar — that sandwich lands with the avatar-walk
-            feature; here the baked piece is the tower's staircase. */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/foxpit/map/tower_staircase_clean.png"
-          alt=""
-          aria-hidden
-          draggable={false}
-          style={{ position: "absolute", zIndex: 1, top: 0, left: 0, width: "100%", height: "auto", display: "block", pointerEvents: "none" }}
-        />
+        {/* NOTE: the standalone tower_staircase_clean.png overlay was REMOVED — the staircase +
+            back rails are already baked into tower_map_clean.png (Frank's cross-correlation: the
+            sheet's staircase aligns to the map at dx=0, dy=0), so overlaying a second copy was
+            redundant clutter. */}
 
         {/* AVATAR CLIMB (Phase A) + SLOT PIECES. Layer order: map art incl. baked BACK rail
-            (immutable) → AVATAR (z5) → all 34 post/rail SPRITES at their exact authored coords
-            (SlotPieces, z6). Room labels render ABOVE everything (z7, below). */}
+            (immutable) → AVATAR (z5) → hand-placed front post/rail SPRITES (SlotPieces, z6).
+            Room labels render ABOVE everything (z7, below). */}
         <StairClimber />
         <SlotPieces />
 

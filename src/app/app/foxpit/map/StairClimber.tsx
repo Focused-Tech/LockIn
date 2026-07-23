@@ -16,7 +16,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
  * CLIMB_WAYPOINTS is a first-pass GUESS — I'm blind to the new art's stair geometry. Turn on
  * CALIBRATE (the ⚙ button), drag the numbered dots onto the real treads/landings, then
  * copy the dumped JSON back so I can bake it. CLIMB_WAYPOINTS positions the AVATAR ONLY — the
- * post/rail SLOT sprites (SlotPieces, below) read their own exact coords from slot_placement.json.
+ * post/rail SLOT sprites (SlotPieces, below) are hand-placed via their own ⚙ pieces drag pass.
  */
 
 // ── design tokens (named) ──
@@ -59,69 +59,154 @@ export const CLIMB_WAYPOINTS: Waypoint[] = [
   { x: 36, y: 26.8, landing: true, label: "Winner's Lounge landing" },
 ];
 
-// ── SLOT PIECES — placed at EXACT authored coordinates (NOT from waypoints) ──
-// Frank layered every post/rail on a 1620x4500 sheet — the SAME canvas as tower_map_clean.png —
-// so a piece's position ON THE SHEET IS its position ON THE MAP. We read slot_placement.json (the
-// authored source of truth) and place ALL 34 pieces at their x_pct/y_pct (top-left corner), each
-// scaled by the same factor the map is (width = w / canvas.w). No waypoints, no guessing, no
-// subset, no substitution. Z-model: map art (baked back rails) → AVATAR (z5) → these sprites (z6).
-interface SlotPiece {
-  file: string;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  x_pct: number;
-  y_pct: number;
-}
-interface SlotData {
-  canvas: { w: number; h: number };
-  pieces: SlotPiece[];
+// ── SLOT PIECES — front rails/posts, positioned by HAND (drag pass), not derived ──
+// slot_placement.json holds SLICING ORIGINS (where each piece was parked on the cutting sheet —
+// all on empty canvas beside the staircase), NOT map placements. So we NEVER read positions from
+// it, and NEVER derive rail positions from CLIMB_WAYPOINTS (those move the avatar only). Placement
+// comes from Frank's ⚙ pieces drag pass, baked into SLOT_PLACEMENT below (the single source of
+// truth). The file's filenames + intrinsic w/h are still valid — only its coordinates are void.
+// Z-model: map art (baked back rails) → AVATAR (z5) → these sprites (z6).
+const SHEET_W = 1620;
+const SHEET_H = 4500;
+
+interface SlotPieceDef { file: string; w: number; h: number; landing: string }
+
+// Proposed subset to place — ONE rail + two posts per landing (reported before the drag so a wrong
+// piece is swapped before 34 sprites get moved). Swap a filename here if it's the wrong piece.
+const PROPOSED: SlotPieceDef[] = [
+  { file: "rail_06.png", w: 255, h: 183, landing: "Winner's Lounge" },
+  { file: "post_04.png", w: 37, h: 184, landing: "Winner's Lounge" },
+  { file: "post_05.png", w: 37, h: 184, landing: "Winner's Lounge" },
+  { file: "rail_05.png", w: 221, h: 183, landing: "Boss Fox's Suite" },
+  { file: "post_03.png", w: 36, h: 178, landing: "Boss Fox's Suite" },
+  { file: "post_06.png", w: 36, h: 178, landing: "Boss Fox's Suite" },
+  { file: "rail_14.png", w: 212, h: 152, landing: "High Table" },
+  { file: "post_08.png", w: 36, h: 177, landing: "High Table" },
+  { file: "post_09.png", w: 37, h: 183, landing: "High Table" },
+  { file: "rail_03.png", w: 200, h: 135, landing: "Coliseum · upper" },
+  { file: "post_10.png", w: 34, h: 177, landing: "Coliseum · upper" },
+  { file: "post_11.png", w: 36, h: 178, landing: "Coliseum · upper" },
+  { file: "rail_09.png", w: 200, h: 135, landing: "Coliseum · lower" },
+  { file: "post_12.png", w: 35, h: 177, landing: "Coliseum · lower" },
+  { file: "post_13.png", w: 36, h: 180, landing: "Coliseum · lower" },
+  { file: "rail_12.png", w: 200, h: 135, landing: "Lobby" },
+  { file: "post_14.png", w: 36, h: 180, landing: "Lobby" },
+  { file: "post_16.png", w: 37, h: 188, landing: "Lobby" },
+];
+
+// BAKED placement table — paste Frank's ⚙ pieces JSON here to make it the source of truth. Empty
+// until then, so NORMAL mode renders a CLEAN map (no misplaced rails). file → {x,y} top-left, map-canvas.
+const SLOT_PLACEMENT: Record<string, { x: number; y: number }> = {
+  // (empty — awaiting Frank's drag pass)
+};
+
+// Rough drag STARTING points near each landing (my eyeball, NOT a final position) so the drags are
+// short. The final position is whatever Frank drags to. y per landing group, x per role in the group.
+const STAGE_Y = [1150, 1620, 2180, 2820, 3330, 3880]; // winners, suite, hightable, col-upper, col-lower, lobby
+const STAGE_X = [640, 480, 820]; // rail, post, post
+function stagingPos(i: number): { x: number; y: number } {
+  return { x: STAGE_X[i % 3]!, y: (STAGE_Y[Math.floor(i / 3)] ?? 1000) - 90 };
 }
 
-/** All 34 posts + rails from slot_placement.json, each at its exact authored coordinate. */
+/** Front rail/post sprites. NORMAL: render the baked SLOT_PLACEMENT (clean until baked). ⚙ pieces:
+ *  drag each proposed sprite onto its landing, nudge 1px, copy the emitted map-canvas JSON. */
 export function SlotPieces() {
-  const [data, setData] = useState<SlotData | null>(null);
-  const [err, setErr] = useState<string | null>(null);
-  useEffect(() => {
-    let alive = true;
-    fetch("/foxpit/map/slot_placement.json")
-      .then((r) => {
-        if (!r.ok) throw new Error(`slot_placement.json HTTP ${r.status}`);
-        return r.json();
-      })
-      .then((d: SlotData) => {
-        if (alive) setData(d);
-      })
-      .catch((e) => {
-        // No silent catch — surface the failure on screen + console.
-        console.error("[SlotPieces] failed to load slot_placement.json", e);
-        if (alive) setErr(String(e));
-      });
-    return () => {
-      alive = false;
-    };
-  }, []);
+  const [placing, setPlacing] = useState(false);
+  const [pos, setPos] = useState<Record<string, { x: number; y: number }>>(() => {
+    const init: Record<string, { x: number; y: number }> = {};
+    PROPOSED.forEach((p, i) => { init[p.file] = SLOT_PLACEMENT[p.file] ?? stagingPos(i); });
+    return init;
+  });
+  const [sel, setSel] = useState<string | null>(null);
+  const layerRef = useRef<HTMLDivElement>(null);
+  const grab = useRef<{ dx: number; dy: number } | null>(null);
 
-  const canvasW = data?.canvas.w ?? 1620;
+  const toCanvas = (clientX: number, clientY: number) => {
+    const r = layerRef.current!.getBoundingClientRect();
+    return { x: ((clientX - r.left) / r.width) * SHEET_W, y: ((clientY - r.top) / r.height) * SHEET_H };
+  };
+  const onDown = (file: string) => (e: React.PointerEvent<HTMLImageElement>) => {
+    e.stopPropagation();
+    setSel(file);
+    const c = toCanvas(e.clientX, e.clientY);
+    const p = pos[file]!;
+    grab.current = { dx: c.x - p.x, dy: c.y - p.y };
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+  };
+  const onPMove = (file: string) => (e: React.PointerEvent) => {
+    if (sel !== file || !grab.current) return;
+    const c = toCanvas(e.clientX, e.clientY);
+    setPos((prev) => ({ ...prev, [file]: { x: Math.round(c.x - grab.current!.dx), y: Math.round(c.y - grab.current!.dy) } }));
+  };
+  const onUp = () => { grab.current = null; };
+  const nudge = (dx: number, dy: number) => {
+    if (!sel) return;
+    setPos((prev) => ({ ...prev, [sel]: { x: prev[sel]!.x + dx, y: prev[sel]!.y + dy } }));
+  };
+
+  const emitJson = JSON.stringify(PROPOSED.map((p) => ({ file: p.file, x: pos[p.file]!.x, y: pos[p.file]!.y })));
+  // Normal mode shows ONLY baked pieces (clean until Frank bakes); place mode shows all proposals.
+  const rendered = placing ? PROPOSED : PROPOSED.filter((p) => SLOT_PLACEMENT[p.file]);
+
   return (
-    <div aria-hidden style={{ position: "absolute", inset: 0, zIndex: 6, pointerEvents: "none" }}>
-      {(data?.pieces ?? []).map((p) => (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          key={p.file}
-          src={`/foxpit/map/stair_pieces/${p.file}`}
-          alt=""
-          draggable={false}
-          style={{ position: "absolute", left: `${p.x_pct}%`, top: `${p.y_pct}%`, width: `${(p.w / canvasW) * 100}%`, height: "auto" }}
-        />
-      ))}
-      {err && (
-        <div style={{ position: "absolute", top: 8, left: 8, zIndex: 9, background: "rgba(140,0,0,.92)", color: "#fff", padding: 8, borderRadius: 8, fontSize: 12 }}>
-          Slot pieces failed to load: {err}
+    <>
+      {/* sprite layer — absolute over the tower so % = map-canvas coords. Layer ignores pointers;
+          each piece opts in only while placing, so empty-space touches still pan/scroll the map. */}
+      <div ref={layerRef} aria-hidden style={{ position: "absolute", inset: 0, zIndex: 6, pointerEvents: "none" }}>
+        {rendered.map((p) => {
+          const pt = pos[p.file]!;
+          const on = placing && sel === p.file;
+          return (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={p.file}
+              src={`/foxpit/map/stair_pieces/${p.file}`}
+              alt=""
+              draggable={false}
+              onPointerDown={placing ? onDown(p.file) : undefined}
+              onPointerMove={placing ? onPMove(p.file) : undefined}
+              onPointerUp={placing ? onUp : undefined}
+              onTouchStart={placing ? (e) => e.stopPropagation() : undefined}
+              style={{
+                position: "absolute",
+                left: `${(pt.x / SHEET_W) * 100}%`,
+                top: `${(pt.y / SHEET_H) * 100}%`,
+                width: `${(p.w / SHEET_W) * 100}%`,
+                height: "auto",
+                pointerEvents: placing ? "auto" : "none",
+                cursor: placing ? "grab" : "default",
+                touchAction: "none",
+                outline: on ? "2px solid #00e5ff" : "none",
+                filter: on ? "drop-shadow(0 0 6px #00e5ff)" : "none",
+              }}
+            />
+          );
+        })}
+      </div>
+
+      {/* ⚙ pieces toggle (fixed to the viewport) */}
+      <button
+        onClick={() => setPlacing((v) => !v)}
+        style={{ position: "fixed", top: "calc(env(safe-area-inset-top,0px) + 108px)", right: 8, zIndex: 90, border: "1px solid #00e5ff", background: "rgba(6,8,12,.92)", color: "#00e5ff", borderRadius: 8, padding: "5px 9px", fontSize: 12, fontWeight: 800, cursor: "pointer" }}
+      >
+        {placing ? "✓ pieces" : "⚙ pieces"}
+      </button>
+
+      {placing && (
+        <div style={{ position: "fixed", left: 8, right: 8, bottom: "calc(env(safe-area-inset-bottom,0px) + 10px)", zIndex: 90, display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, color: "#cfe", background: "rgba(6,8,12,.85)", borderRadius: 8, padding: "4px 8px" }}>
+            <span style={{ color: "#00e5ff", fontWeight: 800 }}>{sel ?? "tap a piece"}</span>
+            {sel && <span>x {pos[sel]!.x} · y {pos[sel]!.y}</span>}
+            <span style={{ marginLeft: "auto", display: "flex", gap: 4 }}>
+              {([["←", -1, 0], ["→", 1, 0], ["↑", 0, -1], ["↓", 0, 1]] as const).map(([g, dx, dy]) => (
+                <button key={g} onClick={() => nudge(dx, dy)} disabled={!sel} style={{ width: 30, height: 30, borderRadius: 6, border: "1px solid #00e5ff", background: "rgba(6,8,12,.92)", color: "#00e5ff", fontSize: 14, fontWeight: 800, cursor: sel ? "pointer" : "not-allowed" }}>{g}</button>
+              ))}
+            </span>
+          </div>
+          <textarea readOnly value={emitJson} onFocus={(e) => e.currentTarget.select()} style={{ height: 52, background: "#0a0c11", color: "#9fe0b0", border: "1px solid #222", borderRadius: 8, fontSize: 10, fontFamily: "ui-monospace, monospace", padding: 6 }} />
         </div>
       )}
-    </div>
+    </>
   );
 }
 
