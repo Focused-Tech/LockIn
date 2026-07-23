@@ -37,32 +37,32 @@ export interface FoxPitRoom {
 export const FOXPIT_ROOMS: FoxPitRoom[] = [
   {
     key: "dojo", order: 0, name: "Dojo", floorLabel: "Basement · Training",
-    boss: "Owl", bossArt: "owl", crest: "O", accent: "#c9873f", needsKey: null, mapY: 0.923,
+    boss: "Owl", bossArt: "owl", crest: "O", accent: "#c9873f", needsKey: null, mapY: 0.903,
     roomImg: "/foxpit/room-dojo.png", avatarImg: "/foxpit/avatar-owl.png", faceoffImg: "/foxpit/faceoff-owl.png",
     tables: 1,
   },
   {
     key: "coliseum", order: 1, name: "Coliseum", floorLabel: "Level 2 · Indoor Stadium",
-    boss: "Wolf", bossArt: "wolf", crest: "W", accent: "#c22b22", needsKey: "owl", mapY: 0.624,
+    boss: "Wolf", bossArt: "wolf", crest: "W", accent: "#c22b22", needsKey: "owl", mapY: 0.574,
     roomImg: "/foxpit/room-coliseum.png", avatarImg: "/foxpit/avatar-wolf.png", faceoffImg: "/foxpit/faceoff-wolf.png",
     tables: 5,
   },
   {
     key: "hightable", order: 2, name: "High Table", floorLabel: "Level 3 · VIP Lounge",
-    boss: "Raven", bossArt: "raven", crest: "R", accent: "#8a4dff", needsKey: "wolf", mapY: 0.434,
+    boss: "Raven", bossArt: "raven", crest: "R", accent: "#8a4dff", needsKey: "wolf", mapY: 0.409,
     roomImg: "/foxpit/room-hightable.png", avatarImg: "/foxpit/avatar-raven.png", faceoffImg: "/foxpit/faceoff-raven.png",
     tables: 3,
   },
   {
     key: "suite", order: 3, name: "Boss Fox's Suite", floorLabel: "Penthouse · Private 1v1",
-    boss: "Boss Fox", bossArt: "fox", crest: "※", accent: "#c8a24b", needsKey: "raven", mapY: 0.320,
+    boss: "Boss Fox", bossArt: "fox", crest: "※", accent: "#c8a24b", needsKey: "raven", mapY: 0.299,
     roomImg: "/foxpit/room-suite.png", avatarImg: "/foxpit/avatar-fox.png", faceoffImg: "/foxpit/faceoff-fox.png",
     tables: 1,
   },
 ];
 
 /** Lobby LABEL position — vertical center of the Lobby room (street level, a hub, not a room). */
-export const LOBBY_MAP_Y = 0.813;
+export const LOBBY_MAP_Y = 0.788;
 /** The elevator is locked in practice and unlocks once you clear the High Table. */
 export const ELEVATOR_UNLOCK_AT: FoxPitRoomKey = "hightable";
 
@@ -79,8 +79,8 @@ export const WINNERS_LOUNGE = {
   name: "Winner's Lounge",
   floorLabel: "Rooftop · Player vs Player",
   accent: "#f5c542",
-  /** LABEL position — vertical center of the rooftop Lounge (NOT the STOP_1 landing). */
-  mapY: 0.184,
+  /** LABEL position — upper band of the rooftop Lounge (above the rail, below the roofline). */
+  mapY: 0.165,
   roomImg: "/foxpit/room-winners.png",
 };
 /** The Lounge unlocks only after Boss Fox (the Suite) is cleared. */

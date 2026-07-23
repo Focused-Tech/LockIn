@@ -19,7 +19,7 @@ import {
   type FoxPitRoomKey,
 } from "@/lib/foxpit";
 import { ELEVATOR_BOTTOM_STOP_PCT } from "@/lib/foxpit/rules";
-import { StairClimber, LandingRails } from "./StairClimber";
+import { StairClimber, SlotPieces } from "./StairClimber";
 
 /**
  * Fox Pit TOWER MAP (build map = map/tower_map_clean.png 1620x4500, natural aspect;
@@ -228,12 +228,11 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           style={{ position: "absolute", zIndex: 1, top: 0, left: 0, width: "100%", height: "auto", display: "block", pointerEvents: "none" }}
         />
 
-        {/* AVATAR CLIMB (Phase A) — the player walks the switchback stairs. SLOT layer order:
-            map art incl. baked BACK rail (immutable) → AVATAR (z5) → ONE front-rail SPRITE per
-            landing (LandingRails, z6). The avatar reads BETWEEN the two rails. Positions are
-            waypoint-driven; the ⚙ calibrate tool dumps corrected numbers. */}
+        {/* AVATAR CLIMB (Phase A) + SLOT PIECES. Layer order: map art incl. baked BACK rail
+            (immutable) → AVATAR (z5) → all 34 post/rail SPRITES at their exact authored coords
+            (SlotPieces, z6). Room labels render ABOVE everything (z7, below). */}
         <StairClimber />
-        <LandingRails />
+        <SlotPieces />
 
         {/* floor plaques — slim, so the painted room art shows behind them */}
         {FOXPIT_ROOMS.map((r) => {
@@ -247,7 +246,7 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
               disabled={!unlocked}
               style={{
                 position: "absolute",
-                zIndex: 2,
+                zIndex: 7,
                 top: `${r.mapY * 100}%`,
                 left: "14%",
                 transform: "translateY(-50%)",
@@ -305,7 +304,7 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           <div
             style={{
               position: "absolute",
-              zIndex: 2,
+              zIndex: 7,
               top: `${WINNERS_LOUNGE.mapY * 100}%`,
               left: "14%",
               transform: "translateY(-50%)",
@@ -337,7 +336,7 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           onClick={() => router.push("/app/foxpit")}
           style={{
             position: "absolute",
-            zIndex: 2,
+            zIndex: 7,
             top: `${LOBBY_MAP_Y * 100}%`,
             left: "14%",
             transform: "translateY(-50%)",
@@ -365,7 +364,7 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           aria-label="Practice free at the Dojo"
           style={{
             position: "absolute",
-            zIndex: 2,
+            zIndex: 7,
             top: `${LOBBY_MAP_Y * 100 + 7}%`,
             left: "14%",
             transform: "translateY(-50%)",

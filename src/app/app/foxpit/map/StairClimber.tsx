@@ -15,8 +15,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
  *
  * CLIMB_WAYPOINTS is a first-pass GUESS — I'm blind to the new art's stair geometry. Turn on
  * CALIBRATE (the ⚙ button), drag the numbered dots onto the real treads/landings, then
- * copy the dumped JSON back so I can bake it. The front-rail SLOT sprites (LandingRails, below)
- * anchor to the SAME landing waypoints, so calibrating the path also positions the rails.
+ * copy the dumped JSON back so I can bake it. CLIMB_WAYPOINTS positions the AVATAR ONLY — the
+ * post/rail SLOT sprites (SlotPieces, below) read their own exact coords from slot_placement.json.
  */
 
 // ── design tokens (named) ──
@@ -59,62 +59,68 @@ export const CLIMB_WAYPOINTS: Waypoint[] = [
   { x: 36, y: 26.8, landing: true, label: "Winner's Lounge landing" },
 ];
 
-// ── FRONT-RAIL SLOT — the Z-depth sandwich ──
-// A slot is NOT a gap in a fence. Per landing it is three render layers, back → front:
-//   LAYER 1  the map art (immutable — includes the baked BACK rail)
-//   LAYER 2  the AVATAR sprite
-//   LAYER 3  ONE front-rail SPRITE, z-index ABOVE the avatar
-// The avatar reads as standing BETWEEN the back rail and the front rail. The map bitmap is
-// finished, immutable art — NOTHING is ever baked onto it. Each landing gets exactly ONE piece
-// file, loaded as its own sprite: no composites, no stitched fences, no invented/mirrored pieces.
-interface LandingRail {
-  /** index into CLIMB_WAYPOINTS — MUST be a landing entry */
-  wp: number;
-  /** the ONE stair-piece file for this landing (no composites) */
-  piece: string;
-  /** on-screen width as a fraction of map width — scale-to-fit ONLY (no reshape/recolor) */
-  widthVw: number;
+// ── SLOT PIECES — placed at EXACT authored coordinates (NOT from waypoints) ──
+// Frank layered every post/rail on a 1620x4500 sheet — the SAME canvas as tower_map_clean.png —
+// so a piece's position ON THE SHEET IS its position ON THE MAP. We read slot_placement.json (the
+// authored source of truth) and place ALL 34 pieces at their x_pct/y_pct (top-left corner), each
+// scaled by the same factor the map is (width = w / canvas.w). No waypoints, no guessing, no
+// subset, no substitution. Z-model: map art (baked back rails) → AVATAR (z5) → these sprites (z6).
+interface SlotPiece {
+  file: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  x_pct: number;
+  y_pct: number;
+}
+interface SlotData {
+  canvas: { w: number; h: number };
+  pieces: SlotPiece[];
 }
 
-// One DISTINCT piece per landing. Piece choices + widths are FIRST-PASS — matching a piece to
-// each landing by on-screen size needs Frank's calibration; confirm or swap once the JSON lands.
-// Positions are NOT here — they come from CLIMB_WAYPOINTS[wp] (calibrated), never hardcoded.
-const LANDING_RAILS: LandingRail[] = [
-  { wp: 2, piece: "rail_02", widthVw: 22 }, // Lobby landing
-  { wp: 4, piece: "rail_03", widthVw: 22 }, // Coliseum · lower
-  { wp: 6, piece: "rail_05", widthVw: 22 }, // Coliseum · upper
-  { wp: 8, piece: "rail_08", widthVw: 22 }, // High Table landing
-  { wp: 10, piece: "rail_12", widthVw: 22 }, // Suite landing
-  { wp: 12, piece: "rail_14", widthVw: 22 }, // Winner's Lounge landing
-];
+/** All 34 posts + rails from slot_placement.json, each at its exact authored coordinate. */
+export function SlotPieces() {
+  const [data, setData] = useState<SlotData | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    fetch("/foxpit/map/slot_placement.json")
+      .then((r) => {
+        if (!r.ok) throw new Error(`slot_placement.json HTTP ${r.status}`);
+        return r.json();
+      })
+      .then((d: SlotData) => {
+        if (alive) setData(d);
+      })
+      .catch((e) => {
+        // No silent catch — surface the failure on screen + console.
+        console.error("[SlotPieces] failed to load slot_placement.json", e);
+        if (alive) setErr(String(e));
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
-/**
- * FRONT-RAIL layer — ONE sprite per landing, z-index ABOVE the avatar (avatar z5 < rails z6),
- * anchored (bottom-center) to that landing's waypoint. This is LAYER 3 of the slot sandwich:
- * a runtime sprite, never baked into the map, never blocking the walkway. Position is driven by
- * CLIMB_WAYPOINTS (calibrated on device) — no hardcoded coordinates.
- */
-export function LandingRails() {
+  const canvasW = data?.canvas.w ?? 1620;
   return (
     <div aria-hidden style={{ position: "absolute", inset: 0, zIndex: 6, pointerEvents: "none" }}>
-      {LANDING_RAILS.map((lr) => {
-        const p = CLIMB_WAYPOINTS[lr.wp];
-        if (!p || !p.landing) {
-          // No silent catch — a bad landing mapping surfaces in the console.
-          console.error(`[LandingRails] CLIMB_WAYPOINTS[${lr.wp}] is not a landing`);
-          return null;
-        }
-        return (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            key={lr.piece}
-            src={`/foxpit/map/stair_pieces/${lr.piece}.png`}
-            alt=""
-            draggable={false}
-            style={{ position: "absolute", left: `${p.x}%`, top: `${p.y}%`, width: `${lr.widthVw}vw`, height: "auto", transform: "translate(-50%,-100%)" }}
-          />
-        );
-      })}
+      {(data?.pieces ?? []).map((p) => (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          key={p.file}
+          src={`/foxpit/map/stair_pieces/${p.file}`}
+          alt=""
+          draggable={false}
+          style={{ position: "absolute", left: `${p.x_pct}%`, top: `${p.y_pct}%`, width: `${(p.w / canvasW) * 100}%`, height: "auto" }}
+        />
+      ))}
+      {err && (
+        <div style={{ position: "absolute", top: 8, left: 8, zIndex: 9, background: "rgba(140,0,0,.92)", color: "#fff", padding: 8, borderRadius: 8, fontSize: 12 }}>
+          Slot pieces failed to load: {err}
+        </div>
+      )}
     </div>
   );
 }
