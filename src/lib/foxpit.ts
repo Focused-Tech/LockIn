@@ -24,8 +24,9 @@ export interface FoxPitRoom {
   accent: string;
   /** the boss-key this floor's door needs to unlock (from the boss one below); null = always open. */
   needsKey: BossArt | null;
-  /** vertical center on map/tower_map_clean.png (fraction of height) — the room's
-   *  ELEVATOR_STOPS landing (Coliseum = midpoint of its two stops). */
+  /** LABEL position on map/tower_map_clean.png (fraction of height) — the room's VERTICAL
+   *  CENTER (midway between its own landing and the landing of the room above), so the plaque
+   *  sits IN the room, not down on the floor seam. NOT the elevator landing (that's ELEVATOR_STOPS). */
   mapY: number;
   roomImg: string;
   avatarImg: string;
@@ -36,32 +37,32 @@ export interface FoxPitRoom {
 export const FOXPIT_ROOMS: FoxPitRoom[] = [
   {
     key: "dojo", order: 0, name: "Dojo", floorLabel: "Basement · Training",
-    boss: "Owl", bossArt: "owl", crest: "O", accent: "#c9873f", needsKey: null, mapY: 0.9722,
+    boss: "Owl", bossArt: "owl", crest: "O", accent: "#c9873f", needsKey: null, mapY: 0.923,
     roomImg: "/foxpit/room-dojo.png", avatarImg: "/foxpit/avatar-owl.png", faceoffImg: "/foxpit/faceoff-owl.png",
     tables: 1,
   },
   {
     key: "coliseum", order: 1, name: "Coliseum", floorLabel: "Level 2 · Indoor Stadium",
-    boss: "Wolf", bossArt: "wolf", crest: "W", accent: "#c22b22", needsKey: "owl", mapY: 0.696,
+    boss: "Wolf", bossArt: "wolf", crest: "W", accent: "#c22b22", needsKey: "owl", mapY: 0.624,
     roomImg: "/foxpit/room-coliseum.png", avatarImg: "/foxpit/avatar-wolf.png", faceoffImg: "/foxpit/faceoff-wolf.png",
     tables: 5,
   },
   {
     key: "hightable", order: 2, name: "High Table", floorLabel: "Level 3 · VIP Lounge",
-    boss: "Raven", bossArt: "raven", crest: "R", accent: "#8a4dff", needsKey: "wolf", mapY: 0.49711,
+    boss: "Raven", bossArt: "raven", crest: "R", accent: "#8a4dff", needsKey: "wolf", mapY: 0.434,
     roomImg: "/foxpit/room-hightable.png", avatarImg: "/foxpit/avatar-raven.png", faceoffImg: "/foxpit/faceoff-raven.png",
     tables: 3,
   },
   {
     key: "suite", order: 3, name: "Boss Fox's Suite", floorLabel: "Penthouse · Private 1v1",
-    boss: "Boss Fox", bossArt: "fox", crest: "※", accent: "#c8a24b", needsKey: "raven", mapY: 0.37111,
+    boss: "Boss Fox", bossArt: "fox", crest: "※", accent: "#c8a24b", needsKey: "raven", mapY: 0.320,
     roomImg: "/foxpit/room-suite.png", avatarImg: "/foxpit/avatar-fox.png", faceoffImg: "/foxpit/faceoff-fox.png",
     tables: 1,
   },
 ];
 
-/** The Lobby floor sits between Coliseum and Dojo (street level, a hub, not a room) — STOP_6 landing. */
-export const LOBBY_MAP_Y = 0.87333;
+/** Lobby LABEL position — vertical center of the Lobby room (street level, a hub, not a room). */
+export const LOBBY_MAP_Y = 0.813;
 /** The elevator is locked in practice and unlocks once you clear the High Table. */
 export const ELEVATOR_UNLOCK_AT: FoxPitRoomKey = "hightable";
 
@@ -78,8 +79,8 @@ export const WINNERS_LOUNGE = {
   name: "Winner's Lounge",
   floorLabel: "Rooftop · Player vs Player",
   accent: "#f5c542",
-  /** STOP_1 landing — top of the shaft. */
-  mapY: 0.26844,
+  /** LABEL position — vertical center of the rooftop Lounge (NOT the STOP_1 landing). */
+  mapY: 0.184,
   roomImg: "/foxpit/room-winners.png",
 };
 /** The Lounge unlocks only after Boss Fox (the Suite) is cleared. */
