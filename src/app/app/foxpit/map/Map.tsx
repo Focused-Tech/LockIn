@@ -15,6 +15,7 @@ import {
   isUnlocked,
   keyLabel,
   roomByKey,
+  type FoxPitRoom,
   type FoxPitRoomKey,
 } from "@/lib/foxpit";
 import { ELEVATOR_BOTTOM_STOP_PCT } from "@/lib/foxpit/rules";
@@ -40,7 +41,6 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
   const towerRef = useRef<HTMLDivElement>(null);
   const [cleared, setCleared] = useState<Set<FoxPitRoomKey>>(new Set());
   const [hud, setHud] = useState(true);
-  const [floorSelect, setFloorSelect] = useState(false);
   const [elevatorLocked, setElevatorLocked] = useState(false);
   const [elevatorRide, setElevatorRide] = useState(false);
   // Fast-travel elevator activates only once the High Table is CLEARED (beaten),
@@ -498,18 +498,6 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
         ‹ Lobby
       </button>
 
-      {floorSelect && (
-        <FloorSelectPanel
-          lone={lone}
-          cleared={cleared}
-          onClose={() => setFloorSelect(false)}
-          onPick={(k) => {
-            setFloorSelect(false);
-            enter(k);
-          }}
-        />
-      )}
-
       {elevatorRide && (
         <ElevatorRide
           lone={lone}
@@ -628,190 +616,6 @@ function NightSky() {
   );
 }
 
-/** The elevator's floor-select — the four room cards + the tiered keys you've won. */
-function FloorSelectPanel({
-  lone,
-  cleared,
-  onClose,
-  onPick,
-}: {
-  lone: boolean;
-  cleared: Set<FoxPitRoomKey>;
-  onClose: () => void;
-  onPick: (k: FoxPitRoomKey) => void;
-}) {
-  const won = FOXPIT_ROOMS.filter((r) => cleared.has(r.key));
-  return (
-    <div
-      onClick={onClose}
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 80,
-        background: "rgba(3,4,7,.86)",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        padding: "84px 18px 24px",
-        overflowY: "auto",
-      }}
-    >
-      <div onClick={(e) => e.stopPropagation()}>
-        <div style={{ textAlign: "center", marginBottom: 12 }}>
-          <div style={{ fontFamily: "Georgia, serif", fontSize: 22, letterSpacing: ".1em", color: "#E7E7EB" }}>
-            ELEVATOR · SELECT A FLOOR
-          </div>
-        </div>
-
-        {/* keys won */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 12,
-            minHeight: 54,
-            marginBottom: 16,
-            padding: "8px 12px",
-            borderRadius: 12,
-            background: "rgba(10,13,18,.6)",
-            border: "1px solid rgba(200,162,75,.3)",
-          }}
-        >
-          <span style={{ fontSize: 10, letterSpacing: ".16em", color: "#8b98a6", fontWeight: 800 }}>
-            KEYS WON
-          </span>
-          {won.length === 0 ? (
-            <span style={{ fontSize: 12, color: "#6b7a8e" }}>None yet — clear a floor to earn its key</span>
-          ) : (
-            won.map((r) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                key={r.key}
-                src={KEY_ASSET[r.bossArt].src}
-                alt={`${r.boss} key`}
-                title={`${KEY_ASSET[r.bossArt].tier} · ${r.boss}`}
-                style={{ height: 40, width: "auto", filter: "drop-shadow(0 2px 6px rgba(0,0,0,.6))" }}
-              />
-            ))
-          )}
-        </div>
-
-        {/* WINNER'S LOUNGE — appears in the directory only once Boss Fox is beaten. Not a
-            boss room: PvP, no key row. Interior + routing land with the Lounge build. */}
-        {winnersUnlocked(cleared) && (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 10,
-              marginBottom: 12,
-              padding: "12px 16px",
-              borderRadius: 14,
-              background: "rgba(245,197,66,.12)",
-              border: `2px solid ${WINNERS_LOUNGE.accent}`,
-              boxShadow: "0 0 18px rgba(245,197,66,.3)",
-            }}
-          >
-            <div style={{ textAlign: "left" }}>
-              <div style={{ fontFamily: "Georgia, serif", fontSize: 17, color: "#f5e3ac", fontWeight: 800 }}>
-                {WINNERS_LOUNGE.name}
-              </div>
-              <div style={{ fontSize: 10, letterSpacing: ".08em", color: "#c8a24b", fontWeight: 700, marginTop: 2 }}>
-                {WINNERS_LOUNGE.floorLabel.toUpperCase()}
-              </div>
-            </div>
-            <span style={{ fontSize: 20 }}>✦</span>
-          </div>
-        )}
-
-        {/* the four room cards */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          {FOXPIT_ROOMS.map((r) => {
-            const unlocked = lone || isUnlocked(r, cleared);
-            const done = cleared.has(r.key);
-            return (
-              <button
-                key={r.key}
-                onClick={() => unlocked && onPick(r.key)}
-                disabled={!unlocked}
-                style={{
-                  position: "relative",
-                  borderRadius: 14,
-                  overflow: "hidden",
-                  border: `2px solid ${done ? "#22C55E" : unlocked ? r.accent : "#3a4653"}`,
-                  boxShadow: unlocked ? `0 0 16px ${r.accent}33, 0 8px 20px rgba(0,0,0,.5)` : "none",
-                  cursor: unlocked ? "pointer" : "not-allowed",
-                  aspectRatio: "3 / 4",
-                  background: "#0a0d13",
-                  filter: unlocked ? "none" : "grayscale(.6) brightness(.6)",
-                  padding: 0,
-                }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={r.roomImg}
-                  alt={r.name}
-                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
-                />
-                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,transparent 45%,rgba(3,4,7,.92))" }} />
-
-                {/* won key badge (top-right) */}
-                {done && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={KEY_ASSET[r.bossArt].src}
-                    alt={`${r.boss} key`}
-                    style={{ position: "absolute", top: 8, right: 8, height: 34, width: "auto", filter: "drop-shadow(0 2px 5px #000)" }}
-                  />
-                )}
-
-                <div style={{ position: "absolute", left: 10, right: 10, bottom: 10, textAlign: "left" }}>
-                  <div style={{ fontFamily: "Georgia, serif", fontSize: 16, color: "#E7E7EB", fontWeight: 700 }}>
-                    {r.name}
-                  </div>
-                  {done ? (
-                    <div style={{ fontSize: 10, letterSpacing: ".1em", color: "#22C55E", fontWeight: 800, marginTop: 2 }}>
-                      ✓ CLEARED
-                    </div>
-                  ) : unlocked ? (
-                    <div style={{ fontSize: 10, letterSpacing: ".1em", color: r.accent, fontWeight: 800, marginTop: 2 }}>
-                      ENTER ›
-                    </div>
-                  ) : (
-                    <div style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, letterSpacing: ".06em", color: "#c8a24b", fontWeight: 800, marginTop: 2 }}>
-                      <LockGlyph size={11} /> NEEDS {keyLabel(r.needsKey!)} KEY
-                    </div>
-                  )}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
-        <button
-          onClick={onClose}
-          style={{
-            display: "block",
-            margin: "20px auto 0",
-            border: "1px solid rgba(231,231,235,.3)",
-            background: "transparent",
-            color: "#c3cedb",
-            borderRadius: 12,
-            padding: "12px 26px",
-            fontSize: 15,
-            fontWeight: 700,
-            cursor: "pointer",
-          }}
-        >
-          Close
-        </button>
-      </div>
-    </div>
-  );
-}
-
 /** Door-open frame sequence (closed → open); reversed to close. */
 const ELEVATOR_FRAMES = [
   "/foxpit/elevator/door-closed.png",
@@ -820,10 +624,43 @@ const ELEVATOR_FRAMES = [
   "/foxpit/elevator/door-open.png",
 ];
 
+// ── Elevator-interior design tokens (named — no bare hex drives the layout) ──
+// The felt reds are sampled from the shaft felt in tower_map_clean.png (~#2a160d) and
+// lifted so the car's BACK WALL reads as red felt, not a black void. Brass matches the car.
+const FELT_BASE = "#3a1712";
+const FELT_DEEP = "#1b0c09";
+const FELT_LIT = "#57231b";
+const BRASS = "#c8a24b";
+const BRASS_LIT = "#f0d68a";
+const BRASS_DARK = "#6e5320";
+const INK = "#211505"; // engraving on a lit brass button
+const LABEL_MUTED = "#7d7365";
+
+/** Tiled red-felt back wall for the car interior, built from the felt tokens. */
+const FELT_WALL: React.CSSProperties = {
+  backgroundColor: FELT_BASE,
+  backgroundImage: [
+    `radial-gradient(circle at 28% 18%, ${FELT_LIT} 0%, rgba(0,0,0,0) 44%)`,
+    `radial-gradient(circle at 76% 84%, ${FELT_LIT} 0%, rgba(0,0,0,0) 50%)`,
+    `repeating-linear-gradient(45deg, ${FELT_DEEP} 0 2px, rgba(0,0,0,0) 2px 5px)`,
+    `repeating-linear-gradient(-45deg, rgba(0,0,0,.16) 0 2px, rgba(0,0,0,0) 2px 5px)`,
+    `linear-gradient(180deg, ${FELT_LIT} 0%, ${FELT_BASE} 46%, ${FELT_DEEP} 100%)`,
+  ].join(","),
+};
+
+/** One row in the elevator directory: a boss room, the lobby hub, or the rooftop lounge. */
+type FloorDest =
+  | { kind: "room"; room: FoxPitRoom }
+  | { kind: "lobby" }
+  | { kind: "winners" };
+
 /**
- * Elevator interior + ride. Click the car → the ornate doors slide OPEN to the
- * brass interior → pick a floor → doors CLOSE → the car travels → arrive (routes
- * into that room's usher→boss door sequence).
+ * ELEVATOR RIDE — tap the car → the ornate doors slide OPEN → HARD CUT to a full-screen
+ * car INTERIOR: red-felt back wall, a brass up/down call plate on the side wall, and a
+ * floor DIRECTORY (round call buttons; lit when unlocked, dim + tier-key when locked).
+ * Pick a floor → doors CLOSE → the car travels → arrive. The Winner's Lounge (rooftop
+ * PvP) only lists once Boss Fox is beaten; arriving there plays a Boss-Fox welcome beat
+ * (usher art is a placeholder — swap when delivered).
  */
 function ElevatorRide({
   lone,
@@ -836,74 +673,199 @@ function ElevatorRide({
   onClose: () => void;
   onArrive: (k: FoxPitRoomKey) => void;
 }) {
-  const [phase, setPhase] = useState<"opening" | "select" | "closing" | "riding">("opening");
+  const router = useRouter();
+  const [phase, setPhase] = useState<"opening" | "select" | "closing" | "riding" | "lounge">("opening");
   const [frame, setFrame] = useState(0);
-  const [dest, setDest] = useState<FoxPitRoomKey | null>(null);
+  const [dest, setDest] = useState<FloorDest | null>(null);
 
-  // doors open: 0 → last
+  // Directory, top → bottom. Winner's Lounge only appears once Boss Fox is beaten.
+  const directory: FloorDest[] = [
+    ...(winnersUnlocked(cleared) ? [{ kind: "winners" } as FloorDest] : []),
+    { kind: "room", room: roomByKey("suite") },
+    { kind: "room", room: roomByKey("hightable") },
+    { kind: "room", room: roomByKey("coliseum") },
+    { kind: "lobby" },
+    { kind: "room", room: roomByKey("dojo") },
+  ];
+
+  const destName = (d: FloorDest) =>
+    d.kind === "room" ? d.room.name : d.kind === "lobby" ? "Lobby" : WINNERS_LOUNGE.name;
+
+  // doors open: 0 → last, then HARD CUT to the interior floor-select
   useEffect(() => {
     if (phase !== "opening") return;
     if (frame < ELEVATOR_FRAMES.length - 1) {
       const t = setTimeout(() => setFrame((f) => f + 1), 240);
       return () => clearTimeout(t);
     }
-    const t = setTimeout(() => setPhase("select"), 350);
+    const t = setTimeout(() => setPhase("select"), 300);
     return () => clearTimeout(t);
   }, [phase, frame]);
 
-  // doors close: last → 0
+  // doors close: last → 0, then travel
   useEffect(() => {
     if (phase !== "closing") return;
     if (frame > 0) {
-      const t = setTimeout(() => setFrame((f) => f - 1), 240);
+      const t = setTimeout(() => setFrame((f) => f - 1), 200);
       return () => clearTimeout(t);
     }
-    const t = setTimeout(() => setPhase("riding"), 300);
+    const t = setTimeout(() => setPhase("riding"), 250);
     return () => clearTimeout(t);
   }, [phase, frame]);
 
-  // travel, then arrive at the floor
+  // travel, then arrive (rooms → onArrive; lobby → hub; winners → welcome beat)
   useEffect(() => {
     if (phase !== "riding" || !dest) return;
-    const t = setTimeout(() => onArrive(dest), 1700);
+    const t = setTimeout(() => {
+      if (dest.kind === "room") onArrive(dest.room.key);
+      else if (dest.kind === "lobby") router.push("/app/foxpit");
+      else setPhase("lounge");
+    }, 1700);
     return () => clearTimeout(t);
-  }, [phase, dest, onArrive]);
+  }, [phase, dest, onArrive, router]);
 
-  const pick = (k: FoxPitRoomKey) => { setDest(k); setPhase("closing"); };
+  const pick = (d: FloorDest) => { setDest(d); setFrame(ELEVATOR_FRAMES.length - 1); setPhase("closing"); };
+  const showDoors = phase === "opening" || phase === "closing";
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 85, background: "#05070b", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      {phase === "select" && (
-        <button onClick={onClose} aria-label="Close" style={{ position: "absolute", top: 16, right: 14, zIndex: 3, border: "1px solid rgba(200,162,75,.5)", background: "rgba(3,4,7,.6)", color: "#d8c79b", borderRadius: 10, padding: "6px 12px", fontSize: 18, fontWeight: 700, cursor: "pointer" }}>✕</button>
+    <div style={{ position: "fixed", inset: 0, zIndex: 85, ...FELT_WALL, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      {/* interior vignette so the felt reads with depth */}
+      <div aria-hidden style={{ position: "absolute", inset: 0, pointerEvents: "none", boxShadow: `inset 0 0 120px 30px ${FELT_DEEP}` }} />
+
+      {/* DOORS — the ornate car doors: opening on entry, closing on pick. Centered as the
+          portal in front of the felt; hard-cut away once open. */}
+      {showDoors && (
+        <div style={{ position: "absolute", inset: 0, background: "#05070b", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 4 }}>
+          <div style={{ position: "relative", height: "92%", aspectRatio: "1 / 1", maxWidth: "100%" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={ELEVATOR_FRAMES[frame]} alt="Elevator doors" draggable={false} style={{ width: "100%", height: "100%", objectFit: "contain", filter: "drop-shadow(0 0 44px rgba(200,162,75,.22))" }} />
+          </div>
+        </div>
       )}
 
-      <div style={{ position: "relative", height: "92%", aspectRatio: "1 / 1", maxWidth: "100%" }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={ELEVATOR_FRAMES[frame]} alt="Elevator" draggable={false} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", filter: "drop-shadow(0 0 44px rgba(200,162,75,.22))" }} />
-
-        {phase === "select" && (
-          <div style={{ position: "absolute", left: "50%", top: "45%", transform: "translate(-50%,-50%)", width: "60%", display: "flex", flexDirection: "column", gap: 8, animation: "foxpitFadeUp .5s ease both" }}>
-            <div style={{ textAlign: "center", fontSize: 11, letterSpacing: ".18em", color: "#e0cf9f", fontWeight: 800, textShadow: "0 2px 6px #000" }}>SELECT A FLOOR</div>
-            {FOXPIT_ROOMS.slice().reverse().map((r) => {
-              const unlocked = lone || isUnlocked(r, cleared);
-              const done = cleared.has(r.key);
-              return (
-                <button key={r.key} onClick={() => unlocked && pick(r.key)} disabled={!unlocked}
-                  style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "9px 12px", borderRadius: 10, cursor: unlocked ? "pointer" : "not-allowed", background: "rgba(6,8,12,.82)", border: `1.5px solid ${done ? "#22C55E" : unlocked ? r.accent : "#3a4653"}`, color: "#E7E7EB", filter: unlocked ? "none" : "grayscale(.5) brightness(.7)" }}>
-                  <span style={{ fontFamily: "Georgia, serif", fontSize: 14, fontWeight: 700 }}>{r.name}</span>
-                  <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: ".06em", color: done ? "#22C55E" : unlocked ? r.accent : "#c8a24b" }}>{done ? "✓" : unlocked ? "GO ›" : `${keyLabel(r.needsKey!)} KEY`}</span>
-                </button>
-              );
-            })}
+      {/* INTERIOR — floor directory + side call-plate (select), and the travel beat (riding) */}
+      {(phase === "select" || phase === "riding") && (
+        <div style={{ position: "relative", zIndex: 2, display: "flex", flexDirection: "column", height: "100%", boxSizing: "border-box", padding: "calc(env(safe-area-inset-top,0px) + 16px) calc(env(safe-area-inset-right,0px) + 14px) calc(env(safe-area-inset-bottom,0px) + 16px) calc(env(safe-area-inset-left,0px) + 14px)" }}>
+          {/* header */}
+          <div style={{ flex: "0 0 auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div>
+              <div style={{ fontFamily: "Georgia, serif", fontSize: 20, letterSpacing: ".14em", color: BRASS_LIT, textShadow: "0 2px 6px #000" }}>ELEVATOR</div>
+              <div style={{ fontSize: 10, letterSpacing: ".24em", color: BRASS, fontWeight: 800 }}>SELECT A FLOOR</div>
+            </div>
+            {phase === "select" && (
+              <button onClick={onClose} aria-label="Close" style={{ border: `1px solid ${BRASS}`, background: "rgba(0,0,0,.35)", color: BRASS_LIT, borderRadius: 10, padding: "6px 12px", fontSize: 18, fontWeight: 700, cursor: "pointer" }}>✕</button>
+            )}
           </div>
-        )}
 
-        {phase === "riding" && (
-          <div style={{ position: "absolute", left: "50%", top: "45%", transform: "translate(-50%,-50%)", textAlign: "center", animation: "foxpitFadeUp .4s ease both" }}>
-            <div style={{ fontFamily: "Georgia, serif", fontSize: 22, color: "#f5ead0", letterSpacing: ".1em", textShadow: "0 2px 12px #000" }}>Traveling…</div>
+          {/* body: side call-plate + the directory */}
+          <div style={{ flex: "1 1 auto", display: "flex", gap: 12, marginTop: 14, minHeight: 0 }}>
+            {/* SIDE WALL up/down call plate — brass, matches the car */}
+            <div style={{ flex: "0 0 auto", alignSelf: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: "12px 8px", borderRadius: 12, background: `linear-gradient(180deg, ${BRASS}, ${BRASS_DARK})`, border: `2px solid ${BRASS_LIT}`, boxShadow: `0 6px 16px rgba(0,0,0,.5), inset 0 0 8px ${BRASS_LIT}` }}>
+              {(["▲", "▼"] as const).map((g, i) => {
+                const lit = phase === "riding" && i === 0;
+                return (
+                  <span key={g} style={{ width: 30, height: 30, borderRadius: 999, display: "grid", placeItems: "center", fontSize: 13, color: INK, background: `radial-gradient(circle at 40% 35%, ${BRASS_LIT}, ${BRASS_DARK})`, border: `1.5px solid ${BRASS_LIT}`, boxShadow: lit ? `0 0 12px ${BRASS_LIT}` : "inset 0 1px 3px rgba(0,0,0,.5)", opacity: lit ? 1 : 0.85 }}>{g}</span>
+                );
+              })}
+              <div style={{ width: 34, height: 12, borderRadius: 3, background: "#0c0904", color: BRASS_LIT, fontSize: 8, fontWeight: 800, display: "grid", placeItems: "center", letterSpacing: ".06em" }}>{dest ? "•••" : "—"}</div>
+            </div>
+
+            {/* DIRECTORY — one row per floor */}
+            <div style={{ flex: "1 1 auto", display: "flex", flexDirection: "column", gap: 10, overflowY: "auto", minHeight: 0, animation: "foxpitFadeUp .4s ease both" }}>
+              {directory.map((d) => (
+                <FloorRow key={d.kind === "room" ? d.room.key : d.kind} d={d} lone={lone} cleared={cleared} traveling={phase === "riding"} onPick={pick} />
+              ))}
+            </div>
           </div>
-        )}
-      </div>
+
+          {phase === "riding" && dest && (
+            <div style={{ flex: "0 0 auto", textAlign: "center", marginTop: 10 }}>
+              <div style={{ fontFamily: "Georgia, serif", fontSize: 20, color: BRASS_LIT, letterSpacing: ".1em", textShadow: "0 2px 12px #000" }}>
+                Traveling to {destName(dest)}…
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* WINNER'S LOUNGE welcome beat — Boss Fox ushers the player in (placeholder cutout). */}
+      {phase === "lounge" && (
+        <div style={{ position: "relative", zIndex: 3, height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "0 24px", animation: "foxpitFadeUp .5s ease both" }}>
+          <div style={{ fontSize: 11, letterSpacing: ".26em", color: BRASS, fontWeight: 800 }}>WINNER&apos;S LOUNGE</div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={roomByKey("suite").avatarImg} alt="Boss Fox welcomes you" draggable={false} style={{ height: "46%", width: "auto", maxWidth: "80%", objectFit: "contain", margin: "14px 0", filter: "drop-shadow(0 10px 30px rgba(0,0,0,.7))" }} />
+          <div style={{ fontFamily: "Georgia, serif", fontSize: 22, color: "#f5e3ac" }}>Boss Fox welcomes you in</div>
+          <div style={{ fontSize: 13, color: "#e8cfa0", marginTop: 6, maxWidth: 320, lineHeight: 1.5 }}>
+            You beat the tower. This is the rooftop — player versus player. (Lounge opening soon.)
+          </div>
+          <button onClick={onClose} style={{ marginTop: 22, border: `2px solid ${BRASS}`, background: "rgba(200,162,75,.16)", color: "#fff", borderRadius: 12, padding: "12px 30px", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>Step in ›</button>
+        </div>
+      )}
     </div>
+  );
+}
+
+/** One directory row: a round brass call button + floor label; lit when unlocked, dim
+ *  with the tier-key icon when locked. */
+function FloorRow({
+  d,
+  lone,
+  cleared,
+  traveling,
+  onPick,
+}: {
+  d: FloorDest;
+  lone: boolean;
+  cleared: Set<FoxPitRoomKey>;
+  traveling: boolean;
+  onPick: (d: FloorDest) => void;
+}) {
+  const room = d.kind === "room" ? d.room : null;
+  const unlocked = d.kind === "room" ? lone || isUnlocked(room!, cleared) : true;
+  const done = room ? cleared.has(room.key) : false;
+  const name = d.kind === "winners" ? WINNERS_LOUNGE.name : d.kind === "lobby" ? "Lobby" : room!.name;
+  const sub = d.kind === "winners" ? WINNERS_LOUNGE.floorLabel : d.kind === "lobby" ? "Street level · Hub" : room!.floorLabel;
+  const accent = d.kind === "winners" ? WINNERS_LOUNGE.accent : d.kind === "lobby" ? BRASS : room!.accent;
+  const keyIcon = !unlocked && room?.needsKey ? KEY_ASSET[room.needsKey] : null;
+
+  return (
+    <button
+      onClick={() => unlocked && !traveling && onPick(d)}
+      disabled={!unlocked || traveling}
+      style={{
+        display: "flex", alignItems: "center", gap: 14, width: "100%", textAlign: "left",
+        padding: "10px 12px", borderRadius: 14,
+        background: "rgba(10,5,4,.55)",
+        border: `1.5px solid ${unlocked ? accent : BRASS_DARK}`,
+        boxShadow: unlocked ? `0 0 14px ${accent}44` : "none",
+        cursor: unlocked && !traveling ? "pointer" : "not-allowed",
+        filter: unlocked ? "none" : "grayscale(.35) brightness(.82)",
+      }}
+    >
+      {/* round CALL BUTTON — glowing brass when unlocked, dim when locked */}
+      <span style={{
+        flex: "0 0 auto", width: 46, height: 46, borderRadius: 999, display: "grid", placeItems: "center",
+        fontSize: 17, fontWeight: 900, color: unlocked ? INK : BRASS_DARK,
+        background: unlocked ? `radial-gradient(circle at 38% 32%, ${BRASS_LIT}, ${BRASS_DARK})` : "radial-gradient(circle at 38% 32%, #241a10, #0d0a06)",
+        border: `2px solid ${unlocked ? BRASS_LIT : BRASS_DARK}`,
+        boxShadow: unlocked ? `0 0 14px ${BRASS}aa, inset 0 0 6px ${BRASS_LIT}` : "inset 0 2px 5px rgba(0,0,0,.6)",
+      }}>
+        {done ? "✓" : unlocked ? "●" : <LockGlyph size={16} />}
+      </span>
+
+      {/* label */}
+      <span style={{ flex: "1 1 auto", minWidth: 0 }}>
+        <span style={{ display: "block", fontFamily: "Georgia, serif", fontSize: 17, fontWeight: 700, color: unlocked ? "#f6ead2" : LABEL_MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</span>
+        <span style={{ display: "block", fontSize: 10, letterSpacing: ".08em", fontWeight: 700, color: unlocked ? accent : LABEL_MUTED }}>{sub.toUpperCase()}</span>
+      </span>
+
+      {/* right: tier-key when locked, CLEARED when done */}
+      {keyIcon ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={keyIcon.src} alt={`needs ${keyIcon.tier} key`} style={{ flex: "0 0 auto", height: 30, width: "auto", filter: "drop-shadow(0 2px 5px #000)" }} />
+      ) : done ? (
+        <span style={{ flex: "0 0 auto", fontSize: 11, fontWeight: 800, letterSpacing: ".08em", color: "#22C55E" }}>CLEARED</span>
+      ) : null}
+    </button>
   );
 }
