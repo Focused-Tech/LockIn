@@ -19,13 +19,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
  * post/rail SLOT sprites (SlotPieces, below) are hand-placed via their own ⚙ pieces drag pass.
  */
 
-// ── design tokens (named) ──
-const PAW_GOLD = "#d9a441";
-const GUIDE_CYAN = "rgba(0,229,255,.9)";
-const HANDLE_RED = "rgba(252,62,1,.92)";
-const HANDLE_RING = "#ffffff";
-const DUMP_GREEN = "#9fe0b0";
-const PANEL_INK = "rgba(6,8,12,.9)";
 
 /**
  * 8-FRAME STAIR-CLIMBING WALK CYCLE (side profile, facing RIGHT), sliced from the 2x4 sheet.
@@ -219,17 +212,14 @@ const easeInOut = (t: number) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2,
  * a screenshot. ⚙ toggles CALIBRATE: drag the dots, copy the JSON.
  */
 export function StairClimber() {
-  const [wp, setWp] = useState<Waypoint[]>(CLIMB_WAYPOINTS);
+  const [wp] = useState<Waypoint[]>(CLIMB_WAYPOINTS);
   const [pos, setPos] = useState({ x: CLIMB_WAYPOINTS[0]!.x, y: CLIMB_WAYPOINTS[0]!.y, facing: 1, frame: 0 });
   const [moving, setMoving] = useState(false);
-  const [calibrate, setCalibrate] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const rootRef = useRef<HTMLDivElement>(null);
   const busy = useRef(false);
   const raf = useRef<number | null>(null);
   const timer = useRef<number | null>(null);
   const seg = useRef(0);
-  const dragging = useRef<number | null>(null);
 
   const stepTo = useCallback((to: number, list: Waypoint[]) => {
     const from = to - 1;
@@ -257,9 +247,8 @@ export function StairClimber() {
     raf.current = requestAnimationFrame(frame);
   }, []);
 
-  // auto-climb loop (paused while calibrating). Guarded so a thrown frame surfaces, not swallowed.
+  // auto-climb loop. Guarded so a thrown frame surfaces, not swallowed.
   useEffect(() => {
-    if (calibrate) return;
     let alive = true;
     const tick = () => {
       if (!alive) return;
@@ -293,27 +282,10 @@ export function StairClimber() {
       if (timer.current) window.clearTimeout(timer.current);
       if (raf.current) cancelAnimationFrame(raf.current);
     };
-  }, [calibrate, wp, stepTo]);
-
-  // calibrate: drag a numbered dot → update its waypoint (in % of the container)
-  const onDrag = (e: React.PointerEvent) => {
-    const i = dragging.current;
-    if (i === null || !rootRef.current) return;
-    const r = rootRef.current.getBoundingClientRect();
-    const x = Math.max(0, Math.min(100, ((e.clientX - r.left) / r.width) * 100));
-    const y = Math.max(0, Math.min(100, ((e.clientY - r.top) / r.height) * 100));
-    setWp((prev) => prev.map((p, k) => (k === i ? { ...p, x: +x.toFixed(1), y: +y.toFixed(1) } : p)));
-  };
-
-  const dumpJson = JSON.stringify(wp.map((p) => ({ x: p.x, y: p.y, ...(p.landing ? { landing: true } : {}) })));
+  }, [wp, stepTo]);
 
   return (
-    <div
-      ref={rootRef}
-      style={{ position: "absolute", inset: 0, zIndex: 5, pointerEvents: calibrate ? "auto" : "none" }}
-      onPointerMove={calibrate ? onDrag : undefined}
-      onPointerUp={() => (dragging.current = null)}
-    >
+    <div style={{ position: "absolute", inset: 0, zIndex: 5, pointerEvents: "none" }}>
       {/* the walking avatar — feet anchored on the waypoint; scaleX flips at switchbacks;
           bob sells the single-pose walk while moving. */}
       <div
@@ -333,46 +305,6 @@ export function StairClimber() {
           <img src={WALK_FRAMES[pos.frame % WALK_FRAMES.length] ?? WALK_FRAMES[0]} alt="Climbing player" draggable={false} style={{ width: "100%", height: "auto", display: "block", transform: `scaleX(${pos.facing})` }} />
         </div>
       </div>
-
-      {/* calibrate overlay: guide line + numbered draggable dots */}
-      {calibrate && (
-        <>
-          <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} preserveAspectRatio="none" viewBox="0 0 100 100">
-            <polyline points={wp.map((p) => `${p.x},${p.y}`).join(" ")} fill="none" stroke={GUIDE_CYAN} strokeWidth={0.4} />
-          </svg>
-          {wp.map((p, i) => (
-            <div
-              key={i}
-              onPointerDown={(e) => { dragging.current = i; e.stopPropagation(); }}
-              onTouchStart={(e) => e.stopPropagation()}
-              style={{
-                position: "absolute", left: `${p.x}%`, top: `${p.y}%`, transform: "translate(-50%,-50%)",
-                width: 22, height: 22, borderRadius: "50%", background: p.landing ? PAW_GOLD : HANDLE_RED,
-                border: `2px solid ${HANDLE_RING}`, color: "#fff", fontSize: 11, fontWeight: 800,
-                display: "grid", placeItems: "center", cursor: "grab", touchAction: "none", zIndex: 7,
-              }}
-            >
-              {i}
-            </div>
-          ))}
-        </>
-      )}
-
-      {/* ⚙ calibrate toggle + JSON dump (dev tool; always tappable) */}
-      <button
-        onClick={() => setCalibrate((c) => !c)}
-        style={{ position: "absolute", top: "calc(env(safe-area-inset-top,0px) + 60px)", right: 8, zIndex: 9, pointerEvents: "auto", border: `1px solid ${PAW_GOLD}`, background: PANEL_INK, color: PAW_GOLD, borderRadius: 8, padding: "5px 9px", fontSize: 12, fontWeight: 800, cursor: "pointer" }}
-      >
-        {calibrate ? "✓ done" : "⚙ cal"}
-      </button>
-      {calibrate && (
-        <textarea
-          readOnly
-          value={dumpJson}
-          onFocus={(e) => e.currentTarget.select()}
-          style={{ position: "absolute", left: 8, right: 8, bottom: "calc(env(safe-area-inset-bottom,0px) + 12px)", height: 70, zIndex: 9, pointerEvents: "auto", background: "#0a0c11", color: DUMP_GREEN, border: "1px solid #222", borderRadius: 8, fontSize: 10, fontFamily: "ui-monospace, monospace", padding: 8 }}
-        />
-      )}
 
       {error && (
         <div style={{ position: "absolute", left: 8, right: 8, top: "calc(env(safe-area-inset-top,0px) + 100px)", zIndex: 9, pointerEvents: "none", background: "rgba(120,0,0,.9)", color: "#fff", borderRadius: 8, padding: 10, fontSize: 12 }}>

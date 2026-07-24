@@ -131,6 +131,9 @@ export function FoxPitGame({
   // held only as a transient toggle — it affects scoring + the tally.
   const [bossMode, setBossMode] = useState<BossStakeMode>("match");
   const [last, setLast] = useState<{ you: number; boss: number; won: boolean; bossMode: BossStakeMode } | null>(null);
+  // DEV PREVIEW (temporary): jump straight to the dethroned-boss key-drop without playing a full
+  // room. Remove before launch along with the 🔑 button below.
+  const [keyPreview, setKeyPreview] = useState(false);
 
   // Skip/Start on the how-to screen: remember the dismissal and advance to the deal (categories
   // are already chosen in the locker).
@@ -223,6 +226,26 @@ export function FoxPitGame({
 
   return (
     <div className="fixed inset-0 z-[67] flex flex-col overflow-y-auto bg-background text-foreground">
+      {/* DEV PREVIEW (temporary): jump straight to this room's key-drop. Remove before launch. */}
+      <button
+        onClick={() => setKeyPreview(true)}
+        className="fixed right-2 z-[90] rounded-md border px-2 py-1 text-[11px] font-extrabold"
+        style={{ top: "calc(env(safe-area-inset-top,0px) + 74px)", borderColor: "#00e5ff", background: "rgba(6,8,12,.9)", color: "#00e5ff" }}
+      >
+        🔑 keydrop
+      </button>
+      {keyPreview && (
+        <div className="fixed inset-0 z-[95] flex flex-col bg-background">
+          <KeyDropPhase
+            roomKey={roomKey}
+            accent={accent}
+            bossName={rules.boss}
+            roundsWon={Math.ceil(rules.rounds / 2 + 0.5)}
+            totalRounds={rules.rounds}
+            onDone={() => setKeyPreview(false)}
+          />
+        </div>
+      )}
       {/* header */}
       <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-border bg-background/95 px-4 py-3">
         <button onClick={onExit} className="rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-muted">
@@ -853,7 +876,7 @@ function RevealPhase({
 }
 
 /* ---------------- room cleared: the dethroned boss drops the key ---------------- */
-function KeyDropPhase({
+export function KeyDropPhase({
   roomKey,
   accent,
   bossName,

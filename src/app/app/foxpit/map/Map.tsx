@@ -951,7 +951,7 @@ function WinnersLoungeArrival({ onDone }: { onDone: () => void }) {
           src={src}
           alt=""
           draggable={false}
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: i === LOUNGE_PLATES.length - 1 ? "cover" : "contain", opacity: beat === i ? 1 : 0, transition: "opacity .6s ease", animation: beat === i ? `foxpitPushIn ${((LOUNGE_BEAT_MS[i] ?? 3000) + 600) / 1000}s ease-in-out both` : "none" }}
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 42%", opacity: beat === i ? 1 : 0, transition: "opacity .6s ease", animation: beat === i ? `foxpitPushIn ${((LOUNGE_BEAT_MS[i] ?? 3000) + 600) / 1000}s ease-in-out both` : "none" }}
         />
       ))}
       {beat === 0 && (
