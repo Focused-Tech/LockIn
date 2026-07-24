@@ -33,6 +33,7 @@ function slateTint(s: FoxSlate) {
  *   category → tip → dealing → deal (keep-N + one redeal) → play → reveal → announce
  */
 type Phase =
+  | "howto"
   | "category"
   | "tip"
   | "dealing"
@@ -82,7 +83,19 @@ export function FoxPitGame({
   const room = roomByKey(roomKey);
   const accent = room.accent;
 
-  const [phase, setPhase] = useState<Phase>("category");
+  // The Dojo opens on the HOW-TO-PLAY screen (item 5) — its own beat BEFORE category select —
+  // unless the player has already dismissed/skipped it (remembered). Every other room starts at
+  // category select. Lazy init so there's no flash of the wrong screen.
+  const [phase, setPhase] = useState<Phase>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        if (roomKey === "dojo" && !localStorage.getItem("foxpit.howto.v1")) return "howto";
+      } catch (err) {
+        console.error("[foxpit] how-to flag read failed:", err);
+      }
+    }
+    return "category";
+  });
   const [roundIndex, setRoundIndex] = useState(0);
   // NOTE: no deal at mount. Cards only exist once `dealRound()` runs, which happens
   // after the category-select (and tip) beats have resolved.
@@ -95,24 +108,15 @@ export function FoxPitGame({
   const [roundsWon, setRoundsWon] = useState(0);
   const [last, setLast] = useState<{ you: number; boss: number; won: boolean } | null>(null);
 
-  // Item 5: HOW TO PLAY in the Dojo — shown once, dismissal/skip is remembered so it doesn't
-  // reappear every round.
-  const [showHowTo, setShowHowTo] = useState(false);
-  useEffect(() => {
-    if (roomKey !== "dojo" || typeof window === "undefined") return;
-    try {
-      if (!localStorage.getItem("foxpit.howto.v1")) setShowHowTo(true);
-    } catch (err) {
-      console.error("[foxpit] how-to flag read failed:", err);
-    }
-  }, [roomKey]);
+  // Skip/Start on the how-to screen: remember the dismissal (so it never reappears) and advance
+  // to category select.
   const dismissHowTo = () => {
     try {
       localStorage.setItem("foxpit.howto.v1", "1");
     } catch (err) {
       console.error("[foxpit] how-to flag write failed:", err);
     }
-    setShowHowTo(false);
+    setPhase("category");
   };
 
   const keepN = keepNFor(roomKey, roundIndex);
@@ -197,7 +201,6 @@ export function FoxPitGame({
 
   return (
     <div className="fixed inset-0 z-[67] flex flex-col overflow-y-auto bg-background text-foreground">
-      {showHowTo && <HowToPlay accent={accent} onDismiss={dismissHowTo} />}
       {/* header */}
       <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-border bg-background/95 px-4 py-3">
         <button onClick={onExit} className="rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-muted">
@@ -216,6 +219,8 @@ export function FoxPitGame({
           <div>{FOXPIT_BUILD_VERSION}</div>
         </div>
       </div>
+
+      {phase === "howto" && <HowToPlay accent={accent} onDismiss={dismissHowTo} />}
 
       {phase === "category" && (
         <CategorySelectPhase
@@ -329,11 +334,14 @@ function HowToPlay({ accent, onDismiss }: { accent: string; onDismiss: () => voi
   ];
   return (
     <div
-      className="fixed inset-0 z-[72] flex flex-col overflow-y-auto bg-background/97 p-6"
-      style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 20px)", paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 20px)" }}
+      className="flex flex-1 flex-col overflow-y-auto p-6"
+      style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 20px)" }}
     >
       <div className="flex items-center justify-between">
-        <div className="font-serif text-2xl" style={{ color: accent }}>How to play</div>
+        <div>
+          <div className="text-xs font-extrabold tracking-widest" style={{ color: accent }}>THE DOJO</div>
+          <div className="font-serif text-2xl text-foreground">How to play</div>
+        </div>
         <button onClick={onDismiss} className="rounded-lg border border-border px-4 py-1.5 text-sm font-bold text-muted">
           Skip
         </button>
