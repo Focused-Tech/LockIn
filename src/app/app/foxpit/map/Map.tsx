@@ -815,18 +815,92 @@ function ElevatorRide({
         </div>
       )}
 
-      {/* WINNER'S LOUNGE welcome beat — Boss Fox ushers the player in (placeholder cutout). */}
-      {phase === "lounge" && (
-        <div style={{ position: "relative", zIndex: 3, height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "0 24px", animation: "foxpitFadeUp .5s ease both" }}>
-          <div style={{ fontSize: 11, letterSpacing: ".26em", color: BRASS, fontWeight: 800 }}>WINNER&apos;S LOUNGE</div>
+      {/* WINNER'S LOUNGE arrival cinematic (Part B) — plays the four plates on first arrival. */}
+      {phase === "lounge" && <WinnersLoungeArrival onDone={onClose} />}
+    </div>
+  );
+}
+
+/**
+ * WINNER'S LOUNGE arrival cinematic (Part B) — the "you have arrived" payoff for beating Boss Fox.
+ * Four plates open on the room and close on the throne, each a slow push-in cross-fading into the
+ * next (~2.5s each). The final beat overlays Boss Fox ushering the player in (placeholder cutout —
+ * swap when the art lands) and hands off to the lounge. Plays IN FULL the first arrival; auto-skips
+ * on every later visit. Tap anywhere to skip. Dealer-less — no Locksmith here (B3).
+ */
+const LOUNGE_PLATES = [
+  "/foxpit/lounge/wl_plate_wide_establishing.png", // open on the room
+  "/foxpit/lounge/wl_plate_throne_left_3q.png",
+  "/foxpit/lounge/wl_plate_throne_right_3q.png",
+  "/foxpit/lounge/wl_plate_throne_straight.png", // close on the throne (the prize)
+];
+const LOUNGE_BOSS_FOX = "/foxpit/avatar-fox.png"; // placeholder usher until the cutout lands
+const LOUNGE_BEAT_MS = 2500;
+
+function WinnersLoungeArrival({ onDone }: { onDone: () => void }) {
+  const [firstTime] = useState(() => {
+    if (typeof window === "undefined") return true;
+    try {
+      return !localStorage.getItem("foxpit.lounge.arrived.v1");
+    } catch (err) {
+      console.error("[foxpit] lounge arrival flag read failed:", err);
+      return true;
+    }
+  });
+  const [beat, setBeat] = useState(0);
+  const done = useRef(onDone);
+  done.current = onDone;
+
+  // Later visits: skip the cinematic automatically (do not make a returning player sit through it).
+  useEffect(() => {
+    if (firstTime) return;
+    const t = window.setTimeout(() => done.current(), 0);
+    return () => window.clearTimeout(t);
+  }, [firstTime]);
+
+  // First visit: remember it, then advance the beats (holding on the final throne + Boss Fox).
+  useEffect(() => {
+    if (!firstTime) return;
+    try {
+      localStorage.setItem("foxpit.lounge.arrived.v1", "1");
+    } catch (err) {
+      console.error("[foxpit] lounge arrival flag write failed:", err);
+    }
+  }, [firstTime]);
+  useEffect(() => {
+    if (!firstTime || beat >= LOUNGE_PLATES.length - 1) return;
+    const t = window.setTimeout(() => setBeat((b) => b + 1), LOUNGE_BEAT_MS);
+    return () => window.clearTimeout(t);
+  }, [firstTime, beat]);
+
+  if (!firstTime) return null;
+  const onThrone = beat === LOUNGE_PLATES.length - 1;
+
+  return (
+    <div onClick={() => done.current()} style={{ position: "absolute", inset: 0, zIndex: 5, background: "#05070b", overflow: "hidden", cursor: "pointer" }}>
+      {LOUNGE_PLATES.map((src, i) => (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          key={src}
+          src={src}
+          alt=""
+          draggable={false}
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: beat === i ? 1 : 0, transition: "opacity .6s ease", animation: beat === i ? `foxpitPushIn ${(LOUNGE_BEAT_MS + 600) / 1000}s ease-in-out both` : "none" }}
+        />
+      ))}
+      {beat === 0 && (
+        <div style={{ position: "absolute", top: "8%", left: 0, right: 0, textAlign: "center", fontSize: 12, letterSpacing: ".3em", color: "#f5e3ac", fontWeight: 800, textShadow: "0 2px 10px #000", animation: "foxpitFadeUp .9s ease both" }}>WINNER&apos;S LOUNGE</div>
+      )}
+      {onThrone && (
+        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", paddingBottom: "calc(env(safe-area-inset-bottom,0px) + 26px)", animation: "foxpitFadeUp 1s ease both" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={roomByKey("suite").avatarImg} alt="Boss Fox welcomes you" draggable={false} style={{ height: "46%", width: "auto", maxWidth: "80%", objectFit: "contain", margin: "14px 0", filter: "drop-shadow(0 10px 30px rgba(0,0,0,.7))" }} />
-          <div style={{ fontFamily: "Georgia, serif", fontSize: 22, color: "#f5e3ac" }}>Boss Fox welcomes you in</div>
-          <div style={{ fontSize: 13, color: "#e8cfa0", marginTop: 6, maxWidth: 320, lineHeight: 1.5 }}>
-            You beat the tower. This is the rooftop — player versus player. (Lounge opening soon.)
-          </div>
-          <button onClick={onClose} style={{ marginTop: 22, border: `2px solid ${BRASS}`, background: "rgba(200,162,75,.16)", color: "#fff", borderRadius: 12, padding: "12px 30px", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>Step in ›</button>
+          <img src={LOUNGE_BOSS_FOX} alt="Boss Fox welcomes you in" draggable={false} style={{ height: "42%", width: "auto", maxWidth: "70%", objectFit: "contain", filter: "drop-shadow(0 10px 30px rgba(0,0,0,.8))" }} />
+          <div style={{ fontFamily: "Georgia, serif", fontSize: 22, color: "#f5e3ac", textShadow: "0 2px 10px #000", marginTop: 6 }}>Welcome to the Winner&apos;s Lounge</div>
+          <button onClick={(e) => { e.stopPropagation(); done.current(); }} style={{ marginTop: 16, border: `2px solid ${BRASS}`, background: "rgba(200,162,75,.18)", color: "#fff", borderRadius: 12, padding: "12px 30px", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>Step in ›</button>
         </div>
+      )}
+      {!onThrone && (
+        <div style={{ position: "absolute", bottom: "calc(env(safe-area-inset-bottom,0px) + 16px)", right: 16, fontSize: 12, letterSpacing: ".1em", color: "rgba(245,227,172,.7)" }}>tap to skip</div>
       )}
     </div>
   );

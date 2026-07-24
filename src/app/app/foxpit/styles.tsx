@@ -6,6 +6,8 @@ export function FoxPitStyles() {
     <style>{`
       @keyframes foxpitBob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(-6px);} }
       @keyframes foxpitSpin { to { transform: rotate(360deg); } }
+      /* Winner's Lounge arrival: each plate slow-pushes in over its beat (ease in/out, no snap). */
+      @keyframes foxpitPushIn { from { transform: scale(1); } to { transform: scale(1.08); } }
       /* Stair-climb bob — the single walk pose bobs while moving between waypoints. */
       @keyframes foxpitClimberBob { 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(-2.2%);} }
       @keyframes foxpitKeySpin { 0%{ transform: rotateY(0deg) translateY(0);} 50%{ transform: rotateY(180deg) translateY(-10px);} 100%{ transform: rotateY(360deg) translateY(0);} }
