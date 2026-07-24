@@ -20,12 +20,12 @@ type Piece = { file: string; w: number; h: number; prox: Cap; dist: Cap };
 
 // Skeleton anchors in FIG coords (figure faces RIGHT). Near side = viewer side (drawn last).
 const SK = {
-  head: { x: 110, y: 66 }, // coin centre
-  torso: { x: 74, y: 92 }, // torso top-left
-  shoulderN: { x: 126, y: 104 },
-  shoulderF: { x: 98, y: 106 },
-  hipN: { x: 118, y: 250 },
-  hipF: { x: 104, y: 252 },
+  head: { x: 112, y: 112 }, // coin centre — sits on the collar
+  torso: { x: 74, y: 96 }, // torso top-left
+  shoulderN: { x: 142, y: 104 },
+  shoulderF: { x: 96, y: 108 },
+  hipN: { x: 120, y: 256 },
+  hipF: { x: 106, y: 258 },
 };
 
 // Per-gender pieces: prox = joint toward the body (rotation pivot), dist = joint the child hangs on.
@@ -78,12 +78,16 @@ function chain(upper: Piece, lower: Piece, anchor: Cap, upAngle: number, loAngle
 export function AvatarRig({ gender = "male", phase = 0, facing = 1 }: { gender?: Gender; phase?: number; facing?: 1 | -1 }) {
   const P = rigPieces(gender);
   const s = Math.sin(phase * Math.PI * 2);
-  // Stride, rotation only. Thighs scissor opposite; the knee flexes on the leg swinging BACK, so the
-  // bent leg ALTERNATES. Arms swing opposite their same-side leg; elbows carry a light constant bend.
-  const thighN = 16 * s, thighF = -16 * s;
-  const shinN = -38 * Math.max(0, -s), shinF = -38 * Math.max(0, s);
-  const uarmN = -18 * s, uarmF = 18 * s;
-  const farmN = -16 - 8 * Math.max(0, -s), farmF = -16 - 8 * Math.max(0, s);
+  const up = Math.max(0, s); // up-beat of the step
+  // Climbing a stair: the NEAR leg (its slice is pre-bent — the lifted leg) rises and the knee flexes
+  // to clear the tread, then lowers to plant; the FAR leg is the planted push-off. Arms swing. Rotation
+  // only. Kept moderate so the FK joints stay connected — tune against the device screenshot.
+  const thighN = -10 * up;   // lift the front knee on the step
+  const shinN = -24 * up;    // flex the front knee as it lifts
+  const thighF = 6 * s;      // planted leg pushes through
+  const shinF = -10 * Math.max(0, -s);
+  const uarmN = -15 * s, uarmF = 15 * s;
+  const farmN = -14 - 6 * Math.max(0, -s), farmF = -14 - 6 * Math.max(0, s);
 
   // Paint order back → front (item 4).
   const placed: Placed[] = [
