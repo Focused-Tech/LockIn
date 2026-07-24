@@ -42,6 +42,9 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
   const towerRef = useRef<HTMLDivElement>(null);
   const [cleared, setCleared] = useState<Set<FoxPitRoomKey>>(new Set());
   const [hud, setHud] = useState(true);
+  // The BUILD MAP is a large image; hold the tower (elevator animation + overlays) behind a loader
+  // until it has fully decoded, so the map shows FIRST and complete — not in sections after the car.
+  const [mapReady, setMapReady] = useState(false);
   const [elevatorLocked, setElevatorLocked] = useState(false);
   const [elevatorRide, setElevatorRide] = useState(false);
   // Fast-travel elevator activates only once the High Table is CLEARED (beaten),
@@ -210,7 +213,7 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           src="/foxpit/map/tower_map_clean.png"
           alt="The Fox Pit tower"
           draggable={false}
-          onLoad={fitTower}
+          onLoad={() => { setMapReady(true); fitTower(); }}
           style={{ position: "relative", zIndex: 1, width: "100%", height: "auto", display: "block" }}
         />
 
@@ -425,7 +428,7 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
             padding: 0,
             cursor: "pointer",
             filter: elevatorUnlocked ? "none" : "grayscale(.55) brightness(.6)",
-            animation: elevatorUnlocked
+            animation: elevatorUnlocked && mapReady
               ? "foxpitElevatorStops 34s ease-in-out infinite"
               : "none",
           }}
@@ -449,6 +452,32 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           under the system bars, and give the top/bottom rooms breathing room. */}
       <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: "calc(env(safe-area-inset-top, 0px) + 10px)", background: "#0A0D12", zIndex: 62, pointerEvents: "none" }} />
       <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, height: "calc(env(safe-area-inset-bottom, 0px) + 12px)", background: "#0A0D12", zIndex: 62, pointerEvents: "none" }} />
+
+      {/* LOADER — covers the tower until the BUILD MAP has fully decoded, so the map (with the
+          staircase) is what appears first, complete, rather than the elevator animating over a
+          half-loaded map. Fades out on map load. */}
+      <div
+        aria-hidden={mapReady}
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 70,
+          background: "#0A0D12",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexDirection: "column",
+          gap: 14,
+          opacity: mapReady ? 0 : 1,
+          pointerEvents: mapReady ? "none" : "auto",
+          transition: "opacity .5s ease",
+        }}
+      >
+        <div style={{ width: 38, height: 38, borderRadius: "50%", border: "3px solid rgba(200,162,75,.25)", borderTopColor: "#C8A24B", animation: "foxpitSpin 0.9s linear infinite" }} />
+        <div style={{ fontFamily: "Georgia, serif", fontSize: 15, letterSpacing: ".14em", color: "#C8A24B" }}>
+          CLIMBING THE TOWER…
+        </div>
+      </div>
 
       {/* fixed HUD — appears on entry, fades out after 4s */}
       <div

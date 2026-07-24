@@ -614,9 +614,9 @@ function SlateCardFace({
           {slate.questions.length}Q · {stakes[0]}–{stakes[stakes.length - 1]} ⛃
         </div>
       </div>
-      {/* category outline; brightens + fills when kept */}
+      {/* category outline; brightens + fills when kept. Thin 1px border (was 2px) per Frank. */}
       <div
-        className="pointer-events-none absolute inset-0 rounded-[10px] border-2"
+        className="pointer-events-none absolute inset-0 rounded-[10px] border"
         style={{ borderColor: keep ? tint.color : tint.border, background: keep ? tint.soft : "transparent" }}
       />
       {keep && (
