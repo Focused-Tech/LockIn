@@ -23,15 +23,15 @@ export const TRIVIA_MIN_OPTIONS = 2;
 export const TRIVIA_MAX_OPTIONS = 4;
 
 /**
- * Difficulty ladder, easiest → hardest, keyed by the room the player is in.
- * The label is handed to the generator verbatim, so it doubles as the spec for
- * how hard that tier should read.
+ * Difficulty ladder, easiest → hardest, keyed by the room. Difficulty scales by DECOY QUALITY,
+ * not by obscurity — a famous fact with genuinely plausible alternatives is harder than an
+ * obscure fact with one absurd option. The label is handed to the generator verbatim.
  */
 export const TRIVIA_TIERS: Record<FoxPitRoomKey, string> = {
-  dojo: "easiest — a casual fan of this category answers correctly without hesitating",
-  coliseum: "moderate — a regular follower gets it; a casual fan has to think",
-  hightable: "hard — needs real familiarity with the category's history",
-  suite: "hardest — a dedicated superfan's question, but still objectively checkable",
+  dojo: "2 options, well-known facts — any follower of the category gets it right away",
+  coliseum: "3 options, one genuinely plausible decoy a casual fan might fall for",
+  hightable: "4 options, specifics — exact years, margins, chart positions, runners-up; all four options are plausible to a fan",
+  suite: "4 options, expert tier — precise figures and second-order details; distractors are near-misses only an expert rules out",
 };
 
 /** The categories the pool is generated for — the SAME set the player picks from. */
@@ -112,6 +112,28 @@ export const TRIVIA_TOOL_SCHEMA = {
   },
   required: ["questions"],
 };
+
+/**
+ * POLITICS RULE (part 5): a political question must NAME its specifics — a real candidate/
+ * officeholder OR a real bill/law/measure by name — AND include a year. Vague framing
+ * ("Did the Senate pass the infrastructure bill?") is rejected; specific framing
+ * ("In 2021, the Infrastructure Investment and Jobs Act passed the Senate by what margin?")
+ * is accepted. Heuristic validator: drop any political item lacking a year plus a named
+ * measure or a proper-noun person.
+ */
+export function politicalQuestionOk(question: string): boolean {
+  const hasYear = /\b(1[89]|20)\d{2}\b/.test(question);
+  const hasNamedMeasure =
+    /\b(Act|Bill|Amendment|Resolution|Law|Measure|Proposition|Initiative|Treaty|Accord|Executive Order|Referendum)\b/.test(question);
+  // A proper-noun person/body: two consecutive Capitalized words (e.g. "Barack Obama", "Supreme Court").
+  const hasProperName = /\b[A-Z][a-z]+ [A-Z][a-z]+\b/.test(question);
+  return hasYear && (hasNamedMeasure || hasProperName);
+}
+
+/** True when this generated question belongs to the Politics category (case-insensitive). */
+export function isPoliticsCategory(category: string): boolean {
+  return category.toLowerCase().includes("politic");
+}
 
 /** Has this batch aged out? */
 export function batchIsStale(generatedAt: number, now: number): boolean {

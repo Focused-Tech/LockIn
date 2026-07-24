@@ -12,7 +12,7 @@ import { LockGlyph } from "@/components/practice/LockGlyph";
 import { categoryTint } from "@/lib/practice/tints";
 import { roomByKey, type FoxPitRoomKey } from "@/lib/foxpit";
 import { ROOM_RULES, keepNFor, SLATES_PER_ROUND, REDEALS_PER_ROUND, FOXPIT_BUILD_VERSION, CATEGORY_TINT_KEY, TIMERS, FOXPIT_CATEGORIES, CARD_DISTRIBUTION, cardMinFor, unlockedTierCount, type FoxPitCategory } from "@/lib/foxpit/rules";
-import { dealFoxSlatesByCategories, roundScore, bossRoundScore, slateWon, type FoxSlate } from "@/lib/foxpit/slates";
+import { dealFoxSlatesByCategories, roundScore, bossRoundScore, slateWon, type FoxSlate, type BossStakeMode } from "@/lib/foxpit/slates";
 
 /** Resolve the player's shared interest categories (users/{uid}.categories[]) to the Fox Pit set.
  *  Case-insensitive intersection; falls back to all Fox Pit categories if none match. */
@@ -118,7 +118,10 @@ export function FoxPitGame({
   const [redealsLeft, setRedealsLeft] = useState(REDEALS_PER_ROUND);
   const [picks, setPicks] = useState<Record<string, "a" | "b">>({});
   const [roundsWon, setRoundsWon] = useState(0);
-  const [last, setLast] = useState<{ you: number; boss: number; won: boolean } | null>(null);
+  // Boss stake mode chosen per round (item 4). Persisted WITH the round result (in `last`), not
+  // held only as a transient toggle — it affects scoring + the tally.
+  const [bossMode, setBossMode] = useState<BossStakeMode>("match");
+  const [last, setLast] = useState<{ you: number; boss: number; won: boolean; bossMode: BossStakeMode } | null>(null);
 
   // Skip/Start on the how-to screen: remember the dismissal (so it never reappears) and advance
   // to category select.
@@ -175,11 +178,12 @@ export function FoxPitGame({
   const lockRound = () => {
     // Manual early-lock below the floor is blocked by the disabled button + on-screen reason;
     // the round timer still force-settles with whatever is in hand.
-    const played = slates.filter((s) => isLocked(s, picks)).length;
+    const played = slates.filter((s) => isLocked(s, picks));
+    const playedStakes = played.map((s) => s.stake!); // boss plays EXACTLY these cards (item 2)
     const you = roundScore(slates, picks);
-    const boss = bossRoundScore(roomKey, played); // boss plays EXACTLY as many as the player (item 2)
+    const boss = bossRoundScore(roomKey, playedStakes, bossMode); // MATCH / TOP staking (item 4)
     const won = you >= boss;
-    setLast({ you, boss, won });
+    setLast({ you, boss, won, bossMode });
     if (won) setRoundsWon((w) => w + 1);
     setPhase("reveal"); // cards reveal first, then the Locksmith calls it
   };
@@ -208,6 +212,7 @@ export function FoxPitGame({
     setRedealsLeft(REDEALS_PER_ROUND);
     setPicks({});
     setLast(null);
+    setBossMode("match");
     setPhase("category");
   };
 
@@ -241,6 +246,9 @@ export function FoxPitGame({
           accent={accent}
           playerCats={playerCats}
           stakes={rules.stakes}
+          bossName={rules.boss}
+          bossMode={bossMode}
+          onBossMode={setBossMode}
           onConfirm={confirmCategories}
         />
       )}
@@ -306,7 +314,7 @@ export function FoxPitGame({
           won={last.won}
           you={last.you}
           boss={last.boss}
-          note={`${rules.boss} reads at ${rules.bossWinPct}%`}
+          note={`${rules.boss} reads at ${rules.bossWinPct}% · ${last.bossMode === "top" ? "TOP stakes" : "MATCH stakes"}`}
           cta={roundIndex + 1 >= rules.rounds ? "See the tally ›" : "Next round ›"}
           onCta={nextRound}
           onQuit={onExit}
@@ -396,11 +404,14 @@ function HowToPlay({ accent, onDismiss }: { accent: string; onDismiss: () => voi
  * shared interests. Breadth is the reward lever — more categories spread the 5 cards thinner but
  * open higher stake tiers. Defaults to 1 (the safe path). No hedge decay. */
 function CategorySelectPhase({
-  accent, playerCats, stakes, onConfirm,
+  accent, playerCats, stakes, bossName, bossMode, onBossMode, onConfirm,
 }: {
   accent: string;
   playerCats: FoxPitCategory[];
   stakes: number[];
+  bossName: string;
+  bossMode: BossStakeMode;
+  onBossMode: (m: BossStakeMode) => void;
   onConfirm: (cats: FoxPitCategory[]) => void;
 }) {
   // Default to ONE category — most players should take the safe path by default.
@@ -454,6 +465,30 @@ function CategorySelectPhase({
         <span className="font-extrabold" style={{ color: accent }}>{n}</span> categor{n === 1 ? "y" : "ies"} →{" "}
         <span className="font-bold text-foreground">{split.join(" / ")}</span> cards · unlocks up to{" "}
         <span className="font-extrabold" style={{ color: accent }}>{topOpen} ⛃</span>
+      </div>
+
+      {/* BOSS STAKE MODE (item 4) — choose which fight before the round starts */}
+      <div className="w-full max-w-sm">
+        <div className="mb-1 text-center text-[11px] font-extrabold tracking-widest text-muted">HOW DOES {bossName.toUpperCase()} STAKE?</div>
+        <div className="flex gap-2">
+          {([
+            ["match", "Match", "Stakes at your tier — even fight."],
+            ["top", "Top", `Stakes ${stakes[stakes.length - 1]} ⛃ every card — harder, bigger pot.`],
+          ] as const).map(([m, label, desc]) => {
+            const on = bossMode === m;
+            return (
+              <button
+                key={m}
+                onClick={() => onBossMode(m)}
+                className="flex-1 rounded-xl border p-3 text-left"
+                style={{ borderColor: on ? accent : "var(--border)", background: on ? `${accent}22` : "transparent" }}
+              >
+                <div className="text-sm font-extrabold" style={{ color: on ? accent : "var(--foreground)" }}>{label}</div>
+                <div className="mt-0.5 text-[11px] text-muted">{desc}</div>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <button

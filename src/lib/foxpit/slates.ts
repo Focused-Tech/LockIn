@@ -192,14 +192,20 @@ export function roundScore(slates: FoxSlate[], picks: Record<string, "a" | "b">)
   return slates.reduce((sum, s) => (s.stake && slateWon(s, picks) ? sum + s.stake : sum), 0);
 }
 
-/** The boss's simulated round score. The boss plays EXACTLY as many cards as the player did
- *  (`cards`), each won at the boss win% and staked at the room's middle tier. Gates advancement,
- *  not coin-banking. `cards` defaults to the full deal for any legacy caller. */
-export function bossRoundScore(room: FoxPitRoomKey, cards: number = SLATES_PER_ROUND): number {
+/** Boss stake mode (item 4): MATCH = boss stakes at the player's own tier per card; TOP = boss
+ *  stakes at the room's highest tier on every card (harder to out-score, bigger pot). */
+export type BossStakeMode = "match" | "top";
+
+/** The boss's simulated round score. He plays EXACTLY the player's cards (one per `playedStakes`
+ *  entry), each won at the boss win%. In MATCH he stakes what the player staked on that card; in
+ *  TOP he stakes the room's highest tier on every card. Gates advancement, not coin-banking. */
+export function bossRoundScore(room: FoxPitRoomKey, playedStakes: number[], mode: BossStakeMode): number {
   const { bossWinPct, stakes } = ROOM_RULES[room];
-  const midStake = stakes[Math.floor(stakes.length / 2)]!;
-  const n = Math.max(0, Math.min(cards, SLATES_PER_ROUND));
+  const topStake = stakes[stakes.length - 1]!;
   let score = 0;
-  for (let i = 0; i < n; i++) if (Math.random() * 100 < bossWinPct) score += midStake;
+  for (const st of playedStakes) {
+    const bossStake = mode === "top" ? topStake : st;
+    if (Math.random() * 100 < bossWinPct) score += bossStake;
+  }
   return score;
 }

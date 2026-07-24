@@ -23,6 +23,8 @@ import {
   TRIVIA_TIERS,
   TRIVIA_TOOL_SCHEMA,
   generatedBatchSchema,
+  politicalQuestionOk,
+  isPoliticsCategory,
   type GeneratedQuestion,
 } from "@/lib/foxpit/trivia";
 import type { FoxPitRoomKey } from "@/lib/foxpit";
@@ -48,6 +50,17 @@ function systemPrompt(): string {
     "   truth depends on when it is read. Name the year explicitly instead.",
     "5. Prefer facts that have been settled for a while over very recent ones — a result",
     "   from several years ago cannot be overturned by news you have not seen.",
+    "6. DIFFICULTY COMES FROM DECOY QUALITY, NOT OBSCURITY. A famous fact with three",
+    "   genuinely plausible alternatives is harder than an obscure fact with one absurd",
+    "   option. Write distractors a knowledgeable fan would actually have to think about —",
+    "   real runners-up, near-miss figures, the other plausible year. Never pad with a joke",
+    "   option or an obviously wrong one.",
+    "7. POLITICS (hard requirement): every political question MUST name the specifics — the",
+    "   actual candidate or officeholder, the actual bill / law / measure by its real name,",
+    "   the chamber or body, and the year. Vague framing is invalid.",
+    "     REJECT: \"Did the Senate pass the infrastructure bill?\"",
+    "     ACCEPT: \"In 2021, the Infrastructure Investment and Jobs Act passed the Senate by",
+    "             what vote margin?\"",
     "",
     "Write questions a knowledgeable fan of the category would enjoy, not textbook",
     "filler. Vary what the question asks about; do not make every question 'who won'.",
@@ -115,5 +128,19 @@ export async function generateTriviaCell(
     throw new Error(`Trivia generation failed validation for ${category}/${tier}`);
   }
 
-  return { category, tier, questions: parsed.data.questions };
+  let questions = parsed.data.questions;
+
+  // POLITICS validator (part 5): drop any political item lacking a named person/measure + a year,
+  // rather than ship vague framing. Not silent — logs how many were dropped.
+  if (isPoliticsCategory(category)) {
+    const before = questions.length;
+    questions = questions.filter((q) => politicalQuestionOk(q.question));
+    if (questions.length < before) {
+      console.error(
+        `[trivia] dropped ${before - questions.length} vague political item(s) for ${category}/${tier} (need a named person/measure + a year)`,
+      );
+    }
+  }
+
+  return { category, tier, questions };
 }
