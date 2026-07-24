@@ -1,0 +1,6 @@
+piece, size, origin-on-plate(y,x) — ALL transparent PNGs, alpha only, NO backgrounds
+owl_defeated.png	186x333	at(473,86)
+alphawolf_defeated.png	217x361	at(434,286)
+raven_walkaway_dropping.png	171x450	at(359,589)
+raven_drop_feather.png	30x27	at(672,589)
+bossfox_key_handoff.png	151x438	at(369,773)

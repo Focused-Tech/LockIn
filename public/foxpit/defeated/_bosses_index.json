@@ -1,0 +1,47 @@
+{
+ "source_plate": "Gradient_Styling_for_Your_Design__3_.png",
+ "plate": [
+  1056,
+  1504
+ ],
+ "registration": "plate_x/plate_y = origin on the source plate. Compositing every piece at its plate_x/plate_y on a 1056x1504 transparent canvas reproduces the upload, minus 677 px of invisible noise.",
+ "alpha": "plate arrived with clean alpha; no knockout, no defringe (edge-ring white = 0.00%% on all four figures)",
+ "dropped": "677 px of dead specks (max alpha 3, invisible) and green-spill flecks removed",
+ "pieces": [
+  {
+   "file": "owl_defeated.png",
+   "w": 186,
+   "h": 333,
+   "plate_x": 86,
+   "plate_y": 473
+  },
+  {
+   "file": "alphawolf_defeated.png",
+   "w": 217,
+   "h": 361,
+   "plate_x": 286,
+   "plate_y": 434
+  },
+  {
+   "file": "raven_walkaway_dropping.png",
+   "w": 171,
+   "h": 450,
+   "plate_x": 589,
+   "plate_y": 359
+  },
+  {
+   "file": "raven_drop_feather.png",
+   "w": 30,
+   "h": 27,
+   "plate_x": 589,
+   "plate_y": 672
+  },
+  {
+   "file": "bossfox_key_handoff.png",
+   "w": 151,
+   "h": 438,
+   "plate_x": 773,
+   "plate_y": 369
+  }
+ ]
+}

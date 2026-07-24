@@ -10,7 +10,7 @@
 import { useEffect, useRef, useState } from "react";
 import { LockGlyph } from "@/components/practice/LockGlyph";
 import { categoryTint } from "@/lib/practice/tints";
-import { roomByKey, type FoxPitRoomKey } from "@/lib/foxpit";
+import { roomByKey, KEY_ASSET, type FoxPitRoomKey } from "@/lib/foxpit";
 import { ROOM_RULES, keepNFor, SLATES_PER_ROUND, REDEALS_PER_ROUND, FOXPIT_BUILD_VERSION, CATEGORY_TINT_KEY, TIMERS, FOXPIT_CATEGORIES, cardMinFor, unlockedTierCount, type FoxPitCategory } from "@/lib/foxpit/rules";
 import { dealFoxSlatesByCategories, roundScore, bossRoundScore, slateWon, type FoxSlate, type BossStakeMode } from "@/lib/foxpit/slates";
 
@@ -76,6 +76,17 @@ const WINNER_TABLE_BOSS_RIGHT = "/foxpit/tables/locksmith_winners_boss_right.png
 const WINNER_TABLE_BOSS_LEFT = "/foxpit/tables/locksmith_winners_boss_left.png"; // boss wins (left arm)
 /** The LockIn card face every slate is drawn on. */
 const CARD_FRONT = "/foxpit/cards/card_front_single.png";
+
+/** Dethroned-boss cutouts (transparent) for the room-cleared key drop — each boss knocked off
+ *  their throne, dropping/handing over their key. Public/foxpit/defeated. */
+const DEFEATED_BOSS: Record<FoxPitRoomKey, string> = {
+  dojo: "/foxpit/defeated/owl_defeated.png",
+  coliseum: "/foxpit/defeated/alphawolf_defeated.png",
+  hightable: "/foxpit/defeated/raven_walkaway_dropping.png",
+  suite: "/foxpit/defeated/bossfox_key_handoff.png",
+};
+/** Raven flings a feather as she walks away (hightable only). */
+const RAVEN_FEATHER = "/foxpit/defeated/raven_drop_feather.png";
 
 export function FoxPitGame({
   roomKey,
@@ -307,23 +318,34 @@ export function FoxPitGame({
         />
       )}
 
-      {phase === "roomResult" && (
+      {phase === "roomResult" && cleared && (
+        <KeyDropPhase
+          roomKey={roomKey}
+          accent={accent}
+          bossName={rules.boss}
+          roundsWon={roundsWon}
+          totalRounds={rules.rounds}
+          onDone={onCleared}
+        />
+      )}
+
+      {phase === "roomResult" && !cleared && (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
           <div className="text-xs font-extrabold tracking-widest" style={{ color: accent }}>
             {rules.boss.toUpperCase()}
           </div>
           <div className="font-serif text-4xl" style={{ color: accent }}>
-            {cleared ? "Room cleared" : "Boss holds the room"}
+            Boss holds the room
           </div>
           <div className="text-sm text-muted">
             You took {roundsWon} of {rules.rounds} rounds.
           </div>
           <button
-            onClick={cleared ? onCleared : onExit}
+            onClick={onExit}
             className="mt-4 rounded-xl border px-8 py-4 text-lg font-extrabold text-foreground"
             style={{ borderColor: accent, background: `${accent}22` }}
           >
-            {cleared ? `Claim the ${rules.boss} key ›` : "Back to the map ›"}
+            Back to the map ›
           </button>
         </div>
       )}
@@ -825,6 +847,95 @@ function RevealPhase({
         <button onClick={onDone} className="w-full rounded-xl py-4 text-lg font-extrabold text-white" style={{ background: accent }}>
           Hear the call ›
         </button>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- room cleared: the dethroned boss drops the key ---------------- */
+function KeyDropPhase({
+  roomKey,
+  accent,
+  bossName,
+  roundsWon,
+  totalRounds,
+  onDone,
+}: {
+  roomKey: FoxPitRoomKey;
+  accent: string;
+  bossName: string;
+  roundsWon: number;
+  totalRounds: number;
+  onDone: () => void;
+}) {
+  const room = roomByKey(roomKey);
+  const key = KEY_ASSET[room.bossArt];
+  const bossImg = DEFEATED_BOSS[roomKey];
+  const isRaven = roomKey === "hightable";
+  const [dropped, setDropped] = useState(false);
+  const [showCta, setShowCta] = useState(false);
+  useEffect(() => {
+    const t1 = window.setTimeout(() => { setDropped(true); playCoinDrop(true); }, 550);
+    const t2 = window.setTimeout(() => setShowCta(true), 1900);
+    return () => { window.clearTimeout(t1); window.clearTimeout(t2); };
+  }, []);
+
+  return (
+    <div className="relative flex flex-1 flex-col overflow-hidden">
+      {/* the room + its now-EMPTY throne (boss has been knocked off it) */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={FLOOR_IMG[roomKey]} alt="" className="absolute inset-0 h-full w-full object-cover" style={{ opacity: 0.5 }} />
+      <div aria-hidden className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(5,7,11,.7), rgba(5,7,11,.32) 34%, rgba(5,7,11,.92))" }} />
+
+      {/* dethroned boss cutout — rises in, dropping/handing over the key */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={bossImg}
+        alt={`${bossName} dethroned`}
+        draggable={false}
+        className="absolute"
+        style={{ bottom: "12%", left: "50%", transform: "translateX(-50%)", height: "58%", width: "auto", objectFit: "contain", filter: "drop-shadow(0 12px 30px rgba(0,0,0,.8))", animation: "foxpitFadeUp .8s ease both" }}
+      />
+
+      {/* the KEY falls from the boss to a glowing rest — the player claims it */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={key.src}
+        alt={`${key.tier} key`}
+        draggable={false}
+        className="absolute"
+        style={{
+          left: "50%", top: "52%", height: 74, width: "auto",
+          transform: `translateX(-50%) translateY(${dropped ? "0" : "-220%"}) rotate(${dropped ? "8deg" : "-40deg"})`,
+          opacity: dropped ? 1 : 0,
+          transition: "transform 1.1s cubic-bezier(.34,1.4,.5,1), opacity .5s ease",
+          filter: `drop-shadow(0 0 18px ${accent})`,
+        }}
+      />
+      {isRaven && dropped && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={RAVEN_FEATHER} alt="" aria-hidden className="absolute" style={{ left: "58%", top: "46%", height: 26, animation: "foxpitFadeUp 1.2s ease both" }} />
+      )}
+
+      {/* copy */}
+      <div className="absolute inset-x-0 flex flex-col items-center gap-1 px-6 text-center" style={{ top: "8%" }}>
+        <div className="text-xs font-extrabold tracking-widest" style={{ color: accent }}>ROOM CLEARED</div>
+        <div className="font-serif text-3xl text-foreground" style={{ textShadow: "0 2px 12px #000" }}>You dethroned {bossName}</div>
+        <div className="text-sm font-bold" style={{ color: accent }}>The {key.tier} key is yours</div>
+        <div className="mt-1 text-xs text-muted">You took {roundsWon} of {totalRounds} rounds · {bossName} will fight to reclaim the throne</div>
+      </div>
+
+      {/* claim CTA */}
+      <div className="absolute inset-x-0 flex justify-center" style={{ bottom: "calc(env(safe-area-inset-bottom,0px) + 26px)" }}>
+        {showCta && (
+          <button
+            onClick={onDone}
+            className="rounded-xl border px-8 py-4 text-lg font-extrabold text-foreground"
+            style={{ borderColor: accent, background: `${accent}22`, animation: "foxpitFadeUp .5s ease both" }}
+          >
+            Take the key ›
+          </button>
+        )}
       </div>
     </div>
   );
