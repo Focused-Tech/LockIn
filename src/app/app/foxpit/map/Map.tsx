@@ -18,7 +18,7 @@ import {
   type FoxPitRoom,
   type FoxPitRoomKey,
 } from "@/lib/foxpit";
-import { ELEVATOR_BOTTOM_STOP_PCT } from "@/lib/foxpit/rules";
+import { ELEVATOR_STOP_BY_ID } from "@/lib/foxpit/rules";
 import { StairClimber, SlotPieces } from "./StairClimber";
 import { ArenaIntro } from "@/app/app/practice/arena/chooser/ArenaIntro";
 
@@ -417,10 +417,10 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           style={{
             position: "absolute",
             zIndex: 1,
-            // Idle rest = STOP_7 (Dojo, bottom of shaft). 'top' is the car's BOTTOM edge
-            // (translateY(-100%) anchors bottom to the top:% line), so it equals the stop
-            // pct directly. When unlocked, foxpitElevatorStops drives the full-height climb.
-            top: `${ELEVATOR_BOTTOM_STOP_PCT}%`,
+            // PARKED at the High Table (high-rollers) landing — its approved default rest position.
+            // 'top' is the car's BOTTOM edge (translateY(-100%) anchors bottom to the top:% line),
+            // so it equals the stop pct directly. The demo climb-loop is retired; tap to ride.
+            top: `${ELEVATOR_STOP_BY_ID.hightable}%`,
             left: "0.5%",
             width: "8%",
             transform: "translateY(-100%)",
@@ -429,9 +429,7 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
             padding: 0,
             cursor: "pointer",
             filter: elevatorUnlocked ? "none" : "grayscale(.55) brightness(.6)",
-            animation: elevatorUnlocked && mapReady
-              ? "foxpitElevatorStops 34s ease-in-out infinite"
-              : "none",
+            animation: "none",
           }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -886,7 +884,7 @@ function WinnersLoungeArrival({ onDone }: { onDone: () => void }) {
   const [firstTime] = useState(() => {
     if (typeof window === "undefined") return true;
     try {
-      return !localStorage.getItem("foxpit.lounge.arrived.v4");
+      return !localStorage.getItem("foxpit.lounge.arrived.v5");
     } catch (err) {
       console.error("[foxpit] lounge arrival flag read failed:", err);
       return true;
@@ -905,7 +903,7 @@ function WinnersLoungeArrival({ onDone }: { onDone: () => void }) {
   useEffect(() => {
     if (!firstTime) return;
     try {
-      localStorage.setItem("foxpit.lounge.arrived.v4", "1");
+      localStorage.setItem("foxpit.lounge.arrived.v5", "1");
     } catch (err) {
       console.error("[foxpit] lounge arrival flag write failed:", err);
     }
@@ -953,7 +951,7 @@ function WinnersLoungeArrival({ onDone }: { onDone: () => void }) {
           src={src}
           alt=""
           draggable={false}
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", opacity: beat === i ? 1 : 0, transition: "opacity .6s ease", animation: beat === i ? `foxpitPushIn ${((LOUNGE_BEAT_MS[i] ?? 3000) + 600) / 1000}s ease-in-out both` : "none" }}
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: i === LOUNGE_PLATES.length - 1 ? "cover" : "contain", opacity: beat === i ? 1 : 0, transition: "opacity .6s ease", animation: beat === i ? `foxpitPushIn ${((LOUNGE_BEAT_MS[i] ?? 3000) + 600) / 1000}s ease-in-out both` : "none" }}
         />
       ))}
       {beat === 0 && (

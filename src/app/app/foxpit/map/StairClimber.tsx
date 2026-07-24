@@ -182,112 +182,33 @@ const SLOT_PLACEMENT: Record<string, { x: number; y: number }> = {
 };
 
 // Rough drag STARTING points near each landing (my eyeball, NOT a final position) so the drags are
-// short. The final position is whatever Frank drags to. y per landing group, x per role in the group.
-const STAGE_Y = [1150, 1620, 2180, 2820, 3330, 3880]; // winners, suite, hightable, col-upper, col-lower, lobby
-const STAGE_X = [640, 480, 820]; // rail, post, post
-function stagingPos(i: number): { x: number; y: number } {
-  return { x: STAGE_X[i % 3]!, y: (STAGE_Y[Math.floor(i / 3)] ?? 1000) - 90 };
-}
-
-/** Front rail/post sprites. NORMAL: render the baked SLOT_PLACEMENT (clean until baked). ⚙ pieces:
- *  drag each proposed sprite onto its landing, nudge 1px, copy the emitted map-canvas JSON. */
+/** Front rail/post sprites — the baked SLOT_PLACEMENT, rendered over the tower (path is mapped;
+ *  the drag tool has been retired). % = map-canvas coords; the layer never eats pointer events. */
 export function SlotPieces() {
-  const [placing, setPlacing] = useState(false);
-  const [pos, setPos] = useState<Record<string, { x: number; y: number }>>(() => {
-    const init: Record<string, { x: number; y: number }> = {};
-    PROPOSED.forEach((p, i) => { init[p.file] = SLOT_PLACEMENT[p.file] ?? stagingPos(i); });
-    return init;
-  });
-  const [sel, setSel] = useState<string | null>(null);
-  const layerRef = useRef<HTMLDivElement>(null);
-  const grab = useRef<{ dx: number; dy: number } | null>(null);
-
-  const toCanvas = (clientX: number, clientY: number) => {
-    const r = layerRef.current!.getBoundingClientRect();
-    return { x: ((clientX - r.left) / r.width) * SHEET_W, y: ((clientY - r.top) / r.height) * SHEET_H };
-  };
-  const onDown = (file: string) => (e: React.PointerEvent<HTMLImageElement>) => {
-    e.stopPropagation();
-    setSel(file);
-    const c = toCanvas(e.clientX, e.clientY);
-    const p = pos[file]!;
-    grab.current = { dx: c.x - p.x, dy: c.y - p.y };
-    e.currentTarget.setPointerCapture?.(e.pointerId);
-  };
-  const onPMove = (file: string) => (e: React.PointerEvent) => {
-    if (sel !== file || !grab.current) return;
-    const c = toCanvas(e.clientX, e.clientY);
-    setPos((prev) => ({ ...prev, [file]: { x: Math.round(c.x - grab.current!.dx), y: Math.round(c.y - grab.current!.dy) } }));
-  };
-  const onUp = () => { grab.current = null; };
-  const nudge = (dx: number, dy: number) => {
-    if (!sel) return;
-    setPos((prev) => ({ ...prev, [sel]: { x: prev[sel]!.x + dx, y: prev[sel]!.y + dy } }));
-  };
-
-  const emitJson = JSON.stringify(PROPOSED.map((p) => ({ file: p.file, x: pos[p.file]!.x, y: pos[p.file]!.y })));
-  // Normal mode shows ONLY baked pieces (clean until Frank bakes); place mode shows all proposals.
-  const rendered = placing ? PROPOSED : PROPOSED.filter((p) => SLOT_PLACEMENT[p.file]);
-
+  const rendered = PROPOSED.filter((p) => SLOT_PLACEMENT[p.file]);
   return (
-    <>
-      {/* sprite layer — absolute over the tower so % = map-canvas coords. Layer ignores pointers;
-          each piece opts in only while placing, so empty-space touches still pan/scroll the map. */}
-      <div ref={layerRef} aria-hidden style={{ position: "absolute", inset: 0, zIndex: 6, pointerEvents: "none" }}>
-        {rendered.map((p) => {
-          const pt = pos[p.file]!;
-          const on = placing && sel === p.file;
-          return (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              key={p.file}
-              src={`/foxpit/map/stair_pieces/${p.file}`}
-              alt=""
-              draggable={false}
-              onPointerDown={placing ? onDown(p.file) : undefined}
-              onPointerMove={placing ? onPMove(p.file) : undefined}
-              onPointerUp={placing ? onUp : undefined}
-              onTouchStart={placing ? (e) => e.stopPropagation() : undefined}
-              style={{
-                position: "absolute",
-                left: `${(pt.x / SHEET_W) * 100}%`,
-                top: `${(pt.y / SHEET_H) * 100}%`,
-                width: `${(p.w / SHEET_W) * 100}%`,
-                height: "auto",
-                pointerEvents: placing ? "auto" : "none",
-                cursor: placing ? "grab" : "default",
-                touchAction: "none",
-                outline: on ? "2px solid #00e5ff" : "none",
-                filter: on ? "drop-shadow(0 0 6px #00e5ff)" : "none",
-              }}
-            />
-          );
-        })}
-      </div>
-
-      {/* ⚙ pieces toggle (fixed to the viewport) */}
-      <button
-        onClick={() => setPlacing((v) => !v)}
-        style={{ position: "fixed", top: "calc(env(safe-area-inset-top,0px) + 108px)", right: 8, zIndex: 90, border: "1px solid #00e5ff", background: "rgba(6,8,12,.92)", color: "#00e5ff", borderRadius: 8, padding: "5px 9px", fontSize: 12, fontWeight: 800, cursor: "pointer" }}
-      >
-        {placing ? "✓ pieces" : "⚙ pieces"}
-      </button>
-
-      {placing && (
-        <div style={{ position: "fixed", left: 8, right: 8, bottom: "calc(env(safe-area-inset-bottom,0px) + 10px)", zIndex: 90, display: "flex", flexDirection: "column", gap: 6 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, color: "#cfe", background: "rgba(6,8,12,.85)", borderRadius: 8, padding: "4px 8px" }}>
-            <span style={{ color: "#00e5ff", fontWeight: 800 }}>{sel ?? "tap a piece"}</span>
-            {sel && <span>x {pos[sel]!.x} · y {pos[sel]!.y}</span>}
-            <span style={{ marginLeft: "auto", display: "flex", gap: 4 }}>
-              {([["←", -1, 0], ["→", 1, 0], ["↑", 0, -1], ["↓", 0, 1]] as const).map(([g, dx, dy]) => (
-                <button key={g} onClick={() => nudge(dx, dy)} disabled={!sel} style={{ width: 30, height: 30, borderRadius: 6, border: "1px solid #00e5ff", background: "rgba(6,8,12,.92)", color: "#00e5ff", fontSize: 14, fontWeight: 800, cursor: sel ? "pointer" : "not-allowed" }}>{g}</button>
-              ))}
-            </span>
-          </div>
-          <textarea readOnly value={emitJson} onFocus={(e) => e.currentTarget.select()} style={{ height: 52, background: "#0a0c11", color: "#9fe0b0", border: "1px solid #222", borderRadius: 8, fontSize: 10, fontFamily: "ui-monospace, monospace", padding: 6 }} />
-        </div>
-      )}
-    </>
+    <div aria-hidden style={{ position: "absolute", inset: 0, zIndex: 6, pointerEvents: "none" }}>
+      {rendered.map((p) => {
+        const pt = SLOT_PLACEMENT[p.file]!;
+        return (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            key={p.file}
+            src={`/foxpit/map/stair_pieces/${p.file}`}
+            alt=""
+            draggable={false}
+            style={{
+              position: "absolute",
+              left: `${(pt.x / SHEET_W) * 100}%`,
+              top: `${(pt.y / SHEET_H) * 100}%`,
+              width: `${(p.w / SHEET_W) * 100}%`,
+              height: "auto",
+              pointerEvents: "none",
+            }}
+          />
+        );
+      })}
+    </div>
   );
 }
 
