@@ -13,7 +13,7 @@ import { useRef, useState } from "react";
  * first-pass guess; the architect refines them with the built-in pivot cal tool (drag each dot,
  * copy the emitted JSON, and it gets baked into JOINTS). Blind pivots are a known failure here.
  *
- * Position always comes from CLIMB_WAYPOINTS via the parent (StairClimber) — this component only
+ * Position + scale come from the parent (AVATAR_SLOTS / AVATAR_SCALE, calibrated) — this component only
  * renders the figure for a given walk `phase` + `facing`.
  */
 
@@ -47,16 +47,18 @@ const JOINTS: Record<string, { x: number; y: number }> = {
   kneeF: { x: 320, y: 578 },
 };
 
-// Contra-lateral swing: near arm forward when far leg forward. Small amplitude keeps the flat rig
-// visually connected; the cal-refined joints + larger amplitude come after calibration.
-const legN = (s: number) => 9 * s;
-const legF = (s: number) => -9 * s;
-const shinN = (s: number) => 6 * s;
-const shinF = (s: number) => -6 * s;
-const armN = (s: number) => -8 * s; // opposite the near leg
-const armF = (s: number) => 8 * s;
-const farmN = (s: number) => -6 * s;
-const farmF = (s: number) => 6 * s;
+// Contra-lateral stride (rotation only). s = sin(2*pi*phase). Thighs scissor opposite; the knee
+// bends on whichever leg is swinging BACK, so the bent leg ALTERNATES each step. Arms swing opposite
+// their same-side leg, visibly. Amplitudes are set to read on a phone at render scale (verify in a
+// device screenshot post-calibration, per the spec).
+const legN = (s: number) => 20 * s;
+const legF = (s: number) => -20 * s;
+const shinN = (s: number) => -46 * Math.max(0, -s); // near knee bends when the near thigh is back
+const shinF = (s: number) => -46 * Math.max(0, s); // far knee bends when the far thigh is back
+const armN = (s: number) => -24 * s; // opposite the near leg
+const armF = (s: number) => 24 * s;
+const farmN = (s: number) => -12 - 14 * Math.max(0, -s);
+const farmF = (s: number) => -12 - 14 * Math.max(0, s);
 const still = () => 0;
 
 // Paint order back->front (item 4): far thigh, far shin, far upperarm, far forearm, torso,
@@ -128,7 +130,9 @@ export function AvatarRig({
   onJointsChange?: (j: Record<string, { x: number; y: number }>) => void;
 }) {
   const list = pieces(gender);
-  const s = cal ? 0 : Math.sin(phase * Math.PI * 2);
+  // Pose comes from `phase` in every mode (pivot cal passes 0 for a straight pose; slot cal passes a
+  // mid-stride phase so the rig matches the baked reference while it's dragged onto it).
+  const s = Math.sin(phase * Math.PI * 2);
   const [joints, setJoints] = useState(JOINTS);
   const rootRef = useRef<HTMLDivElement>(null);
   const drag = useRef<string | null>(null);

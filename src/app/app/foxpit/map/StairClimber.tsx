@@ -7,22 +7,18 @@ import { AvatarRig } from "./AvatarRig";
  * FOX PIT — AVATAR STAIR CLIMB (Phase A).
  *
  * The avatar is a jointed WALK RIG (see AvatarRig) assembled from the 18 limb slices — no flat
- * cutout. Its limbs swing (rotation only) as it moves; facing flips at each switchback turn.
+ * cutout. Its limbs swing (rotation only) as it walks; facing flips at each switchback turn, and it
+ * tucks BEHIND the front rail/newel sprites (SlotPieces, z6) that form each ledge's slot.
  *
- * The avatar climbs a switchback path of WAYPOINTS (x,y in % of tower_map_clean.png,
- * 1620x4500). Feet are anchored on the point: the rig's feet sit near the bottom of its figure
- * box (FOOT_PCT), so we translate the FEET onto the waypoint, not the box.
- *
- * CLIMB_WAYPOINTS is a first-pass GUESS — I'm blind to the new art's stair geometry. Turn on
- * CALIBRATE (the ⚙ button), drag the numbered dots onto the real treads/landings, then
- * copy the dumped JSON back so I can bake it. CLIMB_WAYPOINTS positions the AVATAR ONLY — the
- * post/rail SLOT sprites (SlotPieces, below) are hand-placed via their own ⚙ pieces drag pass.
+ * Position + scale are NOT computed here — they come from AVATAR_SLOTS / AVATAR_SCALE, which the
+ * architect calibrates with the ⚙ slot cal tool by dragging the live rig onto the baked reference
+ * avatar. Until that JSON is baked, nothing renders on the real climb. The rig's internal joints are
+ * a separate calibration (the ⚙ pivots tool).
  */
 
-
 /** One full stride cycle (ms) while moving — drives the rig's contra-lateral swing phase. */
-const STRIDE_MS = 640;
-/** Feet sit near the bottom of the rig figure box — anchor the FEET onto the waypoint, not the box. */
+const STRIDE_MS = 720;
+/** Feet sit near the bottom of the rig figure box — anchor the FEET onto the slot, not the box. */
 const FOOT_PCT = 95;
 /** Avatar gender selects the male or female rig slices; persisted per user later, male for now. */
 function avatarGender(): "male" | "female" {
@@ -30,108 +26,28 @@ function avatarGender(): "male" | "female" {
   try { return localStorage.getItem("foxpit.avatar") === "female" ? "female" : "male"; }
   catch { return "male"; }
 }
-/** Avatar box width as a fraction of the map width. The rig box is 2:1 (tall), so to match the
- *  old 611² cutout's rendered HEIGHT (15vw at width 15) the rig uses half that width. */
-const AVATAR_W_VW = 7.5;
+/** Mid-stride phase the slot-cal rig freezes at, to match the baked reference while being dragged. */
+const CAL_POSE_PHASE = 0.16;
 
-export interface Waypoint {
-  x: number;
-  y: number;
-  landing?: boolean;
-  label?: string;
-}
-
-// ── STAIR PATH — DERIVED FROM THE TREADS (traced off tower_staircase_clean.png, aligns 1:1) ──
-// The staircase is a SWITCHBACK: flights alternate direction, a ledge caps each flight, and a
-// ledge is a STEP too (treads, ledge, treads, ledge…). Ledge extremes were read by tracing the
-// tread band per row on the art. ONE measured constant: the horizontal step run per tread.
 const MAP_W = 1620;
 const MAP_H = 4500;
-/** MEASURED: horizontal run per tread on the 1620x4500 map (starting pitch; verify vs the render). */
-const STEP_RUN_PX = 35.5;
 
-/** Ledge (flight-cap) extremes, BOTTOM (Dojo floor) → TOP (High Table landing). side = the wall the
- *  ledge sits against; flights alternate between them. */
-interface Ledge { x: number; y: number; side: "L" | "R"; label?: string }
-const STAIR_LEDGES: Ledge[] = [
-  { x: 366, y: 4380, side: "L", label: "Dojo floor" },
-  { x: 710, y: 4080, side: "R" },
-  { x: 400, y: 3840, side: "L" },
-  { x: 695, y: 3570, side: "R" },
-  { x: 396, y: 3300, side: "L" },
-  { x: 690, y: 3030, side: "R" },
-  { x: 415, y: 2790, side: "L" },
-  { x: 710, y: 2460, side: "R" },
-  { x: 455, y: 2237, side: "L", label: "High Table landing" }, // TOP FLIGHT — was missing
-];
-
-/** A derived flight: climbing direction, endpoints, tread count, and the ledge that caps it. */
-export interface Flight {
-  index: number;
-  dir: "toR" | "toL"; // climbing direction; increasing x = toR
-  from: { x: number; y: number };
-  to: { x: number; y: number }; // the ledge at the top of the flight
-  treads: number;
-}
-
-/** Build flights between consecutive ledges (climbing order); tread count from the measured pitch.
- *  ASSERTS the switchback — two consecutive flights running the same way is a bug, so it fails loudly. */
-function deriveFlights(): Flight[] {
-  const flights: Flight[] = [];
-  for (let i = 0; i < STAIR_LEDGES.length - 1; i++) {
-    const from = STAIR_LEDGES[i]!;
-    const to = STAIR_LEDGES[i + 1]!;
-    const dir: "toR" | "toL" = to.x >= from.x ? "toR" : "toL";
-    const treads = Math.max(1, Math.round(Math.abs(to.x - from.x) / STEP_RUN_PX));
-    if (i > 0 && flights[i - 1]!.dir === dir) {
-      console.error(
-        `[StairClimber] switchback broken: flights ${i - 1} and ${i} both run ${dir} — check STAIR_LEDGES`,
-      );
-    }
-    flights.push({ index: i, dir, from: { x: from.x, y: from.y }, to: { x: to.x, y: to.y }, treads });
-  }
-  return flights;
-}
-
-export const STAIR_FLIGHTS: Flight[] = deriveFlights();
-
-/** The climb path: one waypoint per TREAD (feet land ON the tread top), plus the LEDGE capping each
- *  flight (a ledge is a step). Positions as % of the map so they survive any rescale. */
-export const CLIMB_WAYPOINTS: Waypoint[] = (() => {
-  const wp: Waypoint[] = [
-    { x: (STAIR_LEDGES[0]!.x / MAP_W) * 100, y: (STAIR_LEDGES[0]!.y / MAP_H) * 100, landing: true, label: STAIR_LEDGES[0]!.label },
-  ];
-  for (const f of STAIR_FLIGHTS) {
-    for (let k = 1; k <= f.treads; k++) {
-      const t = k / f.treads;
-      const isLedge = k === f.treads;
-      wp.push({
-        x: ((f.from.x + (f.to.x - f.from.x) * t) / MAP_W) * 100,
-        y: ((f.from.y + (f.to.y - f.from.y) * t) / MAP_H) * 100,
-        landing: isLedge,
-        label: isLedge ? STAIR_LEDGES[f.index + 1]!.label : undefined,
-      });
-    }
-  }
-  return wp;
-})();
-
-// Dev report (client): per-flight direction, tread count, ledge position (px + %), plus the total.
-if (typeof window !== "undefined") {
-  const total = STAIR_FLIGHTS.reduce((n, f) => n + f.treads, 0);
-  console.info(
-    `[StairClimber] ${STAIR_FLIGHTS.length} flights, ${total} treads`,
-    STAIR_FLIGHTS.map((f) => {
-      const L = STAIR_LEDGES[f.index + 1]!;
-      return { flight: f.index, dir: f.dir, treads: f.treads, ledge: `${L.x},${L.y} (${((L.x / MAP_W) * 100).toFixed(1)}%,${((L.y / MAP_H) * 100).toFixed(1)}%)` };
-    }),
-  );
-}
+// ── AVATAR SLOTS — CALIBRATED ON DEVICE, NEVER COMPUTED HERE ─────────────────────────────────────
+// tower_map_clean.png carries a BAKED REFERENCE AVATAR (Lobby-stairs landing): it encodes WHERE the
+// avatar sits, HOW BIG it is, and the coin-head treatment. Position + scale come ONLY from the
+// architect dragging the live rig onto that reference in the ⚙ slot cal tool, then pasting its JSON
+// here. Until then AVATAR_SLOTS is empty and NO avatar renders on the real climb — no guessed
+// default, no CLIMB_WAYPOINTS fallback.
+export interface AvatarSlot { id: number; mapX: number; mapY: number }
+/** UNCALIBRATED — rig width as a fraction of the map width (one value, shared by every slot). */
+export const AVATAR_SCALE = 0;
+/** UNCALIBRATED — paste { slots: [...] } from the ⚙ slot cal tool. */
+export const AVATAR_SLOTS: AvatarSlot[] = [];
 
 // ── SLOT PIECES — front rails/posts, positioned by HAND (drag pass), not derived ──
 // slot_placement.json holds SLICING ORIGINS (where each piece was parked on the cutting sheet —
 // all on empty canvas beside the staircase), NOT map placements. So we NEVER read positions from
-// it, and NEVER derive rail positions from CLIMB_WAYPOINTS (those move the avatar only). Placement
+// it, and NEVER derive rail positions from the avatar slots (those position the avatar only). Placement
 // comes from Frank's ⚙ pieces drag pass, baked into SLOT_PLACEMENT below (the single source of
 // truth). The file's filenames + intrinsic w/h are still valid — only its coordinates are void.
 // Z-model: map art (baked back rails) → AVATAR (z5) → these sprites (z6).
@@ -202,134 +118,173 @@ export function SlotPieces() {
 
 const easeInOut = (t: number) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
 
+const STAIR_REF = "/foxpit/map/tower_staircase_clean.png"; // avatar-free staircase — the slot guide
+const devBtn = (on: boolean): React.CSSProperties => ({
+  pointerEvents: "auto", border: `1px solid ${on ? "#22C55E" : "#00e5ff"}`, background: "rgba(6,8,12,.92)",
+  color: on ? "#22C55E" : "#00e5ff", borderRadius: 8, padding: "5px 9px", fontSize: 12, fontWeight: 800, cursor: "pointer",
+});
+const slotDump: React.CSSProperties = { height: 56, background: "#0a0c11", color: "#9fe0b0", border: "1px solid #222", borderRadius: 8, fontSize: 10, fontFamily: "ui-monospace, monospace", padding: 8 };
+
 /**
- * The climbing avatar. Auto-climbs bottom → top on a loop so every landing is visible for
- * a screenshot. ⚙ toggles CALIBRATE: drag the dots, copy the JSON.
+ * The climbing avatar. Position + scale come ONLY from AVATAR_SLOTS / AVATAR_SCALE (calibrated with
+ * the ⚙ slot tool). Until those exist, nothing renders here. ⚙ pivots calibrates the rig joints;
+ * ⚙ slot places the avatar on the baked reference.
  */
 export function StairClimber() {
-  const [wp] = useState<Waypoint[]>(CLIMB_WAYPOINTS);
-  const [pos, setPos] = useState({ x: CLIMB_WAYPOINTS[0]!.x, y: CLIMB_WAYPOINTS[0]!.y, facing: 1 as 1 | -1, phase: 0 });
-  const [moving, setMoving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [rigCal, setRigCal] = useState(false); // pivot cal tool for the walk rig
-  const [rigJson, setRigJson] = useState("");
   const gender = avatarGender();
+  const [error, setError] = useState<string | null>(null);
+  const [calMode, setCalMode] = useState<"off" | "pivots" | "slot">("off");
+  const [pivotJson, setPivotJson] = useState("");
+
+  const slotXY = (s: AvatarSlot) => ({ xPct: (s.mapX / MAP_W) * 100, yPct: (s.mapY / MAP_H) * 100 });
+  const hasSlots = AVATAR_SLOTS.length > 0;
+  const [pos, setPos] = useState(() => {
+    const s0 = AVATAR_SLOTS[0];
+    return s0 ? { ...slotXY(s0), facing: 1 as 1 | -1, phase: 0 } : { xPct: 0, yPct: 0, facing: 1 as 1 | -1, phase: 0 };
+  });
+  const [moving, setMoving] = useState(false);
   const busy = useRef(false);
   const raf = useRef<number | null>(null);
   const timer = useRef<number | null>(null);
   const seg = useRef(0);
 
-  const stepTo = useCallback((to: number, list: Waypoint[]) => {
-    const from = to - 1;
-    const a = list[from]!;
-    const b = list[to]!;
-    const facing: 1 | -1 = b.x >= a.x ? 1 : -1;
-    busy.current = true;
-    setMoving(true);
-    const dur = 260; // per-tread step (the path is now tread-level, ~75 steps)
+  const stepTo = useCallback((to: number) => {
+    const a = AVATAR_SLOTS[to - 1]!, b = AVATAR_SLOTS[to]!;
+    const A = { xPct: (a.mapX / MAP_W) * 100, yPct: (a.mapY / MAP_H) * 100 };
+    const B = { xPct: (b.mapX / MAP_W) * 100, yPct: (b.mapY / MAP_H) * 100 };
+    const facing: 1 | -1 = b.mapX >= a.mapX ? 1 : -1;
+    busy.current = true; setMoving(true);
+    const dur = Math.max(600, Math.hypot(B.xPct - A.xPct, B.yPct - A.yPct) * 90);
     const t0 = performance.now();
     const frame = (now: number) => {
       const t = Math.min(1, (now - t0) / dur);
       const e = easeInOut(t);
-      // continuous stride phase drives the rig's contra-lateral limb swing while moving
-      const phase = ((now - t0) / STRIDE_MS) % 1;
-      setPos({ x: a.x + (b.x - a.x) * e, y: a.y + (b.y - a.y) * e, facing, phase });
-      if (t < 1) {
-        raf.current = requestAnimationFrame(frame);
-      } else {
-        busy.current = false;
-        setMoving(false);
-        seg.current = to;
-      }
+      const phase = ((now - t0) / STRIDE_MS) % 1; // keeps advancing → visible stride
+      setPos({ xPct: A.xPct + (B.xPct - A.xPct) * e, yPct: A.yPct + (B.yPct - A.yPct) * e, facing, phase });
+      if (t < 1) raf.current = requestAnimationFrame(frame);
+      else { busy.current = false; setMoving(false); seg.current = to; setPos((p) => ({ ...p, phase: 0 })); } // idle pose, not a held mid-stride
     };
     raf.current = requestAnimationFrame(frame);
   }, []);
 
-  // auto-climb loop. Guarded so a thrown frame surfaces, not swallowed.
+  // Walk the calibrated slots in a loop (needs 2+; a single slot just stands). Paused during cal.
   useEffect(() => {
+    if (!hasSlots || AVATAR_SLOTS.length < 2 || calMode !== "off") return;
     let alive = true;
     const tick = () => {
       if (!alive) return;
       try {
-        if (busy.current) {
-          timer.current = window.setTimeout(tick, 200);
-          return;
-        }
-        if (seg.current >= wp.length - 1) {
-          // reached the top — pause, reset to the bottom, climb again
+        if (busy.current) { timer.current = window.setTimeout(tick, 150); return; }
+        if (seg.current >= AVATAR_SLOTS.length - 1) {
           seg.current = 0;
-          setPos({ x: wp[0]!.x, y: wp[0]!.y, facing: 1, phase: 0 });
-          timer.current = window.setTimeout(tick, 1400);
+          setPos({ ...slotXY(AVATAR_SLOTS[0]!), facing: 1, phase: 0 });
+          timer.current = window.setTimeout(tick, 1200);
           return;
         }
-        // Walk to the next point. If it's a LEDGE, the avatar has reached a table — pause on it,
-        // THEN the next step (the next flight) flips direction (the switchback turn).
-        const arriving = wp[seg.current + 1];
-        stepTo(seg.current + 1, wp);
-        const dwell = arriving?.landing ? 750 : 90;
-        timer.current = window.setTimeout(tick, 260 + dwell);
+        stepTo(seg.current + 1);
+        timer.current = window.setTimeout(tick, 700);
       } catch (err) {
-        // No silent catch — surface it.
         console.error("[StairClimber] climb loop failed", err);
         setError(String(err));
       }
     };
     timer.current = window.setTimeout(tick, 700);
-    return () => {
-      alive = false;
-      if (timer.current) window.clearTimeout(timer.current);
-      if (raf.current) cancelAnimationFrame(raf.current);
-    };
-  }, [wp, stepTo]);
+    return () => { alive = false; if (timer.current) window.clearTimeout(timer.current); if (raf.current) cancelAnimationFrame(raf.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasSlots, calMode, stepTo]);
 
   return (
-    <div style={{ position: "absolute", inset: 0, zIndex: 5, pointerEvents: rigCal ? "auto" : "none" }}>
-      {/* the walking avatar RIG — feet anchored on the waypoint; the rig flips + swings internally;
-          bob adds a little life while moving. */}
-      <div
-        style={{
-          position: "absolute",
-          left: `${pos.x}%`,
-          top: `${pos.y}%`,
-          width: `${AVATAR_W_VW}vw`,
-          transform: `translate(-50%, -${FOOT_PCT}%)`,
-          pointerEvents: rigCal ? "auto" : "none",
-          zIndex: 5,
-          filter: "drop-shadow(0 4px 4px rgba(0,0,0,.7))",
-        }}
-      >
-        <div style={{ animation: moving && !rigCal ? "foxpitClimberBob .5s ease-in-out infinite" : "none" }}>
-          <AvatarRig
-            gender={gender}
-            phase={pos.phase}
-            facing={pos.facing}
-            cal={rigCal}
-            onJointsChange={(j) => setRigJson(JSON.stringify(j))}
-          />
+    <div style={{ position: "absolute", inset: 0, zIndex: 5, pointerEvents: calMode !== "off" ? "auto" : "none" }}>
+      {/* REAL avatar — ONLY once AVATAR_SLOTS is calibrated, and never during a cal mode. */}
+      {hasSlots && calMode === "off" && (
+        <div style={{ position: "absolute", left: `${pos.xPct}%`, top: `${pos.yPct}%`, width: `${AVATAR_SCALE * 100}%`, transform: `translate(-50%, -${FOOT_PCT}%)`, pointerEvents: "none", zIndex: 5, filter: "drop-shadow(0 4px 4px rgba(0,0,0,.7))" }}>
+          <div style={{ animation: moving ? "foxpitClimberBob .5s ease-in-out infinite" : "none" }}>
+            <AvatarRig gender={gender} phase={pos.phase} facing={pos.facing} />
+          </div>
         </div>
-      </div>
-
-      {/* ⚙ pivots — pivot cal tool (dev): freeze the walk, drag each joint dot, copy the JSON. */}
-      <button
-        onClick={() => setRigCal((v) => !v)}
-        style={{ position: "fixed", top: "calc(env(safe-area-inset-top,0px) + 60px)", right: 8, zIndex: 90, pointerEvents: "auto", border: "1px solid #00e5ff", background: "rgba(6,8,12,.92)", color: "#00e5ff", borderRadius: 8, padding: "5px 9px", fontSize: 12, fontWeight: 800, cursor: "pointer" }}
-      >
-        {rigCal ? "✓ pivots" : "⚙ pivots"}
-      </button>
-      {rigCal && (
-        <textarea
-          readOnly
-          value={rigJson}
-          onFocus={(e) => e.currentTarget.select()}
-          style={{ position: "fixed", left: 8, right: 8, bottom: "calc(env(safe-area-inset-bottom,0px) + 12px)", height: 64, zIndex: 90, pointerEvents: "auto", background: "#0a0c11", color: "#9fe0b0", border: "1px solid #222", borderRadius: 8, fontSize: 10, fontFamily: "ui-monospace, monospace", padding: 8 }}
-        />
       )}
+
+      {/* ⚙ PIVOTS — rig centred + frozen straight; drag joint dots, copy JSON. */}
+      {calMode === "pivots" && (
+        <>
+          <div style={{ position: "fixed", left: "50%", top: "48%", transform: "translate(-50%,-50%)", width: "42vw", zIndex: 88, pointerEvents: "auto" }}>
+            <AvatarRig gender={gender} phase={0} facing={1} cal onJointsChange={(j) => setPivotJson(JSON.stringify(j))} />
+          </div>
+          <textarea readOnly value={pivotJson} onFocus={(e) => e.currentTarget.select()} style={{ position: "fixed", left: 8, right: 8, bottom: "calc(env(safe-area-inset-bottom,0px) + 12px)", zIndex: 90, pointerEvents: "auto", ...slotDump }} />
+        </>
+      )}
+
+      {/* ⚙ SLOT — drag the live rig onto the baked reference, scale, drop N slots, copy JSON. */}
+      {calMode === "slot" && <AvatarSlotCal gender={gender} />}
+
+      {/* dev toggles */}
+      <div style={{ position: "fixed", top: "calc(env(safe-area-inset-top,0px) + 60px)", right: 8, zIndex: 90, display: "flex", flexDirection: "column", gap: 6, pointerEvents: "auto" }}>
+        <button onClick={() => setCalMode((m) => (m === "slot" ? "off" : "slot"))} style={devBtn(calMode === "slot")}>{calMode === "slot" ? "✓ slot" : "⚙ slot"}</button>
+        <button onClick={() => setCalMode((m) => (m === "pivots" ? "off" : "pivots"))} style={devBtn(calMode === "pivots")}>{calMode === "pivots" ? "✓ pivots" : "⚙ pivots"}</button>
+      </div>
 
       {error && (
         <div style={{ position: "absolute", left: 8, right: 8, top: "calc(env(safe-area-inset-top,0px) + 100px)", zIndex: 9, pointerEvents: "none", background: "rgba(120,0,0,.9)", color: "#fff", borderRadius: 8, padding: 10, fontSize: 12 }}>
           Climb error: {error}
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * AVATAR-SLOT CAL — drag the live 18-piece rig (50% opacity, so the baked reference shows through)
+ * onto its spot on the map; the avatar-free staircase overlay (STAIR_REF) marks where the slots land.
+ * Corner handle scales uniformly (one scale for all slots). "Add slot" drops a numbered slot at the
+ * current spot (N, no cap; tap a dot to delete). Emits { avatarScale, slots } to paste back + bake.
+ */
+function AvatarSlotCal({ gender }: { gender: "male" | "female" }) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(AVATAR_SCALE > 0 ? AVATAR_SCALE : 0.09);
+  const [cur, setCur] = useState({ mapX: 760, mapY: 3480 });
+  const [slots, setSlots] = useState<AvatarSlot[]>(AVATAR_SLOTS.length ? AVATAR_SLOTS.map((s) => ({ ...s })) : []);
+  const idRef = useRef(slots.reduce((m, s) => Math.max(m, s.id), 0) + 1);
+  const drag = useRef<null | "move" | "scale">(null);
+
+  const toMap = (cx: number, cy: number) => {
+    const r = rootRef.current!.getBoundingClientRect();
+    return { mapX: Math.round(((cx - r.left) / r.width) * MAP_W), mapY: Math.round(((cy - r.top) / r.height) * MAP_H) };
+  };
+  const onMove = (e: React.PointerEvent) => {
+    if (!drag.current || !rootRef.current) return;
+    if (drag.current === "move") { setCur(toMap(e.clientX, e.clientY)); return; }
+    const r = rootRef.current.getBoundingClientRect();
+    const px = ((e.clientX - r.left) / r.width) * MAP_W;
+    setScale(Math.max(0.03, Math.min(0.28, (Math.abs(px - cur.mapX) * 2) / MAP_W)));
+  };
+  const json = JSON.stringify({ avatarScale: +scale.toFixed(4), slots });
+  const at = (mapX: number, mapY: number) => ({ left: `${(mapX / MAP_W) * 100}%`, top: `${(mapY / MAP_H) * 100}%` });
+
+  return (
+    <div ref={rootRef} onPointerMove={onMove} onPointerUp={() => (drag.current = null)} style={{ position: "absolute", inset: 0, zIndex: 8, pointerEvents: "auto" }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={STAIR_REF} alt="" aria-hidden style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.4, pointerEvents: "none" }} />
+
+      {slots.map((s) => (
+        <button key={s.id} onClick={() => setSlots((xs) => xs.filter((x) => x.id !== s.id))} title="tap to delete"
+          style={{ position: "absolute", ...at(s.mapX, s.mapY), transform: "translate(-50%,-50%)", width: 20, height: 20, borderRadius: "50%", background: "rgba(34,197,94,.92)", border: "2px solid #fff", color: "#012", fontSize: 10, fontWeight: 900, zIndex: 9, cursor: "pointer" }}>{s.id}</button>
+      ))}
+
+      {/* the live rig at 50% opacity — drag to position */}
+      <div onPointerDown={(e) => { drag.current = "move"; (e.currentTarget as HTMLDivElement).setPointerCapture?.(e.pointerId); }}
+        style={{ position: "absolute", ...at(cur.mapX, cur.mapY), width: `${scale * 100}%`, transform: `translate(-50%, -${FOOT_PCT}%)`, opacity: 0.5, zIndex: 10, cursor: "grab", touchAction: "none" }}>
+        <AvatarRig gender={gender} phase={CAL_POSE_PHASE} facing={1} />
+        <div onPointerDown={(e) => { e.stopPropagation(); drag.current = "scale"; }} title="drag to scale"
+          style={{ position: "absolute", right: -9, top: -9, width: 18, height: 18, borderRadius: 4, background: "#00e5ff", border: "2px solid #fff", zIndex: 11, cursor: "nwse-resize", touchAction: "none" }} />
+      </div>
+
+      <div style={{ position: "fixed", left: 8, right: 8, bottom: "calc(env(safe-area-inset-bottom,0px) + 10px)", zIndex: 92, display: "flex", flexDirection: "column", gap: 6, pointerEvents: "auto" }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <button onClick={() => setSlots((s) => [...s, { id: idRef.current++, mapX: cur.mapX, mapY: cur.mapY }])} style={devBtn(false)}>+ Add slot here</button>
+          <span style={{ fontSize: 10, color: "#9fe0b0" }}>scale {scale.toFixed(3)} · {slots.length} slot(s) · drag rig to place, corner to size, tap a dot to delete</span>
+        </div>
+        <textarea readOnly value={json} onFocus={(e) => e.currentTarget.select()} style={slotDump} />
+      </div>
     </div>
   );
 }
