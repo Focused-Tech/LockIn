@@ -30,8 +30,9 @@ function avatarGender(): "male" | "female" {
   try { return localStorage.getItem("foxpit.avatar") === "female" ? "female" : "male"; }
   catch { return "male"; }
 }
-/** Avatar box width as a fraction of the map width (tuned on device). */
-const AVATAR_W_VW = 15;
+/** Avatar box width as a fraction of the map width (tuned on device). Sized so the figure reads
+ *  proportionate to the elevator car + newel posts — not towering over them. */
+const AVATAR_W_VW = 5;
 
 export interface Waypoint {
   x: number;
