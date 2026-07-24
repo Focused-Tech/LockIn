@@ -25,13 +25,31 @@ export const TRIVIA_MAX_OPTIONS = 4;
 /**
  * Difficulty ladder, easiest → hardest, keyed by the room. Difficulty scales by DECOY QUALITY,
  * not by obscurity — a famous fact with genuinely plausible alternatives is harder than an
- * obscure fact with one absurd option. The label is handed to the generator verbatim.
+ * obscure fact with one absurd option.
+ *
+ * The PRACTICE floor (dojo) is deliberately a confidence builder: GENERAL-KNOWLEDGE, plainly
+ * worded questions a typical player gets right ~70% of the time — even someone who follows the
+ * category only casually. Players should ADVANCE and feel capable, not feel dumb and quit. Each
+ * floor up tightens the decoys and the specificity so the climb is genuinely felt. The label is
+ * handed to the generator verbatim.
  */
 export const TRIVIA_TIERS: Record<FoxPitRoomKey, string> = {
-  dojo: "2 options, well-known facts — any follower of the category gets it right away",
-  coliseum: "3 options, one genuinely plausible decoy a casual fan might fall for",
-  hightable: "4 options, specifics — exact years, margins, chart positions, runners-up; all four options are plausible to a fan",
-  suite: "4 options, expert tier — precise figures and second-order details; distractors are near-misses only an expert rules out",
+  dojo: "PRACTICE FLOOR — general knowledge, easy. Ask the single most famous, widely-known fact in the category (the headline even a casual person has heard). Plain wording, zero jargon, 2 options where the correct one clearly stands out to anyone who follows the category at all. A typical player should get about 70% of these right — do NOT make this floor tricky.",
+  coliseum: "3 options, one genuinely plausible decoy a casual fan might fall for. Still a well-known fact — about 55% of players get it.",
+  hightable: "4 options, specifics — exact years, margins, chart positions, runners-up; all four options are plausible to a fan. About 40% get it.",
+  suite: "4 options, expert tier — precise figures and second-order details; distractors are near-misses only an expert rules out. About 28% get it.",
+};
+
+/**
+ * Target share of typical players who should answer correctly, per floor. The practice floor is a
+ * confidence builder (~70%); each floor up is harder. Folded into the generator prompt so the model
+ * calibrates decoy strength to the intended win rate — the goal is players advancing, not quitting.
+ */
+export const TRIVIA_TARGET_ACCURACY: Record<FoxPitRoomKey, number> = {
+  dojo: 0.7,
+  coliseum: 0.55,
+  hightable: 0.4,
+  suite: 0.28,
 };
 
 /** The categories the pool is generated for — the SAME set the player picks from. */

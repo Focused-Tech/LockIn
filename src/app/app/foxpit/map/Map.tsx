@@ -834,7 +834,9 @@ const LOUNGE_PLATES = [
   "/foxpit/lounge/wl_plate_throne_right_3q.png",
   "/foxpit/lounge/wl_plate_throne_straight.png", // close on the throne (the prize)
 ];
-const LOUNGE_BOSS_FOX = "/foxpit/avatar-fox.png"; // placeholder usher until the cutout lands
+// The usher is the SAME boss-fox art shown when Boss Fox opens the Fox Pit door
+// (suite room.avatarImg) — the full standing suited fox, rendered whole (contain), never cropped.
+const LOUNGE_BOSS_FOX = "/foxpit/avatar-fox.png";
 /** Per-beat hold (ms) — the FULL establishing room shot lingers longest, then each throne plate.
  *  Every screen is well over 2.5s; the final beat (throne straight + Boss Fox) holds until "Step in". */
 const LOUNGE_BEAT_MS = [3800, 3000, 3000];
@@ -843,7 +845,7 @@ function WinnersLoungeArrival({ onDone }: { onDone: () => void }) {
   const [firstTime] = useState(() => {
     if (typeof window === "undefined") return true;
     try {
-      return !localStorage.getItem("foxpit.lounge.arrived.v2");
+      return !localStorage.getItem("foxpit.lounge.arrived.v3");
     } catch (err) {
       console.error("[foxpit] lounge arrival flag read failed:", err);
       return true;
@@ -864,7 +866,7 @@ function WinnersLoungeArrival({ onDone }: { onDone: () => void }) {
   useEffect(() => {
     if (!firstTime) return;
     try {
-      localStorage.setItem("foxpit.lounge.arrived.v2", "1");
+      localStorage.setItem("foxpit.lounge.arrived.v3", "1");
     } catch (err) {
       console.error("[foxpit] lounge arrival flag write failed:", err);
     }
@@ -887,7 +889,7 @@ function WinnersLoungeArrival({ onDone }: { onDone: () => void }) {
           src={src}
           alt=""
           draggable={false}
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: beat === i ? 1 : 0, transition: "opacity .8s ease", animation: beat === i ? `foxpitPushIn ${((LOUNGE_BEAT_MS[i] ?? 3000) + 800) / 1000}s ease-in-out both` : "none" }}
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", opacity: beat === i ? 1 : 0, transition: "opacity .6s ease", animation: beat === i ? `foxpitPushIn ${((LOUNGE_BEAT_MS[i] ?? 3000) + 600) / 1000}s ease-in-out both` : "none" }}
         />
       ))}
       {beat === 0 && (

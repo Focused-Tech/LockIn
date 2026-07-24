@@ -21,6 +21,7 @@ import { getAnthropic } from "@/lib/ai/client";
 import {
   TRIVIA_PER_CELL,
   TRIVIA_TIERS,
+  TRIVIA_TARGET_ACCURACY,
   TRIVIA_TOOL_SCHEMA,
   generatedBatchSchema,
   politicalQuestionOk,
@@ -55,7 +56,14 @@ function systemPrompt(): string {
     "   option. Write distractors a knowledgeable fan would actually have to think about —",
     "   real runners-up, near-miss figures, the other plausible year. Never pad with a joke",
     "   option or an obviously wrong one.",
-    "7. POLITICS (hard requirement): every political question MUST name the specifics — the",
+    "7. CALIBRATE TO THE TARGET WIN RATE. Each cell states how often a typical player should",
+    "   get it right. The PRACTICE floor (~70%) is a confidence builder: general-knowledge,",
+    "   plainly-worded questions about the single most famous fact in the category — the",
+    "   headline even a casual person has heard. Do NOT make the practice floor tricky; save",
+    "   the hard, near-miss decoys for the upper floors. The point is for players to advance",
+    "   and feel capable, not feel dumb and quit. Match the decoy strength to the target: easy",
+    "   floors get one clearly-best answer; hard floors get four genuinely competing options.",
+    "8. POLITICS (hard requirement): every political question MUST name the specifics — the",
     "   actual candidate or officeholder, the actual bill / law / measure by its real name,",
     "   the chamber or body, and the year. Vague framing is invalid.",
     "     REJECT: \"Did the Senate pass the infrastructure bill?\"",
@@ -68,9 +76,11 @@ function systemPrompt(): string {
 }
 
 function userPrompt(category: string, tier: FoxPitRoomKey): string {
+  const targetPct = Math.round(TRIVIA_TARGET_ACCURACY[tier] * 100);
   return [
     `Category: ${category}`,
     `Difficulty: ${TRIVIA_TIERS[tier]}`,
+    `Target: about ${targetPct}% of typical players should answer correctly — tune the decoy strength to hit that rate.`,
     "",
     `Write ${TRIVIA_PER_CELL} questions at that difficulty, all in that category.`,
     "Every question must be independently answerable — no shared setup between them.",

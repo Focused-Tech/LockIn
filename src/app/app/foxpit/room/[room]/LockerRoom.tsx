@@ -23,8 +23,10 @@ const KEY_TIER_COLOR: Record<string, string> = { Bronze: "#c9873f", Silver: "#b7
 /** The locker art strip. Baked open, so the door-swing (A3) is a cross-fade reveal until the
  *  three-piece art (body + door front + door inner) lands — never skew the baked image. */
 const LOCKER_ART = "/foxpit/dojo_locker_room.png";
-/** open_bay from dojo_locker_room_anchors.json (percent survives scaling). */
-const OPEN_BAY = { xPct: 53.32, yPct: 17.38, wPct: 5.14, hPct: 20.41 };
+/** The one OPEN bay in the baked art — the lit reveal (hanging gi + shelves) with its door
+ *  swung right. Measured off the art so the glow sits OVER the open door/bay, not beside it
+ *  (percent survives scaling). */
+const OPEN_BAY = { xPct: 42, yPct: 15, wPct: 15, hPct: 40 };
 
 // ── PARENT → SUBCATEGORY taxonomy (A5). Groups the ONE shared granular set (CATEGORIES /
 // users/{uid}.categories[]) under broad parents. No parallel list. Only parents with subs show. ──
