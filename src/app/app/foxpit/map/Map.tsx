@@ -48,6 +48,9 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
   const [mapReady, setMapReady] = useState(false);
   const [elevatorLocked, setElevatorLocked] = useState(false);
   const [elevatorRide, setElevatorRide] = useState(false);
+  // Enter the Winner's Lounge straight from its map plaque (like every other room), not only via
+  // the elevator — plays the same entrance cinematic.
+  const [loungeArrival, setLoungeArrival] = useState(false);
   // Fast-travel elevator activates only once the High Table is CLEARED (beaten),
   // independent of the architect door-unlock override.
   const elevatorUnlocked = cleared.has(ELEVATOR_UNLOCK_AT);
@@ -296,7 +299,8 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
             PvP, not a boss room, so it has no key/lock row — it's a destination, not a
             grind. Interior build is a separate task. */}
         {winnersUnlocked(cleared) && (
-          <div
+          <button
+            onClick={() => setLoungeArrival(true)}
             style={{
               position: "absolute",
               zIndex: 7,
@@ -309,6 +313,7 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
               maxWidth: "74%",
               padding: "7px 12px",
               borderRadius: 999,
+              cursor: "pointer",
               color: "#1a140a",
               background: "rgba(245,197,66,.9)",
               border: `1.5px solid ${WINNERS_LOUNGE.accent}`,
@@ -323,7 +328,7 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
             <span style={{ fontSize: 10, color: "#5a4408", fontWeight: 800, letterSpacing: ".04em", whiteSpace: "nowrap" }}>
               PvP
             </span>
-          </div>
+          </button>
         )}
 
         {/* lobby landmark (street level, a hub — tap to return to the lobby) */}
@@ -531,6 +536,14 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           onClose={() => setElevatorRide(false)}
           onArrive={(k) => { setElevatorRide(false); enter(k); }}
         />
+      )}
+
+      {/* Winner's Lounge entrance — played straight from the map plaque (parallels tapping any
+          other room). Full-screen; the arrival component handles the glass door + plates. */}
+      {loungeArrival && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 88, background: "#05070b" }}>
+          <WinnersLoungeArrival onDone={() => setLoungeArrival(false)} />
+        </div>
       )}
 
       {elevatorLocked && (
