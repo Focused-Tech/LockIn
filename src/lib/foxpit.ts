@@ -120,11 +120,11 @@ const CLEARED_KEY = "foxpit.cleared.v1";
 
 /**
  * ARCHITECT OVERRIDE (temporary): the architect's account is treated as having
- * cleared every room EXCEPT Boss Fox's Suite, so the full journey plays out —
- * keys won (owl/wolf/raven), the elevator unlocked, only the final boss left.
+ * cleared EVERY room — including Boss Fox's Suite — so all keys are won, the elevator
+ * is unlocked, and the WINNER'S LOUNGE is open for testing the rooftop entrance.
  * Remove / gate to real progression before launch.
  */
-const ARCHITECT_CLEARED: FoxPitRoomKey[] = ["dojo", "coliseum", "hightable"];
+const ARCHITECT_CLEARED: FoxPitRoomKey[] = ["dojo", "coliseum", "hightable", "suite"];
 
 export function getCleared(): Set<FoxPitRoomKey> {
   const s = new Set<FoxPitRoomKey>(ARCHITECT_CLEARED);
