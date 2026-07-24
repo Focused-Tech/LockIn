@@ -11,7 +11,7 @@ import { useEffect, useRef, useState } from "react";
 import { LockGlyph } from "@/components/practice/LockGlyph";
 import { categoryTint } from "@/lib/practice/tints";
 import { roomByKey, type FoxPitRoomKey } from "@/lib/foxpit";
-import { ROOM_RULES, keepNFor, SLATES_PER_ROUND, REDEALS_PER_ROUND, FOXPIT_BUILD_VERSION, CATEGORY_TINT_KEY, TIMERS, CATEGORY_HEDGE, FOXPIT_CATEGORIES, type FoxPitCategory } from "@/lib/foxpit/rules";
+import { ROOM_RULES, keepNFor, SLATES_PER_ROUND, REDEALS_PER_ROUND, FOXPIT_BUILD_VERSION, CATEGORY_TINT_KEY, TIMERS, CATEGORY_HEDGE, FOXPIT_CATEGORIES, cardMinFor, type FoxPitCategory } from "@/lib/foxpit/rules";
 import { dealFoxSlates, categoriesFor, roundScore, bossRoundScore, slateWon, type FoxSlate } from "@/lib/foxpit/slates";
 
 /** Design-system semantic colors (win green / loss red), referenced by name. */
@@ -92,6 +92,10 @@ export function FoxPitGame({
   const [last, setLast] = useState<{ you: number; boss: number; won: boolean } | null>(null);
 
   const keepN = keepNFor(roomKey, roundIndex);
+  /** Forced-minimum cards to play vs this room's boss (item 2). Owl/Wolf = 1, Raven/Fox = 5. */
+  const cardMin = cardMinFor(rules.boss);
+  /** A card is "played" once it's staked AND fully answered. */
+  const playedCount = slates.filter((s) => isLocked(s, picks)).length;
 
   /* ------- DEAL / keep-N ------- */
   const toggleKeep = (id: string) => {
@@ -111,10 +115,9 @@ export function FoxPitGame({
     setRedealsLeft((r) => r - 1);
   };
 
-  /** `force` = the decision clock ran out: whatever is in hand locks in and the
-   *  game begins (no keep-N gate at that point). */
-  const startPlay = (force = false) => {
-    if (!force && kept.size < keepN) return;
+  /** Go to the table. No keep-N gate — the player picks how many cards to PLAY at the table
+   *  (item 1), and redeal works at any keep count (item 3). `force` = the decision clock ran out. */
+  const startPlay = (_force = false) => {
     setPhase("play");
   };
 
@@ -123,13 +126,16 @@ export function FoxPitGame({
     setSlates((prev) => prev.map((s) => (s.id === slateId ? { ...s, stake } : s)));
   const pick = (qid: string, side: "a" | "b") => setPicks((p) => ({ ...p, [qid]: side }));
 
-  const allStaked = slates.every((s) => s.stake != null);
-  const allAnswered = slates.every((s) => s.questions.every((q) => picks[q.id] != null));
-  const canLock = allStaked && allAnswered;
+  // Lock-in unlocks once the player has fully played at least the floor (1 for Owl/Wolf, 5 for
+  // Raven/Fox) — NOT all 5 (items 1, 4). Never auto-fill; the reason shows on screen below the floor.
+  const canLock = playedCount >= cardMin;
 
   const lockRound = () => {
+    // Manual early-lock below the floor is blocked by the disabled button + on-screen reason;
+    // the round timer still force-settles with whatever is in hand.
+    const played = slates.filter((s) => isLocked(s, picks)).length;
     const you = roundScore(slates, picks);
-    const boss = bossRoundScore(roomKey);
+    const boss = bossRoundScore(roomKey, played); // boss plays EXACTLY as many as the player (item 2)
     const won = you >= boss;
     setLast({ you, boss, won });
     if (won) setRoundsWon((w) => w + 1);
@@ -215,7 +221,6 @@ export function FoxPitGame({
         <DealPhase
           slates={slates}
           kept={kept}
-          keepN={keepN}
           redealsLeft={redealsLeft}
           accent={accent}
           stakes={rules.stakes}
@@ -234,6 +239,9 @@ export function FoxPitGame({
           seconds={rules.secondsPerQuestion}
           accent={accent}
           canLock={canLock}
+          cardMin={cardMin}
+          playedCount={playedCount}
+          bossName={rules.boss}
           onStake={setStake}
           onPick={pick}
           onLock={lockRound}
@@ -254,6 +262,7 @@ export function FoxPitGame({
           note={`${rules.boss} reads at ${rules.bossWinPct}%`}
           cta={roundIndex + 1 >= rules.rounds ? "See the tally ›" : "Next round ›"}
           onCta={nextRound}
+          onQuit={onExit}
         />
       )}
 
@@ -483,11 +492,10 @@ function SlateCardFace({
 
 /* ---------------- deal / keep-N phase ---------------- */
 function DealPhase({
-  slates, kept, keepN, redealsLeft, accent, stakes, onToggle, onRedeal, onPlay, onAutoPlay,
+  slates, kept, redealsLeft, accent, stakes, onToggle, onRedeal, onPlay, onAutoPlay,
 }: {
   slates: FoxSlate[];
   kept: Set<string>;
-  keepN: number;
   redealsLeft: number;
   accent: string;
   stakes: number[];
@@ -496,8 +504,6 @@ function DealPhase({
   onPlay: () => void;
   onAutoPlay: () => void;
 }) {
-  const enough = kept.size >= keepN;
-
   // Decision clock: if it runs out, the hand you're holding LOCKS IN and the
   // game begins (no keep/discard penalty prompt).
   const [left, setLeft] = useState<number>(TIMERS.discardDecision);
@@ -518,7 +524,7 @@ function DealPhase({
         {left}s
       </div>
       <div className="text-center text-sm text-muted">
-        Keep at least <span className="font-extrabold" style={{ color: accent }}>{keepN}</span> — discard the rest for one redeal, then play all {slates.length}.
+        Keep the cards you like — discard the rest for one redeal, then play as many as you want at the table.
       </div>
       {/* your hand — each slate drawn on the LockIn card face */}
       <div className="flex flex-wrap justify-center gap-2">
@@ -546,11 +552,10 @@ function DealPhase({
         </button>
         <button
           onClick={onPlay}
-          disabled={!enough}
-          className="flex-1 rounded-xl py-3 text-sm font-extrabold text-white disabled:opacity-40"
+          className="flex-1 rounded-xl py-3 text-sm font-extrabold text-white"
           style={{ background: accent }}
         >
-          {enough ? "Play all 5 ›" : `Keep ${keepN}`}
+          To the table ›
         </button>
       </div>
     </div>
@@ -559,7 +564,7 @@ function DealPhase({
 
 /* ---------------- play phase ---------------- */
 function PlayPhase({
-  slates, picks, stakes, seconds, accent, canLock, onStake, onPick, onLock,
+  slates, picks, stakes, seconds, accent, canLock, cardMin, playedCount, bossName, onStake, onPick, onLock,
 }: {
   slates: FoxSlate[];
   picks: Record<string, "a" | "b">;
@@ -567,6 +572,9 @@ function PlayPhase({
   seconds: number;
   accent: string;
   canLock: boolean;
+  cardMin: number;
+  playedCount: number;
+  bossName: string;
   onStake: (id: string, stake: number) => void;
   onPick: (qid: string, side: "a" | "b") => void;
   onLock: () => void;
@@ -668,13 +676,28 @@ function PlayPhase({
         className="fixed inset-x-0 bottom-0 z-10 border-t border-border bg-background/95 p-3"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 14px)" }}
       >
+        {/* how many the player is playing + the floor for this boss */}
+        <div className="mb-2 text-center text-[12px] font-semibold text-muted">
+          Playing <span className="font-extrabold" style={{ color: accent }}>{playedCount}</span> of {slates.length}
+          {cardMin > 1 ? ` · ${bossName} requires at least ${cardMin}` : " · your call, 1–" + slates.length}
+        </div>
+        {/* item 2: block below the floor and SAY WHY (never auto-fill) */}
+        {!canLock && !expired && (
+          <div className="mb-2 text-center text-[12px] font-bold" style={{ color: COLOR_LOSS }}>
+            Stake + answer {cardMin - playedCount} more card{cardMin - playedCount > 1 ? "s" : ""} to lock in
+          </div>
+        )}
         <button
           onClick={onLock}
           disabled={!canLock && !expired}
           className="w-full rounded-xl py-4 text-lg font-extrabold text-white disabled:opacity-40"
           style={{ background: accent }}
         >
-          {canLock ? "Lock in the round ›" : expired ? "Settle (time up) ›" : "Stake + answer all 5"}
+          {canLock
+            ? `Lock in ${playedCount} card${playedCount > 1 ? "s" : ""} ›`
+            : expired
+              ? "Settle (time up) ›"
+              : `Play ${Math.max(1, cardMin - playedCount)} more`}
         </button>
       </div>
     </div>
@@ -739,7 +762,7 @@ function RevealPhase({
 
 /* ---------------- announce: the Locksmith calls it at the table + coin drop ---------------- */
 function AnnouncePhase({
-  roomKey, accent, won, you, boss, note, cta, onCta,
+  roomKey, accent, won, you, boss, note, cta, onCta, onQuit,
 }: {
   roomKey: FoxPitRoomKey;
   accent: string;
@@ -749,6 +772,7 @@ function AnnouncePhase({
   note: string;
   cta: string;
   onCta: () => void;
+  onQuit: () => void;
 }) {
   useEffect(() => { playCoinDrop(won); }, [won]);
   // Her raised arm points at the WINNING seat: right = you, left = the boss.
@@ -793,9 +817,18 @@ function AnnouncePhase({
         </div>
         <div className="text-sm font-bold text-foreground">YOU {you} · BOSS {boss}</div>
         <div className="text-xs text-muted">{note}</div>
-        <button onClick={onCta} className="mt-3 w-full max-w-sm rounded-xl py-4 text-lg font-extrabold text-white" style={{ background: accent }}>
-          {cta}
-        </button>
+        {/* Quit + advance sit at the bottom, clear of her raised arm/name up top (item 6). */}
+        <div className="mt-3 flex w-full max-w-sm gap-2">
+          <button
+            onClick={onQuit}
+            className="flex-1 rounded-xl border border-border py-4 text-base font-extrabold text-muted"
+          >
+            Quit game
+          </button>
+          <button onClick={onCta} className="flex-[1.4] rounded-xl py-4 text-lg font-extrabold text-white" style={{ background: accent }}>
+            {cta}
+          </button>
+        </div>
       </div>
     </div>
   );

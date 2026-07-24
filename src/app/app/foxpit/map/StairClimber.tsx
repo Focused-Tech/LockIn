@@ -40,24 +40,33 @@ export interface Waypoint {
   label?: string;
 }
 
-/** SEED switchback path (bottom → top), % of the 1620x4500 build map. Landings align to
- *  ELEVATOR_STOPS. GUESS — calibrate on device, then paste JSON back to bake. Exported so
- *  the front-rail sprites anchor to the SAME (calibrated) landing coordinates. */
-export const CLIMB_WAYPOINTS: Waypoint[] = [
-  { x: 34, y: 97.0, label: "Dojo floor" },
-  { x: 55, y: 92.0 },
-  { x: 30, y: 87.3, landing: true, label: "Lobby landing" },
-  { x: 58, y: 80.5 },
-  { x: 32, y: 75.2, landing: true, label: "Coliseum · lower" },
-  { x: 60, y: 69.5 },
-  { x: 34, y: 64.0, landing: true, label: "Coliseum · upper" },
-  { x: 60, y: 57.0 },
-  { x: 34, y: 49.7, landing: true, label: "High Table landing" },
-  { x: 58, y: 43.2 },
-  { x: 32, y: 37.1, landing: true, label: "Suite landing" },
-  { x: 52, y: 31.8 },
-  { x: 36, y: 26.8, landing: true, label: "Winner's Lounge landing" },
-];
+// ── PARAMETRIC SWITCHBACK PATH (item 10) — DERIVED, not dragged ──
+// The staircase is a regular switchback: a landing, a straight diagonal flight to the next
+// landing, direction reversing each landing. The LANDING HEIGHTS are the elevator stop lines
+// (the car opens onto them), and the two horizontal extremes are read off tower_staircase_clean.png
+// (which aligns to the map 1:1). All geometry is named constants — nudge ONE number to shift the
+// whole path without touching logic.
+const MAP_W = 1620;
+const MAP_H = 4500;
+/** Elevator stop lines = landing heights (px on the 1620x4500 map), bottom (Dojo) → top (Winner's). */
+const LANDING_STOPS_Y = [4375, 3930, 3383, 2882, 2237, 1670, 1208];
+const LANDING_LABELS = ["Dojo", "Lobby", "Coliseum · lower", "Coliseum · upper", "High Table", "Boss Fox's Suite", "Winner's Lounge"];
+/** Switchback horizontal extremes (px on 1620) — the left/right turn columns of the flights. */
+const FLIGHT_X_LEFT = 520;
+const FLIGHT_X_RIGHT = 1010;
+/** Bottom landing (Dojo) sits on the LEFT; each landing up alternates sides (the reversing flights). */
+const DOJO_ON_LEFT = true;
+
+/** The climb path, generated from the geometry above: one waypoint per landing, alternating side. */
+export const CLIMB_WAYPOINTS: Waypoint[] = LANDING_STOPS_Y.map((yPx, i) => {
+  const leftSide = DOJO_ON_LEFT ? i % 2 === 0 : i % 2 === 1;
+  return {
+    x: ((leftSide ? FLIGHT_X_LEFT : FLIGHT_X_RIGHT) / MAP_W) * 100,
+    y: (yPx / MAP_H) * 100,
+    landing: true,
+    label: LANDING_LABELS[i],
+  };
+});
 
 // ── SLOT PIECES — front rails/posts, positioned by HAND (drag pass), not derived ──
 // slot_placement.json holds SLICING ORIGINS (where each piece was parked on the cutting sheet —
@@ -336,6 +345,7 @@ export function StairClimber() {
             <div
               key={i}
               onPointerDown={(e) => { dragging.current = i; e.stopPropagation(); }}
+              onTouchStart={(e) => e.stopPropagation()}
               style={{
                 position: "absolute", left: `${p.x}%`, top: `${p.y}%`, transform: "translate(-50%,-50%)",
                 width: 22, height: 22, borderRadius: "50%", background: p.landing ? PAW_GOLD : HANDLE_RED,

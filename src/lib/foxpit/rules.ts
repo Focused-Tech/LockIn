@@ -8,8 +8,31 @@
  */
 import type { FoxPitRoomKey } from "@/lib/foxpit";
 
-/** Slates dealt each round; you ALWAYS play all of them. */
+/** Slates dealt each round. The player then chooses HOW MANY to actually play (1..this). */
 export const SLATES_PER_ROUND = 5;
+/** Most cards a player may play in a round (the deal size). Never hardcode 5 in the flow. */
+export const MAX_CARDS_PER_ROUND = SLATES_PER_ROUND;
+
+/**
+ * FORCED MINIMUM cards a player must play against a given opponent (item 2). The player picks
+ * how many to play (1..MAX); where a minimum applies, lock-in is blocked below it with an
+ * on-screen reason — never auto-filled. The BOSS then plays exactly as many as the player did.
+ * Keyed by the opponent's display name (ROOM_RULES.boss + the underlings faced in multi-table rooms).
+ */
+export const OPPONENT_CARD_MIN: Record<string, number> = {
+  "Sensei Owl": 1, // Dojo — no minimum
+  Ghost: 1, // Coliseum underling — no minimum
+  "Alpha Wolf": 1, // Coliseum — no minimum
+  Grim: 4, // High Table underling — minimum 4
+  "Boss Raven": 5, // High Table — minimum 5
+  "Boss Fox": 5, // Fox Den — minimum 5
+};
+/** Fallback floor when an opponent isn't listed. */
+export const DEFAULT_CARD_MIN = 1;
+/** The forced-minimum cards to play for a room's current boss. */
+export function cardMinFor(boss: string): number {
+  return OPPONENT_CARD_MIN[boss] ?? DEFAULT_CARD_MIN;
+}
 
 /** The mulligan: the discarded (non-kept) slates may be redealt ONCE per round. */
 export const REDEALS_PER_ROUND = 1;
@@ -146,7 +169,7 @@ export const ECONOMY = {
 } as const;
 
 /** Shown in-app + in build output (bump per build). */
-export const FOXPIT_BUILD_VERSION = "fp-pieces-drag-1";
+export const FOXPIT_BUILD_VERSION = "fp-dojo-fixes-1";
 
 /** Keep-N for a given room + round index (0-based), clamped to the round table. */
 export function keepNFor(room: FoxPitRoomKey, roundIndex: number): number {
