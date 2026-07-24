@@ -128,74 +128,75 @@ if (typeof window !== "undefined") {
   );
 }
 
-// ── SLOT PIECES — front rails/posts, positioned by HAND (drag pass), not derived ──
-// slot_placement.json holds SLICING ORIGINS (where each piece was parked on the cutting sheet —
-// all on empty canvas beside the staircase), NOT map placements. So we NEVER read positions from
-// it, and NEVER derive rail positions from CLIMB_WAYPOINTS (those move the avatar only). Placement
-// comes from Frank's ⚙ pieces drag pass, baked into SLOT_PLACEMENT below (the single source of
-// truth). The file's filenames + intrinsic w/h are still valid — only its coordinates are void.
-// Z-model: map art (baked back rails) → AVATAR (z5) → these sprites (z6).
+// ── SLOT PIECES — the FRONT rail + newel-post layer the avatar walks BEHIND ──
+// Positions are EXACT map placements from public/foxpit/map/slot_placement.json (x,y = sprite
+// TOP-LEFT on the 1620x4500 canvas, identical to tower_map_clean.png). Rendered as % so they scale
+// with the map. Z-model: map art (baked back rails) < AVATAR (z5) < RAILS < POSTS — so the avatar
+// tucks into the slot: in front of the baked back rail, behind the front rail, behind the posts.
 const SHEET_W = 1620;
 const SHEET_H = 4500;
 
-interface SlotPieceDef { file: string; w: number; h: number; landing: string }
-
-// Proposed subset to place — ONE rail + two posts per landing (reported before the drag so a wrong
-// piece is swapped before 34 sprites get moved). Swap a filename here if it's the wrong piece.
-const PROPOSED: SlotPieceDef[] = [
-  { file: "rail_06.png", w: 255, h: 183, landing: "Winner's Lounge" },
-  { file: "post_04.png", w: 37, h: 184, landing: "Winner's Lounge" },
-  { file: "post_05.png", w: 37, h: 184, landing: "Winner's Lounge" },
-  { file: "rail_05.png", w: 221, h: 183, landing: "Boss Fox's Suite" },
-  { file: "post_03.png", w: 36, h: 178, landing: "Boss Fox's Suite" },
-  { file: "post_06.png", w: 36, h: 178, landing: "Boss Fox's Suite" },
-  { file: "rail_14.png", w: 212, h: 152, landing: "High Table" },
-  { file: "post_08.png", w: 36, h: 177, landing: "High Table" },
-  { file: "post_09.png", w: 37, h: 183, landing: "High Table" },
-  { file: "rail_03.png", w: 200, h: 135, landing: "Coliseum · upper" },
-  { file: "post_10.png", w: 34, h: 177, landing: "Coliseum · upper" },
-  { file: "post_11.png", w: 36, h: 178, landing: "Coliseum · upper" },
-  { file: "rail_09.png", w: 200, h: 135, landing: "Coliseum · lower" },
-  { file: "post_12.png", w: 35, h: 177, landing: "Coliseum · lower" },
-  { file: "post_13.png", w: 36, h: 180, landing: "Coliseum · lower" },
-  { file: "rail_12.png", w: 200, h: 135, landing: "Lobby" },
-  { file: "post_14.png", w: 36, h: 180, landing: "Lobby" },
-  { file: "post_16.png", w: 37, h: 188, landing: "Lobby" },
+type SlotSprite = { file: string; x: number; y: number; w: number };
+const SLOT_SPRITES: SlotSprite[] = [
+  { file: "post_01.png", x: 473, y: 1025, w: 36 },
+  { file: "post_02.png", x: 718, y: 1030, w: 36 },
+  { file: "piece_01.png", x: 548, y: 1087, w: 99 },
+  { file: "post_03.png", x: 805, y: 1492, w: 36 },
+  { file: "rail_01.png", x: 587, y: 1564, w: 169 },
+  { file: "post_04.png", x: 767, y: 1854, w: 37 },
+  { file: "post_05.png", x: 851, y: 1854, w: 37 },
+  { file: "rail_02.png", x: 909, y: 1895, w: 173 },
+  { file: "rail_03.png", x: 1122, y: 1897, w: 200 },
+  { file: "rail_04.png", x: 1359, y: 1900, w: 197 },
+  { file: "rail_05.png", x: 1172, y: 2087, w: 221 },
+  { file: "post_06.png", x: 805, y: 2092, w: 36 },
+  { file: "rail_06.png", x: 882, y: 2093, w: 255 },
+  { file: "rail_07.png", x: 1431, y: 2125, w: 187 },
+  { file: "rail_08.png", x: 1152, y: 2348, w: 182 },
+  { file: "post_07.png", x: 1460, y: 2354, w: 37 },
+  { file: "post_08.png", x: 1070, y: 2407, w: 36 },
+  { file: "rail_09.png", x: 1152, y: 2546, w: 200 },
+  { file: "post_09.png", x: 1040, y: 2675, w: 37 },
+  { file: "post_10.png", x: 1346, y: 2898, w: 34 },
+  { file: "post_11.png", x: 996, y: 2905, w: 36 },
+  { file: "rail_10.png", x: 1084, y: 2957, w: 181 },
+  { file: "post_12.png", x: 1162, y: 3197, w: 35 },
+  { file: "rail_11.png", x: 927, y: 3244, w: 154 },
+  { file: "post_13.png", x: 1272, y: 3421, w: 36 },
+  { file: "post_14.png", x: 989, y: 3439, w: 36 },
+  { file: "rail_12.png", x: 1046, y: 3482, w: 200 },
+  { file: "post_15.png", x: 1284, y: 3723, w: 39 },
+  { file: "rail_13.png", x: 1055, y: 3779, w: 163 },
+  { file: "post_16.png", x: 1338, y: 3971, w: 37 },
+  { file: "post_17.png", x: 1028, y: 3988, w: 38 },
+  { file: "rail_14.png", x: 1111, y: 4038, w: 212 },
+  { file: "post_18.png", x: 954, y: 4234, w: 36 },
+  { file: "rail_15.png", x: 1080, y: 4264, w: 163 },
 ];
 
-// BAKED placement table — paste Frank's ⚙ pieces JSON here to make it the source of truth. Empty
-// until then, so NORMAL mode renders a CLEAN map (no misplaced rails). file → {x,y} top-left, map-canvas.
-const SLOT_PLACEMENT: Record<string, { x: number; y: number }> = {
-  // (empty — awaiting Frank's drag pass)
-};
-
-// Rough drag STARTING points near each landing (my eyeball, NOT a final position) so the drags are
-/** Front rail/post sprites — the baked SLOT_PLACEMENT, rendered over the tower (path is mapped;
- *  the drag tool has been retired). % = map-canvas coords; the layer never eats pointer events. */
+/** Front rail + newel-post SLOT layer, placed at their exact map coords. Posts paint on top of the
+ *  rails; both above the avatar so it walks in the slot. */
 export function SlotPieces() {
-  const rendered = PROPOSED.filter((p) => SLOT_PLACEMENT[p.file]);
   return (
     <div aria-hidden style={{ position: "absolute", inset: 0, zIndex: 6, pointerEvents: "none" }}>
-      {rendered.map((p) => {
-        const pt = SLOT_PLACEMENT[p.file]!;
-        return (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            key={p.file}
-            src={`/foxpit/map/stair_pieces/${p.file}`}
-            alt=""
-            draggable={false}
-            style={{
-              position: "absolute",
-              left: `${(pt.x / SHEET_W) * 100}%`,
-              top: `${(pt.y / SHEET_H) * 100}%`,
-              width: `${(p.w / SHEET_W) * 100}%`,
-              height: "auto",
-              pointerEvents: "none",
-            }}
-          />
-        );
-      })}
+      {SLOT_SPRITES.map((s) => (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          key={s.file}
+          src={`/foxpit/map/stair_pieces/${s.file}`}
+          alt=""
+          draggable={false}
+          style={{
+            position: "absolute",
+            left: `${(s.x / SHEET_W) * 100}%`,
+            top: `${(s.y / SHEET_H) * 100}%`,
+            width: `${(s.w / SHEET_W) * 100}%`,
+            height: "auto",
+            zIndex: s.file.startsWith("post") ? 2 : 1, // posts on top of rails
+            pointerEvents: "none",
+          }}
+        />
+      ))}
     </div>
   );
 }
