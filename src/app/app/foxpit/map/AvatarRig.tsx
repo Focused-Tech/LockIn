@@ -13,7 +13,7 @@ import { useRef, useState } from "react";
  * first-pass guess; the architect refines them with the built-in pivot cal tool (drag each dot,
  * copy the emitted JSON, and it gets baked into JOINTS). Blind pivots are a known failure here.
  *
- * Position + scale come from the parent (AVATAR_SLOTS / AVATAR_SCALE, calibrated) — this component only
+ * Position + scale come from the parent (StairClimber, which walks the climb path) — this component only
  * renders the figure for a given walk `phase` + `facing`.
  */
 
