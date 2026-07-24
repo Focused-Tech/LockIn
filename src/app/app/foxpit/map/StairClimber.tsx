@@ -27,8 +27,21 @@ const HANDLE_RING = "#ffffff";
 const DUMP_GREEN = "#9fe0b0";
 const PANEL_INK = "rgba(6,8,12,.9)";
 
-const AVATAR_SRC = "/foxpit/avatar-climber.png";
-/** Feet sit 86.4% down the 611² canvas — anchor the feet, not the box bottom. */
+/**
+ * 8-FRAME STAIR-CLIMBING WALK CYCLE (side profile, facing RIGHT), sliced from the 2x4 sheet.
+ * Drop the eight sliced frames as /foxpit/walk/avatar-walk-1.png … avatar-walk-8.png and list them
+ * here in order (frame 8 loops back to 1). Until they're in, the single mid-stride pose stands in
+ * as a 1-frame "cycle". Direction is handled by scaleX (flips at each ledge — the switchback turn),
+ * so ALL frames face RIGHT; never mirror the art in the sheet.
+ */
+const WALK_FRAMES = [
+  "/foxpit/avatar-climber.png",
+  // "/foxpit/walk/avatar-walk-1.png", "/foxpit/walk/avatar-walk-2.png", … avatar-walk-8.png
+];
+/** ms per walk frame while the avatar is moving (8 frames ≈ one stride cycle). */
+const WALK_FRAME_MS = 90;
+/** Feet sit 86.4% down the 611² canvas — anchor the feet, not the box bottom. (Re-measure if the
+ *  walk frames use a different canvas/baseline.) */
 const FOOT_PCT = 86.4;
 /** Avatar box width as a fraction of the map width (tuned on device). */
 const AVATAR_W_VW = 15;
@@ -286,7 +299,7 @@ const easeInOut = (t: number) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2,
  */
 export function StairClimber() {
   const [wp, setWp] = useState<Waypoint[]>(CLIMB_WAYPOINTS);
-  const [pos, setPos] = useState({ x: CLIMB_WAYPOINTS[0]!.x, y: CLIMB_WAYPOINTS[0]!.y, facing: 1 });
+  const [pos, setPos] = useState({ x: CLIMB_WAYPOINTS[0]!.x, y: CLIMB_WAYPOINTS[0]!.y, facing: 1, frame: 0 });
   const [moving, setMoving] = useState(false);
   const [calibrate, setCalibrate] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -309,7 +322,9 @@ export function StairClimber() {
     const frame = (now: number) => {
       const t = Math.min(1, (now - t0) / dur);
       const e = easeInOut(t);
-      setPos({ x: a.x + (b.x - a.x) * e, y: a.y + (b.y - a.y) * e, facing });
+      // cycle the walk frames while moving (no-op with the single-pose fallback)
+      const walkFrame = WALK_FRAMES.length > 1 ? Math.floor((now - t0) / WALK_FRAME_MS) % WALK_FRAMES.length : 0;
+      setPos({ x: a.x + (b.x - a.x) * e, y: a.y + (b.y - a.y) * e, facing, frame: walkFrame });
       if (t < 1) {
         raf.current = requestAnimationFrame(frame);
       } else {
@@ -335,12 +350,16 @@ export function StairClimber() {
         if (seg.current >= wp.length - 1) {
           // reached the top — pause, reset to the bottom, climb again
           seg.current = 0;
-          setPos({ x: wp[0]!.x, y: wp[0]!.y, facing: 1 });
+          setPos({ x: wp[0]!.x, y: wp[0]!.y, facing: 1, frame: 0 });
           timer.current = window.setTimeout(tick, 1400);
           return;
         }
+        // Walk to the next point. If it's a LEDGE, the avatar has reached a table — pause on it,
+        // THEN the next step (the next flight) flips direction (the switchback turn).
+        const arriving = wp[seg.current + 1];
         stepTo(seg.current + 1, wp);
-        timer.current = window.setTimeout(tick, 260 + 90);
+        const dwell = arriving?.landing ? 750 : 90;
+        timer.current = window.setTimeout(tick, 260 + dwell);
       } catch (err) {
         // No silent catch — surface it.
         console.error("[StairClimber] climb loop failed", err);
@@ -390,7 +409,7 @@ export function StairClimber() {
       >
         <div style={{ animation: moving ? "foxpitClimberBob .5s ease-in-out infinite" : "none" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={AVATAR_SRC} alt="Climbing player" draggable={false} style={{ width: "100%", height: "auto", display: "block", transform: `scaleX(${pos.facing})` }} />
+          <img src={WALK_FRAMES[pos.frame % WALK_FRAMES.length] ?? WALK_FRAMES[0]} alt="Climbing player" draggable={false} style={{ width: "100%", height: "auto", display: "block", transform: `scaleX(${pos.facing})` }} />
         </div>
       </div>
 
