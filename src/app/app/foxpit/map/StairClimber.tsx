@@ -40,33 +40,92 @@ export interface Waypoint {
   label?: string;
 }
 
-// ── PARAMETRIC SWITCHBACK PATH (item 10) — DERIVED, not dragged ──
-// The staircase is a regular switchback: a landing, a straight diagonal flight to the next
-// landing, direction reversing each landing. The LANDING HEIGHTS are the elevator stop lines
-// (the car opens onto them), and the two horizontal extremes are read off tower_staircase_clean.png
-// (which aligns to the map 1:1). All geometry is named constants — nudge ONE number to shift the
-// whole path without touching logic.
+// ── STAIR PATH — DERIVED FROM THE TREADS (traced off tower_staircase_clean.png, aligns 1:1) ──
+// The staircase is a SWITCHBACK: flights alternate direction, a ledge caps each flight, and a
+// ledge is a STEP too (treads, ledge, treads, ledge…). Ledge extremes were read by tracing the
+// tread band per row on the art. ONE measured constant: the horizontal step run per tread.
 const MAP_W = 1620;
 const MAP_H = 4500;
-/** Elevator stop lines = landing heights (px on the 1620x4500 map), bottom (Dojo) → top (Winner's). */
-const LANDING_STOPS_Y = [4375, 3930, 3383, 2882, 2237, 1670, 1208];
-const LANDING_LABELS = ["Dojo", "Lobby", "Coliseum · lower", "Coliseum · upper", "High Table", "Boss Fox's Suite", "Winner's Lounge"];
-/** Switchback horizontal extremes (px on 1620) — the left/right turn columns of the flights. */
-const FLIGHT_X_LEFT = 520;
-const FLIGHT_X_RIGHT = 1010;
-/** Bottom landing (Dojo) sits on the LEFT; each landing up alternates sides (the reversing flights). */
-const DOJO_ON_LEFT = true;
+/** MEASURED: horizontal run per tread on the 1620x4500 map (starting pitch; verify vs the render). */
+const STEP_RUN_PX = 35.5;
 
-/** The climb path, generated from the geometry above: one waypoint per landing, alternating side. */
-export const CLIMB_WAYPOINTS: Waypoint[] = LANDING_STOPS_Y.map((yPx, i) => {
-  const leftSide = DOJO_ON_LEFT ? i % 2 === 0 : i % 2 === 1;
-  return {
-    x: ((leftSide ? FLIGHT_X_LEFT : FLIGHT_X_RIGHT) / MAP_W) * 100,
-    y: (yPx / MAP_H) * 100,
-    landing: true,
-    label: LANDING_LABELS[i],
-  };
-});
+/** Ledge (flight-cap) extremes, BOTTOM (Dojo floor) → TOP (High Table landing). side = the wall the
+ *  ledge sits against; flights alternate between them. */
+interface Ledge { x: number; y: number; side: "L" | "R"; label?: string }
+const STAIR_LEDGES: Ledge[] = [
+  { x: 366, y: 4380, side: "L", label: "Dojo floor" },
+  { x: 710, y: 4080, side: "R" },
+  { x: 400, y: 3840, side: "L" },
+  { x: 695, y: 3570, side: "R" },
+  { x: 396, y: 3300, side: "L" },
+  { x: 690, y: 3030, side: "R" },
+  { x: 415, y: 2790, side: "L" },
+  { x: 710, y: 2460, side: "R" },
+  { x: 455, y: 2237, side: "L", label: "High Table landing" }, // TOP FLIGHT — was missing
+];
+
+/** A derived flight: climbing direction, endpoints, tread count, and the ledge that caps it. */
+export interface Flight {
+  index: number;
+  dir: "toR" | "toL"; // climbing direction; increasing x = toR
+  from: { x: number; y: number };
+  to: { x: number; y: number }; // the ledge at the top of the flight
+  treads: number;
+}
+
+/** Build flights between consecutive ledges (climbing order); tread count from the measured pitch.
+ *  ASSERTS the switchback — two consecutive flights running the same way is a bug, so it fails loudly. */
+function deriveFlights(): Flight[] {
+  const flights: Flight[] = [];
+  for (let i = 0; i < STAIR_LEDGES.length - 1; i++) {
+    const from = STAIR_LEDGES[i]!;
+    const to = STAIR_LEDGES[i + 1]!;
+    const dir: "toR" | "toL" = to.x >= from.x ? "toR" : "toL";
+    const treads = Math.max(1, Math.round(Math.abs(to.x - from.x) / STEP_RUN_PX));
+    if (i > 0 && flights[i - 1]!.dir === dir) {
+      console.error(
+        `[StairClimber] switchback broken: flights ${i - 1} and ${i} both run ${dir} — check STAIR_LEDGES`,
+      );
+    }
+    flights.push({ index: i, dir, from: { x: from.x, y: from.y }, to: { x: to.x, y: to.y }, treads });
+  }
+  return flights;
+}
+
+export const STAIR_FLIGHTS: Flight[] = deriveFlights();
+
+/** The climb path: one waypoint per TREAD (feet land ON the tread top), plus the LEDGE capping each
+ *  flight (a ledge is a step). Positions as % of the map so they survive any rescale. */
+export const CLIMB_WAYPOINTS: Waypoint[] = (() => {
+  const wp: Waypoint[] = [
+    { x: (STAIR_LEDGES[0]!.x / MAP_W) * 100, y: (STAIR_LEDGES[0]!.y / MAP_H) * 100, landing: true, label: STAIR_LEDGES[0]!.label },
+  ];
+  for (const f of STAIR_FLIGHTS) {
+    for (let k = 1; k <= f.treads; k++) {
+      const t = k / f.treads;
+      const isLedge = k === f.treads;
+      wp.push({
+        x: ((f.from.x + (f.to.x - f.from.x) * t) / MAP_W) * 100,
+        y: ((f.from.y + (f.to.y - f.from.y) * t) / MAP_H) * 100,
+        landing: isLedge,
+        label: isLedge ? STAIR_LEDGES[f.index + 1]!.label : undefined,
+      });
+    }
+  }
+  return wp;
+})();
+
+// Dev report (client): per-flight direction, tread count, ledge position (px + %), plus the total.
+if (typeof window !== "undefined") {
+  const total = STAIR_FLIGHTS.reduce((n, f) => n + f.treads, 0);
+  console.info(
+    `[StairClimber] ${STAIR_FLIGHTS.length} flights, ${total} treads`,
+    STAIR_FLIGHTS.map((f) => {
+      const L = STAIR_LEDGES[f.index + 1]!;
+      return { flight: f.index, dir: f.dir, treads: f.treads, ledge: `${L.x},${L.y} (${((L.x / MAP_W) * 100).toFixed(1)}%,${((L.y / MAP_H) * 100).toFixed(1)}%)` };
+    }),
+  );
+}
 
 // ── SLOT PIECES — front rails/posts, positioned by HAND (drag pass), not derived ──
 // slot_placement.json holds SLICING ORIGINS (where each piece was parked on the cutting sheet —
@@ -245,7 +304,7 @@ export function StairClimber() {
     const facing = b.x >= a.x ? 1 : -1;
     busy.current = true;
     setMoving(true);
-    const dur = 1000;
+    const dur = 260; // per-tread step (the path is now tread-level, ~75 steps)
     const t0 = performance.now();
     const frame = (now: number) => {
       const t = Math.min(1, (now - t0) / dur);
@@ -281,7 +340,7 @@ export function StairClimber() {
           return;
         }
         stepTo(seg.current + 1, wp);
-        timer.current = window.setTimeout(tick, 1000 + 380);
+        timer.current = window.setTimeout(tick, 260 + 90);
       } catch (err) {
         // No silent catch — surface it.
         console.error("[StairClimber] climb loop failed", err);
