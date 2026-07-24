@@ -8,6 +8,7 @@ import {
   SLATES_PER_ROUND,
   FOXPIT_CATEGORIES,
   REAL_DATA_ENTERS_AT,
+  CARD_DISTRIBUTION,
   type FoxPitCategory,
 } from "./rules";
 
@@ -159,6 +160,23 @@ export function dealFoxSlates(room: FoxPitRoomKey, hedged: FoxPitCategory[] = []
   for (let i = 0; i < SLATES_PER_ROUND; i++) {
     out.push(buildSlate(room, draw[Math.floor(Math.random() * draw.length)]!));
   }
+  return out;
+}
+
+/**
+ * Deal the round's 5 slates spread across the CHOSEN categories per CARD_DISTRIBUTION (new model):
+ * 1 cat → 5 of it; 2 → 3/2; 3 → 2/2/1; 4 → 2/1/1/1; 5 → one each. Breadth is the player's own risk
+ * choice, so any category is valid on any floor.
+ */
+export function dealFoxSlatesByCategories(room: FoxPitRoomKey, chosen: FoxPitCategory[]): FoxSlate[] {
+  const cats = chosen.length ? chosen : categoriesFor(room);
+  const n = Math.max(1, Math.min(cats.length, 5));
+  const split = CARD_DISTRIBUTION[n] ?? [SLATES_PER_ROUND];
+  const out: FoxSlate[] = [];
+  split.forEach((count, i) => {
+    const cat = cats[i % cats.length]!;
+    for (let k = 0; k < count; k++) out.push(buildSlate(room, cat));
+  });
   return out;
 }
 

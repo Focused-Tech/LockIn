@@ -91,14 +91,28 @@ export const ROOM_RULES: Record<FoxPitRoomKey, RoomRules> = {
   suite: { boss: "Boss Fox", floor: 5, tables: 1, rounds: 5, keepN: [3, 3, 3, 4, 4], bossWinPct: 85, stakes: [15, 25, 50], secondsPerQuestion: 12, note: "winner-take-all" },
 };
 
-/** Category-hedge decay by difficulty: how many categories the player gets to pick,
- *  and how many are dealt. Owl = widest hedge; Fox = all dealt (no hedge). */
-export const CATEGORY_HEDGE: Record<FoxPitRoomKey, { pick: number; dealt: number | "all" }> = {
-  dojo: { pick: 5, dealt: 5 },
-  coliseum: { pick: 3, dealt: 2 },
-  hightable: { pick: 2, dealt: 3 },
-  suite: { pick: FOXPIT_CATEGORIES.length, dealt: "all" },
+/**
+ * CARD DISTRIBUTION (new model, item 2): the five cards are spread as evenly as possible across
+ * however many categories the player chose (1–5). Named table — not computed ad hoc. Index by the
+ * chosen category count.
+ */
+export const CARD_DISTRIBUTION: Record<number, number[]> = {
+  1: [5],
+  2: [3, 2],
+  3: [2, 2, 1],
+  4: [2, 1, 1, 1],
+  5: [1, 1, 1, 1, 1],
 };
+
+/**
+ * BREADTH UNLOCKS STAKES (item 3): choosing N categories opens the LOWEST N tiers of the room's
+ * stake ladder — this is the reward for breadth. No multipliers anywhere; scoring is unchanged.
+ * Tiers above the unlocked count render LOCKED (with the reason), never hidden. Returns how many
+ * of `stakes` are unlocked at the given breadth.
+ */
+export function unlockedTierCount(categoryCount: number, ladderLength: number): number {
+  return Math.max(1, Math.min(categoryCount, ladderLength));
+}
 
 /**
  * ELEVATOR STOPS — where the car's BOTTOM EDGE parks at each landing, as a % of
@@ -169,7 +183,7 @@ export const ECONOMY = {
 } as const;
 
 /** Shown in-app + in build output (bump per build). */
-export const FOXPIT_BUILD_VERSION = "fp-dojo-fixes-3";
+export const FOXPIT_BUILD_VERSION = "fp-catmodel-1";
 
 /** Keep-N for a given room + round index (0-based), clamped to the round table. */
 export function keepNFor(room: FoxPitRoomKey, roundIndex: number): number {

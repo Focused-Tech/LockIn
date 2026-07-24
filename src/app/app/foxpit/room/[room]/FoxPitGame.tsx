@@ -11,8 +11,16 @@ import { useEffect, useRef, useState } from "react";
 import { LockGlyph } from "@/components/practice/LockGlyph";
 import { categoryTint } from "@/lib/practice/tints";
 import { roomByKey, type FoxPitRoomKey } from "@/lib/foxpit";
-import { ROOM_RULES, keepNFor, SLATES_PER_ROUND, REDEALS_PER_ROUND, FOXPIT_BUILD_VERSION, CATEGORY_TINT_KEY, TIMERS, CATEGORY_HEDGE, FOXPIT_CATEGORIES, cardMinFor, type FoxPitCategory } from "@/lib/foxpit/rules";
-import { dealFoxSlates, categoriesFor, roundScore, bossRoundScore, slateWon, type FoxSlate } from "@/lib/foxpit/slates";
+import { ROOM_RULES, keepNFor, SLATES_PER_ROUND, REDEALS_PER_ROUND, FOXPIT_BUILD_VERSION, CATEGORY_TINT_KEY, TIMERS, FOXPIT_CATEGORIES, CARD_DISTRIBUTION, cardMinFor, unlockedTierCount, type FoxPitCategory } from "@/lib/foxpit/rules";
+import { dealFoxSlatesByCategories, roundScore, bossRoundScore, slateWon, type FoxSlate } from "@/lib/foxpit/slates";
+
+/** Resolve the player's shared interest categories (users/{uid}.categories[]) to the Fox Pit set.
+ *  Case-insensitive intersection; falls back to all Fox Pit categories if none match. */
+function resolvePlayerCats(userCategories: string[]): FoxPitCategory[] {
+  const wanted = new Set(userCategories.map((c) => c.toLowerCase()));
+  const matched = FOXPIT_CATEGORIES.filter((c) => wanted.has(c));
+  return matched.length ? matched : [...FOXPIT_CATEGORIES];
+}
 
 /** Design-system semantic colors (win green / loss red), referenced by name. */
 const COLOR_WIN = "#22C55E";
@@ -72,16 +80,20 @@ const CARD_FRONT = "/foxpit/cards/card_front_single.png";
 
 export function FoxPitGame({
   roomKey,
+  userCategories,
   onExit,
   onCleared,
 }: {
   roomKey: FoxPitRoomKey;
+  userCategories: string[];
   onExit: () => void;
   onCleared: () => void;
 }) {
   const rules = ROOM_RULES[roomKey];
   const room = roomByKey(roomKey);
   const accent = room.accent;
+  /** The categories this player may pick from (their shared interests, resolved to the Fox Pit set). */
+  const playerCats = resolvePlayerCats(userCategories);
 
   // The Dojo opens on the HOW-TO-PLAY screen (item 5) — its own beat BEFORE category select —
   // unless the player has already dismissed/skipped it (remembered). Every other room starts at
@@ -124,6 +136,8 @@ export function FoxPitGame({
   const cardMin = cardMinFor(rules.boss);
   /** A card is "played" once it's staked AND fully answered. */
   const playedCount = slates.filter((s) => isLocked(s, picks)).length;
+  /** Breadth (item 3): choosing N categories opens the lowest N stake tiers of the room ladder. */
+  const unlockedStakes = rules.stakes.slice(0, unlockedTierCount(pickedCats.length, rules.stakes.length));
 
   /* ------- DEAL / keep-N ------- */
   const toggleKeep = (id: string) => {
@@ -137,7 +151,7 @@ export function FoxPitGame({
 
   const redeal = () => {
     if (redealsLeft <= 0) return;
-    const fresh = dealFoxSlates(roomKey, pickedCats);
+    const fresh = dealFoxSlatesByCategories(roomKey, pickedCats);
     let fi = 0;
     setSlates((prev) => prev.map((s) => (kept.has(s.id) ? s : fresh[fi++]!)));
     setRedealsLeft((r) => r - 1);
@@ -172,7 +186,7 @@ export function FoxPitGame({
 
   /** The ONLY place a round's cards are created. Runs on entry to `dealing`. */
   const dealRound = (cats: FoxPitCategory[]) => {
-    setSlates(dealFoxSlates(roomKey, cats));
+    setSlates(dealFoxSlatesByCategories(roomKey, cats));
     setPhase("dealing");
   };
 
@@ -224,8 +238,9 @@ export function FoxPitGame({
 
       {phase === "category" && (
         <CategorySelectPhase
-          roomKey={roomKey}
           accent={accent}
+          playerCats={playerCats}
+          stakes={rules.stakes}
           onConfirm={confirmCategories}
         />
       )}
@@ -266,6 +281,8 @@ export function FoxPitGame({
           slates={slates}
           picks={picks}
           stakes={rules.stakes}
+          unlockedStakes={unlockedStakes}
+          categoryCount={pickedCats.length}
           seconds={rules.secondsPerQuestion}
           accent={accent}
           canLock={canLock}
@@ -374,34 +391,30 @@ function HowToPlay({ accent, onDismiss }: { accent: string; onDismiss: () => voi
 }
 
 /* ---------------- dealing: cards dealt out on the Locksmith table ---------------- */
-/* ---------------- BEAT 1 — category select ----------------
- * The hedge decays with difficulty (CATEGORY_HEDGE): Owl picks 5, Wolf 3, Raven 2,
- * Boss Fox gets no hedge at all (everything is dealt). This is SEPARATE from keep-N,
- * which is the mulligan floor applied after the cards land. */
+/* ---------------- BEAT 1 — category select (new model) ----------------
+ * Free choice every floor: the player picks HOW MANY categories to play (1–5) from their OWN
+ * shared interests. Breadth is the reward lever — more categories spread the 5 cards thinner but
+ * open higher stake tiers. Defaults to 1 (the safe path). No hedge decay. */
 function CategorySelectPhase({
-  roomKey, accent, onConfirm,
+  accent, playerCats, stakes, onConfirm,
 }: {
-  roomKey: FoxPitRoomKey;
   accent: string;
+  playerCats: FoxPitCategory[];
+  stakes: number[];
   onConfirm: (cats: FoxPitCategory[]) => void;
 }) {
-  const pool = categoriesFor(roomKey);
-  const hedge = CATEGORY_HEDGE[roomKey];
-  const noHedge = hedge.dealt === "all";
-  const pick = Math.min(hedge.pick, pool.length);
-  const [chosen, setChosen] = useState<FoxPitCategory[]>([]);
-
-  // Boss Fox: no choice to make — everything is dealt, so don't stall the round.
-  useEffect(() => {
-    if (noHedge) onConfirm(pool);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [noHedge]);
-  if (noHedge) return null;
+  // Default to ONE category — most players should take the safe path by default.
+  const [chosen, setChosen] = useState<FoxPitCategory[]>(() => playerCats.slice(0, 1));
 
   const toggle = (c: FoxPitCategory) =>
     setChosen((prev) =>
-      prev.includes(c) ? prev.filter((x) => x !== c) : prev.length >= pick ? prev : [...prev, c],
+      prev.includes(c) ? prev.filter((x) => x !== c) : prev.length >= 5 ? prev : [...prev, c],
     );
+
+  const n = chosen.length;
+  const split = CARD_DISTRIBUTION[Math.max(1, Math.min(n, 5))] ?? [SLATES_PER_ROUND];
+  const openTiers = unlockedTierCount(n, stakes.length);
+  const topOpen = stakes[openTiers - 1] ?? stakes[0]!;
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-5 p-6">
@@ -409,14 +422,14 @@ function CategorySelectPhase({
         <div className="text-xs font-extrabold tracking-widest" style={{ color: accent }}>
           CATEGORY SELECT
         </div>
-        <div className="mt-1 font-serif text-2xl text-foreground">Pick your ground</div>
+        <div className="mt-1 font-serif text-2xl text-foreground">Choose your ground</div>
         <div className="mt-1 text-[13px] text-muted">
-          Choose {pick} of {pool.length} — the round deals from these only.
+          Pick 1–5 categories. More categories spread the five cards thinner — but open higher stakes.
         </div>
       </div>
 
       <div className="flex w-full max-w-sm flex-wrap justify-center gap-2">
-        {pool.map((c) => {
+        {playerCats.map((c) => {
           const on = chosen.includes(c);
           const tint = categoryTint(CATEGORY_TINT_KEY[c]);
           return (
@@ -436,13 +449,20 @@ function CategorySelectPhase({
         })}
       </div>
 
+      {/* live preview: the card split + how far up the stake ladder this breadth reaches */}
+      <div className="text-center text-[13px] text-muted">
+        <span className="font-extrabold" style={{ color: accent }}>{n}</span> categor{n === 1 ? "y" : "ies"} →{" "}
+        <span className="font-bold text-foreground">{split.join(" / ")}</span> cards · unlocks up to{" "}
+        <span className="font-extrabold" style={{ color: accent }}>{topOpen} ⛃</span>
+      </div>
+
       <button
-        disabled={chosen.length < pick}
+        disabled={n < 1}
         onClick={() => onConfirm(chosen)}
         className="w-full max-w-sm rounded-xl border px-6 py-4 text-base font-extrabold disabled:opacity-40"
         style={{ borderColor: accent, background: `${accent}22`, color: "var(--foreground)" }}
       >
-        {chosen.length < pick ? `Pick ${pick - chosen.length} more` : "Lock the hedge ›"}
+        Deal {SLATES_PER_ROUND} cards ›
       </button>
     </div>
   );
@@ -647,11 +667,13 @@ function DealPhase({
 
 /* ---------------- play phase ---------------- */
 function PlayPhase({
-  slates, picks, stakes, seconds, accent, canLock, cardMin, playedCount, bossName, onStake, onPick, onLock,
+  slates, picks, stakes, unlockedStakes, categoryCount, seconds, accent, canLock, cardMin, playedCount, bossName, onStake, onPick, onLock,
 }: {
   slates: FoxSlate[];
   picks: Record<string, "a" | "b">;
   stakes: number[];
+  unlockedStakes: number[];
+  categoryCount: number;
   seconds: number;
   accent: string;
   canLock: boolean;
@@ -715,19 +737,38 @@ function PlayPhase({
               </div>
             )}
           </div>
-          {/* stake tier */}
-          <div className="mb-3 flex flex-wrap gap-2">
-            {stakes.map((st) => (
-              <button
-                key={st}
-                onClick={() => onStake(s.id, st)}
-                className="rounded-full border px-3 py-1 text-xs font-extrabold"
-                style={{ borderColor: s.stake === st ? accent : "var(--border, #1E2A38)", color: s.stake === st ? "#fff" : "#8b98a6", background: s.stake === st ? accent : "transparent" }}
-              >
-                {st} ⛃
-              </button>
-            ))}
+          {/* stake tier — breadth unlocks the lowest N tiers; higher tiers render LOCKED (item 3) */}
+          <div className="mb-1 flex flex-wrap gap-2">
+            {stakes.map((st, ti) => {
+              const unlocked = unlockedStakes.includes(st);
+              const selected = s.stake === st;
+              return (
+                <button
+                  key={st}
+                  onClick={() => unlocked && onStake(s.id, st)}
+                  disabled={!unlocked}
+                  className="flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-extrabold"
+                  style={{
+                    borderColor: selected ? accent : "var(--border, #1E2A38)",
+                    color: selected ? "#fff" : unlocked ? "#8b98a6" : "#5a6675",
+                    background: selected ? accent : "transparent",
+                    cursor: unlocked ? "pointer" : "not-allowed",
+                    opacity: unlocked ? 1 : 0.55,
+                  }}
+                >
+                  {!unlocked && <LockGlyph size={11} />}
+                  {st} ⛃{!unlocked ? ` · ${ti + 1} cats` : ""}
+                </button>
+              );
+            })}
           </div>
+          {/* the reason: the lowest locked tier + how many categories opens it (never hidden) */}
+          {stakes.length > unlockedStakes.length && (
+            <div className="mb-3 text-[11px] font-semibold" style={{ color: "#8b98a6" }}>
+              Play {unlockedStakes.length + 1} categor{unlockedStakes.length + 1 === 1 ? "y" : "ies"} to unlock {stakes[unlockedStakes.length]} ⛃
+              <span className="text-[10px]"> (you played {categoryCount})</span>
+            </div>
+          )}
           {/* questions */}
           <div className="flex flex-col gap-2">
             {s.questions.map((q) => (

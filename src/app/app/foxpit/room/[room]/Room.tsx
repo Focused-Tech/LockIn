@@ -66,10 +66,12 @@ export function FoxPitRoom({
   roomKey,
   username = "Member",
   avatarUrl = null,
+  categories = [],
 }: {
   roomKey: FoxPitRoomKey;
   username?: string;
   avatarUrl?: string | null;
+  categories?: string[];
 }) {
   const router = useRouter();
   const room = roomByKey(roomKey);
@@ -299,6 +301,7 @@ export function FoxPitRoom({
       {phase === "play" && (
         <FoxPitGame
           roomKey={room.key}
+          userCategories={categories}
           onExit={() => { setPhase("room"); setActiveTable(null); }}
           onCleared={() => {
             markCleared(room.key);
