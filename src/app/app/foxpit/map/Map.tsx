@@ -662,7 +662,6 @@ const BRASS = "#c8a24b";
 const BRASS_LIT = "#f0d68a";
 const BRASS_DARK = "#6e5320";
 const INK = "#211505"; // engraving on a lit brass button
-const LABEL_MUTED = "#7d7365";
 
 /** Tiled red-felt back wall for the car interior, built from the felt tokens. */
 const FELT_WALL: React.CSSProperties = {
@@ -681,6 +680,19 @@ type FloorDest =
   | { kind: "room"; room: FoxPitRoom }
   | { kind: "lobby" }
   | { kind: "winners" };
+
+/** Front-facing corridor art for each floor — the elevator's back wall shows this floor's
+ *  landing as you cycle to it (best available per-floor art; swap for true corridor plates later). */
+const FLOOR_CORRIDOR: Record<string, string> = {
+  dojo: "/foxpit/floors/floor_dojo.png",
+  coliseum: "/foxpit/floors/floor_coliseum.png",
+  hightable: "/foxpit/floors/floor_ravensnest.png",
+  suite: "/foxpit/floors/floor_foxden.png",
+  lobby: "/foxpit/lobby-scene.png",
+  winners: "/foxpit/lounge/wl_plate_wide_establishing.png",
+};
+const corridorFor = (d: FloorDest) =>
+  FLOOR_CORRIDOR[d.kind === "room" ? d.room.key : d.kind] ?? FLOOR_CORRIDOR.lobby;
 
 /**
  * ELEVATOR RIDE — tap the car → the ornate doors slide OPEN → HARD CUT to a full-screen
@@ -705,6 +717,9 @@ function ElevatorRide({
   const [phase, setPhase] = useState<"opening" | "select" | "closing" | "riding" | "lounge">("opening");
   const [frame, setFrame] = useState(0);
   const [dest, setDest] = useState<FloorDest | null>(null);
+  // Which floor the car is currently "on" — the corridor shown on the back wall. Cycled with ▲/▼.
+  const [cursor, setCursor] = useState(0);
+  const initedCursor = useRef(false);
 
   // Directory, top → bottom. Winner's Lounge only appears once Boss Fox is beaten.
   const directory: FloorDest[] = [
@@ -718,6 +733,20 @@ function ElevatorRide({
 
   const destName = (d: FloorDest) =>
     d.kind === "room" ? d.room.name : d.kind === "lobby" ? "Lobby" : WINNERS_LOUNGE.name;
+  const destSub = (d: FloorDest) =>
+    d.kind === "room" ? d.room.floorLabel : d.kind === "lobby" ? "Street level · Hub" : WINNERS_LOUNGE.floorLabel;
+  const destUnlocked = (d: FloorDest) => (d.kind !== "room" ? true : lone || isUnlocked(d.room, cleared));
+
+  // Open the car on the floor the player is CURRENTLY on (first not-yet-cleared room).
+  useEffect(() => {
+    if (initedCursor.current) return;
+    initedCursor.current = true;
+    const curKey = FOXPIT_ROOMS.find((r) => !cleared.has(r.key))?.key;
+    const i = directory.findIndex((d) => d.kind === "room" && d.room.key === curKey);
+    if (i >= 0) setCursor(i);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const cycle = (dir: -1 | 1) => setCursor((c) => Math.max(0, Math.min(directory.length - 1, c + dir)));
 
   // doors open: 0 → last, then HARD CUT to the interior floor-select
   useEffect(() => {
@@ -771,50 +800,61 @@ function ElevatorRide({
         </div>
       )}
 
-      {/* INTERIOR — floor directory + side call-plate (select), and the travel beat (riding) */}
-      {(phase === "select" || phase === "riding") && (
-        <div style={{ position: "relative", zIndex: 2, display: "flex", flexDirection: "column", height: "100%", boxSizing: "border-box", padding: "calc(env(safe-area-inset-top,0px) + 16px) calc(env(safe-area-inset-right,0px) + 14px) calc(env(safe-area-inset-bottom,0px) + 16px) calc(env(safe-area-inset-left,0px) + 14px)" }}>
-          {/* header */}
-          <div style={{ flex: "0 0 auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div>
-              <div style={{ fontFamily: "Georgia, serif", fontSize: 20, letterSpacing: ".14em", color: BRASS_LIT, textShadow: "0 2px 6px #000" }}>ELEVATOR</div>
-              <div style={{ fontSize: 10, letterSpacing: ".24em", color: BRASS, fontWeight: 800 }}>SELECT A FLOOR</div>
-            </div>
-            {phase === "select" && (
-              <button onClick={onClose} aria-label="Close" style={{ border: `1px solid ${BRASS}`, background: "rgba(0,0,0,.35)", color: BRASS_LIT, borderRadius: 10, padding: "6px 12px", fontSize: 18, fontWeight: 700, cursor: "pointer" }}>✕</button>
-            )}
-          </div>
+      {/* INTERIOR — the car's BACK WALL is a front-facing view of the current floor's corridor;
+          you cycle floors with the up/down call panel, then GO. (Doors already hard-cut away.) */}
+      {(phase === "select" || phase === "riding") && (() => {
+        const active = phase === "riding" && dest ? dest : directory[cursor]!;
+        const unlocked = destUnlocked(active);
+        const keyNeed = !unlocked && active.kind === "room" && active.room.needsKey ? KEY_ASSET[active.room.needsKey] : null;
+        return (
+          <div style={{ position: "absolute", inset: 0, zIndex: 2, overflow: "hidden" }}>
+            {/* FLOOR CORRIDOR back wall — front-facing view of this floor's landing */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img key={corridorFor(active)} src={corridorFor(active)} alt={`${destName(active)} corridor`} draggable={false} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: unlocked ? "none" : "grayscale(.7) brightness(.55)", animation: "foxpitFadeUp .4s ease both" }} />
+            {/* legibility scrims — darker top + bottom so the brass reads over the art */}
+            <div aria-hidden style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(5,7,11,.72), transparent 26%, transparent 40%, rgba(5,7,11,.86))" }} />
 
-          {/* body: side call-plate + the directory */}
-          <div style={{ flex: "1 1 auto", display: "flex", gap: 12, marginTop: 14, minHeight: 0 }}>
-            {/* SIDE WALL up/down call plate — brass, matches the car */}
-            <div style={{ flex: "0 0 auto", alignSelf: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: "12px 8px", borderRadius: 12, background: `linear-gradient(180deg, ${BRASS}, ${BRASS_DARK})`, border: `2px solid ${BRASS_LIT}`, boxShadow: `0 6px 16px rgba(0,0,0,.5), inset 0 0 8px ${BRASS_LIT}` }}>
-              {(["▲", "▼"] as const).map((g, i) => {
-                const lit = phase === "riding" && i === 0;
-                return (
-                  <span key={g} style={{ width: 30, height: 30, borderRadius: 999, display: "grid", placeItems: "center", fontSize: 13, color: INK, background: `radial-gradient(circle at 40% 35%, ${BRASS_LIT}, ${BRASS_DARK})`, border: `1.5px solid ${BRASS_LIT}`, boxShadow: lit ? `0 0 12px ${BRASS_LIT}` : "inset 0 1px 3px rgba(0,0,0,.5)", opacity: lit ? 1 : 0.85 }}>{g}</span>
-                );
-              })}
-              <div style={{ width: 34, height: 12, borderRadius: 3, background: "#0c0904", color: BRASS_LIT, fontSize: 8, fontWeight: 800, display: "grid", placeItems: "center", letterSpacing: ".06em" }}>{dest ? "•••" : "—"}</div>
-            </div>
-
-            {/* DIRECTORY — one row per floor */}
-            <div style={{ flex: "1 1 auto", display: "flex", flexDirection: "column", gap: 10, overflowY: "auto", minHeight: 0, animation: "foxpitFadeUp .4s ease both" }}>
-              {directory.map((d) => (
-                <FloorRow key={d.kind === "room" ? d.room.key : d.kind} d={d} lone={lone} cleared={cleared} traveling={phase === "riding"} onPick={pick} />
-              ))}
-            </div>
-          </div>
-
-          {phase === "riding" && dest && (
-            <div style={{ flex: "0 0 auto", textAlign: "center", marginTop: 10 }}>
-              <div style={{ fontFamily: "Georgia, serif", fontSize: 20, color: BRASS_LIT, letterSpacing: ".1em", textShadow: "0 2px 12px #000" }}>
-                Traveling to {destName(dest)}…
+            {/* top bar — ELEVATOR label + close */}
+            <div style={{ position: "absolute", top: "calc(env(safe-area-inset-top,0px) + 14px)", left: 16, right: 16, display: "flex", alignItems: "center", justifyContent: "space-between", zIndex: 2 }}>
+              <div>
+                <div style={{ fontFamily: "Georgia, serif", fontSize: 20, letterSpacing: ".14em", color: BRASS_LIT, textShadow: "0 2px 6px #000" }}>ELEVATOR</div>
+                <div style={{ fontSize: 10, letterSpacing: ".24em", color: BRASS, fontWeight: 800 }}>{phase === "riding" ? "TRAVELING" : "SELECT A FLOOR"}</div>
               </div>
+              {phase === "select" && (
+                <button onClick={onClose} aria-label="Close" style={{ border: `1px solid ${BRASS}`, background: "rgba(0,0,0,.45)", color: BRASS_LIT, borderRadius: 10, padding: "6px 12px", fontSize: 18, fontWeight: 700, cursor: "pointer" }}>✕</button>
+              )}
             </div>
-          )}
-        </div>
-      )}
+
+            {/* BACK-WALL call panel — up/down cycles floors; the readout names this landing; GO travels */}
+            <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", bottom: "calc(env(safe-area-inset-bottom,0px) + 26px)", width: "min(86vw, 340px)", display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "16px 16px 18px", borderRadius: 16, background: `linear-gradient(180deg, ${BRASS}, ${BRASS_DARK})`, border: `2px solid ${BRASS_LIT}`, boxShadow: `0 10px 26px rgba(0,0,0,.6), inset 0 0 10px ${BRASS_LIT}`, zIndex: 2 }}>
+              {/* ▲ up */}
+              <button onClick={() => cycle(-1)} disabled={phase === "riding" || cursor === 0} aria-label="Up" style={{ width: 46, height: 34, borderRadius: 10, color: INK, fontSize: 16, fontWeight: 900, cursor: phase === "riding" || cursor === 0 ? "default" : "pointer", background: `radial-gradient(circle at 40% 30%, ${BRASS_LIT}, ${BRASS_DARK})`, border: `1.5px solid ${BRASS_LIT}`, opacity: cursor === 0 ? 0.4 : 1, boxShadow: phase === "riding" && dest ? `0 0 12px ${BRASS_LIT}` : "inset 0 1px 3px rgba(0,0,0,.5)" }}>▲</button>
+
+              {/* readout — the floor this corridor belongs to */}
+              <div style={{ width: "100%", textAlign: "center", background: "#0c0904", borderRadius: 8, padding: "8px 10px", border: `1px solid ${BRASS_DARK}` }}>
+                <div style={{ fontFamily: "Georgia, serif", fontSize: 22, color: BRASS_LIT, letterSpacing: ".06em", lineHeight: 1.1 }}>{destName(active)}</div>
+                <div style={{ fontSize: 10, letterSpacing: ".14em", color: BRASS, fontWeight: 700, marginTop: 2 }}>{destSub(active)}</div>
+                {keyNeed && (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 6, fontSize: 11, color: "#e7cf93", fontWeight: 700 }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={keyNeed.src} alt="" style={{ height: 16, width: "auto" }} /> Needs the {keyNeed.tier} key
+                  </div>
+                )}
+              </div>
+
+              {/* ▼ down */}
+              <button onClick={() => cycle(1)} disabled={phase === "riding" || cursor === directory.length - 1} aria-label="Down" style={{ width: 46, height: 34, borderRadius: 10, color: INK, fontSize: 16, fontWeight: 900, cursor: phase === "riding" || cursor === directory.length - 1 ? "default" : "pointer", background: `radial-gradient(circle at 40% 30%, ${BRASS_LIT}, ${BRASS_DARK})`, border: `1.5px solid ${BRASS_LIT}`, opacity: cursor === directory.length - 1 ? 0.4 : 1, boxShadow: "inset 0 1px 3px rgba(0,0,0,.5)" }}>▼</button>
+
+              {/* GO / traveling */}
+              {phase === "riding" ? (
+                <div style={{ fontFamily: "Georgia, serif", fontSize: 15, color: "#fff", letterSpacing: ".08em", textShadow: "0 2px 8px #000" }}>Traveling to {destName(active)}…</div>
+              ) : (
+                <button onClick={() => unlocked && pick(active)} disabled={!unlocked} style={{ width: "100%", borderRadius: 12, padding: "12px 0", fontSize: 15, fontWeight: 900, letterSpacing: ".1em", color: unlocked ? "#1a1206" : "#7a6b45", background: unlocked ? `linear-gradient(180deg, ${BRASS_LIT}, ${BRASS})` : "rgba(12,9,4,.5)", border: `2px solid ${unlocked ? BRASS_LIT : BRASS_DARK}`, cursor: unlocked ? "pointer" : "default", boxShadow: unlocked ? `0 0 16px ${BRASS_LIT}88` : "none" }}>{unlocked ? "GO ›" : "LOCKED"}</button>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* WINNER'S LOUNGE arrival cinematic (Part B) — plays the four plates on first arrival. */}
       {phase === "lounge" && <WinnersLoungeArrival onDone={onClose} />}
@@ -937,67 +977,3 @@ function WinnersLoungeArrival({ onDone }: { onDone: () => void }) {
   );
 }
 
-/** One directory row: a round brass call button + floor label; lit when unlocked, dim
- *  with the tier-key icon when locked. */
-function FloorRow({
-  d,
-  lone,
-  cleared,
-  traveling,
-  onPick,
-}: {
-  d: FloorDest;
-  lone: boolean;
-  cleared: Set<FoxPitRoomKey>;
-  traveling: boolean;
-  onPick: (d: FloorDest) => void;
-}) {
-  const room = d.kind === "room" ? d.room : null;
-  const unlocked = d.kind === "room" ? lone || isUnlocked(room!, cleared) : true;
-  const done = room ? cleared.has(room.key) : false;
-  const name = d.kind === "winners" ? WINNERS_LOUNGE.name : d.kind === "lobby" ? "Lobby" : room!.name;
-  const sub = d.kind === "winners" ? WINNERS_LOUNGE.floorLabel : d.kind === "lobby" ? "Street level · Hub" : room!.floorLabel;
-  const accent = d.kind === "winners" ? WINNERS_LOUNGE.accent : d.kind === "lobby" ? BRASS : room!.accent;
-  const keyIcon = !unlocked && room?.needsKey ? KEY_ASSET[room.needsKey] : null;
-
-  return (
-    <button
-      onClick={() => unlocked && !traveling && onPick(d)}
-      disabled={!unlocked || traveling}
-      style={{
-        display: "flex", alignItems: "center", gap: 14, width: "100%", textAlign: "left",
-        padding: "10px 12px", borderRadius: 14,
-        background: "rgba(10,5,4,.55)",
-        border: `1.5px solid ${unlocked ? accent : BRASS_DARK}`,
-        boxShadow: unlocked ? `0 0 14px ${accent}44` : "none",
-        cursor: unlocked && !traveling ? "pointer" : "not-allowed",
-        filter: unlocked ? "none" : "grayscale(.35) brightness(.82)",
-      }}
-    >
-      {/* round CALL BUTTON — glowing brass when unlocked, dim when locked */}
-      <span style={{
-        flex: "0 0 auto", width: 46, height: 46, borderRadius: 999, display: "grid", placeItems: "center",
-        fontSize: 17, fontWeight: 900, color: unlocked ? INK : BRASS_DARK,
-        background: unlocked ? `radial-gradient(circle at 38% 32%, ${BRASS_LIT}, ${BRASS_DARK})` : "radial-gradient(circle at 38% 32%, #241a10, #0d0a06)",
-        border: `2px solid ${unlocked ? BRASS_LIT : BRASS_DARK}`,
-        boxShadow: unlocked ? `0 0 14px ${BRASS}aa, inset 0 0 6px ${BRASS_LIT}` : "inset 0 2px 5px rgba(0,0,0,.6)",
-      }}>
-        {done ? "✓" : unlocked ? "●" : <LockGlyph size={16} />}
-      </span>
-
-      {/* label */}
-      <span style={{ flex: "1 1 auto", minWidth: 0 }}>
-        <span style={{ display: "block", fontFamily: "Georgia, serif", fontSize: 17, fontWeight: 700, color: unlocked ? "#f6ead2" : LABEL_MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</span>
-        <span style={{ display: "block", fontSize: 10, letterSpacing: ".08em", fontWeight: 700, color: unlocked ? accent : LABEL_MUTED }}>{sub.toUpperCase()}</span>
-      </span>
-
-      {/* right: tier-key when locked, CLEARED when done */}
-      {keyIcon ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={keyIcon.src} alt={`needs ${keyIcon.tier} key`} style={{ flex: "0 0 auto", height: 30, width: "auto", filter: "drop-shadow(0 2px 5px #000)" }} />
-      ) : done ? (
-        <span style={{ flex: "0 0 auto", fontSize: 11, fontWeight: 800, letterSpacing: ".08em", color: "#22C55E" }}>CLEARED</span>
-      ) : null}
-    </button>
-  );
-}
