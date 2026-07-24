@@ -1,205 +1,129 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element */
-import { useRef, useState } from "react";
 
 /**
- * AVATAR WALK RIG — the climbing avatar, assembled from the 18 limb slices in
- * public/foxpit/cutouts/avatar_rig/ (9 per gender). No baked figure: each limb is pinned by its
- * PROXIMAL joint to a pivot and rotated for the walk (rotation only, no new art). The head is a
- * DRAWN gold-coin placeholder (no head slice exists) until the user avatar badge renders.
- *
- * PIVOTS: brass-cap centroids in _rig_index.json are CANDIDATES only. The joints below are a
- * first-pass guess; the architect refines them with the built-in pivot cal tool (drag each dot,
- * copy the emitted JSON, and it gets baked into JOINTS). Blind pivots are a known failure here.
- *
- * Position + scale come from the parent (StairClimber, which walks the climb path) — this component only
- * renders the figure for a given walk `phase` + `facing`.
+ * AVATAR WALK RIG — assembled from the 18 limb slices (9 per gender) with FORWARD KINEMATICS:
+ * each leg is thigh→shin(+shoe), each arm is upperarm→forearm(+hand), joined at the brass caps
+ * (hip/knee/shoulder/elbow). The lower bone hangs off its parent's DISTAL cap and inherits the
+ * parent's rotation, so the limb stays connected — no detached/third leg. Head = a DRAWN gold coin
+ * (no head slice). Rotation only, no new art. Position + scale come from the parent (StairClimber).
  */
 
-// Figure box in source-plate pixels (1056x1504). Pieces are placed inside it by pinning their
-// proximal cap to a JOINT; % of this box drives the on-screen layout.
-const FIG = { x0: 285, y0: 270, w: 215, h: 430 };
+// Figure box (local px). Skeleton anchors + piece caps live in this space; % of it drives layout.
+const FIG = { w: 220, h: 440 };
 export const RIG_ASPECT = FIG.w / FIG.h;
 
 type Gender = "male" | "female";
-type Piece = {
-  file: string;
-  w: number;
-  h: number;
-  prox: { x: number; y: number }; // proximal-cap offset in piece-local px (the rotation pivot)
-  joint: string; // key into JOINTS — where the pivot is pinned in the figure
-  z: number; // paint order (item 4)
-  swing: (s: number) => number; // walk rotation in degrees, s = sin(2*pi*phase)
+type Cap = { x: number; y: number };
+type Piece = { file: string; w: number; h: number; prox: Cap; dist: Cap };
+
+// Skeleton anchors in FIG coords (figure faces RIGHT). Near side = viewer side (drawn last).
+const SK = {
+  head: { x: 110, y: 66 }, // coin centre
+  torso: { x: 74, y: 92 }, // torso top-left
+  shoulderN: { x: 126, y: 104 },
+  shoulderF: { x: 98, y: 106 },
+  hipN: { x: 118, y: 250 },
+  hipF: { x: 104, y: 252 },
 };
 
-// First-pass joints (plate px, figure facing RIGHT). Editable via the pivot cal tool.
-const JOINTS: Record<string, { x: number; y: number }> = {
-  torso: { x: 323, y: 369 }, // torso top cap anchor (no rotation)
-  neck: { x: 337, y: 300 }, // coin-head centre
-  shoulderN: { x: 360, y: 360 },
-  shoulderF: { x: 318, y: 360 },
-  elbowN: { x: 348, y: 432 },
-  elbowF: { x: 330, y: 430 },
-  hipN: { x: 348, y: 505 },
-  hipF: { x: 330, y: 505 },
-  kneeN: { x: 360, y: 578 },
-  kneeF: { x: 320, y: 578 },
+// Per-gender pieces: prox = joint toward the body (rotation pivot), dist = joint the child hangs on.
+// Values are piece-local px, read off the slices' brass caps (single-cap pieces estimate the far end).
+function rigPieces(g: Gender): Record<string, Piece> {
+  const mk = (file: string, w: number, h: number, prox: Cap, dist: Cap): Piece => ({ file: `${g === "male" ? "m" : "f"}_${file}.png`, w, h, prox, dist });
+  if (g === "male") {
+    return {
+      torso: mk("torso", 72, 158, { x: 24, y: 30 }, { x: 40, y: 150 }),
+      thighN: mk("thigh_near", 93, 86, { x: 16, y: 18 }, { x: 78, y: 66 }),
+      shinN: mk("shin_near", 63, 104, { x: 15, y: 6 }, { x: 46, y: 98 }),
+      thighF: mk("thigh_far", 33, 96, { x: 14, y: 6 }, { x: 16, y: 88 }),
+      shinF: mk("shin_far", 58, 107, { x: 15, y: 6 }, { x: 42, y: 100 }),
+      uarmN: mk("upperarm_near", 34, 113, { x: 15, y: 7 }, { x: 18, y: 106 }),
+      farmN: mk("forearm_near", 33, 136, { x: 15, y: 8 }, { x: 20, y: 122 }),
+      uarmF: mk("upperarm_far", 38, 109, { x: 14, y: 7 }, { x: 22, y: 102 }),
+      farmF: mk("forearm_far", 48, 139, { x: 30, y: 8 }, { x: 30, y: 126 }),
+    };
+  }
+  return {
+    torso: mk("torso", 63, 145, { x: 26, y: 24 }, { x: 34, y: 138 }),
+    thighN: mk("thigh_near", 82, 103, { x: 18, y: 18 }, { x: 66, y: 88 }),
+    shinN: mk("shin_near", 55, 115, { x: 16, y: 10 }, { x: 40, y: 108 }),
+    thighF: mk("thigh_far", 35, 109, { x: 16, y: 18 }, { x: 16, y: 100 }),
+    shinF: mk("shin_far", 51, 111, { x: 15, y: 6 }, { x: 38, y: 104 }),
+    uarmN: mk("upperarm_near", 38, 111, { x: 14, y: 6 }, { x: 20, y: 104 }),
+    farmN: mk("forearm_near", 32, 138, { x: 16, y: 8 }, { x: 18, y: 124 }),
+    uarmF: mk("upperarm_far", 35, 111, { x: 16, y: 6 }, { x: 20, y: 104 }),
+    farmF: mk("forearm_far", 54, 141, { x: 31, y: 8 }, { x: 30, y: 128 }),
+  };
+}
+
+const rot = (x: number, y: number, deg: number) => {
+  const r = (deg * Math.PI) / 180, c = Math.cos(r), s = Math.sin(r);
+  return { x: x * c - y * s, y: x * s + y * c };
 };
 
-// Contra-lateral stride (rotation only). s = sin(2*pi*phase). Thighs scissor opposite; the knee
-// bends on whichever leg is swinging BACK, so the bent leg ALTERNATES each step. Arms swing opposite
-// their same-side leg, visibly. Amplitudes are set to read on a phone at render scale (verify in a
-// device screenshot post-calibration, per the spec).
-const legN = (s: number) => 20 * s;
-const legF = (s: number) => -20 * s;
-const shinN = (s: number) => -46 * Math.max(0, -s); // near knee bends when the near thigh is back
-const shinF = (s: number) => -46 * Math.max(0, s); // far knee bends when the far thigh is back
-const armN = (s: number) => -24 * s; // opposite the near leg
-const armF = (s: number) => 24 * s;
-const farmN = (s: number) => -12 - 14 * Math.max(0, -s);
-const farmF = (s: number) => -12 - 14 * Math.max(0, s);
-const still = () => 0;
-
-// Paint order back->front (item 4): far thigh, far shin, far upperarm, far forearm, torso,
-// [coin head], near thigh, near shin, near upperarm, near forearm.
-function pieces(g: Gender): Piece[] {
-  const p = g === "male" ? "m" : "f";
-  // proximal caps (piece-local px) picked as the top brass-cap; single-cap pieces estimate the top.
-  const M = {
-    torso: { w: 72, h: 158, prox: { x: 22, y: 39 } },
-    uarm_near: { w: 34, h: 113, prox: { x: 14, y: 6 } },
-    farm_near: { w: 33, h: 136, prox: { x: 15, y: 7 } },
-    thigh_near: { w: 93, h: 86, prox: { x: 15, y: 17 } },
-    shin_near: { w: 63, h: 104, prox: { x: 15, y: 5 } },
-    uarm_far: { w: 38, h: 109, prox: { x: 13, y: 6 } },
-    farm_far: { w: 48, h: 139, prox: { x: 30, y: 7 } },
-    thigh_far: { w: 33, h: 96, prox: { x: 14, y: 5 } },
-    shin_far: { w: 58, h: 107, prox: { x: 15, y: 6 } },
-  };
-  const F = {
-    torso: { w: 63, h: 145, prox: { x: 25, y: 22 } },
-    uarm_near: { w: 38, h: 111, prox: { x: 14, y: 5 } },
-    farm_near: { w: 32, h: 138, prox: { x: 16, y: 8 } },
-    thigh_near: { w: 82, h: 103, prox: { x: 18, y: 18 } },
-    shin_near: { w: 55, h: 115, prox: { x: 15, y: 11 } },
-    uarm_far: { w: 35, h: 111, prox: { x: 16, y: 6 } },
-    farm_far: { w: 54, h: 141, prox: { x: 31, y: 7 } },
-    thigh_far: { w: 35, h: 109, prox: { x: 16, y: 19 } },
-    shin_far: { w: 51, h: 111, prox: { x: 15, y: 6 } },
-  };
-  const D = g === "male" ? M : F;
-  const mk = (key: keyof typeof M, joint: string, z: number, swing: (s: number) => number): Piece => ({
-    file: `${p}_${key}.png`,
-    w: D[key].w,
-    h: D[key].h,
-    prox: D[key].prox,
-    joint,
-    z,
-    swing,
-  });
+type Placed = { p: Piece; at: Cap; angle: number; z: number };
+/** Two-bone chain: upper pinned to `anchor` at upAngle; lower hangs off upper's DIST, rotated by
+ *  upAngle+loAngle so it inherits the parent's swing (FK). */
+function chain(upper: Piece, lower: Piece, anchor: Cap, upAngle: number, loAngle: number, zUp: number, zLo: number): Placed[] {
+  const d = rot(upper.dist.x - upper.prox.x, upper.dist.y - upper.prox.y, upAngle);
+  const knee = { x: anchor.x + d.x, y: anchor.y + d.y };
   return [
-    mk("thigh_far", "hipF", 1, legF),
-    mk("shin_far", "kneeF", 2, shinF),
-    mk("uarm_far", "shoulderF", 3, armF),
-    mk("farm_far", "elbowF", 4, farmF),
-    mk("torso", "torso", 5, still),
-    // coin head = z 6 (drawn separately)
-    mk("thigh_near", "hipN", 7, legN),
-    mk("shin_near", "kneeN", 8, shinN),
-    mk("uarm_near", "shoulderN", 9, armN),
-    mk("farm_near", "elbowN", 10, farmN),
+    { p: upper, at: anchor, angle: upAngle, z: zUp },
+    { p: lower, at: knee, angle: upAngle + loAngle, z: zLo },
   ];
 }
 
-function pct(px: number, span: number, origin: number) {
-  return ((px - origin) / span) * 100;
-}
-
-export function AvatarRig({
-  gender = "male",
-  phase = 0,
-  facing = 1,
-  cal = false,
-  onJointsChange,
-}: {
-  gender?: Gender;
-  phase?: number;
-  facing?: 1 | -1;
-  cal?: boolean; // pivot cal tool: freeze the walk, show draggable pivot dots + JSON
-  onJointsChange?: (j: Record<string, { x: number; y: number }>) => void;
-}) {
-  const list = pieces(gender);
-  // Pose comes from `phase` in every mode (pivot cal passes 0 for a straight pose; slot cal passes a
-  // mid-stride phase so the rig matches the baked reference while it's dragged onto it).
+export function AvatarRig({ gender = "male", phase = 0, facing = 1 }: { gender?: Gender; phase?: number; facing?: 1 | -1 }) {
+  const P = rigPieces(gender);
   const s = Math.sin(phase * Math.PI * 2);
-  const [joints, setJoints] = useState(JOINTS);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const drag = useRef<string | null>(null);
+  // Stride, rotation only. Thighs scissor opposite; the knee flexes on the leg swinging BACK, so the
+  // bent leg ALTERNATES. Arms swing opposite their same-side leg; elbows carry a light constant bend.
+  const thighN = 16 * s, thighF = -16 * s;
+  const shinN = -38 * Math.max(0, -s), shinF = -38 * Math.max(0, s);
+  const uarmN = -18 * s, uarmF = 18 * s;
+  const farmN = -16 - 8 * Math.max(0, -s), farmF = -16 - 8 * Math.max(0, s);
 
-  const toPlate = (clientX: number, clientY: number) => {
-    const r = rootRef.current!.getBoundingClientRect();
-    return {
-      x: Math.round(FIG.x0 + ((clientX - r.left) / r.width) * FIG.w),
-      y: Math.round(FIG.y0 + ((clientY - r.top) / r.height) * FIG.h),
-    };
-  };
-  const onMove = (e: React.PointerEvent) => {
-    if (!cal || !drag.current) return;
-    const pt = toPlate(e.clientX, e.clientY);
-    setJoints((prev) => {
-      const next = { ...prev, [drag.current!]: pt };
-      onJointsChange?.(next);
-      return next;
-    });
-  };
+  // Paint order back → front (item 4).
+  const placed: Placed[] = [
+    ...chain(P.thighF!, P.shinF!, SK.hipF, thighF, shinF, 1, 2),
+    ...chain(P.uarmF!, P.farmF!, SK.shoulderF, uarmF, farmF, 3, 4),
+    { p: P.torso!, at: { x: SK.torso.x + P.torso!.prox.x, y: SK.torso.y + P.torso!.prox.y }, angle: 0, z: 5 },
+    ...chain(P.thighN!, P.shinN!, SK.hipN, thighN, shinN, 7, 8),
+    ...chain(P.uarmN!, P.farmN!, SK.shoulderN, uarmN, farmN, 9, 10),
+  ];
 
-  const coin = joints.neck!;
-  const coinD = 62; // plate px
+  const coinD = 60;
 
   return (
-    <div
-      ref={rootRef}
-      onPointerMove={onMove}
-      onPointerUp={() => (drag.current = null)}
-      style={{
-        position: "relative",
-        width: "100%",
-        aspectRatio: `${FIG.w} / ${FIG.h}`,
-        transform: `scaleX(${facing})`,
-        pointerEvents: cal ? "auto" : "none",
-      }}
-    >
-      {list.map((pc) => {
-        const j = joints[pc.joint]!;
-        return (
-          <img
-            key={pc.file}
-            src={`/foxpit/cutouts/avatar_rig/${pc.file}`}
-            alt=""
-            draggable={false}
-            style={{
-              position: "absolute",
-              left: `${pct(j.x - pc.prox.x, FIG.w, FIG.x0)}%`,
-              top: `${pct(j.y - pc.prox.y, FIG.h, FIG.y0)}%`,
-              width: `${(pc.w / FIG.w) * 100}%`,
-              height: "auto",
-              zIndex: pc.z,
-              transformOrigin: `${(pc.prox.x / pc.w) * 100}% ${(pc.prox.y / pc.h) * 100}%`,
-              transform: `rotate(${pc.swing(s)}deg)`,
-            }}
-          />
-        );
-      })}
+    <div style={{ position: "relative", width: "100%", aspectRatio: `${FIG.w} / ${FIG.h}`, transform: `scaleX(${facing})`, pointerEvents: "none" }}>
+      {placed.map((pl) => (
+        <img
+          key={pl.p.file + pl.z}
+          src={`/foxpit/cutouts/avatar_rig/${pl.p.file}`}
+          alt=""
+          draggable={false}
+          style={{
+            position: "absolute",
+            left: `${((pl.at.x - pl.p.prox.x) / FIG.w) * 100}%`,
+            top: `${((pl.at.y - pl.p.prox.y) / FIG.h) * 100}%`,
+            width: `${(pl.p.w / FIG.w) * 100}%`,
+            height: "auto",
+            zIndex: pl.z,
+            transformOrigin: `${(pl.p.prox.x / pl.p.w) * 100}% ${(pl.p.prox.y / pl.p.h) * 100}%`,
+            transform: `rotate(${pl.angle}deg)`,
+          }}
+        />
+      ))}
 
-      {/* HEAD SLOT — a DRAWN gold-coin placeholder (z 6: over torso, under near limbs). No head
-          slice exists; sourced only from tokens, never another asset. */}
+      {/* HEAD SLOT — drawn gold coin (z6, over torso, under near limbs). Tokens only, no head art. */}
       <div
         aria-hidden
         style={{
           position: "absolute",
-          left: `${pct(coin.x - coinD / 2, FIG.w, FIG.x0)}%`,
-          top: `${pct(coin.y - coinD / 2, FIG.h, FIG.y0)}%`,
+          left: `${((SK.head.x - coinD / 2) / FIG.w) * 100}%`,
+          top: `${((SK.head.y - coinD / 2) / FIG.h) * 100}%`,
           width: `${(coinD / FIG.w) * 100}%`,
           aspectRatio: "1 / 1",
           borderRadius: "50%",
@@ -210,41 +134,6 @@ export function AvatarRig({
       >
         <div style={{ position: "absolute", inset: "18%", borderRadius: "50%", background: "radial-gradient(circle at 42% 38%, #ffe9ad, #e6bd5c 70%, #caa043)" }} />
       </div>
-
-      {/* pivot cal: draggable dot per joint + live JSON (dev). Same pattern as the stair waypoints. */}
-      {cal && (
-        <>
-          {Object.entries(joints).map(([k, j]) => (
-            <div
-              key={k}
-              onPointerDown={(e) => {
-                drag.current = k;
-                e.stopPropagation();
-              }}
-              title={k}
-              style={{
-                position: "absolute",
-                left: `${pct(j.x, FIG.w, FIG.x0)}%`,
-                top: `${pct(j.y, FIG.h, FIG.y0)}%`,
-                transform: `translate(-50%,-50%) scaleX(${facing})`,
-                width: 16,
-                height: 16,
-                borderRadius: "50%",
-                background: k === "neck" ? "#d9a441" : "rgba(0,229,255,.95)",
-                border: "2px solid #fff",
-                zIndex: 20,
-                cursor: "grab",
-                touchAction: "none",
-              }}
-            />
-          ))}
-        </>
-      )}
     </div>
   );
-}
-
-/** Serialize the current joints for baking back into JOINTS. */
-export function jointsJson(j: Record<string, { x: number; y: number }>) {
-  return JSON.stringify(j);
 }
