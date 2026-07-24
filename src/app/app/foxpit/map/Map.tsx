@@ -20,6 +20,7 @@ import {
 } from "@/lib/foxpit";
 import { ELEVATOR_BOTTOM_STOP_PCT } from "@/lib/foxpit/rules";
 import { StairClimber, SlotPieces } from "./StairClimber";
+import { ArenaIntro } from "@/app/app/practice/arena/chooser/ArenaIntro";
 
 /**
  * Fox Pit TOWER MAP (build map = map/tower_map_clean.png 1620x4500, natural aspect;
@@ -845,39 +846,62 @@ function WinnersLoungeArrival({ onDone }: { onDone: () => void }) {
   const [firstTime] = useState(() => {
     if (typeof window === "undefined") return true;
     try {
-      return !localStorage.getItem("foxpit.lounge.arrived.v3");
+      return !localStorage.getItem("foxpit.lounge.arrived.v4");
     } catch (err) {
       console.error("[foxpit] lounge arrival flag read failed:", err);
       return true;
     }
   });
   const [beat, setBeat] = useState(0);
+  // The Winner's Lounge ENTRANCE: the same tinted glass door + fox-neon badge as the Fox Pit
+  // entrance, titled "Welcome to the Winner's Lounge". It swings open onto the establishing room
+  // on EVERY arrival; the throne plates that follow play only on the FIRST arrival.
+  const [showDoor, setShowDoor] = useState(true);
   const done = useRef(onDone);
   done.current = onDone;
 
-  // Later visits: skip the cinematic automatically (do not make a returning player sit through it).
-  useEffect(() => {
-    if (firstTime) return;
-    const t = window.setTimeout(() => done.current(), 0);
-    return () => window.clearTimeout(t);
-  }, [firstTime]);
-
-  // First visit: remember it, then advance the beats (holding on the final throne + Boss Fox).
+  // Remember the first arrival so the plate cinematic is a one-time payoff (the door still opens
+  // every time). Written on mount regardless of the door so it can't be missed.
   useEffect(() => {
     if (!firstTime) return;
     try {
-      localStorage.setItem("foxpit.lounge.arrived.v3", "1");
+      localStorage.setItem("foxpit.lounge.arrived.v4", "1");
     } catch (err) {
       console.error("[foxpit] lounge arrival flag write failed:", err);
     }
   }, [firstTime]);
+
+  // Once the door has swung open: first-timers watch the plates (advanced below); returning
+  // players are handed straight into the lounge.
   useEffect(() => {
-    if (!firstTime || beat >= LOUNGE_PLATES.length - 1) return;
+    if (showDoor || firstTime) return;
+    const t = window.setTimeout(() => done.current(), 0);
+    return () => window.clearTimeout(t);
+  }, [showDoor, firstTime]);
+
+  // Advance the throne plates (first arrival only, after the door), holding on the final throne.
+  useEffect(() => {
+    if (!firstTime || showDoor || beat >= LOUNGE_PLATES.length - 1) return;
     const t = window.setTimeout(() => setBeat((b) => b + 1), LOUNGE_BEAT_MS[beat] ?? 3000);
     return () => window.clearTimeout(t);
-  }, [firstTime, beat]);
+  }, [firstTime, showDoor, beat]);
 
-  if (!firstTime) return null;
+  // ENTRANCE door first (every arrival) — swings open onto the establishing room.
+  if (showDoor) {
+    return (
+      <ArenaIntro
+        onDone={() => setShowDoor(false)}
+        revealTitle=""
+        brandPrefix="to the"
+        brandName="Winner's Lounge"
+        revealImage={LOUNGE_PLATES[0]}
+        showWordmark={false}
+      />
+    );
+  }
+
+  if (!firstTime) return null; // returning: door already handed off to the lounge
+
   const onThrone = beat === LOUNGE_PLATES.length - 1;
 
   return (
@@ -898,8 +922,11 @@ function WinnersLoungeArrival({ onDone }: { onDone: () => void }) {
       {onThrone && (
         <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", paddingBottom: "calc(env(safe-area-inset-bottom,0px) + 26px)", animation: "foxpitFadeUp 1s ease both" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={LOUNGE_BOSS_FOX} alt="Boss Fox welcomes you in" draggable={false} style={{ height: "42%", width: "auto", maxWidth: "70%", objectFit: "contain", filter: "drop-shadow(0 10px 30px rgba(0,0,0,.8))" }} />
-          <div style={{ fontFamily: "Georgia, serif", fontSize: 22, color: "#f5e3ac", textShadow: "0 2px 10px #000", marginTop: 6 }}>Welcome to the Winner&apos;s Lounge</div>
+          <img src={LOUNGE_BOSS_FOX} alt="Boss Fox rises at his throne" draggable={false} style={{ height: "42%", width: "auto", maxWidth: "70%", objectFit: "contain", filter: "drop-shadow(0 10px 30px rgba(0,0,0,.8))" }} />
+          {/* The welcome lives on the entrance door now; the payoff beat throws down the gauntlet.
+              "Step in" hands off to the digital player table (B3) — currently returns to the map
+              until that room is built (Frank to spec). */}
+          <div style={{ fontFamily: "Georgia, serif", fontSize: 22, color: "#f5e3ac", textShadow: "0 2px 10px #000", marginTop: 6 }}>Ready to defend your throne?</div>
           <button onClick={(e) => { e.stopPropagation(); done.current(); }} style={{ marginTop: 16, border: `2px solid ${BRASS}`, background: "rgba(200,162,75,.18)", color: "#fff", borderRadius: 12, padding: "12px 30px", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>Step in ›</button>
         </div>
       )}

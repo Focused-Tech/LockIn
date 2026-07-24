@@ -18,9 +18,21 @@ import { useEffect, useRef, useState } from "react";
 export function ArenaIntro({
   onDone,
   revealTitle = "Choose your arena",
+  brandPrefix = "to the",
+  brandName = "Fox Pit",
+  revealImage = "/arena/intro/fox.png",
+  showWordmark = true,
 }: {
   onDone: () => void;
   revealTitle?: string;
+  /** Small line above the brand name on the glass door (default "to the"). */
+  brandPrefix?: string;
+  /** The big brand name on the glass door — "Fox Pit" (lobby) or "Winner's Lounge" (lounge). */
+  brandName?: string;
+  /** What the door swings open to reveal (default the Boss-Fox neon-room cutout). */
+  revealImage?: string;
+  /** Show the upright wordmark reflection beneath the reveal (lobby only). */
+  showWordmark?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [backed, setBacked] = useState(false);
@@ -47,11 +59,13 @@ export function ArenaIntro({
       onClick={skip}
     >
       <div className="door-reveal">
-        <div className="reveal-fox" />
-        <div className="reveal-reflect">
-          <img className="reveal-wordmark" src="/arena/intro/wordmark.png" alt="" />
-        </div>
-        <div className="reveal-arena-title">{revealTitle}</div>
+        <div className="reveal-fox" style={{ backgroundImage: `url("${revealImage}")` }} />
+        {showWordmark && (
+          <div className="reveal-reflect">
+            <img className="reveal-wordmark" src="/arena/intro/wordmark.png" alt="" />
+          </div>
+        )}
+        {revealTitle && <div className="reveal-arena-title">{revealTitle}</div>}
       </div>
       <div className="door-seam" />
       <div className="glass-door">
@@ -59,8 +73,8 @@ export function ArenaIntro({
         <img className="door-crest-img" src="/foxpit/emblem-fox-neon.png" alt="" />
         <div className="door-crest-tint" />
         <div className="door-below">
-          <div className="door-tothe">to the</div>
-          <div className="door-foxpit">Fox Pit</div>
+          <div className="door-tothe">{brandPrefix}</div>
+          <div className="door-foxpit">{brandName}</div>
         </div>
       </div>
       <div className="intro-skip">Tap to skip</div>
@@ -91,7 +105,10 @@ export function ArenaIntro({
         .reveal-fox {
           position: absolute;
           inset: 0;
-          background: url("/arena/intro/fox.png") center 30% / contain no-repeat;
+          /* image is set inline (revealImage prop); position/size stay fixed here */
+          background-position: center 30%;
+          background-size: contain;
+          background-repeat: no-repeat;
           transform: scale(1.26);
           transform-origin: center 52%;
           transition: transform 1.5s cubic-bezier(0.3, 0.7, 0.25, 1);
@@ -265,11 +282,13 @@ export function ArenaIntro({
           /* LockIn brand orange — same accent (#FF3B00) as the wordmark "Lock"
              and the coin count (Tailwind accent.DEFAULT / .dot.active here). */
           color: #ff3b00;
-          font-size: 46px;
+          /* Scales down for longer brand names ("Winner's Lounge") and wraps
+             centered instead of clipping; "Fox Pit" still sits on one line. */
+          font-size: clamp(30px, 12vw, 46px);
           font-weight: 900;
-          line-height: 1;
+          line-height: 1.02;
           letter-spacing: 0.5px;
-          white-space: nowrap;
+          max-width: 86vw;
           text-shadow:
             0 0 16px rgba(0, 0, 0, 0.85),
             0 0 24px rgba(255, 90, 20, 0.4);
