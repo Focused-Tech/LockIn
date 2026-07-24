@@ -11,7 +11,7 @@ import { useEffect, useRef, useState } from "react";
 import { LockGlyph } from "@/components/practice/LockGlyph";
 import { categoryTint } from "@/lib/practice/tints";
 import { roomByKey, type FoxPitRoomKey } from "@/lib/foxpit";
-import { ROOM_RULES, keepNFor, SLATES_PER_ROUND, REDEALS_PER_ROUND, FOXPIT_BUILD_VERSION, CATEGORY_TINT_KEY, TIMERS, FOXPIT_CATEGORIES, CARD_DISTRIBUTION, cardMinFor, unlockedTierCount, type FoxPitCategory } from "@/lib/foxpit/rules";
+import { ROOM_RULES, keepNFor, SLATES_PER_ROUND, REDEALS_PER_ROUND, FOXPIT_BUILD_VERSION, CATEGORY_TINT_KEY, TIMERS, FOXPIT_CATEGORIES, cardMinFor, unlockedTierCount, type FoxPitCategory } from "@/lib/foxpit/rules";
 import { dealFoxSlatesByCategories, roundScore, bossRoundScore, slateWon, type FoxSlate, type BossStakeMode } from "@/lib/foxpit/slates";
 
 /** Resolve the player's shared interest categories (users/{uid}.categories[]) to the Fox Pit set.
@@ -42,7 +42,6 @@ function slateTint(s: FoxSlate) {
  */
 type Phase =
   | "howto"
-  | "category"
   | "tip"
   | "dealing"
   | "deal"
@@ -92,8 +91,6 @@ export function FoxPitGame({
   const rules = ROOM_RULES[roomKey];
   const room = roomByKey(roomKey);
   const accent = room.accent;
-  /** The categories this player may pick from (their shared interests, resolved to the Fox Pit set). */
-  const playerCats = resolvePlayerCats(userCategories);
 
   // The Dojo opens on the HOW-TO-PLAY screen (item 5) — its own beat BEFORE category select —
   // unless the player has already dismissed/skipped it (remembered). Every other room starts at
@@ -106,14 +103,15 @@ export function FoxPitGame({
         console.error("[foxpit] how-to flag read failed:", err);
       }
     }
-    return "category";
+    return "tip"; // A5: categories come from the LOCKER now — no in-game category-select beat
   });
   const [roundIndex, setRoundIndex] = useState(0);
   // NOTE: no deal at mount. Cards only exist once `dealRound()` runs, which happens
   // after the category-select (and tip) beats have resolved.
   const [slates, setSlates] = useState<FoxSlate[]>([]);
-  /** Categories the player hedged into this round (empty until the beat resolves). */
-  const [pickedCats, setPickedCats] = useState<FoxPitCategory[]>([]);
+  /** Categories for the session — chosen in the LOCKER (A5), resolved to the Fox Pit set. Used for
+   *  every round; no in-game re-pick. */
+  const [pickedCats] = useState<FoxPitCategory[]>(() => resolvePlayerCats(userCategories));
   const [kept, setKept] = useState<Set<string>>(new Set());
   const [redealsLeft, setRedealsLeft] = useState(REDEALS_PER_ROUND);
   const [picks, setPicks] = useState<Record<string, "a" | "b">>({});
@@ -123,15 +121,15 @@ export function FoxPitGame({
   const [bossMode, setBossMode] = useState<BossStakeMode>("match");
   const [last, setLast] = useState<{ you: number; boss: number; won: boolean; bossMode: BossStakeMode } | null>(null);
 
-  // Skip/Start on the how-to screen: remember the dismissal (so it never reappears) and advance
-  // to category select.
+  // Skip/Start on the how-to screen: remember the dismissal and advance to the deal (categories
+  // are already chosen in the locker).
   const dismissHowTo = () => {
     try {
       localStorage.setItem("foxpit.howto.v1", "1");
     } catch (err) {
       console.error("[foxpit] how-to flag write failed:", err);
     }
-    setPhase("category");
+    setPhase("tip");
   };
 
   const keepN = keepNFor(roomKey, roundIndex);
@@ -194,12 +192,6 @@ export function FoxPitGame({
     setPhase("dealing");
   };
 
-  /** Beat 1 done → beat 2 (tip). Fox has no hedge, so it resolves straight through. */
-  const confirmCategories = (cats: FoxPitCategory[]) => {
-    setPickedCats(cats);
-    setPhase("tip");
-  };
-
   const nextRound = () => {
     if (roundIndex + 1 >= rules.rounds) {
       setPhase("roomResult");
@@ -207,13 +199,13 @@ export function FoxPitGame({
     }
     setRoundIndex((r) => r + 1);
     setSlates([]);
-    setPickedCats([]);
+    // pickedCats stays — it's the locker's session choice, not a per-round pick.
     setKept(new Set());
     setRedealsLeft(REDEALS_PER_ROUND);
     setPicks({});
     setLast(null);
     setBossMode("match");
-    setPhase("category");
+    setPhase("tip"); // straight to the deal (no in-game category beat)
   };
 
   const cleared = roundsWon > rules.rounds / 2;
@@ -241,23 +233,16 @@ export function FoxPitGame({
 
       {phase === "howto" && <HowToPlay accent={accent} onDismiss={dismissHowTo} />}
 
-      {phase === "category" && (
-        <CategorySelectPhase
+      {/* Pre-round beat — pick which fight (MATCH / TOP). Categories were chosen in the locker (A5). */}
+      {phase === "tip" && (
+        <BossModePhase
           accent={accent}
-          playerCats={playerCats}
           stakes={rules.stakes}
           bossName={rules.boss}
           bossMode={bossMode}
           onBossMode={setBossMode}
-          onConfirm={confirmCategories}
+          onDone={() => dealRound(pickedCats)}
         />
-      )}
-
-      {/* Beat 2 — the Locksmith's tip. The lockpick store isn't built yet, so this
-          resolves straight through to the deal; it exists as its own beat so the
-          spend lands here and not inside the deal. */}
-      {phase === "tip" && (
-        <TipPhase accent={accent} onDone={() => dealRound(pickedCats)} />
       )}
 
       {phase === "dealing" && (
@@ -399,125 +384,51 @@ function HowToPlay({ accent, onDismiss }: { accent: string; onDismiss: () => voi
 }
 
 /* ---------------- dealing: cards dealt out on the Locksmith table ---------------- */
-/* ---------------- BEAT 1 — category select (new model) ----------------
- * Free choice every floor: the player picks HOW MANY categories to play (1–5) from their OWN
- * shared interests. Breadth is the reward lever — more categories spread the 5 cards thinner but
- * open higher stake tiers. Defaults to 1 (the safe path). No hedge decay. */
-function CategorySelectPhase({
-  accent, playerCats, stakes, bossName, bossMode, onBossMode, onConfirm,
+/* ---------------- pre-round beat — pick the fight (MATCH / TOP) ----------------
+ * Categories are chosen in the LOCKER now (A5), so this beat only sets the boss stake mode
+ * (item 4) before the deal. */
+function BossModePhase({
+  accent, stakes, bossName, bossMode, onBossMode, onDone,
 }: {
   accent: string;
-  playerCats: FoxPitCategory[];
   stakes: number[];
   bossName: string;
   bossMode: BossStakeMode;
   onBossMode: (m: BossStakeMode) => void;
-  onConfirm: (cats: FoxPitCategory[]) => void;
+  onDone: () => void;
 }) {
-  // Default to ONE category — most players should take the safe path by default.
-  const [chosen, setChosen] = useState<FoxPitCategory[]>(() => playerCats.slice(0, 1));
-
-  const toggle = (c: FoxPitCategory) =>
-    setChosen((prev) =>
-      prev.includes(c) ? prev.filter((x) => x !== c) : prev.length >= 5 ? prev : [...prev, c],
-    );
-
-  const n = chosen.length;
-  const split = CARD_DISTRIBUTION[Math.max(1, Math.min(n, 5))] ?? [SLATES_PER_ROUND];
-  const openTiers = unlockedTierCount(n, stakes.length);
-  const topOpen = stakes[openTiers - 1] ?? stakes[0]!;
-
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-5 p-6">
+    <div className="flex flex-1 flex-col items-center justify-center gap-6 p-6">
       <div className="text-center">
-        <div className="text-xs font-extrabold tracking-widest" style={{ color: accent }}>
-          CATEGORY SELECT
-        </div>
-        <div className="mt-1 font-serif text-2xl text-foreground">Choose your ground</div>
-        <div className="mt-1 text-[13px] text-muted">
-          Pick 1–5 categories. More categories spread the five cards thinner — but open higher stakes.
-        </div>
+        <div className="text-xs font-extrabold tracking-widest" style={{ color: accent }}>THE FIGHT</div>
+        <div className="mt-1 font-serif text-2xl text-foreground">How does {bossName} stake?</div>
       </div>
-
-      <div className="flex w-full max-w-sm flex-wrap justify-center gap-2">
-        {playerCats.map((c) => {
-          const on = chosen.includes(c);
-          const tint = categoryTint(CATEGORY_TINT_KEY[c]);
+      <div className="flex w-full max-w-sm gap-2">
+        {([
+          ["match", "Match", "Stakes at your tier — even fight."],
+          ["top", "Top", `Stakes ${stakes[stakes.length - 1]} ⛃ every card — harder, bigger pot.`],
+        ] as const).map(([m, label, desc]) => {
+          const on = bossMode === m;
           return (
             <button
-              key={c}
-              onClick={() => toggle(c)}
-              className="rounded-xl border px-4 py-3 text-sm font-bold capitalize transition"
-              style={{
-                borderColor: on ? tint.color : "var(--border)",
-                background: on ? tint.soft : "transparent",
-                color: on ? tint.color : "var(--muted)",
-              }}
+              key={m}
+              onClick={() => onBossMode(m)}
+              className="flex-1 rounded-xl border p-4 text-left"
+              style={{ borderColor: on ? accent : "var(--border)", background: on ? `${accent}22` : "transparent" }}
             >
-              {c}
+              <div className="text-base font-extrabold" style={{ color: on ? accent : "var(--foreground)" }}>{label}</div>
+              <div className="mt-1 text-[12px] text-muted">{desc}</div>
             </button>
           );
         })}
       </div>
-
-      {/* live preview: the card split + how far up the stake ladder this breadth reaches */}
-      <div className="text-center text-[13px] text-muted">
-        <span className="font-extrabold" style={{ color: accent }}>{n}</span> categor{n === 1 ? "y" : "ies"} →{" "}
-        <span className="font-bold text-foreground">{split.join(" / ")}</span> cards · unlocks up to{" "}
-        <span className="font-extrabold" style={{ color: accent }}>{topOpen} ⛃</span>
-      </div>
-
-      {/* BOSS STAKE MODE (item 4) — choose which fight before the round starts */}
-      <div className="w-full max-w-sm">
-        <div className="mb-1 text-center text-[11px] font-extrabold tracking-widest text-muted">HOW DOES {bossName.toUpperCase()} STAKE?</div>
-        <div className="flex gap-2">
-          {([
-            ["match", "Match", "Stakes at your tier — even fight."],
-            ["top", "Top", `Stakes ${stakes[stakes.length - 1]} ⛃ every card — harder, bigger pot.`],
-          ] as const).map(([m, label, desc]) => {
-            const on = bossMode === m;
-            return (
-              <button
-                key={m}
-                onClick={() => onBossMode(m)}
-                className="flex-1 rounded-xl border p-3 text-left"
-                style={{ borderColor: on ? accent : "var(--border)", background: on ? `${accent}22` : "transparent" }}
-              >
-                <div className="text-sm font-extrabold" style={{ color: on ? accent : "var(--foreground)" }}>{label}</div>
-                <div className="mt-0.5 text-[11px] text-muted">{desc}</div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
       <button
-        disabled={n < 1}
-        onClick={() => onConfirm(chosen)}
-        className="w-full max-w-sm rounded-xl border px-6 py-4 text-base font-extrabold disabled:opacity-40"
+        onClick={onDone}
+        className="w-full max-w-sm rounded-xl border px-6 py-4 text-base font-extrabold"
         style={{ borderColor: accent, background: `${accent}22`, color: "var(--foreground)" }}
       >
         Deal {SLATES_PER_ROUND} cards ›
       </button>
-    </div>
-  );
-}
-
-/* ---------------- BEAT 2 — the Locksmith's tip ----------------
- * Placeholder beat: the lockpick store + inventory are not built yet, so there is
- * nothing to spend. It advances immediately rather than faking a purchase. */
-function TipPhase({ accent, onDone }: { accent: string; onDone: () => void }) {
-  const done = useRef(onDone);
-  done.current = onDone;
-  useEffect(() => {
-    const t = window.setTimeout(() => done.current(), 0);
-    return () => window.clearTimeout(t);
-  }, []);
-  return (
-    <div className="flex flex-1 items-center justify-center p-8 text-center">
-      <div className="text-xs font-extrabold tracking-widest" style={{ color: accent }}>
-        …
-      </div>
     </div>
   );
 }
