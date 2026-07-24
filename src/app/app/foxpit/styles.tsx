@@ -17,6 +17,11 @@ export function FoxPitStyles() {
       /* Practice-Here: the card bounces + the down-arrow flashes once every 7s. */
       @keyframes foxpitPracticeBounce { 0%,80%,100%{ transform: translateY(0);} 86%{ transform: translateY(-11px);} 92%{ transform: translateY(-3px);} 96%{ transform: translateY(0);} }
       @keyframes foxpitArrowFlash { 0%,78%,100%{ opacity:.9;} 84%{ opacity:.12;} 90%{ opacity:1;} 95%{ opacity:.5;} }
+      /* Winner pot (item 7): stake coins slide in from BOTH sides to the middle to form the
+         pot, then the whole pile PUSHES to the right as a digital stack. */
+      @keyframes foxpitGatherL { 0%{ transform: translate(-130px,-22px) scale(.7); opacity:0; } 45%{ opacity:1; } 100%{ transform: translate(0,0) scale(1); opacity:1; } }
+      @keyframes foxpitGatherR { 0%{ transform: translate(130px,-22px) scale(.7); opacity:0; } 45%{ opacity:1; } 100%{ transform: translate(0,0) scale(1); opacity:1; } }
+      @keyframes foxpitPotPush { 0%,58%{ transform: translateX(0); } 100%{ transform: translateX(64px); } }
       /* Coin drop on the winner announcement — coins fall onto the table and settle. */
       @keyframes foxpitCoinDrop {
         0%   { transform: translateY(-140%) scale(.7) rotate(0deg); opacity: 0; }

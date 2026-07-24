@@ -60,8 +60,12 @@ const FLOOR_IMG: Record<FoxPitRoomKey, string> = {
   hightable: "/foxpit/floors/floor_ravensnest.png",
   suite: "/foxpit/floors/floor_foxden.png",
 };
-/** Top-down dealer table (Locksmith seated, chips + tray + deck baked in). */
+/** Top-down dealer table (Locksmith seated, chips + tray + deck baked in) — the DEALING phase. */
 const LOCKSMITH_TABLE = "/foxpit/tables/locksmith_player_table.png";
+/** WINNER-announcement tables — Locksmith + table baked in ONE sprite, raised arm = winner's side.
+ *  Every Fox Pit opponent is a boss, so the announcement uses the BOSS table. */
+const WINNER_TABLE_BOSS_RIGHT = "/foxpit/tables/locksmith_winners_boss_right.png"; // player wins (right arm)
+const WINNER_TABLE_BOSS_LEFT = "/foxpit/tables/locksmith_winners_boss_left.png"; // boss wins (left arm)
 /** The LockIn card face every slate is drawn on. */
 const CARD_FRONT = "/foxpit/cards/card_front_single.png";
 
@@ -90,6 +94,26 @@ export function FoxPitGame({
   const [picks, setPicks] = useState<Record<string, "a" | "b">>({});
   const [roundsWon, setRoundsWon] = useState(0);
   const [last, setLast] = useState<{ you: number; boss: number; won: boolean } | null>(null);
+
+  // Item 5: HOW TO PLAY in the Dojo — shown once, dismissal/skip is remembered so it doesn't
+  // reappear every round.
+  const [showHowTo, setShowHowTo] = useState(false);
+  useEffect(() => {
+    if (roomKey !== "dojo" || typeof window === "undefined") return;
+    try {
+      if (!localStorage.getItem("foxpit.howto.v1")) setShowHowTo(true);
+    } catch (err) {
+      console.error("[foxpit] how-to flag read failed:", err);
+    }
+  }, [roomKey]);
+  const dismissHowTo = () => {
+    try {
+      localStorage.setItem("foxpit.howto.v1", "1");
+    } catch (err) {
+      console.error("[foxpit] how-to flag write failed:", err);
+    }
+    setShowHowTo(false);
+  };
 
   const keepN = keepNFor(roomKey, roundIndex);
   /** Forced-minimum cards to play vs this room's boss (item 2). Owl/Wolf = 1, Raven/Fox = 5. */
@@ -173,6 +197,7 @@ export function FoxPitGame({
 
   return (
     <div className="fixed inset-0 z-[67] flex flex-col overflow-y-auto bg-background text-foreground">
+      {showHowTo && <HowToPlay accent={accent} onDismiss={dismissHowTo} />}
       {/* header */}
       <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-border bg-background/95 px-4 py-3">
         <button onClick={onExit} className="rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-muted">
@@ -263,6 +288,7 @@ export function FoxPitGame({
           cta={roundIndex + 1 >= rules.rounds ? "See the tally ›" : "Next round ›"}
           onCta={nextRound}
           onQuit={onExit}
+          bossName={rules.boss}
         />
       )}
 
@@ -286,6 +312,55 @@ export function FoxPitGame({
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ---------------- HOW TO PLAY (Dojo, item 5) ---------------- */
+function HowToPlay({ accent, onDismiss }: { accent: string; onDismiss: () => void }) {
+  const steps: [string, string][] = [
+    ["Choose your ground", "Pick which categories the round deals from."],
+    ["Cards are dealt", "The Locksmith deals you a hand of slates on the table."],
+    ["Keep or discard", "Tap the cards you like to keep them; leave the rest to discard."],
+    ["Redeal once", "Swap your discards for a fresh draw — one redeal per round."],
+    ["Stake", "Put coins on each card you want to play. Play as few as one."],
+    ["Lock in", "Answer your staked cards, then lock the round."],
+    ["Reveal", "The cards turn over — win a card by getting most of its questions right."],
+  ];
+  return (
+    <div
+      className="fixed inset-0 z-[72] flex flex-col overflow-y-auto bg-background/97 p-6"
+      style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 20px)", paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 20px)" }}
+    >
+      <div className="flex items-center justify-between">
+        <div className="font-serif text-2xl" style={{ color: accent }}>How to play</div>
+        <button onClick={onDismiss} className="rounded-lg border border-border px-4 py-1.5 text-sm font-bold text-muted">
+          Skip
+        </button>
+      </div>
+      <div className="mt-5 flex flex-col gap-3">
+        {steps.map(([t, d], i) => (
+          <div key={t} className="flex gap-3">
+            <div
+              className="flex h-7 w-7 flex-none items-center justify-center rounded-full text-sm font-extrabold"
+              style={{ border: `1px solid ${accent}`, color: accent }}
+            >
+              {i + 1}
+            </div>
+            <div>
+              <div className="font-bold text-foreground">{t}</div>
+              <div className="text-sm text-muted">{d}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <button
+        onClick={onDismiss}
+        className="mt-6 w-full rounded-xl py-4 text-lg font-extrabold text-white"
+        style={{ background: accent }}
+      >
+        Start playing ›
+      </button>
     </div>
   );
 }
@@ -762,7 +837,7 @@ function RevealPhase({
 
 /* ---------------- announce: the Locksmith calls it at the table + coin drop ---------------- */
 function AnnouncePhase({
-  roomKey, accent, won, you, boss, note, cta, onCta, onQuit,
+  roomKey, accent, won, you, boss, note, cta, onCta, onQuit, bossName,
 }: {
   roomKey: FoxPitRoomKey;
   accent: string;
@@ -773,40 +848,57 @@ function AnnouncePhase({
   cta: string;
   onCta: () => void;
   onQuit: () => void;
+  bossName: string;
 }) {
   useEffect(() => { playCoinDrop(won); }, [won]);
-  // Her raised arm points at the WINNING seat: right = you, left = the boss.
-  const announce = won
-    ? "/foxpit/locksmith/locksmith_announce_right.png"
-    : "/foxpit/locksmith/locksmith_announce_left.png";
+  // Every Fox Pit opponent is a boss → the BOSS winner-table (her + table baked into ONE sprite).
+  // The raised arm points at the winner's seat: player win = RIGHT arm, boss win = LEFT arm.
+  const table = won ? WINNER_TABLE_BOSS_RIGHT : WINNER_TABLE_BOSS_LEFT;
+  const winnerName = won ? "You" : bossName;
+  // Raised-hand anchor (fraction of the 1264² sprite): name centers here, just above the glove.
+  const handX = won ? 68 : 32;
 
   return (
     <div className="relative flex flex-1 flex-col items-center justify-center overflow-hidden">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={FLOOR_IMG[roomKey]} alt="" className="absolute inset-0 h-full w-full object-cover opacity-90" />
       <div className="absolute inset-0" style={{ background: "radial-gradient(70% 55% at 50% 50%, transparent, rgba(3,4,7,.8))" }} />
-      {/* back at the same table */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={LOCKSMITH_TABLE} alt="" className="relative z-[1] max-h-[58%] w-auto max-w-[92%] object-contain" />
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={announce} alt="The Locksmith announces the winner" className="absolute z-[3] max-h-[40%] w-auto" style={{ top: "4%" }} />
 
-      {/* coin drop onto the table */}
-      {Array.from({ length: 9 }, (_, i) => (
-        <div
-          key={i}
-          className="absolute z-[2] rounded-full"
-          style={{
-            left: `${20 + i * 7.5}%`,
-            top: `${54 + (i % 3) * 5}%`,
-            width: 18,
-            height: 18,
-            background: "radial-gradient(circle at 35% 30%, #ffe9a8, #d9a521 60%, #8a6410)",
-            boxShadow: "0 2px 6px rgba(0,0,0,.6)",
-            animation: `foxpitCoinDrop .9s cubic-bezier(.3,1.2,.4,1) ${i * 0.07}s both`,
-          }}
-        />
-      ))}
+      {/* Winner table — Locksmith + table in ONE sprite (the old her-alone + bare-table composite
+          is gone). The winner's NAME renders over her raised hand, ABOVE the sprite in z-order. */}
+      <div className="relative z-[1]" style={{ height: "62%" }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={table} alt="The Locksmith announces the winner" className="block h-full w-auto object-contain" />
+
+        {/* coin POT (item 7): stake coins gather from BOTH sides to the middle, then push right. */}
+        <div className="absolute z-[2]" style={{ left: "43%", top: "42%", animation: "foxpitPotPush 1.7s ease-in-out .1s both" }}>
+          {Array.from({ length: 12 }, (_, i) => (
+            <div
+              key={i}
+              className="absolute rounded-full"
+              style={{
+                left: `${(i % 4) * 7}px`,
+                top: `${-i * 2.3}px`,
+                width: 20,
+                height: 20,
+                background: "radial-gradient(circle at 35% 30%, #ffe9a8, #d9a521 60%, #8a6410)",
+                boxShadow: "0 2px 6px rgba(0,0,0,.6)",
+                animation: `${i % 2 === 0 ? "foxpitGatherL" : "foxpitGatherR"} .8s cubic-bezier(.3,1,.4,1) ${i * 0.05}s both`,
+              }}
+            />
+          ))}
+        </div>
+
+        {/* winner's name over the raised hand (shrink-to-fit, never wraps over her arm) */}
+        <div className="absolute z-[3]" style={{ left: `${handX}%`, top: "5%", transform: "translateX(-50%)", maxWidth: "40%" }}>
+          <div
+            className="rounded-md px-2 py-0.5 text-center font-serif font-extrabold"
+            style={{ color: won ? COLOR_WIN : "#f5e3ac", background: "rgba(3,4,7,.6)", fontSize: "clamp(11px, 3vw, 19px)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+          >
+            {winnerName}
+          </div>
+        </div>
+      </div>
 
       <div
         className="absolute bottom-0 left-0 right-0 z-[4] flex flex-col items-center gap-1 p-5"
