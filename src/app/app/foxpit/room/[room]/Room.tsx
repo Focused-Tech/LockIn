@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LockGlyph } from "@/components/practice/LockGlyph";
+import { LockerRoom, type LockerChoice } from "./LockerRoom";
 import { FoxPitGame } from "./FoxPitGame";
 import {
   roomByKey,
@@ -15,7 +16,7 @@ import {
   type FoxPitRoomKey,
 } from "@/lib/foxpit";
 
-type Phase = "door" | "room" | "table" | "faceoff" | "play";
+type Phase = "locker" | "door" | "room" | "table" | "faceoff" | "play";
 
 /** The transparent round PLAYER-table cutout (tables only, no dealer) — one per
  *  selectable table, replacing the old green ellipse hotspots. */
@@ -75,7 +76,9 @@ export function FoxPitRoom({
 }) {
   const router = useRouter();
   const room = roomByKey(roomKey);
-  const [phase, setPhase] = useState<Phase>("door");
+  // The Dojo opens on its LOCKER ROOM (Part A) — keys, category + avatar picks — before the game.
+  const [phase, setPhase] = useState<Phase>(roomKey === "dojo" ? "locker" : "door");
+  const [lockerChoice, setLockerChoice] = useState<LockerChoice | null>(null);
   const [activeTable, setActiveTable] = useState<number | null>(null);
   const [beaten, setBeaten] = useState<Set<number>>(new Set());
   const [roomCleared, setRoomCleared] = useState(false);
@@ -298,10 +301,20 @@ export function FoxPitRoom({
 
       {/* ---------- PLAY: the isolated Fox Pit BOSS-JOURNEY coin game (keep-N deal,
            staked play, $-weighted vs the boss) — not real-money, not the arena ---------- */}
+      {/* ---------- LOCKER ROOM (Part A) — the Dojo's staging screen before the game ---------- */}
+      {phase === "locker" && (
+        <LockerRoom
+          roomKey={room.key}
+          playerCategories={categories}
+          onBack={() => router.push("/app/foxpit/map")}
+          onEnter={(choice) => { setLockerChoice(choice); setPhase("room"); }}
+        />
+      )}
+
       {phase === "play" && (
         <FoxPitGame
           roomKey={room.key}
-          userCategories={categories}
+          userCategories={lockerChoice?.categories ?? categories}
           onExit={() => { setPhase("room"); setActiveTable(null); }}
           onCleared={() => {
             markCleared(room.key);
@@ -326,7 +339,7 @@ export function FoxPitRoom({
       {phase === "door" && <DoorIntro room={room} onEnter={() => setPhase("room")} />}
 
       {/* HUD (room/table phases) */}
-      {phase !== "door" && phase !== "faceoff" && (
+      {phase !== "door" && phase !== "faceoff" && phase !== "locker" && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: 108, zIndex: 63, background: "linear-gradient(180deg,rgba(3,4,7,.9),transparent)" }}>
           <button onClick={() => router.push("/app/foxpit/map")} style={hudBack}>‹ Map</button>
           <div style={{ position: "absolute", top: 22, left: 0, right: 0, textAlign: "center" }}>
