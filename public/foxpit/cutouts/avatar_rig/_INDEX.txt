@@ -1,0 +1,19 @@
+piece, size, origin-on-plate(y,x), brass-cap centroids (piece-local; CANDIDATES), bare-skin px
+f_forearm_far.png	54x141	at(693,736)	caps=(33,107) (31,7)	skin=51
+f_forearm_near.png	32x138	at(700,449)	caps=(16,103)	skin=71
+f_shin_far.png	51x111	at(842,750)	caps=(18,75) (15,6)	skin=18
+f_shin_near.png	55x115	at(837,417)	caps=(24,79) (15,11)	skin=14
+f_thigh_far.png	35x109	at(837,680)	caps=(16,19) (15,101)	skin=16
+f_thigh_near.png	82x103	at(841,317)	caps=(18,18) (62,94)	skin=36
+f_torso.png	63x145	at(690,310)	caps=(25,22) (34,102)	skin=35
+f_upperarm_far.png	35x111	at(689,683)	caps=(20,96) (16,6)	skin=5
+f_upperarm_near.png	38x111	at(694,394)	caps=(23,96) (14,5)	skin=10
+m_forearm_far.png	48x139	at(336,733)	caps=(32,115) (30,7)	skin=81
+m_forearm_near.png	33x136	at(340,445)	caps=(19,112) (15,7)	skin=81
+m_shin_far.png	58x107	at(481,743)	caps=(15,6)	skin=16
+m_shin_near.png	63x104	at(484,414)	caps=(15,5)	skin=17
+m_thigh_far.png	33x96	at(484,677)	caps=(16,88) (14,5)	skin=20
+m_thigh_near.png	93x86	at(495,309)	caps=(15,17)	skin=21
+m_torso.png	72x158	at(330,301)	caps=(22,39)	skin=189
+m_upperarm_far.png	38x109	at(335,681)	caps=(13,6)	skin=8
+m_upperarm_near.png	34x113	at(335,398)	caps=(14,6)	skin=10

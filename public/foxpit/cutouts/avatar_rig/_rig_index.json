@@ -1,0 +1,345 @@
+{
+ "source": "Gradient_Styling_for_Your_Design__4_.png \u2014 replacement plate; SUPERSEDES the 08:35 green grid",
+ "method": "alpha preserved byte-for-byte from source (no erosion, no feathering). Only the green channel was clamped to max(R,B) to kill chroma spill.",
+ "heads": "EXCLUDED \u2014 male head dropped as its own component, female head cut at the neck. Head slot = GOLD COIN placeholder, CC-drawn from tokens, until the user avatar badge renders.",
+ "dropped_heads": [
+  {
+   "what": "m head",
+   "plate_y": 260,
+   "plate_x": 308
+  }
+ ],
+ "female_neck_cut": "plate y=690 \u2014 objective width minimum (28 px, y682-690) of the merged female head+torso blob",
+ "brass_caps": "joint-cap centroids detected from the art, piece-local. CANDIDATES only \u2014 which is proximal is NOT asserted. Bind with the cal tool before rigging.",
+ "plate": [
+  1056,
+  1504
+ ],
+ "pieces": [
+  {
+   "file": "f_forearm_far.png",
+   "w": 54,
+   "h": 141,
+   "plate_x": 736,
+   "plate_y": 693,
+   "brass_caps": [
+    {
+     "cx": 33,
+     "cy": 107,
+     "px": 969
+    },
+    {
+     "cx": 31,
+     "cy": 7,
+     "px": 162
+    }
+   ],
+   "skin_px": 51
+  },
+  {
+   "file": "f_forearm_near.png",
+   "w": 32,
+   "h": 138,
+   "plate_x": 449,
+   "plate_y": 700,
+   "brass_caps": [
+    {
+     "cx": 16,
+     "cy": 103,
+     "px": 945
+    }
+   ],
+   "skin_px": 71
+  },
+  {
+   "file": "f_shin_far.png",
+   "w": 51,
+   "h": 111,
+   "plate_x": 750,
+   "plate_y": 842,
+   "brass_caps": [
+    {
+     "cx": 18,
+     "cy": 75,
+     "px": 686
+    },
+    {
+     "cx": 15,
+     "cy": 6,
+     "px": 168
+    }
+   ],
+   "skin_px": 18
+  },
+  {
+   "file": "f_shin_near.png",
+   "w": 55,
+   "h": 115,
+   "plate_x": 417,
+   "plate_y": 837,
+   "brass_caps": [
+    {
+     "cx": 24,
+     "cy": 79,
+     "px": 693
+    },
+    {
+     "cx": 15,
+     "cy": 11,
+     "px": 231
+    }
+   ],
+   "skin_px": 14
+  },
+  {
+   "file": "f_thigh_far.png",
+   "w": 35,
+   "h": 109,
+   "plate_x": 680,
+   "plate_y": 837,
+   "brass_caps": [
+    {
+     "cx": 16,
+     "cy": 19,
+     "px": 301
+    },
+    {
+     "cx": 15,
+     "cy": 101,
+     "px": 201
+    }
+   ],
+   "skin_px": 16
+  },
+  {
+   "file": "f_thigh_near.png",
+   "w": 82,
+   "h": 103,
+   "plate_x": 317,
+   "plate_y": 841,
+   "brass_caps": [
+    {
+     "cx": 18,
+     "cy": 18,
+     "px": 417
+    },
+    {
+     "cx": 62,
+     "cy": 94,
+     "px": 217
+    }
+   ],
+   "skin_px": 36
+  },
+  {
+   "file": "f_torso.png",
+   "w": 63,
+   "h": 145,
+   "plate_x": 310,
+   "plate_y": 690,
+   "brass_caps": [
+    {
+     "cx": 25,
+     "cy": 22,
+     "px": 948
+    },
+    {
+     "cx": 34,
+     "cy": 102,
+     "px": 677
+    }
+   ],
+   "skin_px": 35
+  },
+  {
+   "file": "f_upperarm_far.png",
+   "w": 35,
+   "h": 111,
+   "plate_x": 683,
+   "plate_y": 689,
+   "brass_caps": [
+    {
+     "cx": 20,
+     "cy": 96,
+     "px": 345
+    },
+    {
+     "cx": 16,
+     "cy": 6,
+     "px": 155
+    }
+   ],
+   "skin_px": 5
+  },
+  {
+   "file": "f_upperarm_near.png",
+   "w": 38,
+   "h": 111,
+   "plate_x": 394,
+   "plate_y": 694,
+   "brass_caps": [
+    {
+     "cx": 23,
+     "cy": 96,
+     "px": 359
+    },
+    {
+     "cx": 14,
+     "cy": 5,
+     "px": 150
+    }
+   ],
+   "skin_px": 10
+  },
+  {
+   "file": "m_forearm_far.png",
+   "w": 48,
+   "h": 139,
+   "plate_x": 733,
+   "plate_y": 336,
+   "brass_caps": [
+    {
+     "cx": 32,
+     "cy": 115,
+     "px": 682
+    },
+    {
+     "cx": 30,
+     "cy": 7,
+     "px": 165
+    }
+   ],
+   "skin_px": 81
+  },
+  {
+   "file": "m_forearm_near.png",
+   "w": 33,
+   "h": 136,
+   "plate_x": 445,
+   "plate_y": 340,
+   "brass_caps": [
+    {
+     "cx": 19,
+     "cy": 112,
+     "px": 607
+    },
+    {
+     "cx": 15,
+     "cy": 7,
+     "px": 158
+    }
+   ],
+   "skin_px": 81
+  },
+  {
+   "file": "m_shin_far.png",
+   "w": 58,
+   "h": 107,
+   "plate_x": 743,
+   "plate_y": 481,
+   "brass_caps": [
+    {
+     "cx": 15,
+     "cy": 6,
+     "px": 182
+    }
+   ],
+   "skin_px": 16
+  },
+  {
+   "file": "m_shin_near.png",
+   "w": 63,
+   "h": 104,
+   "plate_x": 414,
+   "plate_y": 484,
+   "brass_caps": [
+    {
+     "cx": 15,
+     "cy": 5,
+     "px": 171
+    }
+   ],
+   "skin_px": 17
+  },
+  {
+   "file": "m_thigh_far.png",
+   "w": 33,
+   "h": 96,
+   "plate_x": 677,
+   "plate_y": 484,
+   "brass_caps": [
+    {
+     "cx": 16,
+     "cy": 88,
+     "px": 154
+    },
+    {
+     "cx": 14,
+     "cy": 5,
+     "px": 150
+    }
+   ],
+   "skin_px": 20
+  },
+  {
+   "file": "m_thigh_near.png",
+   "w": 93,
+   "h": 86,
+   "plate_x": 309,
+   "plate_y": 495,
+   "brass_caps": [
+    {
+     "cx": 15,
+     "cy": 17,
+     "px": 482
+    }
+   ],
+   "skin_px": 21
+  },
+  {
+   "file": "m_torso.png",
+   "w": 72,
+   "h": 158,
+   "plate_x": 301,
+   "plate_y": 330,
+   "brass_caps": [
+    {
+     "cx": 22,
+     "cy": 39,
+     "px": 458
+    }
+   ],
+   "skin_px": 189
+  },
+  {
+   "file": "m_upperarm_far.png",
+   "w": 38,
+   "h": 109,
+   "plate_x": 681,
+   "plate_y": 335,
+   "brass_caps": [
+    {
+     "cx": 13,
+     "cy": 6,
+     "px": 157
+    }
+   ],
+   "skin_px": 8
+  },
+  {
+   "file": "m_upperarm_near.png",
+   "w": 34,
+   "h": 113,
+   "plate_x": 398,
+   "plate_y": 335,
+   "brass_caps": [
+    {
+     "cx": 14,
+     "cy": 6,
+     "px": 168
+    }
+   ],
+   "skin_px": 10
+  }
+ ]
+}

@@ -1,17 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AvatarRig } from "./AvatarRig";
 
 /**
  * FOX PIT — AVATAR STAIR CLIMB (Phase A).
  *
- * Frank's call: use the SINGLE walk cutout (avatar-climber.png, one mid-stride pose)
- * rather than a multi-frame cycle — those frames were never delivered. We sell the walk
- * with a bob + a facing flip at each switchback (the accepted trade-off for a single pose).
+ * The avatar is a jointed WALK RIG (see AvatarRig) assembled from the 18 limb slices — no flat
+ * cutout. Its limbs swing (rotation only) as it moves; facing flips at each switchback turn.
  *
  * The avatar climbs a switchback path of WAYPOINTS (x,y in % of tower_map_clean.png,
- * 1620x4500). Feet are anchored on the point: the figure sits 86.4% down its 611² canvas
- * (13.6% transparent below), so we translate the FEET onto the waypoint, not the box.
+ * 1620x4500). Feet are anchored on the point: the rig's feet sit near the bottom of its figure
+ * box (FOOT_PCT), so we translate the FEET onto the waypoint, not the box.
  *
  * CLIMB_WAYPOINTS is a first-pass GUESS — I'm blind to the new art's stair geometry. Turn on
  * CALIBRATE (the ⚙ button), drag the numbered dots onto the real treads/landings, then
@@ -20,22 +20,16 @@ import { useCallback, useEffect, useRef, useState } from "react";
  */
 
 
-/**
- * 8-FRAME STAIR-CLIMBING WALK CYCLE (side profile, facing RIGHT), sliced from the 2x4 sheet.
- * Drop the eight sliced frames as /foxpit/walk/avatar-walk-1.png … avatar-walk-8.png and list them
- * here in order (frame 8 loops back to 1). Until they're in, the single mid-stride pose stands in
- * as a 1-frame "cycle". Direction is handled by scaleX (flips at each ledge — the switchback turn),
- * so ALL frames face RIGHT; never mirror the art in the sheet.
- */
-const WALK_FRAMES = [
-  "/foxpit/avatar-climber.png",
-  // "/foxpit/walk/avatar-walk-1.png", "/foxpit/walk/avatar-walk-2.png", … avatar-walk-8.png
-];
-/** ms per walk frame while the avatar is moving (8 frames ≈ one stride cycle). */
-const WALK_FRAME_MS = 90;
-/** Feet sit 86.4% down the 611² canvas — anchor the feet, not the box bottom. (Re-measure if the
- *  walk frames use a different canvas/baseline.) */
-const FOOT_PCT = 86.4;
+/** One full stride cycle (ms) while moving — drives the rig's contra-lateral swing phase. */
+const STRIDE_MS = 640;
+/** Feet sit near the bottom of the rig figure box — anchor the FEET onto the waypoint, not the box. */
+const FOOT_PCT = 95;
+/** Avatar gender selects the male or female rig slices; persisted per user later, male for now. */
+function avatarGender(): "male" | "female" {
+  if (typeof window === "undefined") return "male";
+  try { return localStorage.getItem("foxpit.avatar") === "female" ? "female" : "male"; }
+  catch { return "male"; }
+}
 /** Avatar box width as a fraction of the map width (tuned on device). */
 const AVATAR_W_VW = 15;
 
@@ -213,9 +207,12 @@ const easeInOut = (t: number) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2,
  */
 export function StairClimber() {
   const [wp] = useState<Waypoint[]>(CLIMB_WAYPOINTS);
-  const [pos, setPos] = useState({ x: CLIMB_WAYPOINTS[0]!.x, y: CLIMB_WAYPOINTS[0]!.y, facing: 1, frame: 0 });
+  const [pos, setPos] = useState({ x: CLIMB_WAYPOINTS[0]!.x, y: CLIMB_WAYPOINTS[0]!.y, facing: 1 as 1 | -1, phase: 0 });
   const [moving, setMoving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [rigCal, setRigCal] = useState(false); // pivot cal tool for the walk rig
+  const [rigJson, setRigJson] = useState("");
+  const gender = avatarGender();
   const busy = useRef(false);
   const raf = useRef<number | null>(null);
   const timer = useRef<number | null>(null);
@@ -225,7 +222,7 @@ export function StairClimber() {
     const from = to - 1;
     const a = list[from]!;
     const b = list[to]!;
-    const facing = b.x >= a.x ? 1 : -1;
+    const facing: 1 | -1 = b.x >= a.x ? 1 : -1;
     busy.current = true;
     setMoving(true);
     const dur = 260; // per-tread step (the path is now tread-level, ~75 steps)
@@ -233,9 +230,9 @@ export function StairClimber() {
     const frame = (now: number) => {
       const t = Math.min(1, (now - t0) / dur);
       const e = easeInOut(t);
-      // cycle the walk frames while moving (no-op with the single-pose fallback)
-      const walkFrame = WALK_FRAMES.length > 1 ? Math.floor((now - t0) / WALK_FRAME_MS) % WALK_FRAMES.length : 0;
-      setPos({ x: a.x + (b.x - a.x) * e, y: a.y + (b.y - a.y) * e, facing, frame: walkFrame });
+      // continuous stride phase drives the rig's contra-lateral limb swing while moving
+      const phase = ((now - t0) / STRIDE_MS) % 1;
+      setPos({ x: a.x + (b.x - a.x) * e, y: a.y + (b.y - a.y) * e, facing, phase });
       if (t < 1) {
         raf.current = requestAnimationFrame(frame);
       } else {
@@ -260,7 +257,7 @@ export function StairClimber() {
         if (seg.current >= wp.length - 1) {
           // reached the top — pause, reset to the bottom, climb again
           seg.current = 0;
-          setPos({ x: wp[0]!.x, y: wp[0]!.y, facing: 1, frame: 0 });
+          setPos({ x: wp[0]!.x, y: wp[0]!.y, facing: 1, phase: 0 });
           timer.current = window.setTimeout(tick, 1400);
           return;
         }
@@ -285,9 +282,9 @@ export function StairClimber() {
   }, [wp, stepTo]);
 
   return (
-    <div style={{ position: "absolute", inset: 0, zIndex: 5, pointerEvents: "none" }}>
-      {/* the walking avatar — feet anchored on the waypoint; scaleX flips at switchbacks;
-          bob sells the single-pose walk while moving. */}
+    <div style={{ position: "absolute", inset: 0, zIndex: 5, pointerEvents: rigCal ? "auto" : "none" }}>
+      {/* the walking avatar RIG — feet anchored on the waypoint; the rig flips + swings internally;
+          bob adds a little life while moving. */}
       <div
         style={{
           position: "absolute",
@@ -295,16 +292,37 @@ export function StairClimber() {
           top: `${pos.y}%`,
           width: `${AVATAR_W_VW}vw`,
           transform: `translate(-50%, -${FOOT_PCT}%)`,
-          pointerEvents: "none",
+          pointerEvents: rigCal ? "auto" : "none",
           zIndex: 5,
           filter: "drop-shadow(0 4px 4px rgba(0,0,0,.7))",
         }}
       >
-        <div style={{ animation: moving ? "foxpitClimberBob .5s ease-in-out infinite" : "none" }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={WALK_FRAMES[pos.frame % WALK_FRAMES.length] ?? WALK_FRAMES[0]} alt="Climbing player" draggable={false} style={{ width: "100%", height: "auto", display: "block", transform: `scaleX(${pos.facing})` }} />
+        <div style={{ animation: moving && !rigCal ? "foxpitClimberBob .5s ease-in-out infinite" : "none" }}>
+          <AvatarRig
+            gender={gender}
+            phase={pos.phase}
+            facing={pos.facing}
+            cal={rigCal}
+            onJointsChange={(j) => setRigJson(JSON.stringify(j))}
+          />
         </div>
       </div>
+
+      {/* ⚙ pivots — pivot cal tool (dev): freeze the walk, drag each joint dot, copy the JSON. */}
+      <button
+        onClick={() => setRigCal((v) => !v)}
+        style={{ position: "fixed", top: "calc(env(safe-area-inset-top,0px) + 60px)", right: 8, zIndex: 90, pointerEvents: "auto", border: "1px solid #00e5ff", background: "rgba(6,8,12,.92)", color: "#00e5ff", borderRadius: 8, padding: "5px 9px", fontSize: 12, fontWeight: 800, cursor: "pointer" }}
+      >
+        {rigCal ? "✓ pivots" : "⚙ pivots"}
+      </button>
+      {rigCal && (
+        <textarea
+          readOnly
+          value={rigJson}
+          onFocus={(e) => e.currentTarget.select()}
+          style={{ position: "fixed", left: 8, right: 8, bottom: "calc(env(safe-area-inset-bottom,0px) + 12px)", height: 64, zIndex: 90, pointerEvents: "auto", background: "#0a0c11", color: "#9fe0b0", border: "1px solid #222", borderRadius: 8, fontSize: 10, fontFamily: "ui-monospace, monospace", padding: 8 }}
+        />
+      )}
 
       {error && (
         <div style={{ position: "absolute", left: 8, right: 8, top: "calc(env(safe-area-inset-top,0px) + 100px)", zIndex: 9, pointerEvents: "none", background: "rgba(120,0,0,.9)", color: "#fff", borderRadius: 8, padding: 10, fontSize: 12 }}>

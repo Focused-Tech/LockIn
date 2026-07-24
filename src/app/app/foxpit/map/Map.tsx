@@ -888,7 +888,9 @@ const LOUNGE_PLATES = [
 ];
 // The usher is the SAME boss-fox art shown when Boss Fox opens the Fox Pit door
 // (suite room.avatarImg) — the full standing suited fox, rendered whole (contain), never cropped.
-const LOUNGE_BOSS_FOX = "/foxpit/avatar-fox.png";
+// Final-beat welcome cutout — Boss Fox welcomes the winner in. Composited over the throne-straight
+// plate (never baked into it). 751x1299 transparent.
+const LOUNGE_BOSS_FOX = "/foxpit/cutouts/bossfox_welcome_lounge.png";
 /** Per-beat hold (ms) — the FULL establishing room shot lingers longest, then each throne plate.
  *  Every screen is well over 2.5s; the final beat (throne straight + Boss Fox) holds until "Step in". */
 const LOUNGE_BEAT_MS = [3800, 3000, 3000];
@@ -973,7 +975,7 @@ function WinnersLoungeArrival({ onDone }: { onDone: () => void }) {
       {onThrone && (
         <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", paddingBottom: "calc(env(safe-area-inset-bottom,0px) + 26px)", animation: "foxpitFadeUp 1s ease both" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={LOUNGE_BOSS_FOX} alt="Boss Fox rises at his throne" draggable={false} style={{ height: "42%", width: "auto", maxWidth: "70%", objectFit: "contain", filter: "drop-shadow(0 10px 30px rgba(0,0,0,.8))" }} />
+          <img src={LOUNGE_BOSS_FOX} alt="Boss Fox welcomes you in" draggable={false} style={{ height: "62%", width: "auto", maxWidth: "82%", objectFit: "contain", filter: "drop-shadow(0 10px 30px rgba(0,0,0,.8))" }} />
           {/* The welcome lives on the entrance door now; the payoff beat throws down the gauntlet.
               "Step in" hands off to the digital player table (B3) — currently returns to the map
               until that room is built (Frank to spec). */}
