@@ -30,9 +30,9 @@ function avatarGender(): "male" | "female" {
   try { return localStorage.getItem("foxpit.avatar") === "female" ? "female" : "male"; }
   catch { return "male"; }
 }
-/** Avatar box width as a fraction of the map width (tuned on device). Sized so the figure reads
- *  proportionate to the elevator car + newel posts — not towering over them. */
-const AVATAR_W_VW = 5;
+/** Avatar box width as a fraction of the map width. The rig box is 2:1 (tall), so to match the
+ *  old 611² cutout's rendered HEIGHT (15vw at width 15) the rig uses half that width. */
+const AVATAR_W_VW = 7.5;
 
 export interface Waypoint {
   x: number;
