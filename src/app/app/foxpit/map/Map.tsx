@@ -205,9 +205,9 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
         <div ref={towerRef} style={{ position: "relative", width: "100%" }}>
         {/* NIGHT SKY — a SEPARATE, swappable layer (not baked into the map bitmap) that
             continues the skyline painted inside the Winner's Lounge windows up over the
-            empty top of the map, so rooftop + room read as one continuous night. Sits
-            BEHIND the map (zIndex 0); the map's painted top overlaps it. Swap <NightSky>
-            for a day variant later. */}
+            empty top of the map, so rooftop + room read as one continuous night. Sits ABOVE
+            the map (zIndex 2) over the top exterior band, covering the map's baked direction
+            labels with sky. Swap <NightSky> for a day variant later. */}
         <NightSky />
 
         {/* TOWER STACK — the map plate (z0, full canvas, sizes the container) + two TIGHT-CROP pieces
@@ -632,7 +632,10 @@ function NightSky() {
   return (
     <div
       aria-hidden
-      style={{ position: "absolute", zIndex: 0, top: 0, left: 0, right: 0, height: "30%", pointerEvents: "none", overflow: "hidden" }}
+      // ABOVE the map (z2) covering only the exterior-sky band (top 10.5% ≈ y472 of 4500, just above
+      // the Suite ceiling ~y480). This hides the map's baked direction labels ("New Map= Layer 1" and
+      // the "Add Night Sky Here" black bar) with the actual skyline — keep the sky, drop the notes.
+      style={{ position: "absolute", zIndex: 2, top: 0, left: 0, right: 0, height: "10.5%", pointerEvents: "none", overflow: "hidden" }}
     >
       <div
         style={{

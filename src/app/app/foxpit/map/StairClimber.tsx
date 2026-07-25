@@ -41,164 +41,56 @@ export interface Waypoint {
   label?: string;
 }
 
-// ── STAIR PATH — DERIVED FROM THE TREADS (traced off tower_staircase_clean.png, aligns 1:1) ──
-// The staircase is a SWITCHBACK: flights alternate direction, a ledge caps each flight, and a
-// ledge is a STEP too (treads, ledge, treads, ledge…). Ledge extremes were read by tracing the
-// tread band per row on the art. ONE measured constant: the horizontal step run per tread.
+// ── AVATAR SLOT PATH — the lane the avatar walks, traced onto the stairway_piece OVERLAY ──
+// The staircase (stairway_piece @ map 610,2067) is the overlay; THIS is the slot the avatar walks
+// through it, bottom (Dojo) → top (High Table) as a switchback. The two ends run HORIZONTALLY to the
+// elevator ledge (ELEV_X) so the avatar walks to/from the elevator section of each end ledge.
+// x,y in MAP px (1620x4500), stored as % so they survive rescale. Nudge nodes vs the device screenshot.
 const MAP_W = 1620;
 const MAP_H = 4500;
-/** MEASURED: horizontal run per tread on the 1620x4500 map (starting pitch; verify vs the render). */
-const STEP_RUN_PX = 35.5;
+/** Travel per interpolated stride (map px) — one walk waypoint per this much path length. */
+const STEP_RUN_PX = 42;
+/** Right edge of the elevator ledge — where the two end ledges meet the elevator section. */
+const ELEV_X = 380;
 
-/** Ledge (flight-cap) extremes, BOTTOM (Dojo floor) → TOP (High Table landing). side = the wall the
- *  ledge sits against; flights alternate between them. */
-interface Ledge { x: number; y: number; side: "L" | "R"; label?: string }
-const STAIR_LEDGES: Ledge[] = [
-  { x: 366, y: 4380, side: "L", label: "Dojo floor" },
-  { x: 710, y: 4080, side: "R" },
-  { x: 400, y: 3840, side: "L" },
-  { x: 695, y: 3570, side: "R" },
-  { x: 396, y: 3300, side: "L" },
-  { x: 690, y: 3030, side: "R" },
-  { x: 415, y: 2790, side: "L" },
-  { x: 710, y: 2460, side: "R" },
-  { x: 455, y: 2237, side: "L", label: "High Table landing" }, // TOP FLIGHT — was missing
+interface Node { x: number; y: number; stop?: boolean; label?: string }
+/** Bottom → top. `stop` = a real ledge to pause on (elevator ends + stair base/top); the switchback
+ *  turns between them are walked through (facing flips there) without a long dwell. */
+const PATH_NODES: Node[] = [
+  { x: ELEV_X, y: 4290, stop: true, label: "Dojo · elevator" },
+  { x: 1000, y: 4290, stop: true, label: "Dojo · stair base" },
+  { x: 760, y: 3960 },
+  { x: 1090, y: 3660 },
+  { x: 720, y: 3330 },
+  { x: 1240, y: 3050 },
+  { x: 820, y: 2720 },
+  { x: 1410, y: 2400, stop: true, label: "High Table · landing" },
+  { x: ELEV_X, y: 2400, stop: true, label: "High Table · elevator" },
 ];
 
-/** A derived flight: climbing direction, endpoints, tread count, and the ledge that caps it. */
-export interface Flight {
-  index: number;
-  dir: "toR" | "toL"; // climbing direction; increasing x = toR
-  from: { x: number; y: number };
-  to: { x: number; y: number }; // the ledge at the top of the flight
-  treads: number;
-}
-
-/** Build flights between consecutive ledges (climbing order); tread count from the measured pitch.
- *  ASSERTS the switchback — two consecutive flights running the same way is a bug, so it fails loudly. */
-function deriveFlights(): Flight[] {
-  const flights: Flight[] = [];
-  for (let i = 0; i < STAIR_LEDGES.length - 1; i++) {
-    const from = STAIR_LEDGES[i]!;
-    const to = STAIR_LEDGES[i + 1]!;
-    const dir: "toR" | "toL" = to.x >= from.x ? "toR" : "toL";
-    const treads = Math.max(1, Math.round(Math.abs(to.x - from.x) / STEP_RUN_PX));
-    if (i > 0 && flights[i - 1]!.dir === dir) {
-      console.error(
-        `[StairClimber] switchback broken: flights ${i - 1} and ${i} both run ${dir} — check STAIR_LEDGES`,
-      );
-    }
-    flights.push({ index: i, dir, from: { x: from.x, y: from.y }, to: { x: to.x, y: to.y }, treads });
-  }
-  return flights;
-}
-
-export const STAIR_FLIGHTS: Flight[] = deriveFlights();
-
-/** The climb path: one waypoint per TREAD (feet land ON the tread top), plus the LEDGE capping each
- *  flight (a ledge is a step). Positions as % of the map so they survive any rescale. */
+/** Walk path: interpolate ~one waypoint per STEP_RUN of travel along each node→node segment, so the
+ *  rig strides the whole lane (stair flights + the horizontal elevator runs). Positions as % of map. */
 export const CLIMB_WAYPOINTS: Waypoint[] = (() => {
-  const wp: Waypoint[] = [
-    { x: (STAIR_LEDGES[0]!.x / MAP_W) * 100, y: (STAIR_LEDGES[0]!.y / MAP_H) * 100, landing: true, label: STAIR_LEDGES[0]!.label },
-  ];
-  for (const f of STAIR_FLIGHTS) {
-    for (let k = 1; k <= f.treads; k++) {
-      const t = k / f.treads;
-      const isLedge = k === f.treads;
+  const p0 = PATH_NODES[0]!;
+  const wp: Waypoint[] = [{ x: (p0.x / MAP_W) * 100, y: (p0.y / MAP_H) * 100, landing: true, label: p0.label }];
+  for (let i = 1; i < PATH_NODES.length; i++) {
+    const a = PATH_NODES[i - 1]!, b = PATH_NODES[i]!;
+    const n = Math.max(1, Math.round(Math.hypot(b.x - a.x, b.y - a.y) / STEP_RUN_PX));
+    for (let k = 1; k <= n; k++) {
+      const t = k / n, isNode = k === n;
       wp.push({
-        x: ((f.from.x + (f.to.x - f.from.x) * t) / MAP_W) * 100,
-        y: ((f.from.y + (f.to.y - f.from.y) * t) / MAP_H) * 100,
-        landing: isLedge,
-        label: isLedge ? STAIR_LEDGES[f.index + 1]!.label : undefined,
+        x: ((a.x + (b.x - a.x) * t) / MAP_W) * 100,
+        y: ((a.y + (b.y - a.y) * t) / MAP_H) * 100,
+        landing: isNode && !!b.stop,
+        label: isNode ? b.label : undefined,
       });
     }
   }
   return wp;
 })();
 
-// Dev report (client): per-flight direction, tread count, ledge position (px + %), plus the total.
 if (typeof window !== "undefined") {
-  const total = STAIR_FLIGHTS.reduce((n, f) => n + f.treads, 0);
-  console.info(
-    `[StairClimber] ${STAIR_FLIGHTS.length} flights, ${total} treads`,
-    STAIR_FLIGHTS.map((f) => {
-      const L = STAIR_LEDGES[f.index + 1]!;
-      return { flight: f.index, dir: f.dir, treads: f.treads, ledge: `${L.x},${L.y} (${((L.x / MAP_W) * 100).toFixed(1)}%,${((L.y / MAP_H) * 100).toFixed(1)}%)` };
-    }),
-  );
-}
-
-// ── SLOT PIECES — the FRONT rail + newel-post layer the avatar walks BEHIND ──
-// Positions are EXACT map placements from public/foxpit/map/slot_placement.json (x,y = sprite
-// TOP-LEFT on the 1620x4500 canvas, identical to tower_map_clean.png). Rendered as % so they scale
-// with the map. Z-model: map art (baked back rails) < AVATAR (z5) < RAILS < POSTS — so the avatar
-// tucks into the slot: in front of the baked back rail, behind the front rail, behind the posts.
-const SHEET_W = 1620;
-const SHEET_H = 4500;
-
-type SlotSprite = { file: string; x: number; y: number; w: number };
-const SLOT_SPRITES: SlotSprite[] = [
-  { file: "post_01.png", x: 473, y: 1025, w: 36 },
-  { file: "post_02.png", x: 718, y: 1030, w: 36 },
-  { file: "piece_01.png", x: 548, y: 1087, w: 99 },
-  { file: "post_03.png", x: 805, y: 1492, w: 36 },
-  { file: "rail_01.png", x: 587, y: 1564, w: 169 },
-  { file: "post_04.png", x: 767, y: 1854, w: 37 },
-  { file: "post_05.png", x: 851, y: 1854, w: 37 },
-  { file: "rail_02.png", x: 909, y: 1895, w: 173 },
-  { file: "rail_03.png", x: 1122, y: 1897, w: 200 },
-  { file: "rail_04.png", x: 1359, y: 1900, w: 197 },
-  { file: "rail_05.png", x: 1172, y: 2087, w: 221 },
-  { file: "post_06.png", x: 805, y: 2092, w: 36 },
-  { file: "rail_06.png", x: 882, y: 2093, w: 255 },
-  { file: "rail_07.png", x: 1431, y: 2125, w: 187 },
-  { file: "rail_08.png", x: 1152, y: 2348, w: 182 },
-  { file: "post_07.png", x: 1460, y: 2354, w: 37 },
-  { file: "post_08.png", x: 1070, y: 2407, w: 36 },
-  { file: "rail_09.png", x: 1152, y: 2546, w: 200 },
-  { file: "post_09.png", x: 1040, y: 2675, w: 37 },
-  { file: "post_10.png", x: 1346, y: 2898, w: 34 },
-  { file: "post_11.png", x: 996, y: 2905, w: 36 },
-  { file: "rail_10.png", x: 1084, y: 2957, w: 181 },
-  { file: "post_12.png", x: 1162, y: 3197, w: 35 },
-  { file: "rail_11.png", x: 927, y: 3244, w: 154 },
-  { file: "post_13.png", x: 1272, y: 3421, w: 36 },
-  { file: "post_14.png", x: 989, y: 3439, w: 36 },
-  { file: "rail_12.png", x: 1046, y: 3482, w: 200 },
-  { file: "post_15.png", x: 1284, y: 3723, w: 39 },
-  { file: "rail_13.png", x: 1055, y: 3779, w: 163 },
-  { file: "post_16.png", x: 1338, y: 3971, w: 37 },
-  { file: "post_17.png", x: 1028, y: 3988, w: 38 },
-  { file: "rail_14.png", x: 1111, y: 4038, w: 212 },
-  { file: "post_18.png", x: 954, y: 4234, w: 36 },
-  { file: "rail_15.png", x: 1080, y: 4264, w: 163 },
-];
-
-/** Front rail + newel-post SLOT layer, placed at their exact map coords. Posts paint on top of the
- *  rails; both above the avatar so it walks in the slot. */
-export function SlotPieces() {
-  return (
-    <div aria-hidden style={{ position: "absolute", inset: 0, zIndex: 60, pointerEvents: "none" }}>
-      {SLOT_SPRITES.map((s) => (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          key={s.file}
-          src={`/foxpit/map/stair_pieces/${s.file}`}
-          alt=""
-          draggable={false}
-          style={{
-            position: "absolute",
-            left: `${(s.x / SHEET_W) * 100}%`,
-            top: `${(s.y / SHEET_H) * 100}%`,
-            width: `${(s.w / SHEET_W) * 100}%`,
-            height: "auto",
-            zIndex: s.file.startsWith("post") ? 2 : 1, // posts on top of rails
-            pointerEvents: "none",
-          }}
-        />
-      ))}
-    </div>
-  );
+  console.info(`[StairClimber] slot path: ${PATH_NODES.length} nodes → ${CLIMB_WAYPOINTS.length} waypoints`);
 }
 
 const easeInOut = (t: number) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
