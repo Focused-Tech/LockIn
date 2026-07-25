@@ -26,6 +26,7 @@ import {
   generatedBatchSchema,
   politicalQuestionOk,
   isPoliticsCategory,
+  stemHash,
   type GeneratedQuestion,
 } from "@/lib/foxpit/trivia";
 import type { FoxPitRoomKey } from "@/lib/foxpit";
@@ -69,6 +70,14 @@ function systemPrompt(): string {
     "     REJECT: \"Did the Senate pass the infrastructure bill?\"",
     "     ACCEPT: \"In 2021, the Infrastructure Investment and Jobs Act passed the Senate by",
     "             what vote margin?\"",
+    "",
+    "9. TIER FLOOR: never write ultra-easy single-fact REFLEX checks here — those are reserved for",
+    "   the replenish mini-games' pool, never dealt into tower practice. Even the practice floor",
+    "   starts at 'a fan would know this'; difficulty is carried by DECOY QUALITY, not obscurity.",
+    "10. TONE: conversational, fun where it fits — table-talk delivery, like a knowledgeable friend",
+    "    saying it, never dry quiz-show phrasing or stiff textbook wording. Same fact, better delivery.",
+    "11. NO DUPLICATE FACTS: within this batch, never ask the same underlying fact twice. Vary the",
+    "    fact, not just the wording.",
     "",
     "Write questions a knowledgeable fan of the category would enjoy, not textbook",
     "filler. Vary what the question asks about; do not make every question 'who won'.",
@@ -149,6 +158,22 @@ export async function generateTriviaCell(
       console.error(
         `[trivia] dropped ${before - questions.length} vague political item(s) for ${category}/${tier} (need a named person/measure + a year)`,
       );
+    }
+  }
+
+  // UNIQUENESS (section 3b): drop same-fact duplicates WITHIN the cell by normalized stem hash.
+  // (Cross-batch/archive dedup happens at publish time in triviaStore.)
+  {
+    const seen = new Set<string>();
+    const before = questions.length;
+    questions = questions.filter((q) => {
+      const k = stemHash(q.question);
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+    if (questions.length < before) {
+      console.error(`[trivia] dropped ${before - questions.length} same-fact duplicate(s) in ${category}/${tier}`);
     }
   }
 

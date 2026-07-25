@@ -55,6 +55,66 @@ export const TRIVIA_TARGET_ACCURACY: Record<FoxPitRoomKey, number> = {
 /** The categories the pool is generated for — the SAME set the player picks from. */
 export const TRIVIA_CATEGORIES = CATEGORIES.map((c) => c.name);
 
+/**
+ * FOX PIT TRIVIA TAXONOMY (section 3c) — the approved generation breadth: parent → subcategories.
+ * Every batch spreads across ALL of it, and each (subcategory × tier) is its OWN pool with its own
+ * low-water mark. Many facts per subcategory × three tiers per fact family = effectively unlimited
+ * supply; difficulty is carried by DECOY QUALITY, never obscurity.
+ */
+export const FOXPIT_TRIVIA_TAXONOMY: Record<string, string[]> = {
+  "Reality Competition": [
+    "Survivor", "Big Brother", "The Challenge", "Love Island", "Bachelor Nation",
+    "90 Day Fiance", "Drag Race", "Hell's Kitchen", "MasterChef", "Top Chef", "Next Level Chef",
+  ],
+  Sitcoms: ["90s Black sitcoms", "Friends/Seinfeld era", "Office/mockumentary", "Abbott/current"],
+  Drama: ["Power universe", "prestige cable", "current streaming originals"],
+  "Game Shows": ["Price Is Right", "Feud", "Wheel/game-show history", "Deal or No Deal"],
+  Sports: ["NBA", "NFL", "boxing/UFC", "college hoops", "big televised moments"],
+  Music: ["hip-hop/R&B", "videos & VMAs", "Verzuz", "halftime shows"],
+  "News/Politics": ["named person + measure + year"],
+  Awards: ["Emmys", "BET", "Oscars"],
+  Movies: ["franchises", "Black cinema", "box office"],
+  "TV Mechanics": ["finales", "catchphrases", "theme songs", "spin-offs"],
+};
+
+/** Flattened generation cells — one "Parent · Subcategory" label per subcategory. */
+export const FOXPIT_TRIVIA_SUBCATEGORIES: { parent: string; sub: string; label: string }[] =
+  Object.entries(FOXPIT_TRIVIA_TAXONOMY).flatMap(([parent, subs]) =>
+    subs.map((sub) => ({ parent, sub, label: `${parent} · ${sub}` })),
+  );
+
+/**
+ * UNIQUENESS AT GENERATION (section 3b). A normalized STEM = the question with case, punctuation,
+ * filler words and year/number specifics stripped — so two phrasings of the SAME fact collide. The
+ * same fact MAY return at a HIGHER tier (harder decoys) — that is a new question — so the dedup key
+ * is (stemHash + tier), never the stem alone.
+ */
+export function normalizeStem(question: string): string {
+  return question
+    .toLowerCase()
+    .replace(/\b(19|20)\d{2}\b/g, "#") // collapse specific years so "in 2019" ~ "in 2021"
+    .replace(/\b\d+(\.\d+)?\b/g, "#") // collapse numbers/margins
+    .replace(/[^a-z#\s]/g, " ") // drop punctuation
+    .replace(/\b(the|a|an|of|in|on|at|to|for|by|what|which|who|whom|was|were|did|does|is|are|how|many|much)\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Cheap stable 32-bit hash of the normalized stem (djb2). Collisions are acceptable — this is a
+ *  dedup heuristic, not a security boundary. */
+export function stemHash(question: string): string {
+  const s = normalizeStem(question);
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36);
+}
+
+/** The dedup key for a question: same fact at the same TIER phrased twice is a duplicate; the same
+ *  fact at a higher tier is a new, harder question. */
+export function questionDedupeKey(tier: FoxPitRoomKey, question: string): string {
+  return `${tier}:${stemHash(question)}`;
+}
+
 /** One cached trivia question. `correctIndex` is the baked answer. */
 export interface TriviaQuestion {
   id: string;
