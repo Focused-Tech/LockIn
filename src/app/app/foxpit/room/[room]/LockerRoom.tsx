@@ -23,6 +23,16 @@ const KEY_TIER_COLOR: Record<string, string> = { Bronze: "#c9873f", Silver: "#b7
 /** The locker art strip. Baked open, so the door-swing (A3) is a cross-fade reveal until the
  *  three-piece art (body + door front + door inner) lands — never skew the baked image. */
 const LOCKER_ART = "/foxpit/dojo_locker_room.png";
+
+/** Locker-room life: a slow Ken-Burns drift on the room art + a "you're here" badge that slides in
+ *  then breathes a soft gold glow, so entering the locker room reads as a place, not a static screen. */
+const LOCKER_ANIM_CSS = `
+@keyframes foxpitLockerKB { 0% { transform: scale(1.06) translate(0,0); } 50% { transform: scale(1.14) translate(-1.6%,-1.2%); } 100% { transform: scale(1.06) translate(0,0); } }
+.foxpit-locker-kb { animation: foxpitLockerKB 20s ease-in-out infinite; transform-origin: center 40%; }
+@keyframes foxpitLockerBadgeIn { 0% { opacity: 0; transform: translateX(-14px); } 100% { opacity: 1; transform: translateX(0); } }
+@keyframes foxpitLockerBadgeGlow { 0%,100% { box-shadow: 0 0 0 rgba(200,162,75,0); } 50% { box-shadow: 0 0 16px rgba(200,162,75,.55); } }
+.foxpit-locker-badge { animation: foxpitLockerBadgeIn .5s ease-out both, foxpitLockerBadgeGlow 2.8s ease-in-out 1s infinite; }
+`;
 /** The one OPEN bay in the baked art — the lit reveal (hanging gi + shelves) with its door
  *  swung right. Measured off the art so the glow sits OVER the open door/bay, not beside it
  *  (percent survives scaling). */
@@ -126,9 +136,16 @@ export function LockerRoom({
 
         {/* 3 — room art HERO STRIP + open locker */}
         <section>
+          <style>{LOCKER_ANIM_CSS}</style>
           <div className="relative w-full overflow-hidden rounded-xl border border-border" style={{ aspectRatio: "1536 / 1024", maxHeight: "27vh" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={LOCKER_ART} alt="The Dojo locker room" className="h-full w-full object-cover" />
+            <img src={LOCKER_ART} alt="The Dojo locker room" className="foxpit-locker-kb h-full w-full object-cover" />
+            {/* "you're in the locker room" cue — slides in on entry, then breathes a gentle glow */}
+            <div className="foxpit-locker-badge pointer-events-none absolute left-2 top-2 flex items-center gap-1.5 rounded-full px-3 py-1"
+              style={{ background: "rgba(3,4,7,.72)", border: `1.5px solid ${GOLD}`, color: GOLD, backdropFilter: "blur(2px)" }}>
+              <span style={{ fontSize: 12 }}>🗝️</span>
+              <span className="text-[11px] font-extrabold uppercase tracking-[.14em]">You&rsquo;re in the Locker Room</span>
+            </div>
             {/* A3 door-swing scaffold: cross-fade bloom over the open bay when toggled (until the
                 three-piece door art lands, this is a reveal — not a skewed fake swing). */}
             <div

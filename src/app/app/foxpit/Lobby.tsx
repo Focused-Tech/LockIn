@@ -134,9 +134,22 @@ export function FoxPitLobby() {
         />
       )}
 
-      {/* Boss Fox glass-door intro — "Ready Boss Up?" */}
+      {/* Boss Fox glass-door intro — "Ready Boss Up?". Continue plaque fades in below his feet +
+          the wordmark, jumping straight to the tower at the player's current floor. */}
       {phase === "door" && (
-        <ArenaIntro revealTitle="Ready to Boss Up?" onDone={() => setPhase("welcome")} />
+        <ArenaIntro
+          revealTitle="Ready to Boss Up?"
+          onDone={() => setPhase("welcome")}
+          onContinue={() => router.push("/app/foxpit/map")}
+        />
+      )}
+
+      {/* Continue where you left off — also on the lobby, below Boss Fox + the door tokens so it
+          never overlaps them. Orange, plaque-translucent. Routes to the tower (resumes current floor). */}
+      {phase === "lobby" && (
+        <button onClick={() => router.push("/app/foxpit/map")} style={lobbyContinueBtn}>
+          Continue where you left off ›
+        </button>
       )}
 
       {/* WELCOME / step-inside gate (with a Back button) */}
@@ -355,6 +368,25 @@ const FOXPIT_LOBBY_CSS = `
 .foxpit-welcome { animation: foxpitWelcomeIn .5s ease-out both; }
 `;
 
+const lobbyContinueBtn: React.CSSProperties = {
+  position: "absolute",
+  bottom: "6%",
+  left: "50%",
+  transform: "translateX(-50%)",
+  zIndex: 65,
+  background: "rgba(252,62,1,.2)",
+  border: "1.5px solid rgba(252,62,1,.72)",
+  color: "#ffefe8",
+  borderRadius: 999,
+  padding: "11px 22px",
+  fontSize: 14,
+  fontWeight: 800,
+  letterSpacing: ".02em",
+  whiteSpace: "nowrap",
+  cursor: "pointer",
+  backdropFilter: "blur(1px)",
+  boxShadow: "0 0 18px rgba(252,62,1,.35)",
+};
 const backBtn: React.CSSProperties = {
   position: "absolute",
   top: 16,

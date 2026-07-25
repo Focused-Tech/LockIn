@@ -22,6 +22,8 @@ export function ArenaIntro({
   brandName = "Fox Pit",
   revealImage = "/arena/intro/fox.png",
   showWordmark = true,
+  onContinue,
+  continueLabel = "Continue where you left off",
 }: {
   onDone: () => void;
   revealTitle?: string;
@@ -33,6 +35,10 @@ export function ArenaIntro({
   revealImage?: string;
   /** Show the upright wordmark reflection beneath the reveal (lobby only). */
   showWordmark?: boolean;
+  /** When set, a "Continue where you left off" plaque fades in BELOW the wordmark (moving in with
+   *  Boss Fox's zoom-out) — resumes the journey without waiting out the intro. Lobby only. */
+  onContinue?: () => void;
+  continueLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [backed, setBacked] = useState(false);
@@ -66,6 +72,14 @@ export function ArenaIntro({
           </div>
         )}
         {revealTitle && <div className="reveal-arena-title">{revealTitle}</div>}
+        {onContinue && (
+          <button
+            className="reveal-continue"
+            onClick={(e) => { e.stopPropagation(); onContinue(); }}
+          >
+            {continueLabel}
+          </button>
+        )}
       </div>
       <div className="door-seam" />
       <div className="glass-door">
@@ -164,6 +178,35 @@ export function ArenaIntro({
         .door-scene.backed .reveal-arena-title {
           opacity: 1;
           transform: translateX(0);
+        }
+        /* CONTINUE plaque — below Boss Fox's feet + below the wordmark. Orange, plaque-translucent
+           (matches the tower plaques). Fades + slides in with his zoom-out (the .backed beat). */
+        .reveal-continue {
+          position: absolute;
+          left: 50%;
+          top: 91%;
+          transform: translateX(-50%) translateY(12px);
+          z-index: 6;
+          opacity: 0;
+          transition:
+            opacity 0.6s ease 0.65s,
+            transform 0.6s ease 0.65s;
+          background: rgba(252, 62, 1, 0.2);
+          border: 1.5px solid rgba(252, 62, 1, 0.72);
+          color: #ffefe8;
+          border-radius: 999px;
+          padding: 9px 20px;
+          font-size: 13px;
+          font-weight: 800;
+          letter-spacing: 0.02em;
+          white-space: nowrap;
+          cursor: pointer;
+          backdrop-filter: blur(1px);
+          box-shadow: 0 0 18px rgba(252, 62, 1, 0.35);
+        }
+        .door-scene.backed .reveal-continue {
+          opacity: 1;
+          transform: translateX(-50%) translateY(0);
         }
         .door-reveal::after {
           content: "";
