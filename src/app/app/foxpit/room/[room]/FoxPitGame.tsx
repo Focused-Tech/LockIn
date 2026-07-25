@@ -499,12 +499,18 @@ function DealingTable({
   }, [dealt, TOTAL, onDone]);
 
   // spades-style: the lead side gets the first card, then strictly alternating.
+  // CLUSTER both fans ON the green felt (~46%–77% of the frame) — centered on the felt and spread to
+  // FIT whatever the count is, so even Coliseum's 5-per-fan land on the table surface instead of
+  // fanning off its left edge. The boss's fan sits across the far side, yours nearest the viewer.
+  const perFan = Math.max(1, Math.ceil(TOTAL / 2));
+  const FELT_CENTER = 61; // % — middle of the baked table's felt
+  const FELT_SPAN = 26; // % — usable felt width (inset from the 46–77 felt so cards stay on it)
+  const step = perFan > 1 ? FELT_SPAN / (perFan - 1) : 0;
   const cards = Array.from({ length: TOTAL }, (_, i) => {
     const toBoss = bossFirst ? i % 2 === 0 : i % 2 === 1;
-    const slot = Math.floor(i / 2); // 0..4 across each fan
-    // Both fans land ON the green felt (which runs roughly 46%–77% of the frame):
-    // the boss's across the far side clear of the dealer, yours nearest the viewer.
-    return { i, toBoss, x: 26 + slot * 12, y: toBoss ? 55 : 70 };
+    const slot = Math.floor(i / 2); // 0..(perFan-1) across each fan
+    const x = FELT_CENTER - FELT_SPAN / 2 + slot * step;
+    return { i, toBoss, x, y: toBoss ? 55 : 70 };
   });
 
   return (
