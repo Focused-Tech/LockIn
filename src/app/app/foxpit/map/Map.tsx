@@ -210,10 +210,10 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
             for a day variant later. */}
         <NightSky />
 
-        {/* TOWER LAYER STACK — full-canvas plates (1620x4500), all composite at offset (0,0), NO
-            scale/centre/object-fit/transform (they register exactly; any offset would be a bug).
-            z0 map (relative → sizes the container) < z10 stairway < z20 elevator band < z50 avatar
-            < z60 front rail. Source: assets/tower_layers (tower_layers.json). */}
+        {/* TOWER STACK — the map plate (z0, full canvas, sizes the container) + two TIGHT-CROP pieces
+            (elevator band, stairway) each placed at its OWN top-left origin below. Order: map →
+            elevator band → stairway → avatar (z50) → front rail. The old full-canvas stairway/band
+            plates are RETIRED (a full-canvas plate bakes in its position and can't be moved). */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/foxpit/map/tower_layers/tower_layer_00_map_REDO.png"
@@ -222,17 +222,20 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           onLoad={() => { setMapReady(true); fitTower(); }}
           style={{ position: "relative", zIndex: 0, width: "100%", height: "auto", display: "block" }}
         />
+        {/* TIGHT-CROP PIECES — each placed at its own TOP-LEFT origin on the 1620x4500 map canvas.
+            Placement = origin % of canvas; width = piece width % of canvas; height auto keeps the
+            crop's aspect. NOT full-canvas, NOT at 0,0. To re-align to the ledges, change ONLY the two
+            origin numbers per piece (the first two values below) — nothing else moves. z10 band < z20 stairway. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/foxpit/map/tower_layers/tower_layer_10_stairway.png" alt="" aria-hidden draggable={false}
-          style={{ position: "absolute", top: 0, left: 0, zIndex: 10, width: "100%", height: "auto", display: "block" }} />
+        <img src="/foxpit/map/tower_separate_assets/assets/elevator_band_piece.png" alt="" aria-hidden draggable={false}
+          style={{ position: "absolute", zIndex: 10, left: `${(1 / 1620) * 100}%`, top: `${(406 / 4500) * 100}%`, width: `${(351 / 1620) * 100}%`, height: "auto", display: "block" }} />
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/foxpit/map/tower_layers/tower_layer_20_elevator_band.png" alt="" aria-hidden draggable={false}
-          style={{ position: "absolute", top: 0, left: 0, zIndex: 20, width: "100%", height: "auto", display: "block" }} />
+        <img src="/foxpit/map/tower_separate_assets/assets/stairway_piece.png" alt="" aria-hidden draggable={false}
+          style={{ position: "absolute", zIndex: 20, left: `${(610 / 1620) * 100}%`, top: `${(2067 / 4500) * 100}%`, width: `${(887 / 1620) * 100}%`, height: "auto", display: "block" }} />
 
-        {/* z50 AVATAR (live rig). The z10 stairway plate IS the one connected staircase (its own
-            rails included) — the old per-piece SlotPieces are retired. The z60 front-rail plate
-            (tower_layer_60_front_rail.png) is not in the delivery yet; it slots in above the avatar
-            when it lands. */}
+        {/* z50 AVATAR (live rig) — above the map + band + stairway pieces, below the front rail.
+            The stairway_piece is the one connected staircase; the old per-piece SlotPieces are retired.
+            The front-rail plate isn't in the delivery yet; it slots in above the avatar when it lands. */}
         <StairClimber />
 
         {/* floor plaques — slim, so the painted room art shows behind them */}

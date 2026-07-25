@@ -1,0 +1,18 @@
+{
+  "stairway_piece": {
+    "file": "stairway_piece.png",
+    "w": 887,
+    "h": 2310,
+    "authored_x": 610,
+    "authored_y": 2067,
+    "note": "x,y = TOP-LEFT origin on the 1620x4500 map canvas. authored_* is where it sat on page 4 \u2014 NOT a placement."
+  },
+  "elevator_band_piece": {
+    "file": "elevator_band_piece.png",
+    "w": 351,
+    "h": 4041,
+    "authored_x": 1,
+    "authored_y": 406,
+    "note": "x,y = TOP-LEFT origin on the 1620x4500 map canvas. authored_* is where it sat on page 4 \u2014 NOT a placement."
+  }
+}
