@@ -6,9 +6,8 @@ import { ArenaIntro } from "@/app/app/practice/arena/chooser/ArenaIntro";
 
 /** Heavy tower assets (WebP) — preloaded during the lobby intro so the map paints instantly. */
 const MAP_PRELOAD = [
-  "/foxpit/map/tower_layers/tower_layer_00_map_REDO.webp",
-  "/foxpit/map/tower_separate_assets/assets/elevator_band_piece.webp",
-  "/foxpit/map/tower_separate_assets/assets/stairway_piece.webp",
+  "/foxpit/map/tower_layers/tower_base.webp",
+  "/foxpit/map/tower_layers/tower_stairs_overlay.webp",
 ];
 
 /**

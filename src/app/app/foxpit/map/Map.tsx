@@ -18,15 +18,7 @@ import {
   type FoxPitRoom,
   type FoxPitRoomKey,
 } from "@/lib/foxpit";
-import { ELEVATOR_STOP_BY_ID, FOXPIT_STAIR_ORIGIN } from "@/lib/foxpit/rules";
-
-/** Landings (x,y OFFSETS from FOXPIT_STAIR_ORIGIN) where the front slot-baluster panel sits — the
- *  same turns the avatar path pauses on. Origin-relative, so they slide with the staircase. */
-const STAIR_LANDINGS: [number, number][] = [
-  [400, 2223], [220, 1893], [480, 1593], [220, 1263], [630, 983], [220, 653], [793, 333],
-];
-/** Parked brass railing panel (PARKED_unnamed_object_01) native size, used as the front slot layer. */
-const FRONT_RAIL_W = 215, FRONT_RAIL_H = 165;
+import { ELEVATOR_STOP_BY_ID } from "@/lib/foxpit/rules";
 import { StairClimber } from "./StairClimber";
 import { ArenaIntro } from "@/app/app/practice/arena/chooser/ArenaIntro";
 
@@ -217,48 +209,30 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
             labels with sky. Swap <NightSky> for a day variant later. */}
         <NightSky />
 
-        {/* TOWER STACK — the map plate (z0, full canvas, sizes the container) + two TIGHT-CROP pieces
-            (elevator band, stairway) each placed at its OWN top-left origin below. Order: map →
-            elevator band → stairway → avatar (z50) → front rail. The old full-canvas stairway/band
-            plates are RETIRED (a full-canvas plate bakes in its position and can't be moved). */}
+        {/* TOWER SANDWICH — two full-canvas plates (1620x4500) authored ALIGNED by the architect, both
+            composited at offset (0,0), no scale/placement. z0 BASE (map + stair BACKS, sizes the
+            container) → z50 AVATAR → z60 stair OVERLAY (front rails). The avatar walks BETWEEN the
+            plates: IN THE SLOT. Stairs are baked at their reference positions, so the avatar path is
+            unchanged. Source: NEW_MAP_TOWER_SANDWICH (_layer_index.json). */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/foxpit/map/tower_layers/tower_layer_00_map_REDO.webp"
+          src="/foxpit/map/tower_layers/tower_base.webp"
           alt="The Fox Pit tower"
           draggable={false}
           onLoad={() => { fitTower(); }}
           style={{ position: "relative", zIndex: 0, width: "100%", height: "auto", display: "block" }}
         />
-        {/* TIGHT-CROP PIECES — each placed at its own TOP-LEFT origin on the 1620x4500 map canvas.
-            Placement = origin % of canvas; width = piece width % of canvas; height auto keeps the
-            crop's aspect. NOT full-canvas, NOT at 0,0. To re-align to the ledges, change ONLY the two
-            origin numbers per piece (the first two values below) — nothing else moves. z10 band < z20 stairway. */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/foxpit/map/tower_separate_assets/assets/elevator_band_piece.webp" alt="" aria-hidden draggable={false}
-          style={{ position: "absolute", zIndex: 10, left: `${(1 / 1620) * 100}%`, top: `${(406 / 4500) * 100}%`, width: `${(351 / 1620) * 100}%`, height: "auto", display: "block" }} />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/foxpit/map/tower_separate_assets/assets/stairway_piece.webp" alt="" aria-hidden draggable={false}
-          style={{ position: "absolute", zIndex: 20, left: `${(FOXPIT_STAIR_ORIGIN.x / 1620) * 100}%`, top: `${(FOXPIT_STAIR_ORIGIN.y / 4500) * 100}%`, width: `${(887 / 1620) * 100}%`, height: "auto", display: "block" }} />
 
-        {/* FRONT SLOT BALUSTERS — the parked brass railing (PARKED_unnamed_object_01) as the TOP layer
-            of the slot: z25, OVER the avatar (z15), one panel per landing, deck bottom on the landing.
-            The avatar walks BEHIND the balusters (legs behind, head/torso above) — the reference
-            sandwich. Origin-relative like the path, so they slide with the staircase. */}
-        {STAIR_LANDINGS.map(([lx, ly], i) => (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img key={i} src="/foxpit/map/tower_separate_assets/assets/front_baluster.webp" alt="" aria-hidden draggable={false}
-            style={{
-              position: "absolute", zIndex: 25,
-              left: `${((FOXPIT_STAIR_ORIGIN.x + lx - FRONT_RAIL_W / 2) / 1620) * 100}%`,
-              top: `${((FOXPIT_STAIR_ORIGIN.y + ly - FRONT_RAIL_H) / 4500) * 100}%`,
-              width: `${(FRONT_RAIL_W / 1620) * 100}%`, height: "auto", display: "block",
-            }} />
-        ))}
-
-        {/* AVATAR (live rig) at z15 — BELOW the stairway piece (z20) so it walks IN THE SLOT: the
-            stairway's front balusters cross in front of its legs while torso + head read above the rail
-            (the reference-map sandwich). NOT on top of the stairs. StairClimber sets its own z. */}
+        {/* AVATAR (live rig) — StairClimber renders it at z50, BETWEEN the base (z0) and the stair
+            overlay (z60): the overlay's front rails cross in front of its legs while its torso + head
+            read above — the slot. Position/scale unchanged from before; only its z sits between the plates. */}
         <StairClimber />
+
+        {/* STAIR OVERLAY — front of the slot, full-canvas at (0,0), z60: above the avatar (z50), below
+            the room plaques (z70) + HUD (z61) so the labels stay readable over the stairs. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/foxpit/map/tower_layers/tower_stairs_overlay.webp" alt="" aria-hidden draggable={false}
+          style={{ position: "absolute", top: 0, left: 0, zIndex: 60, width: "100%", height: "auto", display: "block" }} />
 
         {/* floor plaques — slim, so the painted room art shows behind them */}
         {FOXPIT_ROOMS.map((r) => {

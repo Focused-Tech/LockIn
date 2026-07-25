@@ -187,10 +187,10 @@ export function StairClimber() {
   }, [wp, stepTo]);
 
   return (
-    // z15 = BELOW the stairway piece (z20), ABOVE the elevator band (z10) + map (z0). The avatar walks
-    // IN THE SLOT: the stairway's front balusters/rail (z20) cross in front of its legs while its torso
-    // + head read above the rail — the same sandwich the reference map shows. NOT on top of the stairs.
-    <div style={{ position: "absolute", inset: 0, zIndex: 15, pointerEvents: "none" }}>
+    // z50 = BETWEEN the two tower plates: ABOVE the base (z0), BELOW the stair overlay (z60). The
+    // avatar walks IN THE SLOT — the overlay's front rails cross in front of its legs while its torso
+    // + head read above. This is the sandwich the new baked map (_layer_index.json) is built for.
+    <div style={{ position: "absolute", inset: 0, zIndex: 50, pointerEvents: "none" }}>
       {/* the walking avatar RIG — feet anchored on the waypoint; the rig flips + swings internally;
           bob adds a little life while moving. No dev tools on screen. */}
       <div
