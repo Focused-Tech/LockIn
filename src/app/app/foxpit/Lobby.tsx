@@ -1,8 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArenaIntro } from "@/app/app/practice/arena/chooser/ArenaIntro";
+
+/** Heavy tower assets (WebP) — preloaded during the lobby intro so the map paints instantly. */
+const MAP_PRELOAD = [
+  "/foxpit/map/tower_layers/tower_layer_00_map_REDO.webp",
+  "/foxpit/map/tower_separate_assets/assets/elevator_band_piece.webp",
+  "/foxpit/map/tower_separate_assets/assets/stairway_piece.webp",
+];
 
 /**
  * Fox Pit LOBBY — the practice-mode front door (background = lobby-scene.png).
@@ -27,6 +34,16 @@ export function FoxPitLobby() {
   const [phase, setPhase] = useState<"door" | "welcome" | "lobby">("door");
   const [popup, setPopup] = useState<Journey | null>(null);
   const [entering, setEntering] = useState<Journey | null>(null);
+
+  // Warm the browser cache with the ~1MB of tower WebP while the player is still in the
+  // door/welcome/choose-path intro, so /app/foxpit/map renders instantly on arrival instead
+  // of fetching them cold. Fire-and-forget; no state, no render impact.
+  useEffect(() => {
+    MAP_PRELOAD.forEach((src) => {
+      const img = new Image();
+      img.src = src;
+    });
+  }, []);
 
   const confirm = (j: Journey) => {
     setPopup(null);

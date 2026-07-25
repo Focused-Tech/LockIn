@@ -46,7 +46,6 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
   const [hud, setHud] = useState(true);
   // The BUILD MAP is a large image; hold the tower (elevator animation + overlays) behind a loader
   // until it has fully decoded, so the map shows FIRST and complete — not in sections after the car.
-  const [mapReady, setMapReady] = useState(false);
   const [elevatorLocked, setElevatorLocked] = useState(false);
   const [elevatorRide, setElevatorRide] = useState(false);
   // Enter the Winner's Lounge straight from its map plaque (like every other room), not only via
@@ -216,10 +215,10 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
             plates are RETIRED (a full-canvas plate bakes in its position and can't be moved). */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/foxpit/map/tower_layers/tower_layer_00_map_REDO.png"
+          src="/foxpit/map/tower_layers/tower_layer_00_map_REDO.webp"
           alt="The Fox Pit tower"
           draggable={false}
-          onLoad={() => { setMapReady(true); fitTower(); }}
+          onLoad={() => { fitTower(); }}
           style={{ position: "relative", zIndex: 0, width: "100%", height: "auto", display: "block" }}
         />
         {/* TIGHT-CROP PIECES — each placed at its own TOP-LEFT origin on the 1620x4500 map canvas.
@@ -227,10 +226,10 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
             crop's aspect. NOT full-canvas, NOT at 0,0. To re-align to the ledges, change ONLY the two
             origin numbers per piece (the first two values below) — nothing else moves. z10 band < z20 stairway. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/foxpit/map/tower_separate_assets/assets/elevator_band_piece.png" alt="" aria-hidden draggable={false}
+        <img src="/foxpit/map/tower_separate_assets/assets/elevator_band_piece.webp" alt="" aria-hidden draggable={false}
           style={{ position: "absolute", zIndex: 10, left: `${(1 / 1620) * 100}%`, top: `${(406 / 4500) * 100}%`, width: `${(351 / 1620) * 100}%`, height: "auto", display: "block" }} />
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/foxpit/map/tower_separate_assets/assets/stairway_piece.png" alt="" aria-hidden draggable={false}
+        <img src="/foxpit/map/tower_separate_assets/assets/stairway_piece.webp" alt="" aria-hidden draggable={false}
           style={{ position: "absolute", zIndex: 20, left: `${(FOXPIT_STAIR_ORIGIN.x / 1620) * 100}%`, top: `${(FOXPIT_STAIR_ORIGIN.y / 4500) * 100}%`, width: `${(887 / 1620) * 100}%`, height: "auto", display: "block" }} />
 
         {/* z50 AVATAR (live rig) — above the map + band + stairway pieces, below the front rail.
@@ -463,31 +462,8 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
       <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: "calc(env(safe-area-inset-top, 0px) + 10px)", background: "#0A0D12", zIndex: 62, pointerEvents: "none" }} />
       <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, height: "calc(env(safe-area-inset-bottom, 0px) + 12px)", background: "#0A0D12", zIndex: 62, pointerEvents: "none" }} />
 
-      {/* LOADER — covers the tower until the BUILD MAP has fully decoded, so the map (with the
-          staircase) is what appears first, complete, rather than the elevator animating over a
-          half-loaded map. Fades out on map load. */}
-      <div
-        aria-hidden={mapReady}
-        style={{
-          position: "fixed",
-          inset: 0,
-          zIndex: 70,
-          background: "#0A0D12",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexDirection: "column",
-          gap: 14,
-          opacity: mapReady ? 0 : 1,
-          pointerEvents: mapReady ? "none" : "auto",
-          transition: "opacity .5s ease",
-        }}
-      >
-        <div style={{ width: 38, height: 38, borderRadius: "50%", border: "3px solid rgba(200,162,75,.25)", borderTopColor: "#C8A24B", animation: "foxpitSpin 0.9s linear infinite" }} />
-        <div style={{ fontFamily: "Georgia, serif", fontSize: 15, letterSpacing: ".14em", color: "#C8A24B" }}>
-          CLIMBING THE TOWER…
-        </div>
-      </div>
+      {/* No loader screen: the tower WebP is preloaded during the lobby intro + cached, so the map
+          paints effectively instantly. (Was a "CLIMBING THE TOWER…" spinner masking the old slow PNG load.) */}
 
       {/* fixed HUD — appears on entry, fades out after 4s */}
       <div
