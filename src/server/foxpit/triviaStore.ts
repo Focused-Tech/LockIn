@@ -105,12 +105,14 @@ export async function triviaNeedsRegen(db: Firestore, now: number): Promise<bool
 }
 
 /**
- * CACHE-ONLY read for a round. Pulls the active batch's questions for the given
- * categories at the given tier, drops anything this player has already seen, and
- * returns them shuffled. Makes ZERO model calls.
+ * CACHE-ONLY deal for a round. Pulls the active batch's questions for the given categories at the
+ * given tier, EXCLUDES every id in the player's triviaSeen, MARKS the dealt ids seen (SEEN = SHOWN,
+ * at expose), and returns them shuffled. Makes ZERO model calls.
  *
- * When the unseen pool is exhausted the seen filter is dropped for that request
- * rather than dealing an empty hand — repeats beat a broken round.
+ * NEVER-REPEAT CONTRACT (Fox Pit trivia): a seen id is never re-dealt. All chosen categories are
+ * pooled together, so a dry category is already back-filled from the others. If the combined FRESH
+ * pool still can't fill `want`, we deal what's fresh (fewer cards) and log the shortfall for the
+ * generation top-up — we do NOT recycle a seen question. Recycling is the one forbidden move.
  */
 export async function fetchTriviaForRound(
   db: Firestore,
@@ -139,15 +141,25 @@ export async function fetchTriviaForRound(
   }
 
   const seen = await fetchSeenIds(db, uid);
+  // FRESH ONLY — never fall back to the full pool. A seen id is never re-dealt.
   const unseen = pool.filter((q) => !seen.has(q.id));
-  const source = unseen.length >= want ? unseen : pool;
-
-  // Fisher-Yates, then take `want`.
-  for (let i = source.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [source[i], source[j]] = [source[j]!, source[i]!];
+  if (unseen.length < want) {
+    console.error(
+      `[trivia] fresh pool short: ${unseen.length}/${want} for tier=${tier} cats=[${cats.join(",")}] — ` +
+        `dealing fresh only, NO recycle. Trigger a generation top-up for these (subcategory,tier) pools.`,
+    );
   }
-  return source.slice(0, want);
+
+  // Fisher-Yates over the FRESH pool, then take up to `want`.
+  for (let i = unseen.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [unseen[i], unseen[j]] = [unseen[j]!, unseen[i]!];
+  }
+  const dealt = unseen.slice(0, want);
+
+  // SEEN = SHOWN: mark the moment they're dealt onto the slate (abandoned rounds still burn them).
+  await markSeen(db, uid, dealt.map((q) => q.id));
+  return dealt;
 }
 
 /** Question ids this player has already been dealt in the current cycle. */
