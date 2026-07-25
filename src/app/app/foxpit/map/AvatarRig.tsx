@@ -86,8 +86,10 @@ export function AvatarRig({ gender = "male", phase = 0, facing = 1 }: { gender?:
   const shinN = -24 * up;    // flex the front knee as it lifts
   const thighF = 6 * s;      // planted leg pushes through
   const shinF = -10 * Math.max(0, -s);
-  const uarmN = -15 * s, uarmF = 15 * s;
-  const farmN = -14 - 6 * Math.max(0, -s), farmF = -14 - 6 * Math.max(0, s);
+  // Bigger arm swing (was ±15 upper / 6 forearm) — a more pronounced contra-lateral pump so the
+  // walk reads as walking, not gliding. Rotation only; joints stay connected.
+  const uarmN = -30 * s, uarmF = 30 * s;
+  const farmN = -18 - 14 * Math.max(0, -s), farmF = -18 - 14 * Math.max(0, s);
 
   // Paint order back → front (item 4).
   const placed: Placed[] = [

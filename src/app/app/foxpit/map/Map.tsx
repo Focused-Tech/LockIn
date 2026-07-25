@@ -275,7 +275,11 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
                 zIndex: 70,
                 top: `${r.mapY * 100}%`,
                 left: "14%",
-                transform: "translateY(-50%)",
+                // 75% of previous size (−25%): scale the WHOLE pill — container, text, checkmark,
+                // border, padding — as one unit, anchored at its left edge + vertically centered on
+                // the room, so it shrinks in place without moving.
+                transform: "translateY(-50%) scale(0.75)",
+                transformOrigin: "left center",
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
@@ -418,7 +422,7 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
         <button
           onClick={() => (elevatorUnlocked ? setElevatorRide(true) : setElevatorLocked(true))}
           aria-label="Use the elevator"
-          style={{ position: "absolute", zIndex: 3, top: 0, bottom: 0, left: 0, width: "12%", border: "none", background: "transparent", padding: 0, cursor: "pointer" }}
+          style={{ position: "absolute", zIndex: 31, top: 0, bottom: 0, left: 0, width: "12%", border: "none", background: "transparent", padding: 0, cursor: "pointer" }}
         />
 
         {/* elevator CABLE — a taut BRASS cable running the shaft; the car rides it.
@@ -428,7 +432,7 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           aria-hidden
           style={{
             position: "absolute",
-            zIndex: 0,
+            zIndex: 29,
             top: 0,
             bottom: 0,
             left: "4.5%",
@@ -449,7 +453,9 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           aria-label="Elevator"
           style={{
             position: "absolute",
-            zIndex: 1,
+            // z30 — ABOVE the band (z10), stairway (z20) + front balusters (z25) I layered in, so the
+            // car rides visibly in the shaft instead of being buried behind them.
+            zIndex: 30,
             // PARKED at the High Table (high-rollers) landing — its approved default rest position.
             // 'top' is the car's BOTTOM edge (translateY(-100%) anchors bottom to the top:% line),
             // so it equals the stop pct directly. The demo climb-loop is retired; tap to ride.

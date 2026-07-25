@@ -192,7 +192,7 @@ export const ECONOMY = {
 } as const;
 
 /** Shown in-app + in build output (bump per build). */
-export const FOXPIT_BUILD_VERSION = "fp-stair-revert-ref";
+export const FOXPIT_BUILD_VERSION = "fp-elevator-plaques-arms";
 
 /** Keep-N for a given room + round index (0-based), clamped to the round table. */
 export function keepNFor(room: FoxPitRoomKey, roundIndex: number): number {
