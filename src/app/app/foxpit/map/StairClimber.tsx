@@ -55,25 +55,25 @@ const STEP_RUN_PX = 42;
 const ELEV_X = 380;
 
 interface Node { x: number; y: number; stop?: boolean; label?: string }
-/** Stair turns as (x OFFSET from the stairway piece origin, absolute y), bottom → top. Because these
- *  are offsets from FOXPIT_STAIR_ORIGIN.x, sliding the staircase slides the avatar path with it —
- *  they can't drift apart. Traced onto the piece's treads/landings. */
+/** Stair turns as OFFSETS from the stairway piece origin (both axes), bottom → top. Because they are
+ *  relative to FOXPIT_STAIR_ORIGIN, nudging the staircase (its x AND y) slides the whole avatar path
+ *  with it — they can't drift apart. Traced onto the piece's treads/landings. */
 const STAIR_LOCAL: readonly [number, number][] = [
-  [400, 4290], // Dojo · stair base
-  [220, 3960],
-  [480, 3660],
-  [220, 3330],
-  [630, 3050],
-  [220, 2720],
-  [793, 2400], // High Table · landing (top)
+  [400, 2223], // Dojo · stair base   (origin.y 2067 + 2223 = 4290)
+  [220, 1893],
+  [480, 1593],
+  [220, 1263],
+  [630, 983],
+  [220, 653],
+  [793, 333], // High Table · landing (top)
 ];
-/** Bottom → top. Elevator ends (fixed at ELEV_X) bracket the stair nodes (origin-relative). `stop` =
- *  a ledge to pause on (elevator ends + stair base/top); switchback turns are walked through. */
+/** Bottom → top. Elevator ends (fixed at ELEV_X, absolute y — the elevator doesn't move with the
+ *  stair) bracket the origin-relative stair nodes. `stop` = a ledge to pause on. */
 const PATH_NODES: Node[] = [
   { x: ELEV_X, y: 4290, stop: true, label: "Dojo · elevator" },
-  ...STAIR_LOCAL.map(([lx, y], i): Node => ({
+  ...STAIR_LOCAL.map(([lx, ly], i): Node => ({
     x: FOXPIT_STAIR_ORIGIN.x + lx,
-    y,
+    y: FOXPIT_STAIR_ORIGIN.y + ly,
     stop: i === 0 || i === STAIR_LOCAL.length - 1,
     label: i === 0 ? "Dojo · stair base" : i === STAIR_LOCAL.length - 1 ? "High Table · landing" : undefined,
   })),
@@ -187,7 +187,10 @@ export function StairClimber() {
   }, [wp, stepTo]);
 
   return (
-    <div style={{ position: "absolute", inset: 0, zIndex: 50, pointerEvents: "none" }}>
+    // z15 = BELOW the stairway piece (z20), ABOVE the elevator band (z10) + map (z0). The avatar walks
+    // IN THE SLOT: the stairway's front balusters/rail (z20) cross in front of its legs while its torso
+    // + head read above the rail — the same sandwich the reference map shows. NOT on top of the stairs.
+    <div style={{ position: "absolute", inset: 0, zIndex: 15, pointerEvents: "none" }}>
       {/* the walking avatar RIG — feet anchored on the waypoint; the rig flips + swings internally;
           bob adds a little life while moving. No dev tools on screen. */}
       <div

@@ -232,9 +232,9 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
         <img src="/foxpit/map/tower_separate_assets/assets/stairway_piece.webp" alt="" aria-hidden draggable={false}
           style={{ position: "absolute", zIndex: 20, left: `${(FOXPIT_STAIR_ORIGIN.x / 1620) * 100}%`, top: `${(FOXPIT_STAIR_ORIGIN.y / 4500) * 100}%`, width: `${(887 / 1620) * 100}%`, height: "auto", display: "block" }} />
 
-        {/* z50 AVATAR (live rig) — above the map + band + stairway pieces, below the front rail.
-            The stairway_piece is the one connected staircase; the old per-piece SlotPieces are retired.
-            The front-rail plate isn't in the delivery yet; it slots in above the avatar when it lands. */}
+        {/* AVATAR (live rig) at z15 — BELOW the stairway piece (z20) so it walks IN THE SLOT: the
+            stairway's front balusters cross in front of its legs while torso + head read above the rail
+            (the reference-map sandwich). NOT on top of the stairs. StairClimber sets its own z. */}
         <StairClimber />
 
         {/* floor plaques — slim, so the painted room art shows behind them */}
