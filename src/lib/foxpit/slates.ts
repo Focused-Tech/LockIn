@@ -3,6 +3,7 @@
  * nothing here touches the real-money feed, Explore, or the practice-arena pool.
  */
 import type { FoxPitRoomKey } from "@/lib/foxpit";
+import { normalizeStem } from "@/lib/foxpit/trivia";
 import {
   ROOM_RULES,
   SLATES_PER_ROUND,
@@ -129,12 +130,32 @@ function buildSlate(room: FoxPitRoomKey, category: FoxPitCategory): FoxSlate {
   const options = BANK[category];
   const template = options[Math.floor(Math.random() * options.length)]!;
   const want = questionsPerSlate(room);
-  const pool = [...template.q];
-  const questions: FoxQuestion[] = [];
-  for (let i = 0; i < want; i++) {
-    const [text, optionA, optionB, conf] = pool[i % pool.length]!;
-    questions.push({ id: uid("q"), text, optionA, optionB, aiConfidence: conf, outcome: rollOutcome(conf) });
+  // A slate must NEVER contain the same question twice. Assemble UNIQUE rows, deduped by NORMALIZED
+  // STEM (folds into the same normalizeStem as the trivia never-repeat work — id-only dedupe would miss
+  // re-used stems). Start with the chosen template, then fill from the category's OTHER templates; the
+  // old `pool[i % pool.length]` cycling is retired — that was what dealt the same question twice.
+  const seen = new Set<string>();
+  const picked: [string, string, string, number][] = [];
+  const take = (rows: [string, string, string, number][]) => {
+    for (const row of rows) {
+      if (picked.length >= want) break;
+      const key = normalizeStem(row[0]);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      picked.push(row);
+    }
+  };
+  take(template.q);
+  for (const t of options) {
+    if (picked.length >= want) break;
+    if (t !== template) take(t.q);
   }
+  if (picked.length < want) {
+    console.error(`[foxpit] slate ${category} has only ${picked.length}/${want} unique questions — dealing fewer, never a duplicate`);
+  }
+  const questions: FoxQuestion[] = picked.map(([text, optionA, optionB, conf]) => ({
+    id: uid("q"), text, optionA, optionB, aiConfidence: conf, outcome: rollOutcome(conf),
+  }));
   return {
     id: uid("slate"),
     category,

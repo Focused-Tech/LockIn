@@ -181,7 +181,23 @@ export function FoxPitGame({
   /* ------- PLAY ------- */
   const setStake = (slateId: string, stake: number) =>
     setSlates((prev) => prev.map((s) => (s.id === slateId ? { ...s, stake } : s)));
-  const pick = (qid: string, side: "a" | "b") => setPicks((p) => ({ ...p, [qid]: side }));
+  const pick = (qid: string, side: "a" | "b") => {
+    setPicks((p) => ({ ...p, [qid]: side }));
+    // (e) changing/adding an answer RE-OPENS that card's stake — never lock a bid the player can no
+    // longer justify. Only the slate that owns this question is affected.
+    setSlates((prev) => prev.map((s) => (s.stake != null && s.questions.some((q) => q.id === qid) ? { ...s, stake: null } : s)));
+    // (c) once this answer COMPLETES the card, bring its now-enabled stake row into view — no scroll-up.
+    const slate = slates.find((s) => s.questions.some((q) => q.id === qid));
+    if (slate && slate.questions.every((q) => (q.id === qid ? true : picks[q.id]))) {
+      requestAnimationFrame(() => {
+        try {
+          document.getElementById(`stake-${slate.id}`)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        } catch (err) {
+          console.error("[foxpit] stake scrollIntoView failed", err);
+        }
+      });
+    }
+  };
 
   // Lock-in unlocks once the player has fully played at least the floor (1 for Owl/Wolf, 5 for
   // Raven/Fox) — NOT all 5 (items 1, 4). Never auto-fill; the reason shows on screen below the floor.
@@ -710,12 +726,15 @@ function PlayPhase({
       {slates.map((s, i) => {
         const tint = slateTint(s); // app-wide category color canon
         const locked = isLocked(s, picks);
+        // Stake gates on a FULLY-ANSWERED card — you can't size a bid before reading the hand.
+        const answered = s.questions.every((q) => picks[q.id]);
         return (
         <div
           key={s.id}
           className={`rounded-xl border-2 p-4 transition ${locked ? "border-accent bg-accent/10" : ""}`}
           style={locked ? undefined : { borderColor: tint.border }}
         >
+          {/* DOM order: category → slate title → questions → stake (verified top-to-bottom) */}
           <div className="mb-2 flex items-center justify-between">
             <div>
               <div
@@ -734,39 +753,7 @@ function PlayPhase({
               </div>
             )}
           </div>
-          {/* stake tier — breadth unlocks the lowest N tiers; higher tiers render LOCKED (item 3) */}
-          <div className="mb-1 flex flex-wrap gap-2">
-            {stakes.map((st, ti) => {
-              const unlocked = unlockedStakes.includes(st);
-              const selected = s.stake === st;
-              return (
-                <button
-                  key={st}
-                  onClick={() => unlocked && onStake(s.id, st)}
-                  disabled={!unlocked}
-                  className="flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-extrabold"
-                  style={{
-                    borderColor: selected ? accent : "var(--border, #1E2A38)",
-                    color: selected ? "#fff" : unlocked ? "#8b98a6" : "#5a6675",
-                    background: selected ? accent : "transparent",
-                    cursor: unlocked ? "pointer" : "not-allowed",
-                    opacity: unlocked ? 1 : 0.55,
-                  }}
-                >
-                  {!unlocked && <LockGlyph size={11} />}
-                  {st} ⛃{!unlocked ? ` · ${ti + 1} cats` : ""}
-                </button>
-              );
-            })}
-          </div>
-          {/* the reason: the lowest locked tier + how many categories opens it (never hidden) */}
-          {stakes.length > unlockedStakes.length && (
-            <div className="mb-3 text-[11px] font-semibold" style={{ color: "#8b98a6" }}>
-              Play {unlockedStakes.length + 1} categor{unlockedStakes.length + 1 === 1 ? "y" : "ies"} to unlock {stakes[unlockedStakes.length]} ⛃
-              <span className="text-[10px]"> (you played {categoryCount})</span>
-            </div>
-          )}
-          {/* questions */}
+          {/* QUESTIONS — read the hand FIRST, before sizing the bid */}
           <div className="flex flex-col gap-2">
             {s.questions.map((q) => (
               <div key={q.id}>
@@ -788,6 +775,55 @@ function PlayPhase({
                 </div>
               </div>
             ))}
+          </div>
+          {/* STAKE — BELOW the questions, DISABLED until the whole card is answered (never hidden) */}
+          <div id={`stake-${s.id}`} className="mt-3">
+            {!answered ? (
+              <div
+                className="rounded-lg border border-dashed px-3 py-2 text-center text-[12px] font-semibold"
+                style={{ borderColor: "var(--border, #1E2A38)", color: "#6b7a8e" }}
+              >
+                Answer this slate to set your stake.
+              </div>
+            ) : (
+              <>
+                <div className="mb-1 text-[10px] font-bold uppercase tracking-wide" style={{ color: "#8b98a6" }}>
+                  Set your stake
+                </div>
+                {/* stake tier — breadth unlocks the lowest N tiers; higher tiers render LOCKED (item 3) */}
+                <div className="flex flex-wrap gap-2">
+                  {stakes.map((st, ti) => {
+                    const unlocked = unlockedStakes.includes(st);
+                    const selected = s.stake === st;
+                    return (
+                      <button
+                        key={st}
+                        onClick={() => unlocked && onStake(s.id, st)}
+                        disabled={!unlocked}
+                        className="flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-extrabold"
+                        style={{
+                          borderColor: selected ? accent : "var(--border, #1E2A38)",
+                          color: selected ? "#fff" : unlocked ? "#8b98a6" : "#5a6675",
+                          background: selected ? accent : "transparent",
+                          cursor: unlocked ? "pointer" : "not-allowed",
+                          opacity: unlocked ? 1 : 0.55,
+                        }}
+                      >
+                        {!unlocked && <LockGlyph size={11} />}
+                        {st} ⛃{!unlocked ? ` · ${ti + 1} cats` : ""}
+                      </button>
+                    );
+                  })}
+                </div>
+                {/* the reason: the lowest locked tier + how many categories opens it (never hidden) */}
+                {stakes.length > unlockedStakes.length && (
+                  <div className="mt-1 text-[11px] font-semibold" style={{ color: "#8b98a6" }}>
+                    Play {unlockedStakes.length + 1} categor{unlockedStakes.length + 1 === 1 ? "y" : "ies"} to unlock {stakes[unlockedStakes.length]} ⛃
+                    <span className="text-[10px]"> (you played {categoryCount})</span>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
         );
