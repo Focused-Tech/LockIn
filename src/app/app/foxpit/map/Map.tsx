@@ -19,7 +19,7 @@ import {
   type FoxPitRoomKey,
 } from "@/lib/foxpit";
 import { ELEVATOR_STOP_BY_ID } from "@/lib/foxpit/rules";
-import { StairClimber, SlotPieces } from "./StairClimber";
+import { StairClimber } from "./StairClimber";
 import { ArenaIntro } from "@/app/app/practice/arena/chooser/ArenaIntro";
 
 /**
@@ -229,10 +229,11 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
         <img src="/foxpit/map/tower_layers/tower_layer_20_elevator_band.png" alt="" aria-hidden draggable={false}
           style={{ position: "absolute", top: 0, left: 0, zIndex: 20, width: "100%", height: "auto", display: "block" }} />
 
-        {/* z50 AVATAR (live rig) + z60 FRONT RAIL (existing SlotPieces). The avatar tucks in the slot:
-            behind the front rail, over the stairway. */}
+        {/* z50 AVATAR (live rig). The z10 stairway plate IS the one connected staircase (its own
+            rails included) — the old per-piece SlotPieces are retired. The z60 front-rail plate
+            (tower_layer_60_front_rail.png) is not in the delivery yet; it slots in above the avatar
+            when it lands. */}
         <StairClimber />
-        <SlotPieces />
 
         {/* floor plaques — slim, so the painted room art shows behind them */}
         {FOXPIT_ROOMS.map((r) => {
