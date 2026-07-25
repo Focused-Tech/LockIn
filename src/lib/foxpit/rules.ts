@@ -172,7 +172,7 @@ export const ELEVATOR_STOP_BY_ID: Record<ElevatorStopId, number> = Object.fromEn
  * apart. To slide the staircase left/right against the elevator ledges, change x ONLY — the avatar
  * path follows automatically. x=60 butts the flights' left edge against the colored elevator ledges.
  */
-export const FOXPIT_STAIR_ORIGIN = { x: 60, y: 2067 } as const;
+export const FOXPIT_STAIR_ORIGIN = { x: 72, y: 2067 } as const;
 
 /** Timers (seconds). */
 export const TIMERS = {
@@ -192,7 +192,7 @@ export const ECONOMY = {
 } as const;
 
 /** Shown in-app + in build output (bump per build). */
-export const FOXPIT_BUILD_VERSION = "fp-stair-meets-ledge";
+export const FOXPIT_BUILD_VERSION = "fp-stair-ref-match";
 
 /** Keep-N for a given room + round index (0-based), clamped to the round table. */
 export function keepNFor(room: FoxPitRoomKey, roundIndex: number): number {
