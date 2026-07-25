@@ -23,8 +23,9 @@ import { StairClimber, SlotPieces } from "./StairClimber";
 import { ArenaIntro } from "@/app/app/practice/arena/chooser/ArenaIntro";
 
 /**
- * Fox Pit TOWER MAP (build map = map/tower_map_clean.png 1620x4500, natural aspect;
- * night sky + baked staircase overlaid as their own layers) — a tall vertical climb with
+ * Fox Pit TOWER MAP (a stack of full-canvas 1620x4500 plates from map/tower_layers, composited at
+ * offset 0,0: z0 map_REDO < z10 stairway < z20 elevator_band < z50 avatar < z60 front rail) — a
+ * tall vertical climb with
  * pinch-to-zoom + pan. Floors are slim PLAQUES (the painted room art shows
  * behind them). The header appears on entry and fades out after 4s. The
  * elevator (far left) opens a FLOOR-SELECT panel: the four room cards, each
@@ -209,26 +210,27 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
             for a day variant later. */}
         <NightSky />
 
-        {/* BUILD MAP — tower_map_clean.png (1620x4500), natural aspect (no distort). The
-            elevator stops + every overlay are % of THIS image's height. relative/z1 so
-            it paints over the night sky where the art is opaque. */}
+        {/* TOWER LAYER STACK — full-canvas plates (1620x4500), all composite at offset (0,0), NO
+            scale/centre/object-fit/transform (they register exactly; any offset would be a bug).
+            z0 map (relative → sizes the container) < z10 stairway < z20 elevator band < z50 avatar
+            < z60 front rail. Source: assets/tower_layers (tower_layers.json). */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/foxpit/map/tower_map_clean.png"
+          src="/foxpit/map/tower_layers/tower_layer_00_map_REDO.png"
           alt="The Fox Pit tower"
           draggable={false}
           onLoad={() => { setMapReady(true); fitTower(); }}
-          style={{ position: "relative", zIndex: 1, width: "100%", height: "auto", display: "block" }}
+          style={{ position: "relative", zIndex: 0, width: "100%", height: "auto", display: "block" }}
         />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/foxpit/map/tower_layers/tower_layer_10_stairway.png" alt="" aria-hidden draggable={false}
+          style={{ position: "absolute", top: 0, left: 0, zIndex: 10, width: "100%", height: "auto", display: "block" }} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/foxpit/map/tower_layers/tower_layer_20_elevator_band.png" alt="" aria-hidden draggable={false}
+          style={{ position: "absolute", top: 0, left: 0, zIndex: 20, width: "100%", height: "auto", display: "block" }} />
 
-        {/* NOTE: the standalone tower_staircase_clean.png overlay was REMOVED — the staircase +
-            back rails are already baked into tower_map_clean.png (Frank's cross-correlation: the
-            sheet's staircase aligns to the map at dx=0, dy=0), so overlaying a second copy was
-            redundant clutter. */}
-
-        {/* AVATAR CLIMB (Phase A) + SLOT PIECES. Layer order: map art incl. baked BACK rail
-            (immutable) → AVATAR (z5) → hand-placed front post/rail SPRITES (SlotPieces, z6).
-            Room labels render ABOVE everything (z7, below). */}
+        {/* z50 AVATAR (live rig) + z60 FRONT RAIL (existing SlotPieces). The avatar tucks in the slot:
+            behind the front rail, over the stairway. */}
         <StairClimber />
         <SlotPieces />
 
@@ -244,7 +246,7 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
               disabled={!unlocked}
               style={{
                 position: "absolute",
-                zIndex: 7,
+                zIndex: 70,
                 top: `${r.mapY * 100}%`,
                 left: "14%",
                 transform: "translateY(-50%)",
@@ -303,7 +305,7 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
             onClick={() => setLoungeArrival(true)}
             style={{
               position: "absolute",
-              zIndex: 7,
+              zIndex: 70,
               top: `${WINNERS_LOUNGE.mapY * 100}%`,
               left: "14%",
               transform: "translateY(-50%)",
@@ -336,7 +338,7 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           onClick={() => router.push("/app/foxpit")}
           style={{
             position: "absolute",
-            zIndex: 7,
+            zIndex: 70,
             top: `${LOBBY_MAP_Y * 100}%`,
             left: "14%",
             transform: "translateY(-50%)",
@@ -364,7 +366,7 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           aria-label="Practice free at the Dojo"
           style={{
             position: "absolute",
-            zIndex: 7,
+            zIndex: 70,
             top: `${LOBBY_MAP_Y * 100 + 7}%`,
             left: "14%",
             transform: "translateY(-50%)",

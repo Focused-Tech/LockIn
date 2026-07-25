@@ -178,7 +178,7 @@ const SLOT_SPRITES: SlotSprite[] = [
  *  rails; both above the avatar so it walks in the slot. */
 export function SlotPieces() {
   return (
-    <div aria-hidden style={{ position: "absolute", inset: 0, zIndex: 6, pointerEvents: "none" }}>
+    <div aria-hidden style={{ position: "absolute", inset: 0, zIndex: 60, pointerEvents: "none" }}>
       {SLOT_SPRITES.map((s) => (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -283,7 +283,7 @@ export function StairClimber() {
   }, [wp, stepTo]);
 
   return (
-    <div style={{ position: "absolute", inset: 0, zIndex: 5, pointerEvents: "none" }}>
+    <div style={{ position: "absolute", inset: 0, zIndex: 50, pointerEvents: "none" }}>
       {/* the walking avatar RIG — feet anchored on the waypoint; the rig flips + swings internally;
           bob adds a little life while moving. No dev tools on screen. */}
       <div
@@ -294,7 +294,7 @@ export function StairClimber() {
           width: `${AVATAR_W_VW}vw`,
           transform: `translate(-50%, -${FOOT_PCT}%)`,
           pointerEvents: "none",
-          zIndex: 5,
+          zIndex: 50,
           filter: "drop-shadow(0 4px 4px rgba(0,0,0,.7))",
         }}
       >
