@@ -19,6 +19,14 @@ import {
   type FoxPitRoomKey,
 } from "@/lib/foxpit";
 import { ELEVATOR_STOP_BY_ID, FOXPIT_STAIR_ORIGIN } from "@/lib/foxpit/rules";
+
+/** Landings (x,y OFFSETS from FOXPIT_STAIR_ORIGIN) where the front slot-baluster panel sits — the
+ *  same turns the avatar path pauses on. Origin-relative, so they slide with the staircase. */
+const STAIR_LANDINGS: [number, number][] = [
+  [400, 2223], [220, 1893], [480, 1593], [220, 1263], [630, 983], [220, 653], [793, 333],
+];
+/** Parked brass railing panel (PARKED_unnamed_object_01) native size, used as the front slot layer. */
+const FRONT_RAIL_W = 215, FRONT_RAIL_H = 165;
 import { StairClimber } from "./StairClimber";
 import { ArenaIntro } from "@/app/app/practice/arena/chooser/ArenaIntro";
 
@@ -231,6 +239,21 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/foxpit/map/tower_separate_assets/assets/stairway_piece.webp" alt="" aria-hidden draggable={false}
           style={{ position: "absolute", zIndex: 20, left: `${(FOXPIT_STAIR_ORIGIN.x / 1620) * 100}%`, top: `${(FOXPIT_STAIR_ORIGIN.y / 4500) * 100}%`, width: `${(887 / 1620) * 100}%`, height: "auto", display: "block" }} />
+
+        {/* FRONT SLOT BALUSTERS — the parked brass railing (PARKED_unnamed_object_01) as the TOP layer
+            of the slot: z25, OVER the avatar (z15), one panel per landing, deck bottom on the landing.
+            The avatar walks BEHIND the balusters (legs behind, head/torso above) — the reference
+            sandwich. Origin-relative like the path, so they slide with the staircase. */}
+        {STAIR_LANDINGS.map(([lx, ly], i) => (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img key={i} src="/foxpit/map/tower_separate_assets/assets/front_baluster.webp" alt="" aria-hidden draggable={false}
+            style={{
+              position: "absolute", zIndex: 25,
+              left: `${((FOXPIT_STAIR_ORIGIN.x + lx - FRONT_RAIL_W / 2) / 1620) * 100}%`,
+              top: `${((FOXPIT_STAIR_ORIGIN.y + ly - FRONT_RAIL_H) / 4500) * 100}%`,
+              width: `${(FRONT_RAIL_W / 1620) * 100}%`, height: "auto", display: "block",
+            }} />
+        ))}
 
         {/* AVATAR (live rig) at z15 — BELOW the stairway piece (z20) so it walks IN THE SLOT: the
             stairway's front balusters cross in front of its legs while torso + head read above the rail
