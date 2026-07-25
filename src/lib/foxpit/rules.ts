@@ -165,6 +165,15 @@ export const ELEVATOR_STOP_BY_ID: Record<ElevatorStopId, number> = Object.fromEn
   ELEVATOR_STOPS.map((s) => [s.id, s.pct]),
 ) as Record<ElevatorStopId, number>;
 
+/**
+ * STAIRWAY PIECE ORIGIN — TOP-LEFT of stairway_piece.png (887x2310) on the 1620x4500 map canvas.
+ * SINGLE SOURCE OF TRUTH: BOTH the Map's stairway image (public/.../stairway_piece.png) AND the
+ * avatar's climb path derive from this, so the staircase and the walking avatar can never drift
+ * apart. To slide the staircase left/right against the elevator ledges, change x ONLY — the avatar
+ * path follows automatically. x=60 butts the flights' left edge against the colored elevator ledges.
+ */
+export const FOXPIT_STAIR_ORIGIN = { x: 60, y: 2067 } as const;
+
 /** Timers (seconds). */
 export const TIMERS = {
   questionDefault: 15,   // Owl
@@ -183,7 +192,7 @@ export const ECONOMY = {
 } as const;
 
 /** Shown in-app + in build output (bump per build). */
-export const FOXPIT_BUILD_VERSION = "fp-avatar-slot-path";
+export const FOXPIT_BUILD_VERSION = "fp-stair-meets-ledge";
 
 /** Keep-N for a given room + round index (0-based), clamped to the round table. */
 export function keepNFor(room: FoxPitRoomKey, roundIndex: number): number {

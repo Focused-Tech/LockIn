@@ -18,7 +18,7 @@ import {
   type FoxPitRoom,
   type FoxPitRoomKey,
 } from "@/lib/foxpit";
-import { ELEVATOR_STOP_BY_ID } from "@/lib/foxpit/rules";
+import { ELEVATOR_STOP_BY_ID, FOXPIT_STAIR_ORIGIN } from "@/lib/foxpit/rules";
 import { StairClimber } from "./StairClimber";
 import { ArenaIntro } from "@/app/app/practice/arena/chooser/ArenaIntro";
 
@@ -231,7 +231,7 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           style={{ position: "absolute", zIndex: 10, left: `${(1 / 1620) * 100}%`, top: `${(406 / 4500) * 100}%`, width: `${(351 / 1620) * 100}%`, height: "auto", display: "block" }} />
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/foxpit/map/tower_separate_assets/assets/stairway_piece.png" alt="" aria-hidden draggable={false}
-          style={{ position: "absolute", zIndex: 20, left: `${(610 / 1620) * 100}%`, top: `${(2067 / 4500) * 100}%`, width: `${(887 / 1620) * 100}%`, height: "auto", display: "block" }} />
+          style={{ position: "absolute", zIndex: 20, left: `${(FOXPIT_STAIR_ORIGIN.x / 1620) * 100}%`, top: `${(FOXPIT_STAIR_ORIGIN.y / 4500) * 100}%`, width: `${(887 / 1620) * 100}%`, height: "auto", display: "block" }} />
 
         {/* z50 AVATAR (live rig) — above the map + band + stairway pieces, below the front rail.
             The stairway_piece is the one connected staircase; the old per-piece SlotPieces are retired.

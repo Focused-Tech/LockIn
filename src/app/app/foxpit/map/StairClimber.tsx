@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AvatarRig } from "./AvatarRig";
+import { FOXPIT_STAIR_ORIGIN } from "@/lib/foxpit/rules";
 
 /**
  * FOX PIT — AVATAR STAIR CLIMB (Phase A).
@@ -54,17 +55,28 @@ const STEP_RUN_PX = 42;
 const ELEV_X = 380;
 
 interface Node { x: number; y: number; stop?: boolean; label?: string }
-/** Bottom → top. `stop` = a real ledge to pause on (elevator ends + stair base/top); the switchback
- *  turns between them are walked through (facing flips there) without a long dwell. */
+/** Stair turns as (x OFFSET from the stairway piece origin, absolute y), bottom → top. Because these
+ *  are offsets from FOXPIT_STAIR_ORIGIN.x, sliding the staircase slides the avatar path with it —
+ *  they can't drift apart. Traced onto the piece's treads/landings. */
+const STAIR_LOCAL: readonly [number, number][] = [
+  [400, 4290], // Dojo · stair base
+  [220, 3960],
+  [480, 3660],
+  [220, 3330],
+  [630, 3050],
+  [220, 2720],
+  [793, 2400], // High Table · landing (top)
+];
+/** Bottom → top. Elevator ends (fixed at ELEV_X) bracket the stair nodes (origin-relative). `stop` =
+ *  a ledge to pause on (elevator ends + stair base/top); switchback turns are walked through. */
 const PATH_NODES: Node[] = [
   { x: ELEV_X, y: 4290, stop: true, label: "Dojo · elevator" },
-  { x: 1000, y: 4290, stop: true, label: "Dojo · stair base" },
-  { x: 760, y: 3960 },
-  { x: 1090, y: 3660 },
-  { x: 720, y: 3330 },
-  { x: 1240, y: 3050 },
-  { x: 820, y: 2720 },
-  { x: 1410, y: 2400, stop: true, label: "High Table · landing" },
+  ...STAIR_LOCAL.map(([lx, y], i): Node => ({
+    x: FOXPIT_STAIR_ORIGIN.x + lx,
+    y,
+    stop: i === 0 || i === STAIR_LOCAL.length - 1,
+    label: i === 0 ? "Dojo · stair base" : i === STAIR_LOCAL.length - 1 ? "High Table · landing" : undefined,
+  })),
   { x: ELEV_X, y: 2400, stop: true, label: "High Table · elevator" },
 ];
 
