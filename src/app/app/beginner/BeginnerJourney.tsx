@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui";
 import { LockGlyph } from "@/components/practice/LockGlyph";
 import { toggleFollowCreator } from "@/components/feed/followActions";
@@ -61,9 +62,9 @@ export function BeginnerJourney({
   const nowMs = useMemo(() => Date.now(), []);
 
   // ── flow helpers ───────────────────────────────────────────────────────────
-  function startPick(c: BeginnerCard, choice: "a" | "b") {
+  function startPick(c: BeginnerCard, choice: "a" | "b", pick: BeginnerPick = c.headline) {
     setCard(c);
-    setLegs([{ pick: c.headline, choice }]);
+    setLegs([{ pick, choice }]);
     setStake(DEFAULT_STAKE);
     setError(null);
     setScreen("pick");
@@ -224,7 +225,7 @@ function ExploreScreen({
 }: {
   feed: BeginnerFeed;
   nowMs: number;
-  onPick: (c: BeginnerCard, choice: "a" | "b") => void;
+  onPick: (c: BeginnerCard, choice: "a" | "b", pick?: BeginnerPick) => void;
 }) {
   return (
     <div className="flex flex-col gap-3">
@@ -268,16 +269,37 @@ function ExploreScreen({
             onClick={() => onPick(c, "b")}
           />
           {c.morePicks.length > 0 && (
-            // Surface the game's OTHER markets (spread / total …) — tapping opens the pick flow where
-            // they can be added as legs, so the card isn't just "who wins".
-            <button
-              onClick={() => onPick(c, "a")}
-              className="mt-2 w-full rounded-lg border border-dashed px-3 py-1.5 text-left text-xs font-semibold"
-              style={{ borderColor: t.border, color: t.color }}
-            >
-              +{c.morePicks.length} more market{c.morePicks.length > 1 ? "s" : ""} ·{" "}
-              {[...new Set(c.morePicks.map((p) => p.question))].join(" · ")} →
-            </button>
+            // The game's OTHER markets (spread / total / …) shown INLINE and directly pickable — the
+            // card is a full board, not just "who wins". Tapping an option starts the pick on it.
+            <div className="mt-3 flex flex-col gap-2">
+              <p className="text-[11px] font-bold uppercase tracking-wide text-muted">More markets</p>
+              {c.morePicks.slice(0, 4).map((p) => (
+                <div key={`${p.slateId}-${p.predictionId}`} className="rounded-lg border border-border p-2">
+                  <div className="mb-1 text-xs font-semibold text-foreground">{p.question}</div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => onPick(c, "a", p)}
+                      className="min-w-0 flex-1 truncate rounded-md border px-2 py-1.5 text-left text-xs font-semibold"
+                      style={{ borderColor: t.border }}
+                    >
+                      {p.optionA} <span className="text-muted">· {p.agreeA}%</span>
+                    </button>
+                    <button
+                      onClick={() => onPick(c, "b", p)}
+                      className="min-w-0 flex-1 truncate rounded-md border px-2 py-1.5 text-left text-xs font-semibold"
+                      style={{ borderColor: t.border }}
+                    >
+                      {p.optionB} <span className="text-muted">· {p.agreeB}%</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {c.morePicks.length > 4 && (
+                <button onClick={() => onPick(c, "a")} className="text-left text-xs font-semibold" style={{ color: t.color }}>
+                  +{c.morePicks.length - 4} more →
+                </button>
+              )}
+            </div>
           )}
           <div className="mt-3 flex items-center justify-between text-xs">
             <span className="font-semibold text-live">
@@ -287,6 +309,14 @@ function ExploreScreen({
               {closesLabel(c.headline.lockTimeMs, nowMs)}
             </span>
           </div>
+          {/* Full DraftKings-style board (every market on one screen) — the Advanced slate view. */}
+          <Link
+            href={`/app/slate/${c.headline.slateId}`}
+            className="mt-2 block text-center text-xs font-semibold"
+            style={{ color: t.color }}
+          >
+            See the full board →
+          </Link>
         </div>
         );
       })}
