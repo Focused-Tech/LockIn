@@ -85,10 +85,12 @@ export interface RoomRules {
 
 /** Floor 2 (Lobby) has no play, so it is intentionally absent from the ruleset. */
 export const ROOM_RULES: Record<FoxPitRoomKey, RoomRules> = {
+  // REDEAL SCHEDULE (redeal max = 5 − keepN): the round-1 keep-N steps 1/2/3/4 up the tower, so the
+  // max cards you can redeal steps DOWN 4/3/2/1 — Owl lets you swap up to 4, then −1 per boss.
   dojo: { boss: "Sensei Owl", floor: 1, tables: 1, rounds: 2, keepN: [1, 2], bossWinPct: 25, stakes: [5, 10, 15], secondsPerQuestion: 15 },
-  coliseum: { boss: "Alpha Wolf", floor: 3, tables: 5, rounds: 3, keepN: [1, 2, 3], bossWinPct: 45, stakes: [5, 10, 15], secondsPerQuestion: 20 },
-  hightable: { boss: "Boss Raven", floor: 4, tables: 4, rounds: 4, keepN: [1, 2, 3, 3], bossWinPct: 65, stakes: [5, 10, 15, 25], secondsPerQuestion: 45, note: "4th table = double-or-nothing" },
-  suite: { boss: "Boss Fox", floor: 5, tables: 1, rounds: 5, keepN: [3, 3, 3, 4, 4], bossWinPct: 85, stakes: [15, 25, 50], secondsPerQuestion: 12, note: "winner-take-all" },
+  coliseum: { boss: "Alpha Wolf", floor: 3, tables: 5, rounds: 3, keepN: [2, 3, 3], bossWinPct: 45, stakes: [5, 10, 15], secondsPerQuestion: 20 },
+  hightable: { boss: "Boss Raven", floor: 4, tables: 4, rounds: 4, keepN: [3, 3, 4, 4], bossWinPct: 65, stakes: [5, 10, 15, 25], secondsPerQuestion: 45, note: "4th table = double-or-nothing" },
+  suite: { boss: "Boss Fox", floor: 5, tables: 1, rounds: 5, keepN: [4, 4, 4, 5, 5], bossWinPct: 85, stakes: [15, 25, 50], secondsPerQuestion: 12, note: "winner-take-all" },
 };
 
 /**
@@ -192,7 +194,7 @@ export const ECONOMY = {
 } as const;
 
 /** Shown in-app + in build output (bump per build). */
-export const FOXPIT_BUILD_VERSION = "fp-clock-in-header";
+export const FOXPIT_BUILD_VERSION = "fp-redeal-schedule";
 
 /** Keep-N for a given room + round index (0-based), clamped to the round table. */
 export function keepNFor(room: FoxPitRoomKey, roundIndex: number): number {
