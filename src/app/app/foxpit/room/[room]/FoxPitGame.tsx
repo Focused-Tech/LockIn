@@ -446,7 +446,7 @@ export function FoxPitGame({
       )}
 
       {phase === "reveal" && last && (
-        <RevealPhase ledger={last.cards} net={last.net} accent={accent} onDone={() => setPhase("announce")} />
+        <RevealPhase slates={slates} picks={picks} ledger={last.cards} net={last.net} accent={accent} onDone={() => setPhase("announce")} />
       )}
 
       {phase === "announce" && last && (
@@ -1044,8 +1044,10 @@ function PlayPhase({
 
 /* ---------------- reveal: outcomes overlaid on the card fronts ---------------- */
 function RevealPhase({
-  ledger, net, accent, onDone,
+  slates, picks, ledger, net, accent, onDone,
 }: {
+  slates: FoxSlate[];
+  picks: Record<string, number>;
   ledger: CardLedgerLine[];
   net: number;
   accent: string;
@@ -1056,28 +1058,57 @@ function RevealPhase({
     loss: COLOR_LOSS,
     push: "#6B7A8E",
   };
+  const slateById = new Map(slates.map((s) => [s.id, s]));
   return (
     <div className="flex flex-1 flex-col gap-3 p-4 pb-28">
       <div className="text-center text-sm font-extrabold tracking-widest" style={{ color: accent }}>
         THE CARDS COME OVER
       </div>
-      {/* PER-CARD HEAD-TO-HEAD LEDGER — one line per card so the player sees exactly where each coin
-          went: you vs the boss on that card, and the coin it moved (+boss stake / −your stake / push). */}
-      <div className="mx-auto flex w-full max-w-md flex-col gap-1.5">
+      {/* PER-CARD: the head-to-head ledger (you vs boss + the coin moved) AND every question's CORRECT
+          answer with your pick — so practice actually teaches, not just scores. */}
+      <div className="mx-auto flex w-full max-w-md flex-col gap-2">
         {ledger.map((c) => {
           const color = RESULT_COLOR[c.result];
           const tag = c.result === "win" ? `+${c.net} ⛃` : c.result === "loss" ? `−${Math.abs(c.net)} ⛃` : "PUSH";
+          const slate = slateById.get(c.slateId);
+          const shown = slate ? slate.questions.slice(0, Math.max(1, Math.min(slate.playCount, slate.questions.length))) : [];
           return (
-            <div key={c.slateId} className="flex items-center gap-2 rounded-xl border p-2.5" style={{ borderColor: color }}>
-              <div className="min-w-0 flex-1">
-                <div className="text-[9px] font-bold uppercase text-muted">{c.category}</div>
-                <div className="truncate font-serif text-xs text-foreground">{c.title}</div>
+            <div key={c.slateId} className="overflow-hidden rounded-xl border" style={{ borderColor: color }}>
+              {/* header: card + H2H + coin */}
+              <div className="flex items-center gap-2 border-b border-border p-2.5">
+                <div className="min-w-0 flex-1">
+                  <div className="text-[9px] font-bold uppercase text-muted">{c.category}</div>
+                  <div className="truncate font-serif text-xs text-foreground">{c.title}</div>
+                </div>
+                <div className="flex shrink-0 flex-col items-end text-[9px] font-extrabold leading-tight">
+                  <span style={{ color: c.playerCorrect ? COLOR_WIN : COLOR_LOSS }}>you {c.playerCorrect ? "✓" : "✗"}</span>
+                  <span style={{ color: c.bossCorrect ? COLOR_WIN : COLOR_LOSS }}>boss {c.bossCorrect ? "✓" : "✗"}</span>
+                </div>
+                <div className="w-16 shrink-0 text-right text-sm font-extrabold" style={{ color }}>{tag}</div>
               </div>
-              <div className="flex shrink-0 flex-col items-end text-[9px] font-extrabold leading-tight">
-                <span style={{ color: c.playerCorrect ? COLOR_WIN : COLOR_LOSS }}>you {c.playerCorrect ? "✓" : "✗"}</span>
-                <span style={{ color: c.bossCorrect ? COLOR_WIN : COLOR_LOSS }}>boss {c.bossCorrect ? "✓" : "✗"}</span>
+              {/* per-question CORRECT ANSWER + your pick */}
+              <div className="flex flex-col gap-2 p-2.5">
+                {shown.map((q) => {
+                  const pick = picks[q.id];
+                  const right = pick === q.correctIndex;
+                  return (
+                    <div key={q.id}>
+                      <div className="mb-0.5 text-xs text-foreground">{q.text}</div>
+                      <div className="text-[11px] font-bold" style={{ color: COLOR_WIN }}>
+                        ✓ {q.options[q.correctIndex]}{right ? "  (your pick)" : ""}
+                      </div>
+                      {!right && pick != null && (
+                        <div className="text-[11px] font-semibold" style={{ color: COLOR_LOSS }}>
+                          ✗ You picked: {q.options[pick]}
+                        </div>
+                      )}
+                      {!right && pick == null && (
+                        <div className="text-[11px] font-semibold text-muted">— not answered</div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-              <div className="w-16 shrink-0 text-right text-sm font-extrabold" style={{ color }}>{tag}</div>
             </div>
           );
         })}
