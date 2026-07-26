@@ -22,7 +22,7 @@ export function Pill({ className, tone = "neutral", ...props }: PillProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium",
+        "inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-3 py-0.5 text-xs font-medium",
         toneStyles[tone],
         className,
       )}

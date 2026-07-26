@@ -29,8 +29,11 @@ export async function fetchBeginnerFeed(
   db: Firestore,
   followedCreators: string[],
 ): Promise<BeginnerFeed> {
-  // Reuse the canonical feed source, then keep only live (stakeable) slates.
-  const slates = (await fetchFeedSlates(db)).filter((s) => s.status === "live");
+  // Reuse the canonical feed source, then keep only slates that are actually STAKEABLE right now —
+  // live AND not past their lock time. (Filtering on status alone leaked expired slates into the
+  // feed that the lock action then rejected with "this contest has closed" — a dead-looking button.)
+  const now = Date.now();
+  const slates = (await fetchFeedSlates(db)).filter((s) => s.status === "live" && s.lockTimeMs > now);
 
   // Group live slates by creator (null = house). Preserve soonest-first order.
   const byCreator = new Map<string, typeof slates>();

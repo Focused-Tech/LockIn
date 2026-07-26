@@ -183,6 +183,7 @@ export function BeginnerJourney({
           onLock={lockIn}
           onBack={() => setScreen("pick")}
           pending={pending}
+          error={error}
         />
       )}
       {screen === "locked" && (
@@ -445,6 +446,7 @@ function ParlayScreen({
   onLock,
   onBack,
   pending,
+  error,
 }: {
   card: BeginnerCard;
   legs: Leg[];
@@ -455,6 +457,7 @@ function ParlayScreen({
   onLock: () => void;
   onBack: () => void;
   pending: boolean;
+  error: string | null;
 }) {
   const usedIds = new Set(legs.map((l) => l.pick.predictionId));
   const addable = card.morePicks.filter((p) => !usedIds.has(p.predictionId));
@@ -601,6 +604,11 @@ function ParlayScreen({
       </p>
 
       <div className="mt-2 flex flex-col gap-2">
+        {error && (
+          <div className="rounded-lg border border-[#E85454] bg-[#E85454]/10 px-3 py-2 text-center text-sm font-semibold text-[#E85454]">
+            {error}
+          </div>
+        )}
         <PrimaryButton onClick={onLock} disabled={pending}>
           {pending
             ? "Locking in…"
