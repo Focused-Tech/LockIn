@@ -65,6 +65,12 @@ export default async function SlatePage({
 
   return (
     <div className="flex flex-col gap-5 p-6">
+      <Link
+        href="/app"
+        className="flex items-center gap-1 self-start text-sm font-semibold text-muted"
+      >
+        ‹ Back to Explore
+      </Link>
       <div>
         <div className="mb-2 flex items-center gap-2">
           <Pill tone="accent">{slate.category}</Pill>

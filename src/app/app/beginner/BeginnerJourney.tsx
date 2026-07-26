@@ -167,6 +167,7 @@ export function BeginnerJourney({
           onStake={setStake}
           onMore={() => setScreen("parlay")}
           onLockOne={lockIn}
+          onBack={reset}
           pending={pending}
         />
       )}
@@ -396,6 +397,7 @@ function PickScreen({
   onStake,
   onMore,
   onLockOne,
+  onBack,
   pending,
 }: {
   card: BeginnerCard;
@@ -405,11 +407,18 @@ function PickScreen({
   onStake: (n: number) => void;
   onMore: () => void;
   onLockOne: () => void;
+  onBack: () => void;
   pending: boolean;
 }) {
   const leg = legs[0]!;
   return (
     <div className="flex flex-col gap-4">
+      <button
+        onClick={onBack}
+        className="-mb-1 flex items-center gap-1 self-start text-sm font-semibold text-muted"
+      >
+        ‹ Back to games
+      </button>
       <p className="text-[10px] font-bold uppercase tracking-wider text-accent">
         Your pick
       </p>
