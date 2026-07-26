@@ -13,6 +13,7 @@ import { categoryTint } from "@/lib/practice/tints";
 import { roomByKey, KEY_ASSET, type FoxPitRoomKey } from "@/lib/foxpit";
 import { ROOM_RULES, keepNFor, SLATES_PER_ROUND, REDEALS_PER_ROUND, FOXPIT_BUILD_VERSION, CATEGORY_TINT_KEY, TIMERS, FOXPIT_CATEGORIES, cardMinFor, unlockedTierCount, type FoxPitCategory } from "@/lib/foxpit/rules";
 import { dealFoxSlatesByCategories, roundScore, bossRoundScore, slateWon, type FoxSlate, type BossStakeMode } from "@/lib/foxpit/slates";
+import { applyFoxPitCoins } from "../../actions";
 
 /** Resolve the player's shared interest categories (users/{uid}.categories[]) to the Fox Pit set.
  *  Case-insensitive intersection; falls back to all Fox Pit categories if none match. */
@@ -217,6 +218,14 @@ export function FoxPitGame({
     const won = you >= boss;
     setLast({ you, boss, won, bossMode });
     if (won) setRoundsWon((w) => w + 1);
+    // Persist the round's NET COIN result to the wallet (coins only, zero rake): won slates pay even
+    // money (2× their stake), the rest lose their stake — `you` = sum of stakes on won slates. Until
+    // now the tower never touched users/{uid}.coinBalance.
+    const totalStaked = played.reduce((sum, s) => sum + (s.stake ?? 0), 0);
+    const netCoins = you * 2 - totalStaked;
+    if (netCoins !== 0) {
+      applyFoxPitCoins(netCoins).catch((e) => console.error("[foxpit] coin persist failed", e));
+    }
     setPhase("reveal"); // cards reveal first, then the Locksmith calls it
   };
 
