@@ -217,25 +217,85 @@ export function slateWon(slate: FoxSlate, picks: Record<string, "a" | "b">): boo
   return correct >= Math.ceil(played.length / 2);
 }
 
-/** $-weighted round score: sum of stakes on WON slates. */
-export function roundScore(slates: FoxSlate[], picks: Record<string, "a" | "b">): number {
-  return slates.reduce((sum, s) => (s.stake && slateWon(s, picks) ? sum + s.stake : sum), 0);
-}
-
 /** Boss stake mode (item 4): MATCH = boss stakes at the player's own tier per card; TOP = boss
  *  stakes at the room's highest tier on every card (harder to out-score, bigger pot). */
 export type BossStakeMode = "match" | "top";
 
-/** The boss's simulated round score. He plays EXACTLY the player's cards (one per `playedStakes`
- *  entry), each won at the boss win%. In MATCH he stakes what the player staked on that card; in
- *  TOP he stakes the room's highest tier on every card. Gates advancement, not coin-banking. */
-export function bossRoundScore(room: FoxPitRoomKey, playedStakes: number[], mode: BossStakeMode): number {
-  const { bossWinPct, stakes } = ROOM_RULES[room];
-  const topStake = stakes[stakes.length - 1]!;
-  let score = 0;
-  for (const st of playedStakes) {
-    const bossStake = mode === "top" ? topStake : st;
-    if (Math.random() * 100 < bossWinPct) score += bossStake;
+export type CardResultKind = "win" | "loss" | "push";
+
+/** One card's coin outcome — the reveal ledger line so the player sees exactly where each coin went. */
+export interface CardLedgerLine {
+  slateId: string;
+  category: FoxPitCategory;
+  title: string;
+  playerCorrect: boolean;
+  bossCorrect: boolean;
+  playerStake: number;
+  bossStake: number;
+  /** + = player takes the boss's stake; − = boss takes the player's stake; 0 = push. */
+  net: number;
+  result: CardResultKind;
+}
+
+export interface RoundSettlement {
+  cards: CardLedgerLine[];
+  net: number;
+  /** H2H cards the player took / the boss took (pushes count for neither). */
+  playerCards: number;
+  bossCards: number;
+}
+
+/**
+ * PER-CARD HEAD-TO-HEAD settlement — the whole coin economy. No pot, no multipliers, no margin.
+ * Each staked card settles ON ITS OWN against the boss:
+ *   • player right & boss wrong → player TAKES the boss's stake on that card (+bossStake)
+ *   • boss right & player wrong → boss TAKES the player's stake on that card (−playerStake)
+ *   • both right OR both wrong  → PUSH: both stakes return, no coins move (0)
+ * The boss's stake per card comes from the fight-screen mode: MATCH = the player's own tier on that
+ * card, TOP = a flat `topStake` on every card. Round net = Σ per-card net. `bossCorrect` is injected
+ * so the caller owns the RNG (and tests can make it deterministic).
+ */
+export function settleRound(
+  slates: FoxSlate[],
+  picks: Record<string, "a" | "b">,
+  mode: BossStakeMode,
+  topStake: number,
+  bossCorrect: (slate: FoxSlate) => boolean,
+): RoundSettlement {
+  const cards: CardLedgerLine[] = [];
+  for (const s of slates) {
+    if (s.stake == null) continue; // only cards the player actually staked/played settle
+    const pc = slateWon(s, picks);
+    const bc = bossCorrect(s);
+    const bossStake = mode === "top" ? topStake : s.stake;
+    let net = 0;
+    let result: CardResultKind;
+    if (pc && !bc) {
+      net = bossStake; // player takes the boss's stake
+      result = "win";
+    } else if (bc && !pc) {
+      net = -s.stake; // boss takes the player's stake
+      result = "loss";
+    } else {
+      net = 0; // PUSH — both right or both wrong, stakes return
+      result = "push";
+    }
+    cards.push({
+      slateId: s.id,
+      category: s.category,
+      title: s.title,
+      playerCorrect: pc,
+      bossCorrect: bc,
+      playerStake: s.stake,
+      bossStake,
+      net,
+      result,
+    });
   }
-  return score;
+  return {
+    cards,
+    net: cards.reduce((sum, c) => sum + c.net, 0),
+    playerCards: cards.filter((c) => c.result === "win").length,
+    bossCards: cards.filter((c) => c.result === "loss").length,
+  };
 }

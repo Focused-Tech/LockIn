@@ -12,7 +12,7 @@ import { LockGlyph } from "@/components/practice/LockGlyph";
 import { categoryTint } from "@/lib/practice/tints";
 import { roomByKey, KEY_ASSET, type FoxPitRoomKey } from "@/lib/foxpit";
 import { ROOM_RULES, keepNFor, SLATES_PER_ROUND, REDEALS_PER_ROUND, FOXPIT_BUILD_VERSION, CATEGORY_TINT_KEY, TIMERS, FOXPIT_CATEGORIES, cardMinFor, unlockedTierCount, type FoxPitCategory } from "@/lib/foxpit/rules";
-import { dealFoxSlatesByCategories, roundScore, bossRoundScore, slateWon, type FoxSlate, type BossStakeMode } from "@/lib/foxpit/slates";
+import { dealFoxSlatesByCategories, settleRound, type FoxSlate, type BossStakeMode, type RoundSettlement, type CardLedgerLine } from "@/lib/foxpit/slates";
 import { applyFoxPitCoins } from "../../actions";
 
 /** Resolve the player's shared interest categories (users/{uid}.categories[]) to the Fox Pit set.
@@ -131,7 +131,7 @@ export function FoxPitGame({
   // Boss stake mode chosen per round (item 4). Persisted WITH the round result (in `last`), not
   // held only as a transient toggle — it affects scoring + the tally.
   const [bossMode, setBossMode] = useState<BossStakeMode>("match");
-  const [last, setLast] = useState<{ you: number; boss: number; won: boolean; bossMode: BossStakeMode } | null>(null);
+  const [last, setLast] = useState<(RoundSettlement & { won: boolean; bossMode: BossStakeMode }) | null>(null);
   // DEV PREVIEW (temporary): jump straight to the dethroned-boss key-drop without playing a full
   // room. Remove before launch along with the 🔑 button below.
   const [keyPreview, setKeyPreview] = useState(false);
@@ -211,20 +211,19 @@ export function FoxPitGame({
   const lockRound = () => {
     // Manual early-lock below the floor is blocked by the disabled button + on-screen reason;
     // the round timer still force-settles with whatever is in hand.
-    const played = slates.filter((s) => isLocked(s, picks));
-    const playedStakes = played.map((s) => s.stake!); // boss plays EXACTLY these cards (item 2)
-    const you = roundScore(slates, picks);
-    const boss = bossRoundScore(roomKey, playedStakes, bossMode); // MATCH / TOP staking (item 4)
-    const won = you >= boss;
-    setLast({ you, boss, won, bossMode });
+    const played = slates.filter((s) => isLocked(s, picks)); // boss plays EXACTLY these cards (item 2)
+    const topStake = rules.stakes[rules.stakes.length - 1] ?? 0;
+    // PER-CARD HEAD-TO-HEAD (Frank's model): each card settles on its own — player-right/boss-wrong
+    // takes the boss's stake, boss-right/player-wrong loses the player's stake, both/neither PUSH.
+    // Boss stake per card = MATCH (player's tier) or TOP (flat top tier). No multipliers.
+    const settlement = settleRound(played, picks, bossMode, topStake, () => Math.random() * 100 < rules.bossWinPct);
+    const won = settlement.playerCards >= settlement.bossCards; // took at least as many H2H cards
+    setLast({ ...settlement, won, bossMode });
     if (won) setRoundsWon((w) => w + 1);
-    // Persist the round's NET COIN result to the wallet (coins only, zero rake): won slates pay even
-    // money (2× their stake), the rest lose their stake — `you` = sum of stakes on won slates. Until
-    // now the tower never touched users/{uid}.coinBalance.
-    const totalStaked = played.reduce((sum, s) => sum + (s.stake ?? 0), 0);
-    const netCoins = you * 2 - totalStaked;
-    if (netCoins !== 0) {
-      applyFoxPitCoins(netCoins).catch((e) => console.error("[foxpit] coin persist failed", e));
+    // Persist the round's NET COIN result to the wallet (coins only, zero rake). Round net = Σ per-card
+    // outcomes. Until this, the tower never touched users/{uid}.coinBalance.
+    if (settlement.net !== 0) {
+      applyFoxPitCoins(settlement.net).catch((e) => console.error("[foxpit] coin persist failed", e));
     }
     setPhase("reveal"); // cards reveal first, then the Locksmith calls it
   };
@@ -404,7 +403,7 @@ export function FoxPitGame({
       )}
 
       {phase === "reveal" && last && (
-        <RevealPhase slates={slates} picks={picks} accent={accent} onDone={() => setPhase("announce")} />
+        <RevealPhase ledger={last.cards} net={last.net} accent={accent} onDone={() => setPhase("announce")} />
       )}
 
       {phase === "announce" && last && (
@@ -412,8 +411,9 @@ export function FoxPitGame({
           roomKey={roomKey}
           accent={accent}
           won={last.won}
-          you={last.you}
-          boss={last.boss}
+          playerCards={last.playerCards}
+          bossCards={last.bossCards}
+          net={last.net}
           note={`${rules.boss} reads at ${rules.bossWinPct}% · ${last.bossMode === "top" ? "TOP stakes" : "MATCH stakes"}`}
           cta={roundIndex + 1 >= rules.rounds ? "See the tally ›" : "Next round ›"}
           onCta={nextRound}
@@ -999,47 +999,46 @@ function PlayPhase({
 
 /* ---------------- reveal: outcomes overlaid on the card fronts ---------------- */
 function RevealPhase({
-  slates, picks, accent, onDone,
+  ledger, net, accent, onDone,
 }: {
-  slates: FoxSlate[];
-  picks: Record<string, "a" | "b">;
+  ledger: CardLedgerLine[];
+  net: number;
   accent: string;
   onDone: () => void;
 }) {
+  const RESULT_COLOR: Record<CardLedgerLine["result"], string> = {
+    win: COLOR_WIN,
+    loss: COLOR_LOSS,
+    push: "#6B7A8E",
+  };
   return (
     <div className="flex flex-1 flex-col gap-3 p-4 pb-28">
       <div className="text-center text-sm font-extrabold tracking-widest" style={{ color: accent }}>
         THE CARDS COME OVER
       </div>
-      <div className="flex flex-wrap justify-center gap-2">
-        {slates.map((s) => {
-          const tint = slateTint(s);
-          const won = slateWon(s, picks);
+      {/* PER-CARD HEAD-TO-HEAD LEDGER — one line per card so the player sees exactly where each coin
+          went: you vs the boss on that card, and the coin it moved (+boss stake / −your stake / push). */}
+      <div className="mx-auto flex w-full max-w-md flex-col gap-1.5">
+        {ledger.map((c) => {
+          const color = RESULT_COLOR[c.result];
+          const tag = c.result === "win" ? `+${c.net} ⛃` : c.result === "loss" ? `−${Math.abs(c.net)} ⛃` : "PUSH";
           return (
-            <div key={s.id} className="relative w-[31%] min-w-[100px]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={CARD_FRONT} alt="" className="block h-auto w-full" />
-              <div className="absolute inset-0 flex flex-col px-2 pb-2 pt-[28%] text-left">
-                <div className="text-[8px] font-bold uppercase" style={{ color: tint.color }}>{s.category}</div>
-                <div className="font-serif text-[10px] leading-tight text-foreground">{s.title}</div>
-                <div className="mt-1 flex flex-col gap-[1px]">
-                  {s.questions.map((q) => {
-                    const hit = picks[q.id] === q.outcome;
-                    return (
-                      <div key={q.id} className="truncate text-[8px] font-bold" style={{ color: hit ? COLOR_WIN : COLOR_LOSS }}>
-                        {hit ? "✓" : "✗"} {q.outcome === "a" ? q.optionA : q.optionB}
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="mt-auto text-[9px] font-extrabold" style={{ color: won ? COLOR_WIN : COLOR_LOSS }}>
-                  {won ? `WON ${s.stake ?? 0} ⛃` : "LOST"}
-                </div>
+            <div key={c.slateId} className="flex items-center gap-2 rounded-xl border p-2.5" style={{ borderColor: color }}>
+              <div className="min-w-0 flex-1">
+                <div className="text-[9px] font-bold uppercase text-muted">{c.category}</div>
+                <div className="truncate font-serif text-xs text-foreground">{c.title}</div>
               </div>
-              <div className="pointer-events-none absolute inset-0 rounded-[10px] border-2" style={{ borderColor: won ? COLOR_WIN : COLOR_LOSS }} />
+              <div className="flex shrink-0 flex-col items-end text-[9px] font-extrabold leading-tight">
+                <span style={{ color: c.playerCorrect ? COLOR_WIN : COLOR_LOSS }}>you {c.playerCorrect ? "✓" : "✗"}</span>
+                <span style={{ color: c.bossCorrect ? COLOR_WIN : COLOR_LOSS }}>boss {c.bossCorrect ? "✓" : "✗"}</span>
+              </div>
+              <div className="w-16 shrink-0 text-right text-sm font-extrabold" style={{ color }}>{tag}</div>
             </div>
           );
         })}
+      </div>
+      <div className="text-center text-sm font-extrabold" style={{ color: net >= 0 ? COLOR_WIN : COLOR_LOSS }}>
+        Round net {net >= 0 ? "+" : "−"}{Math.abs(net)} ⛃
       </div>
       <div
         className="fixed inset-x-0 bottom-0 z-10 border-t border-border bg-background/95 p-3"
@@ -1144,13 +1143,14 @@ export function KeyDropPhase({
 
 /* ---------------- announce: the Locksmith calls it at the table + coin drop ---------------- */
 function AnnouncePhase({
-  roomKey, accent, won, you, boss, note, cta, onCta, onQuit, bossName,
+  roomKey, accent, won, playerCards, bossCards, net, note, cta, onCta, onQuit, bossName,
 }: {
   roomKey: FoxPitRoomKey;
   accent: string;
   won: boolean;
-  you: number;
-  boss: number;
+  playerCards: number;
+  bossCards: number;
+  net: number;
   note: string;
   cta: string;
   onCta: () => void;
@@ -1214,7 +1214,9 @@ function AnnouncePhase({
         <div className="font-serif text-3xl" style={{ color: won ? COLOR_WIN : accent }}>
           {won ? "You take the round" : "The boss takes it"}
         </div>
-        <div className="text-sm font-bold text-foreground">YOU {you} · BOSS {boss}</div>
+        <div className="text-sm font-bold text-foreground">
+          YOU {playerCards} · BOSS {bossCards} <span style={{ color: net >= 0 ? COLOR_WIN : COLOR_LOSS }}>· {net >= 0 ? "+" : "−"}{Math.abs(net)} ⛃</span>
+        </div>
         <div className="text-xs text-muted">{note}</div>
         {/* Quit + advance sit at the bottom, clear of her raised arm/name up top (item 6). */}
         <div className="mt-3 flex w-full max-w-sm gap-2">
