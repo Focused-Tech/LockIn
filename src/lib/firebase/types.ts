@@ -257,6 +257,8 @@ export interface SlateDoc {
   cancelledAt: FsTimestamp | null;
   creatorBonusCents: number;
   createdAt: FsTimestamp;
+  /** Data-feed origin: "espn" | "oddsapi" for real games (settled from final scores), else absent. */
+  source?: string;
 }
 
 // ── slates/{slateId}/predictions/{predictionId} ────────────────────────────────

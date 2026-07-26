@@ -9,12 +9,13 @@ import {
 } from "@/lib/firebase/types";
 import { settleEntries, type SettlementEntryInput } from "@/lib/contest";
 import { verifyPrediction } from "@/lib/ai/verification/verifier";
+import { fetchEspnGameResult, resolveFeedPrediction, isFeedSlateId, type GameResult } from "@/server/feeds/scores";
 import { applySlateToParlays } from "./crossParlay";
 import { notifyResultsReady } from "@/lib/notifications/send";
 import { HOSTING_FEE_SPLIT } from "@/lib/constants";
 
 export type SettleResult =
-  | { ok: true; settled: number; alreadySettled?: boolean; pendingReview?: boolean }
+  | { ok: true; settled: number; alreadySettled?: boolean; pendingReview?: boolean; notFinal?: boolean }
   | { ok: false; error: string };
 
 /** Max writes per Firestore batch (limit is 500; leave headroom). */
@@ -54,6 +55,19 @@ export async function settleSlate(slateId: string): Promise<SettleResult> {
 
   const slate = (await slateRef.get()).data() as SlateDoc;
 
+  // Real data-feed slates settle from the FINAL SCORE, not the AI verifier. Fetch the game result once;
+  // if the game isn't final yet (games finish hours after lock), revert to `locked` so the next cron
+  // run retries — never settle a live game.
+  const isFeed = (slate.source === "espn" || slate.source === "oddsapi") && isFeedSlateId(slateId);
+  let feedResult: GameResult | null = null;
+  if (isFeed) {
+    feedResult = await fetchEspnGameResult(slateId);
+    if (!feedResult || !feedResult.completed) {
+      await slateRef.update({ status: "locked" });
+      return { ok: true, settled: 0, notFinal: true };
+    }
+  }
+
   // 2. Verify outcomes (multi-source cross-reference) in pick order. Already-
   //    resolved predictions (an admin's manual review) are taken as-is.
   const predsSnap = await slateRef
@@ -70,7 +84,15 @@ export async function settleSlate(slateId: string): Promise<SettleResult> {
     predsSnap.docs.map(async (d) => {
       const pred = d.data() as PredictionDoc;
       if (pred.result === "a" || pred.result === "b") {
-        return { ref: d.ref, id: d.id, resolved: pred.result, verdict: null };
+        return { ref: d.ref, id: d.id, resolved: pred.result, verdict: null, feedResolved: false };
+      }
+      if (isFeed && feedResult) {
+        // Grade from the real final score. A push/tie returns null → routed to manual review below.
+        const resolved = resolveFeedPrediction(
+          { id: d.id, predictionType: pred.predictionType, optionA: pred.optionA, overUnderLine: pred.overUnderLine },
+          feedResult,
+        );
+        return { ref: d.ref, id: d.id, resolved, verdict: null, feedResolved: resolved != null };
       }
       const verdict = await verifyPrediction({
         id: d.id,
@@ -83,13 +105,30 @@ export async function settleSlate(slateId: string): Promise<SettleResult> {
         optionAProbability: pred.optionAProbability,
         optionBProbability: pred.optionBProbability,
       });
-      return { ref: d.ref, id: d.id, resolved: null, verdict };
+      return { ref: d.ref, id: d.id, resolved: null, verdict, feedResolved: false };
     }),
   );
 
   for (const v of verified) {
     if (v.resolved) {
       results[v.id] = v.resolved;
+      if (v.feedResolved) {
+        // Persist the real result + the score as evidence.
+        predBatch.set(
+          v.ref,
+          {
+            result: v.resolved,
+            verificationSources: [`ESPN final — away ${feedResult!.awayScore}, home ${feedResult!.homeScore}`],
+            verificationConfidence: 100,
+          },
+          { merge: true },
+        );
+      }
+      continue;
+    }
+    // Feed slate whose market couldn't settle cleanly (push / tie) → manual review, never a guess.
+    if (isFeed && !v.verdict) {
+      needsReview = true;
       continue;
     }
     const verdict = v.verdict!;
