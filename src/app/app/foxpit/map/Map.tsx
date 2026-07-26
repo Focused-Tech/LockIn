@@ -409,8 +409,11 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           style={{
             position: "absolute",
             zIndex: 89,
-            top: 0,
-            bottom: 0,
+            // Cable spans ONLY the shaft's travel — from the Winner's Lounge (top) stop down to the
+            // Dojo (bottom) stop — so it's never seen above the lounge or below the Dojo floor. The
+            // top dome + the car's base cap the ends.
+            top: `${ELEVATOR_STOP_BY_ID.winners}%`,
+            bottom: `${100 - ELEVATOR_STOP_BY_ID.dojo}%`,
             left: "4.5%",
             width: 3,
             transform: "translateX(-50%)",
