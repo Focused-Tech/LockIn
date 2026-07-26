@@ -1,7 +1,7 @@
 import { Logo } from "@/components/Logo";
 import { Pill } from "@/components/ui";
 import { CardRushMeta } from "@/components/CardRushMeta";
-import { formatCents, formatMultiple } from "@/lib/utils";
+import { formatCentsShort, formatCountShort, formatMultiple } from "@/lib/utils";
 import type { EmbedView } from "@/lib/embed";
 import { Countdown } from "./Countdown";
 
@@ -49,7 +49,7 @@ export function EmbedWidget({
 
       <div className="flex items-center gap-2">
         <Pill tone="accent">{view.category}</Pill>
-        <span className="text-xs text-muted">{view.entryCount} entered</span>
+        <span className="text-xs text-muted">{formatCountShort(view.entryCount)} entered</span>
       </div>
 
       <h2 className="text-base font-semibold leading-snug">{view.title}</h2>
@@ -59,13 +59,13 @@ export function EmbedWidget({
         <div>
           <p className="text-xs text-muted">Prize pool</p>
           <p className="text-lg font-semibold text-win">
-            {formatCents(view.prizePoolCents)}
+            {formatCentsShort(view.prizePoolCents)}
           </p>
         </div>
         <div className="text-right">
           <p className="text-xs text-muted">1st place</p>
           <p className="text-lg font-semibold">
-            {formatCents(view.firstPlaceCents)}
+            {formatCentsShort(view.firstPlaceCents)}
             {view.state === "live" && (
               <span className="ml-1 text-sm text-muted">
                 {formatMultiple(view.firstPlaceMultiple)}

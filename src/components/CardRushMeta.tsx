@@ -1,5 +1,6 @@
 import { Pill } from "@/components/ui";
 import { Countdown } from "@/components/Countdown";
+import { formatCountShort } from "@/lib/utils";
 
 /**
  * Card Rush badge + multiplier + (optional) max-entries progress bar + (optional)
@@ -42,7 +43,7 @@ export function CardRushMeta({
             />
           </div>
           <p className="mt-1 text-xs text-muted">
-            {entryCount}/{maxEntries} entries
+            {formatCountShort(entryCount)}/{formatCountShort(maxEntries)} entries
             {entryCount >= maxEntries ? " · full" : ""}
           </p>
         </div>

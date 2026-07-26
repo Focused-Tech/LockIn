@@ -18,7 +18,7 @@ import {
 import type { FeedSlate } from "@/lib/feed";
 import type { ShadowEarnings } from "@/server/data/shadowEarnings";
 import { AddToParlay } from "@/components/cross-parlay/AddToParlay";
-import { formatCents, formatMultiple } from "@/lib/utils";
+import { formatCents, formatCentsShort, formatMultiple } from "@/lib/utils";
 import { submitEntry } from "./actions";
 
 interface LockedEntry {
@@ -136,13 +136,13 @@ export function SlatePicker({
       <div>
         <p className="text-xs text-muted">Prize pool</p>
         <p className="text-xl font-semibold text-win">
-          {formatCents(metrics.prizePoolCents)}
+          {formatCentsShort(metrics.prizePoolCents)}
         </p>
       </div>
       <div className="text-right">
         <p className="text-xs text-muted">1st place</p>
         <p className="text-xl font-semibold">
-          {formatCents(metrics.firstPlaceCents)}
+          {formatCentsShort(metrics.firstPlaceCents)}
           <span className="ml-1 text-sm text-muted">
             {formatMultiple(metrics.firstPlaceMultiple)}
           </span>
@@ -160,7 +160,7 @@ export function SlatePicker({
       slate.status === "settled" || lockedEntry.score != null;
     const prize =
       (lockedEntry.payoutCents ?? 0) > 0
-        ? `Won ${formatCents(lockedEntry.payoutCents!)}`
+        ? `Won ${formatCentsShort(lockedEntry.payoutCents!)}`
         : (lockedEntry.payoutCoins ?? 0) > 0
           ? `Won ${lockedEntry.payoutCoins} coins`
           : "No prize this time";
@@ -203,7 +203,7 @@ export function SlatePicker({
               <p className="text-sm text-foreground">
                 In the ${shadowEarnings.tier} contest, your card would have won{" "}
                 <span className="font-semibold text-win">
-                  {formatCents(shadowEarnings.wouldHaveWonCents)}
+                  {formatCentsShort(shadowEarnings.wouldHaveWonCents)}
                 </span>
                 {shadowEarnings.rank
                   ? ` — rank #${shadowEarnings.rank} of ${shadowEarnings.fieldSize}.`
