@@ -246,6 +246,35 @@ export function FoxPitGame({
 
   const cleared = roundsWon > rules.rounds / 2;
 
+  // ROUND CLOCK (defect 3, full) — lifted here so it pins in the sticky HEADER on every round screen
+  // (deal / keep-redeal / play), never scrolled away or ghosted. Budget = seconds/question × the
+  // round's total questions; it counts down during play and force-settles the round once on expiry.
+  // On the pre-play screens it shows the budget (static) so the player sees the clock they'll race.
+  const roundTotal = rules.secondsPerQuestion * slates.reduce((n, s) => n + s.questions.length, 0);
+  const [timeLeft, setTimeLeft] = useState(0);
+  const clockFired = useRef(false);
+  useEffect(() => {
+    if (phase === "play") { setTimeLeft(roundTotal); clockFired.current = false; }
+    // roundTotal is fixed once the round is dealt; only the phase transition should (re)start the clock.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
+  useEffect(() => {
+    if (phase !== "play" || timeLeft <= 0) return;
+    const t = window.setTimeout(() => setTimeLeft((l) => l - 1), 1000);
+    return () => window.clearTimeout(t);
+  }, [phase, timeLeft]);
+  useEffect(() => {
+    if (phase === "play" && roundTotal > 0 && timeLeft <= 0 && !clockFired.current) {
+      clockFired.current = true;
+      lockRound();
+    }
+  }, [phase, timeLeft, roundTotal]);
+  const clockPlaying = phase === "play";
+  const clockShow = clockPlaying ? timeLeft : roundTotal;
+  const clockAlert = clockPlaying && timeLeft <= 15;
+  const clockVisible = roundTotal > 0 && (phase === "play" || phase === "deal" || phase === "dealing");
+  const clockExpired = phase === "play" && roundTotal > 0 && timeLeft <= 0;
+
   return (
     <div
       className="fixed inset-0 z-[67] flex flex-col overflow-y-auto bg-background text-foreground"
@@ -291,9 +320,17 @@ export function FoxPitGame({
             KEEP {keepN}/{SLATES_PER_ROUND} · coins only
           </div>
         </div>
-        <div className="shrink-0 text-right text-[9px] leading-tight text-muted">
-          <div>won {roundsWon}</div>
-          <div>{FOXPIT_BUILD_VERSION}</div>
+        {/* CLOCK — dedicated header slot, pinned + visible on every round screen; alert-red under 15s */}
+        <div className="shrink-0 flex flex-col items-end gap-0.5">
+          {clockVisible && (
+            <div
+              className="rounded-full border px-2.5 py-0.5 text-sm font-extrabold tabular-nums"
+              style={{ borderColor: clockAlert ? "#E85454" : accent, color: clockAlert ? "#E85454" : accent, background: "rgba(6,8,12,.95)" }}
+            >
+              {clockShow < 0 ? "0:00" : `${Math.floor(clockShow / 60)}:${String(clockShow % 60).padStart(2, "0")}`}
+            </div>
+          )}
+          <div className="text-[8px] leading-none text-muted">w{roundsWon} · {FOXPIT_BUILD_VERSION}</div>
         </div>
       </div>
 
@@ -344,7 +381,7 @@ export function FoxPitGame({
           stakes={rules.stakes}
           unlockedStakes={unlockedStakes}
           categoryCount={pickedCats.length}
-          seconds={rules.secondsPerQuestion}
+          expired={clockExpired}
           accent={accent}
           canLock={canLock}
           cardMin={cardMin}
@@ -736,14 +773,15 @@ function DealPhase({
 
 /* ---------------- play phase ---------------- */
 function PlayPhase({
-  slates, picks, stakes, unlockedStakes, categoryCount, seconds, accent, canLock, cardMin, playedCount, bossName, onStake, onPlayCount, onPick, onLock,
+  slates, picks, stakes, unlockedStakes, categoryCount, expired, accent, canLock, cardMin, playedCount, bossName, onStake, onPlayCount, onPick, onLock,
 }: {
   slates: FoxSlate[];
   picks: Record<string, "a" | "b">;
   stakes: number[];
   unlockedStakes: number[];
   categoryCount: number;
-  seconds: number;
+  /** The round clock lives in the parent header now; PlayPhase only needs the expiry flag. */
+  expired: boolean;
   accent: string;
   canLock: boolean;
   cardMin: number;
@@ -754,24 +792,8 @@ function PlayPhase({
   onPick: (qid: string, side: "a" | "b") => void;
   onLock: () => void;
 }) {
-  // round timer (dead chip on expiry is handled by unanswered = wrong at settle).
-  const total = seconds * slates.reduce((n, s) => n + s.questions.length, 0);
-  const [left, setLeft] = useState(total);
-  useEffect(() => {
-    if (left <= 0) return;
-    const t = setTimeout(() => setLeft((l) => l - 1), 1000);
-    return () => clearTimeout(t);
-  }, [left]);
-  const expired = left <= 0;
-
-  // Clock out: whatever is in hand LOCKS IN and the round settles automatically.
-  const fired = useRef(false);
-  useEffect(() => {
-    if (left <= 0 && !fired.current) {
-      fired.current = true;
-      onLock();
-    }
-  }, [left, onLock]);
+  // The round timer + auto-lock now live in the parent (the clock pins in the header). `expired` is
+  // passed in; the footer surfaces it as the "Settle (time up)" state.
 
   // Reserve EXACT bottom space so the LAST card's questions + stake clear the fixed footer + nav bar.
   const footerRef = useRef<HTMLDivElement>(null);
@@ -796,19 +818,7 @@ function PlayPhase({
       className="flex flex-1 flex-col gap-4 p-4"
       style={{ paddingBottom: `calc(${footerH}px + env(safe-area-inset-bottom, 0px) + 16px)` }}
     >
-      {/* ROUND CLOCK — pinned, OPAQUE, highest chrome z (never ghosted behind the header/cards). Turns
-          alert-red under 15s. Sits just below the safe-area header. */}
-      <div
-        className="sticky z-[45] self-center rounded-full border px-4 py-1 text-sm font-extrabold tabular-nums"
-        style={{
-          top: "calc(env(safe-area-inset-top,0px) + 60px)",
-          borderColor: expired || left <= 15 ? "#E85454" : accent,
-          color: expired || left <= 15 ? "#E85454" : accent,
-          background: "#0A0D12",
-        }}
-      >
-        {expired ? "TIME" : `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`}
-      </div>
+      {/* The round clock now lives in the sticky header (visible on every round screen); no in-body pill. */}
 
       {slates.map((s, i) => {
         const tint = slateTint(s); // app-wide category color canon
