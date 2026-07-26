@@ -134,14 +134,11 @@ export function BeginnerJourney({
 
   // ── header ───────────────────────────────────────────────────────────────
   const header = (
-    <div className="flex items-center justify-between">
-      <div>
-        <h1 className="text-xl font-semibold">Beginner</h1>
-        <p className="text-sm text-muted">Simple &amp; guided — coins, not odds.</p>
-      </div>
-      <span className="rounded-full border border-accent-border bg-accent-soft px-3 py-1 text-sm font-bold text-live">
-        {coins(balance)}
-      </span>
+    // Coin balance lives in the app header (TopNav) only — no second pill here (it duplicated the
+    // header count and wrapped to two lines).
+    <div>
+      <h1 className="text-xl font-semibold">Beginner</h1>
+      <p className="text-sm text-muted">Simple &amp; guided — coins, not odds.</p>
     </div>
   );
 

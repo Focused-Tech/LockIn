@@ -35,72 +35,104 @@ const tiers = [
   { tier: 25, hostingFeeCents: 300 },
 ];
 
+// CURRENT / UPCOMING events (undecided — these are real-money PREDICTIONS, not settled trivia). Dates
+// are relative (now + lockInDays), so a fresh `npm run seed` always produces LIVE, unlocked slates.
 const SLATES = [
   {
-    id: "seed-daytona-500",
-    title: "Daytona 500 — Final Lap Showdown",
-    category: "NASCAR",
+    id: "seed-mlb-deadline",
+    title: "MLB Trade Deadline — Blockbuster Watch",
+    category: "MLB",
     status: "live",
-    entryCount: 4970,
+    entryCount: 5240,
     lockInDays: 2,
     predictions: [
       {
         id: "p1",
-        question: "Who finishes higher?",
-        optionA: "Chase Elliott",
-        optionB: "Ryan Blaney",
-        optionAProbability: 58,
-        optionBProbability: 42,
+        question: "Does a former All-Star get traded before the deadline?",
+        optionA: "Yes",
+        optionB: "No",
+        optionAProbability: 46,
+        optionBProbability: 54,
         predictionType: "binary",
         overUnderLine: null,
       },
       {
         id: "p2",
-        question: "Total lead changes",
-        optionA: "Over 34.5",
-        optionB: "Under 34.5",
-        optionAProbability: 47,
-        optionBProbability: 53,
+        question: "Total deadline-day trades",
+        optionA: "Over 30.5",
+        optionB: "Under 30.5",
+        optionAProbability: 52,
+        optionBProbability: 48,
         predictionType: "over_under",
-        overUnderLine: 34.5,
+        overUnderLine: 30.5,
       },
     ],
   },
   {
-    id: "seed-nba-finals-g5",
-    title: "NBA Finals — Game 5",
-    category: "NBA",
+    id: "seed-wnba-primetime",
+    title: "WNBA Primetime — Aces vs Liberty",
+    category: "WNBA",
     status: "live",
-    entryCount: 1300,
+    entryCount: 1620,
     lockInDays: 1,
     predictions: [
       {
         id: "p1",
+        question: "Who wins?",
+        optionA: "Aces",
+        optionB: "Liberty",
+        optionAProbability: 48,
+        optionBProbability: 52,
+        predictionType: "binary",
+        overUnderLine: null,
+      },
+      {
+        id: "p2",
         question: "Total points",
-        optionA: "Over 220.5",
-        optionB: "Under 220.5",
-        optionAProbability: 51,
-        optionBProbability: 49,
+        optionA: "Over 168.5",
+        optionB: "Under 168.5",
+        optionAProbability: 50,
+        optionBProbability: 50,
         predictionType: "over_under",
-        overUnderLine: 220.5,
+        overUnderLine: 168.5,
       },
     ],
   },
   {
-    id: "seed-worlds-final",
-    title: "Worlds Grand Final — Map 1",
-    category: "Esports",
+    id: "seed-epl-opener",
+    title: "Premier League — Opening Weekend",
+    category: "Soccer",
     status: "live",
-    entryCount: 820,
+    entryCount: 3350,
+    lockInDays: 4,
+    predictions: [
+      {
+        id: "p1",
+        question: "Does the defending champion win their opener?",
+        optionA: "Wins",
+        optionB: "Draw or Loss",
+        optionAProbability: 61,
+        optionBProbability: 39,
+        predictionType: "binary",
+        overUnderLine: null,
+      },
+    ],
+  },
+  {
+    id: "seed-tennis-cincy",
+    title: "US Open Tune-Up — Cincinnati Final",
+    category: "Tennis",
+    status: "live",
+    entryCount: 610,
     lockInDays: 3,
     predictions: [
       {
         id: "p1",
-        question: "First Baron",
-        optionA: "T1",
-        optionB: "Gen.G",
-        optionAProbability: 55,
-        optionBProbability: 45,
+        question: "Does the final go three sets?",
+        optionA: "Three sets",
+        optionB: "Straight sets",
+        optionAProbability: 43,
+        optionBProbability: 57,
         predictionType: "binary",
         overUnderLine: null,
       },
@@ -108,39 +140,59 @@ const SLATES = [
   },
   {
     id: "seed-btc-target",
-    title: "BTC above $100K by Friday?",
+    title: "BTC above $120K by Friday?",
     category: "Crypto",
     status: "live",
-    entryCount: 60,
-    lockInDays: 4,
+    entryCount: 240,
+    lockInDays: 5,
     predictions: [
       {
         id: "p1",
         question: "BTC close Friday",
-        optionA: "Over $100,000",
-        optionB: "Under $100,000",
-        optionAProbability: 38,
-        optionBProbability: 62,
+        optionA: "Over $120,000",
+        optionB: "Under $120,000",
+        optionAProbability: 41,
+        optionBProbability: 59,
         predictionType: "over_under",
-        overUnderLine: 100000,
+        overUnderLine: 120000,
       },
     ],
   },
   {
-    id: "seed-nfl-locked",
-    title: "Sunday Night Football — Locked",
+    id: "seed-ufc-main",
+    title: "UFC Fight Night — Main Event",
+    category: "UFC",
+    status: "live",
+    entryCount: 1080,
+    lockInDays: 2,
+    predictions: [
+      {
+        id: "p1",
+        question: "Does the main event end inside the distance?",
+        optionA: "Finish",
+        optionB: "Decision",
+        optionAProbability: 54,
+        optionBProbability: 46,
+        predictionType: "binary",
+        overUnderLine: null,
+      },
+    ],
+  },
+  {
+    id: "seed-nfl-preseason",
+    title: "NFL Preseason — Kickoff (Locked)",
     category: "NFL",
     status: "locked",
-    entryCount: 8800,
+    entryCount: 7400,
     lockInDays: -0.1,
     predictions: [
       {
         id: "p1",
         question: "Game winner",
-        optionA: "Chiefs",
-        optionB: "Bills",
-        optionAProbability: 53,
-        optionBProbability: 47,
+        optionA: "Cowboys",
+        optionB: "Rams",
+        optionAProbability: 51,
+        optionBProbability: 49,
         predictionType: "binary",
         overUnderLine: null,
       },
@@ -148,7 +200,25 @@ const SLATES = [
   },
 ];
 
+/** Old seed ids to clear so the feed isn't cluttered with expired slates from earlier seeds. */
+const STALE_SEED_IDS = [
+  "seed-daytona-500",
+  "seed-nba-finals-g5",
+  "seed-worlds-final",
+  "seed-nfl-locked",
+  "seed-boxing-rush",
+];
+
 async function run() {
+  // Clear expired slates from earlier seeds (past lockTime) so Beginner/Advanced only show fresh ones.
+  for (const id of STALE_SEED_IDS) {
+    const ref = db.collection("slates").doc(id);
+    const preds = await ref.collection("predictions").get();
+    for (const p of preds.docs) await p.ref.delete();
+    await ref.delete();
+    console.log(`cleared stale ${id}`);
+  }
+
   for (const s of SLATES) {
     const lockMs = now + s.lockInDays * DAY;
     const slateRef = db.collection("slates").doc(s.id);
