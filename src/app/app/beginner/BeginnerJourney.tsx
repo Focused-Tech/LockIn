@@ -267,6 +267,18 @@ function ExploreScreen({
             tone="no"
             onClick={() => onPick(c, "b")}
           />
+          {c.morePicks.length > 0 && (
+            // Surface the game's OTHER markets (spread / total …) — tapping opens the pick flow where
+            // they can be added as legs, so the card isn't just "who wins".
+            <button
+              onClick={() => onPick(c, "a")}
+              className="mt-2 w-full rounded-lg border border-dashed px-3 py-1.5 text-left text-xs font-semibold"
+              style={{ borderColor: t.border, color: t.color }}
+            >
+              +{c.morePicks.length} more market{c.morePicks.length > 1 ? "s" : ""} ·{" "}
+              {[...new Set(c.morePicks.map((p) => p.question))].join(" · ")} →
+            </button>
+          )}
           <div className="mt-3 flex items-center justify-between text-xs">
             <span className="font-semibold text-live">
               {COIN} play {DEFAULT_STAKE} · win up to {winUpTo(DEFAULT_STAKE, 1)}
