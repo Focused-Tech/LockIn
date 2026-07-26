@@ -35,17 +35,19 @@ export async function fetchBeginnerFeed(
   const now = Date.now();
   const slates = (await fetchFeedSlates(db)).filter((s) => s.status === "live" && s.lockTimeMs > now);
 
-  // Group live slates by creator (null = house). Preserve soonest-first order.
+  // Group by creator (their brand = one card with their picks). House/platform slates (creatorId null —
+  // e.g. the real data-feed games) each stand ALONE as their own matchup card, keyed by slate id —
+  // otherwise every real game collapses into a single "LockIn" card and the feed looks like one slate.
   const byCreator = new Map<string, typeof slates>();
   for (const slate of slates) {
-    const key = slate.creatorId ?? "__house__";
+    const key = slate.creatorId ?? `__house__${slate.id}`;
     const arr = byCreator.get(key) ?? [];
     arr.push(slate);
     byCreator.set(key, arr);
   }
 
   // Resolve creator profiles (name + hit-rate) for the real creator ids.
-  const creatorIds = [...byCreator.keys()].filter((k) => k !== "__house__");
+  const creatorIds = [...byCreator.keys()].filter((k) => !k.startsWith("__house__"));
   const profiles = new Map<string, UserDoc>();
   if (creatorIds.length) {
     const refs = creatorIds.map((id) =>
@@ -78,7 +80,7 @@ export async function fetchBeginnerFeed(
 
   const cards: BeginnerCard[] = [];
   for (const [key, group] of byCreator) {
-    const isHouse = key === "__house__";
+    const isHouse = key.startsWith("__house__");
     const profile = isHouse ? undefined : profiles.get(key);
     // Flatten this creator's open picks across their live slates.
     const allPicks: BeginnerPick[] = group.flatMap((s) =>
