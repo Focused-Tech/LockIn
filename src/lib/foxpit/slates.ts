@@ -30,6 +30,9 @@ export interface FoxSlate {
   title: string;
   realData: boolean;
   questions: FoxQuestion[];
+  /** How many of `questions` the player chose to PLAY on this card (1..questions.length). Defaults to
+   *  the full deal; only these count for winning + they drive the card's stake ceiling (defect 5b). */
+  playCount: number;
   /** Coin stake the player assigns (null until staked). */
   stake: number | null;
 }
@@ -164,6 +167,7 @@ function buildSlate(room: FoxPitRoomKey, category: FoxPitCategory): FoxSlate {
     title: template.title,
     realData: category === "sports",
     questions,
+    playCount: questions.length, // default to playing every dealt question; the player can dial down
     stake: null,
   };
 }
@@ -203,11 +207,14 @@ export function dealFoxSlatesByCategories(room: FoxPitRoomKey, chosen: FoxPitCat
   return out;
 }
 
-/** A slate is WON when the player gets at least half its questions right. */
+/** A slate is WON when the player gets at least half of the questions THEY CHOSE TO PLAY right. Only
+ *  the first `playCount` questions count — the ones the player dialed off are neither scored nor held
+ *  against them (defect 5b). */
 export function slateWon(slate: FoxSlate, picks: Record<string, "a" | "b">): boolean {
+  const played = slate.questions.slice(0, Math.max(1, Math.min(slate.playCount, slate.questions.length)));
   let correct = 0;
-  for (const q of slate.questions) if (picks[q.id] === q.outcome) correct += 1;
-  return correct >= Math.ceil(slate.questions.length / 2);
+  for (const q of played) if (picks[q.id] === q.outcome) correct += 1;
+  return correct >= Math.ceil(played.length / 2);
 }
 
 /** $-weighted round score: sum of stakes on WON slates. */

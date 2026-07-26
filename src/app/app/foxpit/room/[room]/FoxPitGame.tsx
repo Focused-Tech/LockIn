@@ -26,9 +26,9 @@ function resolvePlayerCats(userCategories: string[]): FoxPitCategory[] {
 const COLOR_WIN = "#22C55E";
 const COLOR_LOSS = "#E85454";
 
-/** A slate is LOCKED once it's staked and every question is answered. */
+/** A slate is LOCKED once it's staked and every question the player CHOSE TO PLAY is answered. */
 function isLocked(s: FoxSlate, picks: Record<string, "a" | "b">): boolean {
-  return s.stake != null && s.questions.every((q) => picks[q.id] != null);
+  return s.stake != null && s.questions.slice(0, s.playCount).every((q) => picks[q.id] != null);
 }
 /** The app-wide category color canon for a Fox Pit slate. */
 function slateTint(s: FoxSlate) {
@@ -181,6 +181,10 @@ export function FoxPitGame({
   /* ------- PLAY ------- */
   const setStake = (slateId: string, stake: number) =>
     setSlates((prev) => prev.map((s) => (s.id === slateId ? { ...s, stake } : s)));
+  // (5b) per-card question count — the player dials how many of the dealt questions to play (1..max).
+  // Changing it clears that card's stake (the ceiling moved) so they re-confirm the bid.
+  const setPlayCount = (slateId: string, n: number) =>
+    setSlates((prev) => prev.map((s) => (s.id === slateId ? { ...s, playCount: Math.max(1, Math.min(n, s.questions.length)), stake: null } : s)));
   const pick = (qid: string, side: "a" | "b") => {
     setPicks((p) => ({ ...p, [qid]: side }));
     // (e) changing/adding an answer RE-OPENS that card's stake — never lock a bid the player can no
@@ -347,6 +351,7 @@ export function FoxPitGame({
           playedCount={playedCount}
           bossName={rules.boss}
           onStake={setStake}
+          onPlayCount={setPlayCount}
           onPick={pick}
           onLock={lockRound}
         />
@@ -731,7 +736,7 @@ function DealPhase({
 
 /* ---------------- play phase ---------------- */
 function PlayPhase({
-  slates, picks, stakes, unlockedStakes, categoryCount, seconds, accent, canLock, cardMin, playedCount, bossName, onStake, onPick, onLock,
+  slates, picks, stakes, unlockedStakes, categoryCount, seconds, accent, canLock, cardMin, playedCount, bossName, onStake, onPlayCount, onPick, onLock,
 }: {
   slates: FoxSlate[];
   picks: Record<string, "a" | "b">;
@@ -745,6 +750,7 @@ function PlayPhase({
   playedCount: number;
   bossName: string;
   onStake: (id: string, stake: number) => void;
+  onPlayCount: (id: string, n: number) => void;
   onPick: (qid: string, side: "a" | "b") => void;
   onLock: () => void;
 }) {
@@ -807,8 +813,13 @@ function PlayPhase({
       {slates.map((s, i) => {
         const tint = slateTint(s); // app-wide category color canon
         const locked = isLocked(s, picks);
+        // Play only the questions the player chose (defect 5b); those gate the stake + score.
+        const maxQ = s.questions.length;
+        const shown = s.questions.slice(0, s.playCount);
         // Stake gates on a FULLY-ANSWERED card — you can't size a bid before reading the hand.
-        const answered = s.questions.every((q) => picks[q.id]);
+        const answered = shown.every((q) => picks[q.id]);
+        // Fewer questions = smaller stake ceiling: card tiers = the lowest min(breadth, playCount).
+        const cardUnlockedStakes = stakes.slice(0, Math.min(unlockedStakes.length, s.playCount));
         return (
         <div
           key={s.id}
@@ -834,9 +845,31 @@ function PlayPhase({
               </div>
             )}
           </div>
+          {/* HOW MANY QUESTIONS to play on this card (defect 5b) — 1..max; more = bigger stake ceiling */}
+          {maxQ > 1 && (
+            <div className="mb-2 flex items-center gap-2">
+              <span className="text-[10px] font-bold uppercase tracking-wide text-muted">Play</span>
+              <div className="flex gap-1">
+                {Array.from({ length: maxQ }, (_, k) => k + 1).map((n) => {
+                  const on = s.playCount === n;
+                  return (
+                    <button
+                      key={n}
+                      onClick={() => onPlayCount(s.id, n)}
+                      className="h-7 w-7 rounded-md border text-xs font-extrabold"
+                      style={{ borderColor: on ? accent : "var(--border, #1E2A38)", background: on ? accent : "transparent", color: on ? "#fff" : "#8b98a6" }}
+                    >
+                      {n}
+                    </button>
+                  );
+                })}
+              </div>
+              <span className="text-[10px] text-muted">of {maxQ}Q · more = higher stakes</span>
+            </div>
+          )}
           {/* QUESTIONS — read the hand FIRST, before sizing the bid */}
           <div className="flex flex-col gap-2">
-            {s.questions.map((q) => (
+            {shown.map((q) => (
               <div key={q.id}>
                 <div className="mb-1 text-sm text-foreground">{q.text}</div>
                 <div className="flex gap-2">
@@ -874,7 +907,7 @@ function PlayPhase({
                 {/* stake tier — breadth unlocks the lowest N tiers; higher tiers render LOCKED (item 3) */}
                 <div className="flex flex-wrap gap-2">
                   {stakes.map((st, ti) => {
-                    const unlocked = unlockedStakes.includes(st);
+                    const unlocked = cardUnlockedStakes.includes(st);
                     const selected = s.stake === st;
                     return (
                       <button
@@ -896,11 +929,13 @@ function PlayPhase({
                     );
                   })}
                 </div>
-                {/* the reason: the lowest locked tier + how many categories opens it (never hidden) */}
-                {stakes.length > unlockedStakes.length && (
+                {/* the reason a higher tier is locked (never hidden): whichever cap bites first —
+                    this card's question count, or category breadth */}
+                {stakes.length > cardUnlockedStakes.length && (
                   <div className="mt-1 text-[11px] font-semibold" style={{ color: "#8b98a6" }}>
-                    Play {unlockedStakes.length + 1} categor{unlockedStakes.length + 1 === 1 ? "y" : "ies"} to unlock {stakes[unlockedStakes.length]} ⛃
-                    <span className="text-[10px]"> (you played {categoryCount})</span>
+                    {s.playCount <= unlockedStakes.length && s.playCount < stakes.length
+                      ? `Play more questions on this card to raise the stake ceiling.`
+                      : <>Play {unlockedStakes.length + 1} categor{unlockedStakes.length + 1 === 1 ? "y" : "ies"} to unlock {stakes[unlockedStakes.length]} ⛃<span className="text-[10px]"> (you played {categoryCount})</span></>}
                   </div>
                 )}
               </>
