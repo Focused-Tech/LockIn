@@ -241,12 +241,17 @@ export function FoxPitGame({
   const cleared = roundsWon > rules.rounds / 2;
 
   return (
-    <div className="fixed inset-0 z-[67] flex flex-col overflow-y-auto bg-background text-foreground">
+    <div
+      className="fixed inset-0 z-[67] flex flex-col overflow-y-auto bg-background text-foreground"
+      // scroll-into-view must never park content under the fixed footer — reserve more than the tallest
+      // footer (lock button + 2 note rows) plus the nav-bar inset. The exact per-view padding is measured.
+      style={{ scrollPaddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 200px)" }}
+    >
       {/* DEV PREVIEW (temporary): jump straight to this room's key-drop. Remove before launch. */}
       <button
         onClick={() => setKeyPreview(true)}
         className="fixed right-2 z-[90] rounded-md border px-2 py-1 text-[11px] font-extrabold"
-        style={{ top: "calc(env(safe-area-inset-top,0px) + 74px)", borderColor: "#00e5ff", background: "rgba(6,8,12,.9)", color: "#00e5ff" }}
+        style={{ top: "calc(env(safe-area-inset-top,0px) + 74px)", borderColor: "#FF3B00", background: "rgba(6,8,12,.9)", color: "#FF3B00" }}
       >
         🔑 keydrop
       </button>
@@ -262,20 +267,25 @@ export function FoxPitGame({
           />
         </div>
       )}
-      {/* header */}
-      <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-border bg-background/95 px-4 py-3">
-        <button onClick={onExit} className="rounded-lg border border-border px-3 py-1.5 text-sm font-semibold text-muted">
+      {/* ROUND CHROME header — OPAQUE (nothing scrolls through it), clears the status bar via
+          safe-area-top, and compact to at most TWO lines (truncate before wrapping). z-40 so it
+          sits above all card content + the footer. */}
+      <div
+        className="sticky top-0 z-40 flex items-center gap-2 border-b border-border px-3 pb-2"
+        style={{ background: "#0A0D12", paddingTop: "calc(env(safe-area-inset-top,0px) + 8px)" }}
+      >
+        <button onClick={onExit} className="shrink-0 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-muted">
           ‹ Leave
         </button>
-        <div className="flex-1 text-center">
-          <div className="text-xs font-extrabold tracking-widest" style={{ color: accent }}>
-            {rules.boss.toUpperCase()} · ROUND {roundIndex + 1} / {rules.rounds}
+        <div className="min-w-0 flex-1 text-center">
+          <div className="truncate text-xs font-extrabold tracking-wide" style={{ color: accent }}>
+            {rules.boss.toUpperCase()} · ROUND {roundIndex + 1}/{rules.rounds}
           </div>
-          <div className="text-[11px] font-semibold text-muted">
-            KEEP {keepN} of {SLATES_PER_ROUND} · coins only
+          <div className="truncate text-[11px] font-semibold text-muted">
+            KEEP {keepN}/{SLATES_PER_ROUND} · coins only
           </div>
         </div>
-        <div className="text-right text-[10px] leading-tight text-muted">
+        <div className="shrink-0 text-right text-[9px] leading-tight text-muted">
           <div>won {roundsWon}</div>
           <div>{FOXPIT_BUILD_VERSION}</div>
         </div>
@@ -716,10 +726,40 @@ function PlayPhase({
     }
   }, [left, onLock]);
 
+  // Reserve EXACT bottom space so the LAST card's questions + stake clear the fixed footer + nav bar.
+  const footerRef = useRef<HTMLDivElement>(null);
+  const [footerH, setFooterH] = useState(150);
+  useEffect(() => {
+    const el = footerRef.current;
+    if (!el) return;
+    const measure = () => setFooterH(el.offsetHeight);
+    measure();
+    let ro: ResizeObserver | undefined;
+    try {
+      ro = new ResizeObserver(measure);
+      ro.observe(el);
+    } catch (err) {
+      console.error("[foxpit] footer ResizeObserver failed", err);
+    }
+    return () => ro?.disconnect();
+  }, []);
+
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 pb-28">
-      <div className="sticky top-[64px] z-[5] self-center rounded-full border px-4 py-1 text-sm font-extrabold"
-        style={{ borderColor: accent, color: expired ? "#E85454" : accent, background: "var(--surface, #0D1118)" }}>
+    <div
+      className="flex flex-1 flex-col gap-4 p-4"
+      style={{ paddingBottom: `calc(${footerH}px + env(safe-area-inset-bottom, 0px) + 16px)` }}
+    >
+      {/* ROUND CLOCK — pinned, OPAQUE, highest chrome z (never ghosted behind the header/cards). Turns
+          alert-red under 15s. Sits just below the safe-area header. */}
+      <div
+        className="sticky z-[45] self-center rounded-full border px-4 py-1 text-sm font-extrabold tabular-nums"
+        style={{
+          top: "calc(env(safe-area-inset-top,0px) + 60px)",
+          borderColor: expired || left <= 15 ? "#E85454" : accent,
+          color: expired || left <= 15 ? "#E85454" : accent,
+          background: "#0A0D12",
+        }}
+      >
         {expired ? "TIME" : `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`}
       </div>
 
@@ -830,8 +870,9 @@ function PlayPhase({
       })}
 
       <div
-        className="fixed inset-x-0 bottom-0 z-10 border-t border-border bg-background/95 p-3"
-        style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 14px)" }}
+        ref={footerRef}
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-border p-3"
+        style={{ background: "#0A0D12", paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 14px)" }}
       >
         {/* how many the player is playing + the floor for this boss */}
         <div className="mb-2 text-center text-[12px] font-semibold text-muted">
