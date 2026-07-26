@@ -75,6 +75,10 @@ export const FOXPIT_TRIVIA_TAXONOMY: Record<string, string[]> = {
   Awards: ["Emmys", "BET", "Oscars"],
   Movies: ["franchises", "Black cinema", "box office"],
   "TV Mechanics": ["finales", "catchphrases", "theme songs", "spin-offs"],
+  // Crypto + Weather keep the tower's own categories covered by pooled trivia. SETTLED PAST facts only
+  // (milestones, record storms) — never live prices or forecasts, which would break the settled-fact rule.
+  Crypto: ["Bitcoin & crypto milestones"],
+  Weather: ["record storms & weather history"],
 };
 
 /** Flattened generation cells — one "Parent · Subcategory" label per subcategory. */

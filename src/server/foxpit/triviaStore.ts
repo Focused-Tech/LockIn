@@ -45,7 +45,9 @@ export async function publishTriviaBatch(
   for (const cell of cells) {
     cell.questions.forEach((q, i) => {
       rows.push({
-        id: `${batchId}_${cell.tier}_${cell.category.replace(/\s+/g, "-").toLowerCase()}_${i}`,
+        // Sanitize ALL non-alphanumerics (not just whitespace) — a "/" in a category (e.g.
+        // "Friends/Seinfeld era") is a Firestore path separator and makes the doc id invalid.
+        id: `${batchId}_${cell.tier}_${cell.category.replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "").toLowerCase()}_${i}`,
         category: cell.category,
         tier: cell.tier,
         question: q.question,
