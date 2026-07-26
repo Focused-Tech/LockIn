@@ -1,1 +1,6 @@
-{}
+{
+  "crons": [
+    { "path": "/api/cron/settle", "schedule": "*/5 * * * *" },
+    { "path": "/api/cron/sync-feed", "schedule": "0 */6 * * *" }
+  ]
+}

@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit",
     "emulators": "firebase emulators:start",
     "seed": "node scripts/seed-firestore.mjs",
+    "sync:feed": "node --env-file=.env.local scripts/sync-feed.mjs",
     "stripe:price": "node scripts/create-pro-price.mjs",
     "backfill:category-stats": "node scripts/backfill-category-stats.mjs",
     "seed:creators": "node scripts/seed-creators.mjs",
