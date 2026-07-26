@@ -1,0 +1,10 @@
+import { initializeApp, cert, getApps } from "firebase-admin/app";
+import { getFirestore } from "firebase-admin/firestore";
+if (!getApps().length) initializeApp({ credential: cert({ projectId: process.env.FIREBASE_PROJECT_ID, clientEmail: process.env.FIREBASE_CLIENT_EMAIL, privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n") }) });
+const db = getFirestore();
+const now = Date.now();
+const snap = await db.collection("slates").where("status", "==", "live").get();
+const live = snap.docs.map((d) => ({ id: d.id, title: d.data().title, lock: d.data().lockTime?.toMillis?.() ?? 0 })).filter((s) => s.lock > now);
+console.log(`live + unlocked slates the Beginner/Advanced feed will show: ${live.length}`);
+live.forEach((s) => console.log(`  ${s.id} — "${s.title}" — locks in ${((s.lock - now) / 86400000).toFixed(1)}d`));
+process.exit(0);
