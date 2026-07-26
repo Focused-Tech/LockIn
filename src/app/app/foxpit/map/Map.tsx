@@ -409,10 +409,11 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           style={{
             position: "absolute",
             zIndex: 89,
-            // Cable spans ONLY the shaft's travel — from the Winner's Lounge (top) stop down to the
-            // Dojo (bottom) stop — so it's never seen above the lounge or below the Dojo floor. The
-            // top dome + the car's base cap the ends.
-            top: `${ELEVATOR_STOP_BY_ID.winners}%`,
+            // Cable runs from the TOP of the Winner's Lounge room (the night-sky boundary ~10.5%, where
+            // the building becomes visible below the exterior sky) down to the Dojo (bottom) stop — so
+            // it reaches the top of the lounge but is never seen in the sky above it or below the Dojo
+            // floor. The top dome + the car's base cap the ends.
+            top: "10.5%",
             bottom: `${100 - ELEVATOR_STOP_BY_ID.dojo}%`,
             left: "4.5%",
             width: 3,
