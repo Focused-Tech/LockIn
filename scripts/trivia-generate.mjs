@@ -168,6 +168,14 @@ const cells = results.filter((c) => c && c.questions.length > 0);
 const batchId = `batch_${Date.now()}`;
 const generatedAt = Date.now();
 
+// Shuffle each question's options so the correct answer isn't position-biased (the model strongly
+// favours putting it first — ~67% landed in A before this). Fisher-Yates, correctIndex moves with it.
+function shuffled(q) {
+  const tagged = q.options.map((o, idx) => ({ o, correct: idx === q.correctIndex }));
+  for (let j = tagged.length - 1; j > 0; j--) { const k = Math.floor(Math.random() * (j + 1)); [tagged[j], tagged[k]] = [tagged[k], tagged[j]]; }
+  return { options: tagged.map((t) => t.o), correctIndex: tagged.findIndex((t) => t.correct) };
+}
+
 // rows (publishTriviaBatch shape)
 const rows = [];
 for (const cell of cells) {
@@ -175,8 +183,8 @@ for (const cell of cells) {
     // Firestore doc ids can't contain "/", so sanitize ALL non-alphanumerics to "-" (the slug is only
     // an id — retrieval is by the `category` field, not the id). "Friends/Seinfeld era" broke the run.
     id: `${batchId}_${cell.tier}_${cell.category.replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "").toLowerCase()}_${i}`,
-    category: cell.category, tier: cell.tier, question: q.question, options: q.options,
-    correctIndex: q.correctIndex, factNote: q.factNote, batchId, generatedAt,
+    category: cell.category, tier: cell.tier, question: q.question, ...shuffled(q),
+    factNote: q.factNote, batchId, generatedAt,
   }));
 }
 if (rows.length === 0) { console.error("No questions generated — refusing to publish."); process.exit(1); }
