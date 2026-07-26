@@ -216,9 +216,11 @@ export function FoxPitGame({
     setPhase("reveal"); // cards reveal first, then the Locksmith calls it
   };
 
-  /** The ONLY place a round's cards are created. Runs on entry to `dealing`. */
-  const dealRound = (cats: FoxPitCategory[]) => {
-    setSlates(dealFoxSlatesByCategories(roomKey, cats));
+  /** The ONLY place a round's cards are created. Runs on entry to `dealing`. `count` = how many cards
+   *  the player chose to deal on the deal screen (defect 4), within the floor's legal range. */
+  const dealRound = (cats: FoxPitCategory[], count: number = SLATES_PER_ROUND) => {
+    const n = Math.max(1, Math.min(count, SLATES_PER_ROUND));
+    setSlates(dealFoxSlatesByCategories(roomKey, cats).slice(0, n));
     setPhase("dealing");
   };
 
@@ -301,7 +303,8 @@ export function FoxPitGame({
           bossName={rules.boss}
           bossMode={bossMode}
           onBossMode={setBossMode}
-          onDone={() => dealRound(pickedCats)}
+          cardMin={cardMin}
+          onDone={(n) => dealRound(pickedCats, n)}
         />
       )}
 
@@ -309,6 +312,7 @@ export function FoxPitGame({
         <DealingTable
           roomKey={roomKey}
           accent={accent}
+          count={slates.length}
           /* lead alternates each round: round 1 boss deals first, round 2 player. */
           bossFirst={roundIndex % 2 === 0}
           onDone={() => setPhase("deal")}
@@ -459,15 +463,21 @@ function HowToPlay({ accent, onDismiss }: { accent: string; onDismiss: () => voi
  * Categories are chosen in the LOCKER now (A5), so this beat only sets the boss stake mode
  * (item 4) before the deal. */
 function BossModePhase({
-  accent, stakes, bossName, bossMode, onBossMode, onDone,
+  accent, stakes, bossName, bossMode, onBossMode, onDone, cardMin,
 }: {
   accent: string;
   stakes: number[];
   bossName: string;
   bossMode: BossStakeMode;
   onBossMode: (m: BossStakeMode) => void;
-  onDone: () => void;
+  onDone: (dealCount: number) => void;
+  cardMin: number;
 }) {
+  // CARD-COUNT chooser (defect 4). Legal range = [cardMin, MAX] from the floor: Owl/Ghost/Wolf 1–5,
+  // Grim 4–5, Raven/Fox 5 only. When cardMin == MAX the selector renders LOCKED with the reason.
+  const MAX_CARDS = SLATES_PER_ROUND;
+  const locked = cardMin >= MAX_CARDS;
+  const [dealCount, setDealCount] = useState(MAX_CARDS);
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-6 p-6">
       <div className="text-center">
@@ -493,26 +503,57 @@ function BossModePhase({
           );
         })}
       </div>
+      {/* CARD-COUNT chooser — always rendered (locked at the boss's count when min==max) */}
+      <div className="w-full max-w-sm">
+        <div className="mb-1 text-center text-[11px] font-bold uppercase tracking-widest text-muted">How many cards?</div>
+        <div className="flex justify-center gap-2">
+          {Array.from({ length: MAX_CARDS }, (_, i) => i + 1).map((n) => {
+            const allowed = n >= cardMin && n <= MAX_CARDS;
+            const on = dealCount === n;
+            return (
+              <button
+                key={n}
+                onClick={() => allowed && !locked && setDealCount(n)}
+                disabled={!allowed || locked}
+                className="h-11 w-11 rounded-lg border text-base font-extrabold"
+                style={{
+                  borderColor: on ? accent : "var(--border)",
+                  background: on ? accent : "transparent",
+                  color: on ? "#fff" : allowed ? "var(--foreground)" : "#5a6675",
+                  opacity: allowed ? 1 : 0.4,
+                  cursor: allowed && !locked ? "pointer" : "not-allowed",
+                }}
+              >
+                {n}
+              </button>
+            );
+          })}
+        </div>
+        <div className="mt-1 text-center text-[11px] font-semibold" style={{ color: locked ? accent : "var(--muted, #6B7A8E)" }}>
+          {locked ? `${bossName} requires ${cardMin}.` : cardMin > 1 ? `${bossName} requires at least ${cardMin}.` : "Your call — 1 to 5."}
+        </div>
+      </div>
       <button
-        onClick={onDone}
+        onClick={() => onDone(dealCount)}
         className="w-full max-w-sm rounded-xl border px-6 py-4 text-base font-extrabold"
         style={{ borderColor: accent, background: `${accent}22`, color: "var(--foreground)" }}
       >
-        Deal {SLATES_PER_ROUND} cards ›
+        Deal {dealCount} card{dealCount > 1 ? "s" : ""} ›
       </button>
     </div>
   );
 }
 
 function DealingTable({
-  roomKey, accent, bossFirst, onDone,
+  roomKey, accent, count, bossFirst, onDone,
 }: {
   roomKey: FoxPitRoomKey;
   accent: string;
+  count: number;
   bossFirst: boolean;
   onDone: () => void;
 }) {
-  const TOTAL = SLATES_PER_ROUND * 2; // five to the boss, five to you
+  const TOTAL = Math.max(1, count) * 2; // `count` to the boss, `count` to you
   const [dealt, setDealt] = useState(0);
 
   useEffect(() => {

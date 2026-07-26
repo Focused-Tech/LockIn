@@ -103,9 +103,11 @@ const BANK: Record<FoxPitCategory, { title: string; q: [string, string, string, 
   ],
 };
 
-/** Questions per slate grows with room difficulty. */
+/** MAX questions per slate, set by the FLOOR (defect 5a): Owl 1, Wolf 2, Raven 3, Fox 3 — difficulty
+ *  comes from decoy quality, not question volume. (Grim/High-Table underling caps at 2 in the rules;
+ *  the room's boss max governs the deal.) The PLAYER may choose to answer fewer (min 1) per card. */
 function questionsPerSlate(room: FoxPitRoomKey): number {
-  return { dojo: 2, coliseum: 3, hightable: 3, suite: 4 }[room];
+  return { dojo: 1, coliseum: 2, hightable: 3, suite: 3 }[room];
 }
 
 /** Roll a hidden outcome weighted by the AI's confidence on A. */
