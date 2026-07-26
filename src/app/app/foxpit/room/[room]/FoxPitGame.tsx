@@ -12,8 +12,8 @@ import { LockGlyph } from "@/components/practice/LockGlyph";
 import { categoryTint } from "@/lib/practice/tints";
 import { roomByKey, KEY_ASSET, type FoxPitRoomKey } from "@/lib/foxpit";
 import { ROOM_RULES, keepNFor, SLATES_PER_ROUND, REDEALS_PER_ROUND, FOXPIT_BUILD_VERSION, CATEGORY_TINT_KEY, TIMERS, FOXPIT_CATEGORIES, cardMinFor, unlockedTierCount, type FoxPitCategory } from "@/lib/foxpit/rules";
-import { dealFoxSlatesByCategories, settleRound, type FoxSlate, type BossStakeMode, type RoundSettlement, type CardLedgerLine } from "@/lib/foxpit/slates";
-import { applyFoxPitCoins } from "../../actions";
+import { settleRound, type FoxSlate, type BossStakeMode, type RoundSettlement, type CardLedgerLine } from "@/lib/foxpit/slates";
+import { applyFoxPitCoins, dealFoxRound } from "../../actions";
 
 /** Resolve the player's shared interest categories (users/{uid}.categories[]) to the Fox Pit set.
  *  Case-insensitive intersection; falls back to all Fox Pit categories if none match. */
@@ -28,7 +28,7 @@ const COLOR_WIN = "#22C55E";
 const COLOR_LOSS = "#E85454";
 
 /** A slate is LOCKED once it's staked and every question the player CHOSE TO PLAY is answered. */
-function isLocked(s: FoxSlate, picks: Record<string, "a" | "b">): boolean {
+function isLocked(s: FoxSlate, picks: Record<string, number>): boolean {
   return s.stake != null && s.questions.slice(0, s.playCount).every((q) => picks[q.id] != null);
 }
 /** The app-wide category color canon for a Fox Pit slate. */
@@ -126,7 +126,9 @@ export function FoxPitGame({
   const [pickedCats] = useState<FoxPitCategory[]>(() => resolvePlayerCats(userCategories));
   const [kept, setKept] = useState<Set<string>>(new Set());
   const [redealsLeft, setRedealsLeft] = useState(REDEALS_PER_ROUND);
-  const [picks, setPicks] = useState<Record<string, "a" | "b">>({});
+  const [picks, setPicks] = useState<Record<string, number>>({});
+  const [dealPending, setDealPending] = useState(false);
+  const [dealError, setDealError] = useState<string | null>(null);
   const [roundsWon, setRoundsWon] = useState(0);
   // Boss stake mode chosen per round (item 4). Persisted WITH the round result (in `last`), not
   // held only as a transient toggle — it affects scoring + the tally.
@@ -165,11 +167,21 @@ export function FoxPitGame({
     });
   };
 
-  const redeal = () => {
-    if (redealsLeft <= 0) return;
-    const fresh = dealFoxSlatesByCategories(roomKey, pickedCats);
+  const redeal = async () => {
+    if (redealsLeft <= 0 || dealPending) return;
+    // Fetch FRESH cards for exactly the non-kept slots from the never-repeat pool (marks them seen).
+    const discardCount = slates.filter((s) => !kept.has(s.id)).length;
+    if (discardCount === 0) return;
+    setDealPending(true);
+    setDealError(null);
+    const res = await dealFoxRound(roomKey, pickedCats, discardCount);
+    setDealPending(false);
+    if (!res.ok || !res.slates) {
+      setDealError(res.error ?? "Couldn't redeal. Try again.");
+      return;
+    }
     let fi = 0;
-    setSlates((prev) => prev.map((s) => (kept.has(s.id) ? s : fresh[fi++]!)));
+    setSlates((prev) => prev.map((s) => (kept.has(s.id) ? s : (res.slates![fi++] ?? s))));
     setRedealsLeft((r) => r - 1);
   };
 
@@ -186,14 +198,14 @@ export function FoxPitGame({
   // Changing it clears that card's stake (the ceiling moved) so they re-confirm the bid.
   const setPlayCount = (slateId: string, n: number) =>
     setSlates((prev) => prev.map((s) => (s.id === slateId ? { ...s, playCount: Math.max(1, Math.min(n, s.questions.length)), stake: null } : s)));
-  const pick = (qid: string, side: "a" | "b") => {
-    setPicks((p) => ({ ...p, [qid]: side }));
+  const pick = (qid: string, optionIndex: number) => {
+    setPicks((p) => ({ ...p, [qid]: optionIndex }));
     // (e) changing/adding an answer RE-OPENS that card's stake — never lock a bid the player can no
     // longer justify. Only the slate that owns this question is affected.
     setSlates((prev) => prev.map((s) => (s.stake != null && s.questions.some((q) => q.id === qid) ? { ...s, stake: null } : s)));
     // (c) once this answer COMPLETES the card, bring its now-enabled stake row into view — no scroll-up.
     const slate = slates.find((s) => s.questions.some((q) => q.id === qid));
-    if (slate && slate.questions.every((q) => (q.id === qid ? true : picks[q.id]))) {
+    if (slate && slate.questions.every((q) => (q.id === qid ? true : picks[q.id] != null))) {
       requestAnimationFrame(() => {
         try {
           document.getElementById(`stake-${slate.id}`)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -230,9 +242,18 @@ export function FoxPitGame({
 
   /** The ONLY place a round's cards are created. Runs on entry to `dealing`. `count` = how many cards
    *  the player chose to deal on the deal screen (defect 4), within the floor's legal range. */
-  const dealRound = (cats: FoxPitCategory[], count: number = SLATES_PER_ROUND) => {
+  const dealRound = async (cats: FoxPitCategory[], count: number = SLATES_PER_ROUND) => {
     const n = Math.max(1, Math.min(count, SLATES_PER_ROUND));
-    setSlates(dealFoxSlatesByCategories(roomKey, cats).slice(0, n));
+    setDealError(null);
+    setDealPending(true);
+    // Fetch the round's cards from the never-repeat MC pool (server action), THEN animate the deal.
+    const res = await dealFoxRound(roomKey, cats, n);
+    setDealPending(false);
+    if (!res.ok || !res.slates) {
+      setDealError(res.error ?? "Couldn't deal this round.");
+      return;
+    }
+    setSlates(res.slates);
     setPhase("dealing");
   };
 
@@ -341,6 +362,28 @@ export function FoxPitGame({
           <div className="text-[8px] leading-none text-muted">w{roundsWon} · {FOXPIT_BUILD_VERSION}</div>
         </div>
       </div>
+
+      {/* Deal from the never-repeat pool is a server round-trip — cover it, and surface a real error
+          (empty pool / network) instead of a dead screen. */}
+      {dealPending && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(6,8,12,.72)" }}>
+          <div className="flex flex-col items-center gap-3">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-border" style={{ borderTopColor: accent }} />
+            <div className="text-sm font-semibold text-muted">Dealing…</div>
+          </div>
+        </div>
+      )}
+      {dealError && (
+        <div
+          className="fixed inset-x-0 z-50 mx-auto max-w-sm rounded-xl border border-[#E85454] bg-[#E85454]/10 px-4 py-3 text-center"
+          style={{ top: "calc(env(safe-area-inset-top,0px) + 64px)" }}
+        >
+          <div className="text-sm font-semibold text-[#E85454]">{dealError}</div>
+          <button onClick={() => setDealError(null)} className="mt-2 rounded-lg border border-[#E85454] px-3 py-1 text-xs font-bold text-[#E85454]">
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {phase === "howto" && <HowToPlay accent={accent} onDismiss={dismissHowTo} />}
 
@@ -785,7 +828,7 @@ function PlayPhase({
   slates, picks, stakes, unlockedStakes, categoryCount, expired, accent, canLock, cardMin, playedCount, bossName, onStake, onPlayCount, onPick, onLock,
 }: {
   slates: FoxSlate[];
-  picks: Record<string, "a" | "b">;
+  picks: Record<string, number>;
   stakes: number[];
   unlockedStakes: number[];
   categoryCount: number;
@@ -798,7 +841,7 @@ function PlayPhase({
   bossName: string;
   onStake: (id: string, stake: number) => void;
   onPlayCount: (id: string, n: number) => void;
-  onPick: (qid: string, side: "a" | "b") => void;
+  onPick: (qid: string, optionIndex: number) => void;
   onLock: () => void;
 }) {
   // The round timer + auto-lock now live in the parent (the clock pins in the header). `expired` is
@@ -836,7 +879,7 @@ function PlayPhase({
         const maxQ = s.questions.length;
         const shown = s.questions.slice(0, s.playCount);
         // Stake gates on a FULLY-ANSWERED card — you can't size a bid before reading the hand.
-        const answered = shown.every((q) => picks[q.id]);
+        const answered = shown.every((q) => picks[q.id] != null);
         // Fewer questions = smaller stake ceiling: card tiers = the lowest min(breadth, playCount).
         const cardUnlockedStakes = stakes.slice(0, Math.min(unlockedStakes.length, s.playCount));
         return (
@@ -891,17 +934,19 @@ function PlayPhase({
             {shown.map((q) => (
               <div key={q.id}>
                 <div className="mb-1 text-sm text-foreground">{q.text}</div>
-                <div className="flex gap-2">
-                  {(["a", "b"] as const).map((side) => {
-                    const sel = picks[q.id] === side;
+                {/* 4-option multiple choice (settled past fact) — vertical, A–D labelled */}
+                <div className="flex flex-col gap-1.5">
+                  {q.options.map((opt, oi) => {
+                    const sel = picks[q.id] === oi;
                     return (
                       <button
-                        key={side}
-                        onClick={() => onPick(q.id, side)}
-                        className="flex-1 rounded-lg border px-3 py-2 text-sm font-semibold"
+                        key={oi}
+                        onClick={() => onPick(q.id, oi)}
+                        className="flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm font-semibold"
                         style={{ borderColor: sel ? accent : "var(--border, #1E2A38)", background: sel ? `${accent}22` : "transparent", color: sel ? "#fff" : "#c3cedb" }}
                       >
-                        {side === "a" ? q.optionA : q.optionB}
+                        <span className="shrink-0 text-xs font-extrabold" style={{ color: sel ? accent : "#6B7A8E" }}>{String.fromCharCode(65 + oi)}</span>
+                        <span>{opt}</span>
                       </button>
                     );
                   })}

@@ -81,6 +81,29 @@ export const FOXPIT_TRIVIA_TAXONOMY: Record<string, string[]> = {
   Weather: ["record storms & weather history"],
 };
 
+/**
+ * Each Fox Pit TOWER category → the taxonomy PARENTS whose pooled questions feed it. The tower keeps
+ * its own six categories (the locker chooser is unchanged); this is only the deal-time lookup from a
+ * chosen category to the pool's `category` labels. crypto/weather map 1:1; entertainment fans out
+ * across all the show/movie parents.
+ */
+export const FOXPIT_CATEGORY_TAXONOMY: Record<string, string[]> = {
+  music: ["Music"],
+  entertainment: ["Reality Competition", "Sitcoms", "Drama", "Game Shows", "Movies", "Awards", "TV Mechanics"],
+  sports: ["Sports"],
+  politics: ["News/Politics"],
+  crypto: ["Crypto"],
+  weather: ["Weather"],
+};
+
+/** The pool `category` labels ("Parent · Sub") a tower category draws from — matches the ids the
+ *  generator writes, so fetchTriviaForRound's `where("category","in",…)` finds them. */
+export function triviaLabelsForCategory(cat: string): string[] {
+  return (FOXPIT_CATEGORY_TAXONOMY[cat] ?? []).flatMap((p) =>
+    (FOXPIT_TRIVIA_TAXONOMY[p] ?? []).map((s) => `${p} · ${s}`),
+  );
+}
+
 /** Flattened generation cells — one "Parent · Subcategory" label per subcategory. */
 export const FOXPIT_TRIVIA_SUBCATEGORIES: { parent: string; sub: string; label: string }[] =
   Object.entries(FOXPIT_TRIVIA_TAXONOMY).flatMap(([parent, subs]) =>

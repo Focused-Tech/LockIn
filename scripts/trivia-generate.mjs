@@ -28,8 +28,12 @@ const db = admin.firestore();
 
 const MODEL = "claude-sonnet-5";
 const PER_CELL = 12;
-const CONCURRENCY = 4;
-const TIER = process.argv[2] || "dojo";
+const CONCURRENCY = 6;
+// tierKey ∈ dojo|coliseum|hightable|suite, or "all" for the whole tower in ONE batch (retrieval reads
+// only the active batch, so every tier the tower needs must be published together, never as separate
+// runs that would archive each other).
+const TIER_ARG = process.argv[2] || "dojo";
+const TIERS = TIER_ARG === "all" ? ["dojo", "coliseum", "hightable", "suite"] : [TIER_ARG];
 
 // Taxonomy (mirrors FOXPIT_TRIVIA_TAXONOMY) → flattened "Parent · Sub" cells.
 const TAXONOMY = {
@@ -110,11 +114,11 @@ function validate(q) {
 }
 const stem = (s) => s.toLowerCase().replace(/[^a-z ]+/g, "").replace(/\b(the|a|an|in|of|who|what|which|was|were|did|is)\b/g, "").replace(/\s+/g, " ").trim();
 
-async function genCell(category, attempt = 1) {
+async function genCell(category, tier, attempt = 1) {
   const res = await client.messages.create({
     model: MODEL, max_tokens: 8000, system: SYSTEM,
     messages: [{ role: "user", content: [
-      `Category: ${category}`, `Difficulty: ${TIER_BRIEF[TIER]}`,
+      `Category: ${category}`, `Difficulty: ${TIER_BRIEF[tier]}`,
       `Write ${PER_CELL} questions at that difficulty, all in that category. 4 options each. Independently answerable.`,
     ].join("\n") }],
     tools: [TOOL], tool_choice: { type: "tool", name: "emit_trivia" },
@@ -132,28 +136,29 @@ async function genCell(category, attempt = 1) {
     good.push(q);
   }
   if (good.length < 8 && attempt < 2) {
-    const retry = await genCell(category, attempt + 1);
+    const retry = await genCell(category, tier, attempt + 1);
     return { questions: retry.questions, usage: { input_tokens: usage.input_tokens + retry.usage.input_tokens, output_tokens: usage.output_tokens + retry.usage.output_tokens }, dropped: raw.length - good.length };
   }
   return { questions: good, usage, dropped: raw.length - good.length };
 }
 
-// ---- run with a small concurrency pool ----
-const results = new Array(CELLS.length);
+// ---- work list = every (category × tier), run with a small concurrency pool ----
+const WORK = TIERS.flatMap((t) => CELLS.map((c) => ({ category: c, tier: t })));
+const results = new Array(WORK.length);
 let totalIn = 0, totalOut = 0, totalDropped = 0;
 let idx = 0;
 async function worker() {
-  while (idx < CELLS.length) {
+  while (idx < WORK.length) {
     const my = idx++;
-    const cat = CELLS[my];
+    const { category, tier } = WORK[my];
     try {
-      const r = await genCell(cat);
-      results[my] = { category: cat, tier: TIER, questions: r.questions };
+      const r = await genCell(category, tier);
+      results[my] = { category, tier, questions: r.questions };
       totalIn += r.usage.input_tokens; totalOut += r.usage.output_tokens; totalDropped += r.dropped;
-      console.log(`[${my + 1}/${CELLS.length}] ${cat}: ${r.questions.length} kept${r.dropped ? ` (${r.dropped} dropped)` : ""}`);
+      console.log(`[${my + 1}/${WORK.length}] ${tier}/${category}: ${r.questions.length} kept${r.dropped ? ` (${r.dropped} dropped)` : ""}`);
     } catch (e) {
-      console.error(`[${my + 1}/${CELLS.length}] ${cat} FAILED:`, e.message);
-      results[my] = { category: cat, tier: TIER, questions: [] };
+      console.error(`[${my + 1}/${WORK.length}] ${tier}/${category} FAILED:`, e.message);
+      results[my] = { category, tier, questions: [] };
     }
   }
 }
@@ -193,7 +198,7 @@ await flip.commit();
 
 const cost = totalIn * 3e-6 + totalOut * 15e-6;
 console.log(`\n================ PUBLISHED ================`);
-console.log(`tier=${TIER}  cells=${cells.length}/${CELLS.length}  questions=${rows.length}  dropped=${totalDropped}`);
+console.log(`tiers=${TIERS.join(",")}  cells=${cells.length}/${WORK.length}  questions=${rows.length}  dropped=${totalDropped}`);
 console.log(`batchId=${batchId} (now ACTIVE, prior archived)`);
 console.log(`tokens: in ${totalIn}  out ${totalOut}   cost≈$${cost.toFixed(4)} (Sonnet $3/$15 per M)`);
 process.exit(0);
