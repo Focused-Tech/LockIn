@@ -293,7 +293,7 @@ export function LockerRoom({
           className="w-full rounded-xl py-4 text-lg font-extrabold text-white disabled:opacity-40"
           style={{ background: GOLD, color: INK }}
         >
-          Enter the dojo ›
+          Enter the Dojo ›
         </button>
       </div>
     </div>

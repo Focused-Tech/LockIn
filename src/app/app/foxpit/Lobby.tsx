@@ -370,7 +370,8 @@ const FOXPIT_LOBBY_CSS = `
 
 const lobbyContinueBtn: React.CSSProperties = {
   position: "absolute",
-  bottom: "6%",
+  // Clear the Android bottom nav: the safe-area inset plus headroom so it never sits under the nav.
+  bottom: "calc(env(safe-area-inset-bottom, 0px) + 9%)",
   left: "50%",
   transform: "translateX(-50%)",
   zIndex: 65,

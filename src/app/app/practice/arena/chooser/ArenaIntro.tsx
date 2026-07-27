@@ -184,7 +184,8 @@ export function ArenaIntro({
         .reveal-continue {
           position: absolute;
           left: 50%;
-          top: 91%;
+          /* raised off the Android bottom nav so the plaque never overlaps it */
+          top: 84%;
           transform: translateX(-50%) translateY(12px);
           z-index: 6;
           opacity: 0;
