@@ -15,6 +15,7 @@ import {
   MEMBERSHIP_CARD,
   type FoxPitRoomKey,
 } from "@/lib/foxpit";
+import { underlingAt, underlingTableCount, type Underling } from "@/lib/foxpit/underlings";
 
 type Phase = "locker" | "door" | "room" | "table" | "faceoff" | "play";
 
@@ -27,6 +28,8 @@ const PLAYER_TABLE = "/foxpit/tables/table_player_round.png";
 const TABLE_POS: Record<number, [number, number][]> = {
   1: [[50, 66]],
   3: [[34, 68], [50, 71], [66, 68]],
+  // 4 underling tables (High Table): two rows, closest pair first.
+  4: [[36, 74], [64, 74], [38, 60], [62, 60]],
   // 5 tables in a TIGHT cluster, numbered closest-first: table 1 nearest the
   // viewer (bottom), 4 & 5 farthest (top). Kept close but non-overlapping.
   5: [[50, 77], [30, 67], [70, 67], [37, 56], [63, 56]],
@@ -104,10 +107,16 @@ export function FoxPitRoom({
     return () => clearTimeout(t);
   }, [phase]);
 
-  const tables: [number, number][] = TABLE_POS[room.tables] ?? [[50, 66]];
+  // The FLOOR tables are the UNDERLING tables (Coliseum 5 wolves, High Table 4 ravens).
+  // The room BOSS sits at his OWN separate table — the throne/faceoff — reached only after
+  // the pack is cleared. Owl (Dojo) and Boss Fox (Suite) have no pack: one boss table.
+  const nUnderling = underlingTableCount(room.key);
+  const tables: [number, number][] = nUnderling > 0
+    ? (TABLE_POS[nUnderling] ?? TABLE_POS[room.tables] ?? [[50, 66]])
+    : [[50, 66]];
   // Single-table rooms (Owl/Dojo, Boss Fox/Suite) seat you straight at the boss.
-  // Multi-table rooms require beating every regular table first.
-  const singleTable = tables.length === 1;
+  // Multi-table rooms require beating every underling table first.
+  const singleTable = nUnderling === 0;
   const allBeaten = tables.every((_, i) => beaten.has(i));
   const bossReady = singleTable || allBeaten || roomCleared;
   // the table you're currently on = the first not-yet-beaten one (highlighted orange).
@@ -276,10 +285,55 @@ export function FoxPitRoom({
                       pointerEvents: "none",
                     }}
                   >
-                    {singleTable ? `SIT · ${room.boss.toUpperCase()}` : done ? `✓ ${i + 1}` : `TABLE ${i + 1}`}
+                    {singleTable ? `SIT · ${room.boss.toUpperCase()}` : done ? "✓" : ""}
                   </div>
                 </div>
               </button>
+            );
+          })}
+
+          {/* SEATED UNDERLINGS — a wolf/raven stands at each underling table (upright layer,
+              not subject to the felt's top-down tilt). Name + win% on a plate under each.
+              pointer-events:none so taps fall through to the table button beneath. */}
+          {!singleTable && tables.map(([x, y], i) => {
+            const u: Underling | null = underlingAt(room.key, i);
+            if (!u) return null;
+            const done = roomCleared || beaten.has(i);
+            const selecting = activeTable !== null;
+            return (
+              <div
+                key={`u${i}`}
+                style={{
+                  position: "absolute",
+                  left: `${x}%`,
+                  top: `${y}%`,
+                  transform: "translate(-50%,-116%)",
+                  width: 60,
+                  pointerEvents: "none",
+                  zIndex: 3,
+                  opacity: selecting ? 0 : done ? 0.45 : 1,
+                  transition: "opacity .4s ease",
+                  filter: done
+                    ? "grayscale(.6) brightness(.7)"
+                    : "drop-shadow(0 7px 11px rgba(0,0,0,.65))",
+                }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={u.art} alt={u.name} draggable={false} style={{ width: "100%", height: "auto", display: "block" }} />
+                <div
+                  style={{
+                    textAlign: "center",
+                    marginTop: 1,
+                    fontSize: 9,
+                    fontWeight: 800,
+                    letterSpacing: ".04em",
+                    color: done ? "#22C55E" : "#F0E3C8",
+                    textShadow: "0 1px 4px #000, 0 0 6px #000",
+                  }}
+                >
+                  {done ? "CLEARED" : `${u.name.toUpperCase()} · ${u.winPct}%`}
+                </div>
+              </div>
             );
           })}
         </>
@@ -290,6 +344,7 @@ export function FoxPitRoom({
         <TablePanel
           room={room}
           index={activeTable}
+          opponent={singleTable ? null : underlingAt(room.key, activeTable)}
           freeKeycard={isFirstLoneRoom}
           username={username}
           avatarUrl={avatarUrl}
@@ -315,6 +370,7 @@ export function FoxPitRoom({
         <FoxPitGame
           roomKey={room.key}
           userCategories={lockerChoice?.categories ?? categories}
+          opponent={activeTable !== null && !singleTable ? underlingAt(room.key, activeTable) : null}
           onExit={() => { setPhase("room"); setActiveTable(null); }}
           onCleared={() => {
             markCleared(room.key);
@@ -488,10 +544,11 @@ function DoorIntro({ room, onEnter }: { room: ReturnType<typeof roomByKey>; onEn
 
 /* ---------------- table panel ---------------- */
 function TablePanel({
-  room, index, freeKeycard, username, avatarUrl, bossTable, onClose, onConfirm,
+  room, index, opponent, freeKeycard, username, avatarUrl, bossTable, onClose, onConfirm,
 }: {
   room: ReturnType<typeof roomByKey>;
   index: number;
+  opponent: Underling | null;
   freeKeycard: boolean;
   username: string;
   avatarUrl: string | null;
@@ -510,10 +567,10 @@ function TablePanel({
 
       <div style={{ position: "absolute", top: 62, left: 0, right: 0, textAlign: "center" }}>
         <div style={{ fontSize: 12, letterSpacing: ".24em", color: room.accent, fontWeight: 800 }}>
-          {bossTable ? "BOSS TABLE" : `TABLE ${index + 1}`}
+          {bossTable ? "BOSS TABLE" : `TABLE ${index + 1}${opponent ? ` · ${opponent.winPct}% WIN RATE` : ""}`}
         </div>
         <div style={{ fontFamily: "Georgia, serif", fontSize: 22, color: "#E7E7EB", marginTop: 2, textShadow: "0 2px 12px #000" }}>
-          Dealt by the Locksmith
+          {bossTable ? "Dealt by the Locksmith" : opponent ? `${opponent.name} sits across` : "Dealt by the Locksmith"}
         </div>
       </div>
 
@@ -536,7 +593,7 @@ function TablePanel({
 
       <div style={{ position: "absolute", left: 0, right: 0, bottom: "calc(env(safe-area-inset-bottom, 0px) + 28px)", display: "flex", justifyContent: "center", padding: "0 18px" }}>
         <button onClick={onConfirm} style={{ width: "100%", maxWidth: 380, border: `1px solid ${room.accent}`, background: `${room.accent}22`, color: "#ffe", borderRadius: 12, padding: "16px", fontSize: 18, fontWeight: 800, cursor: "pointer" }}>
-          {bossTable ? `Take your seat vs ${room.boss} ›` : "Deal me in ›"}
+          {bossTable ? `Take your seat vs ${room.boss} ›` : opponent ? `Sit vs ${opponent.name} ›` : "Deal me in ›"}
         </button>
       </div>
     </div>

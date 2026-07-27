@@ -92,17 +92,25 @@ const RAVEN_FEATHER = "/foxpit/defeated/raven_drop_feather.png";
 export function FoxPitGame({
   roomKey,
   userCategories,
+  opponent = null,
   onExit,
   onCleared,
 }: {
   roomKey: FoxPitRoomKey;
   userCategories: string[];
+  /** The seated underling for this table (null = the room boss's own table). Drives the
+   *  displayed name + the AI win rate; null falls back to the room boss. */
+  opponent?: { name: string; winPct: number } | null;
   onExit: () => void;
   onCleared: () => void;
 }) {
   const rules = ROOM_RULES[roomKey];
   const room = roomByKey(roomKey);
   const accent = room.accent;
+  // Who you're actually facing at THIS table — an underling (Coliseum/High Table floor
+  // tables) or the room boss (his own table / solo-boss rooms).
+  const oppName = opponent?.name ?? rules.boss;
+  const oppWinPct = opponent?.winPct ?? rules.bossWinPct;
 
   // The Dojo opens on the HOW-TO-PLAY screen (item 5) — its own beat BEFORE category select —
   // unless the player has already dismissed/skipped it (remembered). Every other room starts at
@@ -151,7 +159,7 @@ export function FoxPitGame({
 
   const keepN = keepNFor(roomKey, roundIndex);
   /** Forced-minimum cards to play vs this room's boss (item 2). Owl/Wolf = 1, Raven/Fox = 5. */
-  const cardMin = cardMinFor(rules.boss);
+  const cardMin = cardMinFor(oppName);
   /** A card is "played" once it's staked AND fully answered. */
   const playedCount = slates.filter((s) => isLocked(s, picks)).length;
   /** Breadth (item 3): choosing N categories opens the lowest N stake tiers of the room ladder. */
@@ -228,7 +236,7 @@ export function FoxPitGame({
     // PER-CARD HEAD-TO-HEAD (Frank's model): each card settles on its own — player-right/boss-wrong
     // takes the boss's stake, boss-right/player-wrong loses the player's stake, both/neither PUSH.
     // Boss stake per card = MATCH (player's tier) or TOP (flat top tier). No multipliers.
-    const settlement = settleRound(played, picks, bossMode, topStake, () => Math.random() * 100 < rules.bossWinPct);
+    const settlement = settleRound(played, picks, bossMode, topStake, () => Math.random() * 100 < oppWinPct);
     const won = settlement.playerCards >= settlement.bossCards; // took at least as many H2H cards
     setLast({ ...settlement, won, bossMode });
     if (won) setRoundsWon((w) => w + 1);
@@ -324,7 +332,7 @@ export function FoxPitGame({
           <KeyDropPhase
             roomKey={roomKey}
             accent={accent}
-            bossName={rules.boss}
+            bossName={oppName}
             roundsWon={Math.ceil(rules.rounds / 2 + 0.5)}
             totalRounds={rules.rounds}
             onDone={() => setKeyPreview(false)}
@@ -343,7 +351,7 @@ export function FoxPitGame({
         </button>
         <div className="min-w-0 flex-1 text-center">
           <div className="truncate text-xs font-extrabold tracking-wide" style={{ color: accent }}>
-            {rules.boss.toUpperCase()} · ROUND {roundIndex + 1}/{rules.rounds}
+            {oppName.toUpperCase()} · ROUND {roundIndex + 1}/{rules.rounds}
           </div>
           <div className="truncate text-[11px] font-semibold text-muted">
             KEEP {keepN}/{SLATES_PER_ROUND} · coins only
@@ -392,7 +400,7 @@ export function FoxPitGame({
         <BossModePhase
           accent={accent}
           stakes={rules.stakes}
-          bossName={rules.boss}
+          bossName={oppName}
           bossMode={bossMode}
           onBossMode={setBossMode}
           cardMin={cardMin}
@@ -437,7 +445,7 @@ export function FoxPitGame({
           canLock={canLock}
           cardMin={cardMin}
           playedCount={playedCount}
-          bossName={rules.boss}
+          bossName={oppName}
           onStake={setStake}
           onPlayCount={setPlayCount}
           onPick={pick}
@@ -457,11 +465,11 @@ export function FoxPitGame({
           playerCards={last.playerCards}
           bossCards={last.bossCards}
           net={last.net}
-          note={`${rules.boss} reads at ${rules.bossWinPct}% · ${last.bossMode === "top" ? "TOP stakes" : "MATCH stakes"}`}
+          note={`${oppName} reads at ${oppWinPct}% · ${last.bossMode === "top" ? "TOP stakes" : "MATCH stakes"}`}
           cta={roundIndex + 1 >= rules.rounds ? "See the tally ›" : "Next round ›"}
           onCta={nextRound}
           onQuit={onExit}
-          bossName={rules.boss}
+          bossName={oppName}
         />
       )}
 
@@ -469,7 +477,7 @@ export function FoxPitGame({
         <KeyDropPhase
           roomKey={roomKey}
           accent={accent}
-          bossName={rules.boss}
+          bossName={oppName}
           roundsWon={roundsWon}
           totalRounds={rules.rounds}
           onDone={onCleared}
@@ -479,7 +487,7 @@ export function FoxPitGame({
       {phase === "roomResult" && !cleared && (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
           <div className="text-xs font-extrabold tracking-widest" style={{ color: accent }}>
-            {rules.boss.toUpperCase()}
+            {oppName.toUpperCase()}
           </div>
           <div className="font-serif text-4xl" style={{ color: accent }}>
             Boss holds the room
