@@ -220,6 +220,7 @@ export function FoxPitRoom({
               the room). Beaten = dimmed + ✓; the table you're on = lock-in orange. */}
           {tables.map(([x, y], i) => {
             const done = roomCleared || beaten.has(i);
+            const u = singleTable ? null : underlingAt(room.key, i);
             const isCurrent = i === currentTableIdx;
             // when a table is picked, the others disperse OUTWARD (radially, in the
             // direction they sit) and fade; the picked one nudges up in scale.
@@ -285,55 +286,16 @@ export function FoxPitRoom({
                       pointerEvents: "none",
                     }}
                   >
-                    {singleTable ? `SIT · ${room.boss.toUpperCase()}` : done ? "✓" : ""}
+                    {singleTable
+                      ? `SIT · ${room.boss.toUpperCase()}`
+                      : done
+                        ? "✓"
+                        : u
+                          ? `${u.name.toUpperCase()} · ${u.winPct}%`
+                          : `TABLE ${i + 1}`}
                   </div>
                 </div>
               </button>
-            );
-          })}
-
-          {/* SEATED UNDERLINGS — a wolf/raven stands at each underling table (upright layer,
-              not subject to the felt's top-down tilt). Name + win% on a plate under each.
-              pointer-events:none so taps fall through to the table button beneath. */}
-          {!singleTable && tables.map(([x, y], i) => {
-            const u: Underling | null = underlingAt(room.key, i);
-            if (!u) return null;
-            const done = roomCleared || beaten.has(i);
-            const selecting = activeTable !== null;
-            return (
-              <div
-                key={`u${i}`}
-                style={{
-                  position: "absolute",
-                  left: `${x}%`,
-                  top: `${y}%`,
-                  transform: "translate(-50%,-116%)",
-                  width: 60,
-                  pointerEvents: "none",
-                  zIndex: 3,
-                  opacity: selecting ? 0 : done ? 0.45 : 1,
-                  transition: "opacity .4s ease",
-                  filter: done
-                    ? "grayscale(.6) brightness(.7)"
-                    : "drop-shadow(0 7px 11px rgba(0,0,0,.65))",
-                }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={u.art} alt={u.name} draggable={false} style={{ width: "100%", height: "auto", display: "block" }} />
-                <div
-                  style={{
-                    textAlign: "center",
-                    marginTop: 1,
-                    fontSize: 9,
-                    fontWeight: 800,
-                    letterSpacing: ".04em",
-                    color: done ? "#22C55E" : "#F0E3C8",
-                    textShadow: "0 1px 4px #000, 0 0 6px #000",
-                  }}
-                >
-                  {done ? "CLEARED" : `${u.name.toUpperCase()} · ${u.winPct}%`}
-                </div>
-              </div>
             );
           })}
         </>
