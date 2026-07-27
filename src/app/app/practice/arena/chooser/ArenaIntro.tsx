@@ -133,7 +133,8 @@ export function ArenaIntro({
         .reveal-reflect {
           position: absolute;
           left: 50%;
-          top: 84%;
+          /* wordmark sits under Boss Fox's feet; raised so the Continue plaque clears it below */
+          top: 74%;
           width: 118px;
           transform: translateX(-50%) translateY(10px);
           opacity: 0;
@@ -184,8 +185,9 @@ export function ArenaIntro({
         .reveal-continue {
           position: absolute;
           left: 50%;
-          /* raised off the Android bottom nav so the plaque never overlaps it */
-          top: 84%;
+          /* bottom-anchored + safe-area so the plaque always clears the Android nav, and sits
+             well below the wordmark (top:74%) — no overlap either side. */
+          bottom: calc(env(safe-area-inset-bottom, 0px) + 26px);
           transform: translateX(-50%) translateY(12px);
           z-index: 6;
           opacity: 0;

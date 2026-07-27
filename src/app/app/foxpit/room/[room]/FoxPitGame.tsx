@@ -713,41 +713,102 @@ function DealingTable({
   );
 }
 
-/* ---------------- a slate drawn on the LockIn card face ---------------- */
+/* ---------------- a slate drawn on the LockIn card face ----------------
+ * Tap the card to FLIP it: category/title on the front, the actual question(s) on the
+ * back so the player can READ them before deciding to keep or throw back (per Frank's
+ * spec — the question lives on the card face). The KEEP toggle rides the question side. */
 function SlateCardFace({
-  slate, keep, tint, stakes, onClick,
+  slate, keep, tint, stakes, onToggle,
 }: {
   slate: FoxSlate;
   keep: boolean;
   tint: { color: string; soft: string; border: string };
   stakes: number[];
-  onClick: () => void;
+  onToggle: () => void;
 }) {
+  const [flipped, setFlipped] = useState(false);
+  const ring = { borderColor: keep ? tint.color : tint.border, background: keep ? tint.soft : "transparent" };
   return (
-    <button onClick={onClick} className="relative w-[31%] min-w-[100px]">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={CARD_FRONT} alt="" className="block h-auto w-full" />
-      {/* content sits under the LockIn mark printed on the face */}
-      <div className="absolute inset-0 flex flex-col px-2 pb-2 pt-[30%] text-left">
-        <div className="text-[8px] font-bold uppercase leading-tight" style={{ color: tint.color }}>
-          {slate.category}
+    <div className="relative w-[31%] min-w-[100px]" style={{ perspective: "900px" }}>
+      <div
+        className="relative"
+        style={{
+          transformStyle: "preserve-3d",
+          WebkitTransformStyle: "preserve-3d",
+          transition: "transform .5s cubic-bezier(.2,.8,.2,1)",
+          transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
+        }}
+      >
+        {/* FRONT — category + title */}
+        <div
+          onClick={() => setFlipped(true)}
+          className="relative block w-full cursor-pointer"
+          style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={CARD_FRONT} alt="" className="block h-auto w-full" />
+          <div className="absolute inset-0 flex flex-col px-2 pb-2 pt-[30%] text-left">
+            <div className="text-[8px] font-bold uppercase leading-tight" style={{ color: tint.color }}>
+              {slate.category}
+            </div>
+            <div className="font-serif text-[11px] leading-tight text-foreground">{slate.title}</div>
+            <div className="mt-auto flex items-center justify-between">
+              <span className="text-[8px] text-muted">
+                {slate.questions.length}Q · {stakes[0]}–{stakes[stakes.length - 1]} ⛃
+              </span>
+              <span className="text-[7px] font-extrabold uppercase tracking-wide" style={{ color: tint.color }}>
+                tap ›
+              </span>
+            </div>
+          </div>
+          <div className="pointer-events-none absolute inset-0 rounded-[10px] border" style={ring} />
+          {keep && (
+            <div className="absolute right-1 top-1 rounded px-1 text-[8px] font-extrabold" style={{ color: tint.color, background: "rgba(3,4,7,.7)" }}>
+              KEEP ✓
+            </div>
+          )}
         </div>
-        <div className="font-serif text-[11px] leading-tight text-foreground">{slate.title}</div>
-        <div className="mt-auto text-[8px] text-muted">
-          {slate.questions.length}Q · {stakes[0]}–{stakes[stakes.length - 1]} ⛃
+        {/* BACK — the question(s), so the player can read before keeping/throwing back */}
+        <div
+          onClick={() => setFlipped(false)}
+          className="absolute inset-0 block w-full cursor-pointer"
+          style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={CARD_FRONT} alt="" className="block h-auto w-full" />
+          <div className="absolute inset-0 flex flex-col px-2 pb-2 pt-[15%] text-left">
+            <div className="text-[7px] font-bold uppercase leading-tight" style={{ color: tint.color }}>
+              {slate.category}
+            </div>
+            <div className="mt-0.5 flex-1 overflow-hidden">
+              {slate.questions.map((q, i) => (
+                <div key={q.id} className="mb-1 text-[8px] leading-snug text-foreground">
+                  {slate.questions.length > 1 && <span style={{ color: tint.color }}>{i + 1}. </span>}
+                  {q.text}
+                </div>
+              ))}
+            </div>
+            <div className="mt-auto flex items-center justify-between gap-1">
+              <span className="text-[7px] font-extrabold uppercase tracking-wide" style={{ color: tint.color }}>
+                ‹ flip
+              </span>
+              <span
+                onClick={(e) => { e.stopPropagation(); onToggle(); }}
+                className="rounded px-1.5 py-0.5 text-[8px] font-extrabold uppercase"
+                style={{
+                  color: keep ? "#03040A" : tint.color,
+                  background: keep ? tint.color : "rgba(3,4,7,.65)",
+                  border: `1px solid ${tint.color}`,
+                }}
+              >
+                {keep ? "kept ✓" : "keep"}
+              </span>
+            </div>
+          </div>
+          <div className="pointer-events-none absolute inset-0 rounded-[10px] border" style={ring} />
         </div>
       </div>
-      {/* category outline; brightens + fills when kept. Thin 1px border (was 2px) per Frank. */}
-      <div
-        className="pointer-events-none absolute inset-0 rounded-[10px] border"
-        style={{ borderColor: keep ? tint.color : tint.border, background: keep ? tint.soft : "transparent" }}
-      />
-      {keep && (
-        <div className="absolute right-1 top-1 rounded px-1 text-[8px] font-extrabold" style={{ color: tint.color, background: "rgba(3,4,7,.7)" }}>
-          KEEP ✓
-        </div>
-      )}
-    </button>
+    </div>
   );
 }
 
@@ -785,7 +846,7 @@ function DealPhase({
         {left}s
       </div>
       <div className="text-center text-sm text-muted">
-        Keep the cards you like — discard the rest for one redeal, then play as many as you want at the table.
+        Tap a card to read its question — keep the ones you like, throw the rest back for one redeal, then play them at the table.
       </div>
       {/* your hand — each slate drawn on the LockIn card face */}
       <div className="flex flex-wrap justify-center gap-2">
@@ -796,7 +857,7 @@ function DealPhase({
             keep={kept.has(s.id)}
             tint={slateTint(s)}
             stakes={stakes}
-            onClick={() => onToggle(s.id)}
+            onToggle={() => onToggle(s.id)}
           />
         ))}
       </div>
