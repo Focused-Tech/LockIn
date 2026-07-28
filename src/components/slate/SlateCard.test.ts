@@ -76,14 +76,27 @@ describe("uniform SlateCard (slice 3.4)", () => {
     }
   }
 
-  it("Fox Pit face variant renders the baked image, not the code title", () => {
-    const el = renderCard(base({ mode: "foxpit", faceImage: "/foxpit/cards/card_front_single.png" }));
+  it("Fox Pit face variant: baked image face + slate title overlaid, bezel preserved", () => {
+    const el = renderCard(base({ mode: "foxpit", faceImage: "/foxpit/cards/card_front_single.png", title: "Slate 1 · halftime shows" }));
     expect(errors).toEqual([]);
     const img = el.querySelector("[data-face-image]") as HTMLImageElement;
-    expect(img).toBeTruthy();
-    expect(img.getAttribute("src")).toBe("/foxpit/cards/card_front_single.png");
-    expect(el.querySelector("[data-title]")).toBeNull(); // wordmark is baked, code title suppressed
-    expect((el.firstElementChild as HTMLElement).style.border).toContain(CAT_RGB); // bezel still applies
+    expect(img.getAttribute("src")).toBe("/foxpit/cards/card_front_single.png"); // wordmark is baked into this image
+    // the slate's own title overlays the baked face (sans-serif), the wordmark is NOT redrawn in code
+    expect(el.querySelector("[data-title]")!.textContent).toBe("Slate 1 · halftime shows");
+    expect(el.querySelector("[data-title]")!.className).not.toContain("font-serif");
+    expect((el.firstElementChild as HTMLElement).style.border).toContain(CAT_RGB); // category ring preserved
+  });
+
+  it("DEAL 3.3a: mini (no legs) shows ZERO question text; opened card carries the full question", () => {
+    const Q = "Shakira and J.Lo co-headlined the 2020 Super Bowl halftime show in which city?";
+    const mini = renderCard(base({ mode: "foxpit", faceImage: "/foxpit/cards/card_front_single.png", title: "Slate 1", legs: [], stakeMode: "none" }));
+    expect(mini.querySelectorAll("[data-leg-state]").length).toBe(0);
+    expect(mini.textContent).not.toContain(Q); // mini renders zero question text
+    const opened = renderCard(base({
+      mode: "foxpit", faceImage: "/foxpit/cards/card_front_single.png", title: "Slate 1", stakeMode: "none",
+      legs: [{ question: Q, state: "neutral", picks: [{ label: "Tampa" }, { label: "Miami" }], context: { seasonAverage: "—", last3Form: "—", matchupNote: "" } }],
+    }));
+    expect(opened.textContent).toContain(Q); // opened card carries the full question string
   });
 
   it("failing validation → bad leg + bad flag; afterAnswers stake gated until answered", () => {

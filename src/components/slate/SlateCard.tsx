@@ -48,7 +48,9 @@ export interface SlateLeg {
   qs?: string;
   picks: SlatePick[];
   state: LegState;
-  context: LegDisplayContext;
+  /** display-only context (sports slates). Optional — Fox Pit trivia has no such context; the
+   *  PUBLISH-time requirement is enforced separately by validateLeg for creator sports slates. */
+  context?: LegDisplayContext | null;
   flag?: { variant: "ok" | "bad"; message: string } | null;
 }
 export interface SlateCardProps {
@@ -100,10 +102,19 @@ export function SlateCard({
       className="relative flex flex-col gap-3 overflow-hidden rounded-[22px] bg-surface-card p-[17px]"
       style={{ border: `2px solid ${catColor}`, boxShadow: SH.card }} // category bezel + card depth
     >
-      {/* HEADER — Fox Pit keeps its baked image face; every other mode uses the code eyebrow/title. */}
+      {/* HEADER — Fox Pit keeps its baked image face (wordmark baked in); the slate's own category +
+          title overlay it (sans-serif per the reference). Every other mode uses the code eyebrow/title. */}
       {faceImage ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img data-face-image src={faceImage} alt="" className="-mx-[17px] -mt-[17px] mb-0 block w-[calc(100%+34px)]" />
+        <div className="relative -mx-[17px] -mt-[17px]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img data-face-image src={faceImage} alt="" className="block w-full" />
+          <div className="absolute inset-0 flex flex-col px-4 pt-[27%] text-left">
+            {eyebrow && (
+              <div data-eyebrow className="text-[10px] font-bold uppercase tracking-wide" style={{ color: catColor }}>{eyebrow}</div>
+            )}
+            {title && <div data-title className="text-sm font-semibold leading-tight text-white">{title}</div>}
+          </div>
+        </div>
       ) : (
         <div>
           {eyebrow && (
@@ -160,12 +171,15 @@ export function SlateCard({
             ))}
           </div>
 
-          {/* required display-only context strip (never a threshold). */}
-          <div data-context className="mt-2.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted">
-            <span>Season avg: {leg.context.seasonAverage}</span>
-            <span>Last 3: {leg.context.last3Form}</span>
-            <span>{leg.context.matchupNote}</span>
-          </div>
+          {/* display-only context strip (never a threshold) — present for sports slates, omitted for
+              Fox Pit trivia which has no such context. */}
+          {leg.context && (
+            <div data-context className="mt-2.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted">
+              <span>Season avg: {leg.context.seasonAverage}</span>
+              <span>Last 3: {leg.context.last3Form}</span>
+              <span>{leg.context.matchupNote}</span>
+            </div>
+          )}
 
           {leg.flag && (
             <div
