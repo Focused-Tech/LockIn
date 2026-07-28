@@ -6,6 +6,7 @@ import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUserProfile } from "@/lib/firebase/session";
 import { COLLECTIONS } from "@/lib/firebase/types";
 import { CATEGORIES } from "@/lib/categories";
+import { canCreatorHostCash, blockedStateMessage } from "@/lib/eligibility";
 import { suggestOddsMock, type OddsSuggestion } from "@/lib/ai/probability";
 import { notifyFollowersNewSlate } from "@/lib/notifications/send";
 
@@ -70,6 +71,12 @@ export async function createSlate(
   if (!profile) return { ok: false, error: "Not signed in" };
   if (!profile.creatorVerified) {
     return { ok: false, error: "Apply to become a creator to host contests" };
+  }
+  // SLICE 1.4 — creator-side cash gate (stricter; operator exposure sits with LockIn). Routed
+  // through the ONE resolver, fail-closed on an unknown state.
+  if (!canCreatorHostCash(profile.registeredState)) {
+    const msg = blockedStateMessage(profile.registeredState);
+    return { ok: false, error: `${msg.title}. ${msg.law}` };
   }
   const uid = profile.id;
 

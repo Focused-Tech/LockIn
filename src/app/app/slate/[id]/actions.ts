@@ -10,10 +10,10 @@ import {
   type UserDoc,
 } from "@/lib/firebase/types";
 import {
-  EXCLUDED_STATES,
   FREE_ENTRY_COIN_COST,
   type EntryTier,
 } from "@/lib/constants";
+import { canPlayerEnterCash } from "@/lib/eligibility";
 import { isSelfExcluded } from "@/server/data/responsiblePlay";
 
 export type SubmitEntryInput = {
@@ -102,11 +102,8 @@ export async function submitEntry(
         });
       } else {
         if (user.kycStatus !== "verified") throw new Error("NEEDS_KYC");
-        if (
-          user.registeredState &&
-          (EXCLUDED_STATES as readonly string[]).includes(user.registeredState)
-        )
-          throw new Error("GEO_BLOCKED");
+        // SLICE 1.4 — player-side cash gate through the ONE resolver (fail-closed on unknown state).
+        if (!canPlayerEnterCash(user.registeredState)) throw new Error("GEO_BLOCKED");
         if (user.cashBalanceCents < entryCostCents) throw new Error("LOW_CASH");
         tx.update(userRef, {
           cashBalanceCents: user.cashBalanceCents - entryCostCents,
