@@ -11,9 +11,10 @@ import { useEffect, useRef, useState } from "react";
 import { LockGlyph } from "@/components/practice/LockGlyph";
 import { categoryTint } from "@/lib/practice/tints";
 import { roomByKey, KEY_ASSET, type FoxPitRoomKey } from "@/lib/foxpit";
-import { ROOM_RULES, keepNFor, SLATES_PER_ROUND, REDEALS_PER_ROUND, FOXPIT_BUILD_VERSION, CATEGORY_TINT_KEY, TIMERS, FOXPIT_CATEGORIES, cardMinFor, unlockedTierCount, type FoxPitCategory } from "@/lib/foxpit/rules";
+import { ROOM_RULES, keepNFor, SLATES_PER_ROUND, REDEALS_PER_ROUND, CATEGORY_TINT_KEY, TIMERS, FOXPIT_CATEGORIES, cardMinFor, unlockedTierCount, type FoxPitCategory } from "@/lib/foxpit/rules";
 import { settleRound, type FoxSlate, type BossStakeMode, type RoundSettlement, type CardLedgerLine } from "@/lib/foxpit/slates";
 import { SlateCard, type SlateLeg } from "@/components/slate/SlateCard";
+import { RoundChrome } from "./RoundChrome";
 import { applyFoxPitCoins, dealFoxRound } from "../../actions";
 
 /** Resolve the player's shared interest categories (users/{uid}.categories[]) to the Fox Pit set.
@@ -324,14 +325,7 @@ export function FoxPitGame({
       // footer (lock button + 2 note rows) plus the nav-bar inset. The exact per-view padding is measured.
       style={{ scrollPaddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 200px)" }}
     >
-      {/* DEV PREVIEW (temporary): jump straight to this room's key-drop. Remove before launch. */}
-      <button
-        onClick={() => setKeyPreview(true)}
-        className="fixed right-2 z-[90] rounded-md border px-2 py-1 text-[11px] font-extrabold"
-        style={{ top: "calc(env(safe-area-inset-top,0px) + 74px)", borderColor: "#FF3B00", background: "rgba(6,8,12,.9)", color: "#FF3B00" }}
-      >
-        🔑 keydrop
-      </button>
+      {/* DEV PREVIEW keydrop now lives in the RoundChrome header (beside the timer), not floating. */}
       {keyPreview && (
         <div className="fixed inset-0 z-[95] flex flex-col bg-background">
           <KeyDropPhase
@@ -344,37 +338,21 @@ export function FoxPitGame({
           />
         </div>
       )}
-      {/* ROUND CHROME header — OPAQUE (nothing scrolls through it), clears the status bar via
-          safe-area-top, and compact to at most TWO lines (truncate before wrapping). z-40 so it
-          sits above all card content + the footer. */}
-      <div
-        className="sticky top-0 z-40 flex items-center gap-2 border-b border-border px-3 pb-2"
-        style={{ background: "#0A0D12", paddingTop: "calc(env(safe-area-inset-top,0px) + 8px)" }}
-      >
-        <button onClick={onQuitGame} className="shrink-0 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-muted">
-          ‹ Quit game
-        </button>
-        <div className="min-w-0 flex-1 text-center">
-          <div className="truncate text-xs font-extrabold tracking-wide" style={{ color: accent }}>
-            {oppName.toUpperCase()} · ROUND {roundIndex + 1}/{rules.rounds}
-          </div>
-          <div className="truncate text-[11px] font-semibold text-muted">
-            KEEP {keepN}/{SLATES_PER_ROUND} · coins only
-          </div>
-        </div>
-        {/* CLOCK — dedicated header slot, pinned + visible on every round screen; alert-red under 15s */}
-        <div className="shrink-0 flex flex-col items-end gap-0.5">
-          {clockVisible && (
-            <div
-              className="rounded-full border px-2.5 py-0.5 text-sm font-extrabold tabular-nums"
-              style={{ borderColor: clockAlert ? "#E85454" : accent, color: clockAlert ? "#E85454" : accent, background: "rgba(6,8,12,.95)" }}
-            >
-              {clockShow < 0 ? "0:00" : `${Math.floor(clockShow / 60)}:${String(clockShow % 60).padStart(2, "0")}`}
-            </div>
-          )}
-          <div className="text-[8px] leading-none text-muted">w{roundsWon} · {FOXPIT_BUILD_VERSION}</div>
-        </div>
-      </div>
+      {/* 3.3b — ROUND CHROME (keydrop lives here, beside the timer — never on a card). */}
+      <RoundChrome
+        oppName={oppName}
+        roundIndex={roundIndex}
+        rounds={rules.rounds}
+        keepN={keepN}
+        slatesPerRound={SLATES_PER_ROUND}
+        accent={accent}
+        clockVisible={clockVisible}
+        clockLabel={clockShow < 0 ? "0:00" : `${Math.floor(clockShow / 60)}:${String(clockShow % 60).padStart(2, "0")}`}
+        clockAlert={clockAlert}
+        roundsWon={roundsWon}
+        onQuit={onQuitGame}
+        onKeydrop={() => setKeyPreview(true)}
+      />
 
       {/* Deal from the never-repeat pool is a server round-trip — cover it, and surface a real error
           (empty pool / network) instead of a dead screen. */}
