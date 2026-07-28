@@ -34,6 +34,9 @@ const config: Config = {
           soft: "var(--accent-soft)",
           border: "var(--accent-border)",
         },
+        // Money (creator engine + pot): gold = pot money, cash = the cash-currency accent.
+        gold: "#F0C463",
+        cash: "#2FB98A",
         // Semantic states
         win: "#22C55E",
         loss: "#E85454",

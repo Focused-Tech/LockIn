@@ -1,112 +1,135 @@
 "use client";
 
 /**
- * SLICE 3 — THE UNIFORM SLATE CARD.
+ * SLICE 3 — THE UNIFORM SLATE CARD (rebuilt to design/lockin_slate_card_mockup.html).
  *
- * ONE component renders a slate/leg for EVERY mode (practice, Fox Pit, Lone Wolf, beginner,
- * advanced, creator preview). There is never a second card layout. Currency and context swap per
- * mode via props — there is no cash card and no coin card, one card.
+ * ONE component for every mode. Currency + context swap per mode via props; there is never a second
+ * card layout. Depth is part of the design — literal box-shadow values only (never var() or
+ * color-mix() inside a shadow, which silently no-op). Keydrop is SCREEN CHROME, never on the card.
  *
- * Structure (from the approved mockup): leg container (neutral/ok/bad border state) → question line
- * → pick chips (label + secondary line, selectable) → REQUIRED display-only context strip → flag
- * row (ok/bad, fix-naming copy) → per-CARD stake footer (chips at the bottom, unlocked only after
- * this card's questions are answered — STAKE IS PER CARD, NEVER PER QUESTION).
- *
- * Colors reference TOKENS by name only (slice 8 assigns the purple/gold/orange meaning). No raw hex.
+ * FOX PIT CARVE-OUT (frozen, architect-confirmed): the Locksmith-dealt face-side cards keep their
+ * existing baked header/wordmark — pass `faceImage="/foxpit/cards/card_front_single.png"` and the
+ * card renders that image as its face with the category ring, instead of the code eyebrow/title.
+ * The mockup's short hug-the-content `.mark` pill is DISREGARDED for Fox Pit (and used nowhere else).
  */
 import { cn } from "@/lib/utils";
+import { LockGlyph } from "@/components/practice/LockGlyph";
 
 export type CardCurrency = "cash" | "coins";
 export type LegState = "neutral" | "ok" | "bad";
+/** always = stake always shown; afterAnswers = revealed once this card's questions are answered; none = no stake. */
+export type StakeMode = "always" | "afterAnswers" | "none";
+
+// Literal depth values from the reference (no var()/color-mix() in any shadow).
+const SH = {
+  card: "0 10px 30px rgba(0,0,0,.5)",
+  rise: "inset 0 1px 0 rgba(255,255,255,.045), 0 2px 6px rgba(0,0,0,.45)",
+  pick: "inset 0 1px 0 rgba(255,255,255,.06), 0 1px 3px rgba(0,0,0,.5)",
+  pickSel: "inset 0 1px 0 rgba(255,255,255,.09), 0 0 0 3px rgba(255,255,255,.07), 0 3px 9px rgba(0,0,0,.55)",
+  chipOn: "inset 0 1px 0 rgba(255,255,255,.28), 0 4px 12px rgba(0,0,0,.5)",
+  cta: "inset 0 1px 0 rgba(255,255,255,.3), 0 6px 18px rgba(0,0,0,.55)",
+  barInset: "inset 0 1px 2px rgba(0,0,0,.7)",
+};
+const PICK_GRADIENT = "linear-gradient(180deg,#1B212B 0%,#151A22 100%)";
 
 export interface SlatePick {
   label: string;
-  /** secondary team / context line under the label. */
-  secondary?: string;
+  secondary?: string[];
   selected?: boolean;
-  /** settled outcome, when read-only. */
   result?: "correct" | "wrong" | null;
 }
-
-/** SLICE 3.2 / 2.5 — context is REQUIRED on every leg and is DISPLAY ONLY, never the threshold. */
 export interface LegDisplayContext {
   seasonAverage: string;
   last3Form: string;
   matchupNote: string;
 }
-
 export interface SlateLeg {
   question: string;
+  qs?: string;
   picks: SlatePick[];
   state: LegState;
   context: LegDisplayContext;
-  /** ok/bad flag with fix-naming copy (Lockpick fills this — slice 4). */
   flag?: { variant: "ok" | "bad"; message: string } | null;
 }
-
 export interface SlateCardProps {
-  /** the mode this card renders in — "foxpit" | "beginner" | "advanced" | "practice" | "creator" | … */
   mode: string;
-  /** currency is a PROP — same card, dollars or coins. */
   currency: CardCurrency;
+  /** category-canon color — drives the bezel (border) + eyebrow/context highlights. */
+  catColor: string;
   legs: SlateLeg[];
-  /** per-card stake chip options (the stake footer). */
-  stakeOptions: number[];
-  selectedStake?: number | null;
-  /** this card's questions are answered → the stake footer unlocks (slice 4.6). */
-  answered?: boolean;
-  locked?: boolean;
-  readOnly?: boolean;
+  eyebrow?: string;
   title?: string;
-  category?: string;
+  sub?: string;
+  stakeMode?: StakeMode;
+  stakeOptions?: number[];
+  selectedStake?: number | null;
+  stakeLabel?: string;
+  stakeNote?: string;
+  /** afterAnswers: this card's questions are answered → the stake reveals. */
+  answered?: boolean;
+  cta?: { label: string; disabled?: boolean; coin?: boolean };
+  locked?: boolean;
+  /** the lock-in animation overlay (carried into every mode). */
+  locking?: boolean;
+  readOnly?: boolean;
+  /** FOX PIT face-side: baked card image (card_front_single.png). When set, replaces the code header. */
+  faceImage?: string;
   onPick?: (legIndex: number, pickIndex: number) => void;
   onStake?: (stake: number) => void;
+  onCta?: () => void;
 }
-
-const LEG_BORDER: Record<LegState, string> = {
-  neutral: "border-border",
-  ok: "border-win/60",
-  bad: "border-loss",
-};
 
 function currencyLabel(currency: CardCurrency, amount: number): string {
   return currency === "cash" ? `$${amount}` : `${amount} ⛃`;
 }
 
 export function SlateCard({
-  mode,
-  currency,
-  legs,
-  stakeOptions,
-  selectedStake = null,
-  answered = false,
-  locked = false,
-  readOnly = false,
-  title,
-  category,
-  onPick,
-  onStake,
+  mode, currency, catColor, legs,
+  eyebrow, title, sub,
+  stakeMode = "always", stakeOptions = [], selectedStake = null, stakeLabel = "Play", stakeNote, answered = false,
+  cta, locked = false, locking = false, readOnly = false, faceImage,
+  onPick, onStake, onCta,
 }: SlateCardProps) {
+  const stakeVisible = stakeMode !== "none" && stakeOptions.length > 0;
+  const stakeGated = stakeMode === "afterAnswers" && !answered;
+
   return (
     <div
       data-mode={mode}
       data-currency={currency}
-      className="rounded-xl border border-border bg-surface-card p-3"
+      className="relative flex flex-col gap-3 overflow-hidden rounded-[22px] bg-surface-card p-[17px]"
+      style={{ border: `2px solid ${catColor}`, boxShadow: SH.card }} // category bezel + card depth
     >
-      {(category || title) && (
-        <div className="mb-2">
-          {category && (
-            <div className="text-[10px] font-bold uppercase tracking-widest text-accent">{category}</div>
+      {/* HEADER — Fox Pit keeps its baked image face; every other mode uses the code eyebrow/title. */}
+      {faceImage ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img data-face-image src={faceImage} alt="" className="-mx-[17px] -mt-[17px] mb-0 block w-[calc(100%+34px)]" />
+      ) : (
+        <div>
+          {eyebrow && (
+            <div data-eyebrow className="text-[13px] font-semibold tracking-[0.11em]" style={{ color: catColor }}>{eyebrow}</div>
           )}
-          {title && <div className="font-serif text-base leading-tight text-foreground">{title}</div>}
+          {/* TITLE — sans-serif semibold, NOT serif. */}
+          {title && <div data-title className="mt-1 text-[26px] font-semibold leading-[1.15] tracking-[-0.015em] text-white">{title}</div>}
+          {sub && <div className="-mt-1 text-sm text-muted">{sub}</div>}
         </div>
       )}
 
       {legs.map((leg, li) => (
-        <div key={li} data-leg-state={leg.state} className={cn("mb-2 rounded-lg border bg-surface p-2.5", LEG_BORDER[leg.state])}>
-          <div className="mb-1.5 text-sm text-foreground">{leg.question}</div>
+        <div
+          key={li}
+          data-leg-state={leg.state}
+          className="rounded-[15px] bg-surface p-4"
+          style={{
+            boxShadow: SH.rise, // raised leg panel
+            outline: leg.state === "ok" ? `2px solid ${catColor}` : leg.state === "bad" ? "2px solid #E0432C" : undefined,
+            outlineOffset: leg.state !== "neutral" ? "2px" : undefined,
+          }}
+        >
+          <div className="text-[19px] font-semibold leading-[1.3] text-white">{leg.question}</div>
+          {leg.qs && <div className="mt-1.5 text-sm text-muted">{leg.qs}</div>}
 
-          <div className="flex flex-wrap gap-1.5">
+          <div className="mt-3.5 grid gap-2.5">
             {leg.picks.map((pick, pi) => (
               <button
                 key={pi}
@@ -115,21 +138,30 @@ export function SlateCard({
                 data-selected={pick.selected ? "true" : "false"}
                 disabled={readOnly || locked}
                 onClick={() => onPick?.(li, pi)}
-                className={cn(
-                  "rounded-md border px-2 py-1 text-left text-xs",
-                  pick.selected ? "border-accent text-accent" : "border-border text-foreground",
-                  pick.result === "correct" && "border-win text-win",
-                  pick.result === "wrong" && "border-loss text-loss",
-                )}
+                className="rounded-[11px] border px-3.5 py-3 text-left"
+                style={{
+                  borderColor: pick.selected ? catColor : "#262E3A",
+                  borderWidth: pick.selected ? 1.5 : 1,
+                  backgroundColor: "#181E27",
+                  backgroundImage: PICK_GRADIENT,
+                  boxShadow: pick.selected ? SH.pickSel : SH.pick, // gradient + inset highlight; selected adds a ring
+                }}
               >
-                <span className="block">{pick.label}</span>
-                {pick.secondary && <span className="block text-[10px] text-muted">{pick.secondary}</span>}
+                <span className="block text-[17px] font-semibold leading-tight text-white">{pick.label}</span>
+                {(pick.secondary ?? []).map((s, si) => (
+                  <span key={si} className="mt-1.5 block text-[14px] leading-snug text-muted">{s}</span>
+                ))}
+                {pick.result && (
+                  <span className={cn("mt-1 block text-sm font-semibold", pick.result === "correct" ? "text-cash" : "text-loss")}>
+                    {pick.result === "correct" ? "✓ correct" : "✗ wrong"}
+                  </span>
+                )}
               </button>
             ))}
           </div>
 
-          {/* SLICE 2.5 — required display-only context strip. Never a threshold. */}
-          <div data-context className="mt-2 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-muted">
+          {/* required display-only context strip (never a threshold). */}
+          <div data-context className="mt-2.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted">
             <span>Season avg: {leg.context.seasonAverage}</span>
             <span>Last 3: {leg.context.last3Form}</span>
             <span>{leg.context.matchupNote}</span>
@@ -138,40 +170,76 @@ export function SlateCard({
           {leg.flag && (
             <div
               data-flag={leg.flag.variant}
-              className={cn(
-                "mt-2 rounded-md border-l-2 px-2 py-1.5 text-[11px] leading-snug",
-                leg.flag.variant === "ok" ? "border-win text-win" : "border-loss text-loss",
-              )}
+              className="mt-2 rounded-md border-l-2 px-2 py-1.5 text-[11px] leading-snug"
+              style={{ borderColor: leg.flag.variant === "ok" ? "#2FB98A" : "#E0432C", color: leg.flag.variant === "ok" ? "#3ECFA0" : "#E0432C" }}
               dangerouslySetInnerHTML={{ __html: leg.flag.message }}
             />
           )}
         </div>
       ))}
 
-      {/* SLICE 3.2 / 4.6 — per-CARD stake footer, unlocked only after this card's questions are answered. */}
-      {stakeOptions.length > 0 && (
-        <div data-stake-footer className="mt-1 border-t border-border pt-2">
-          {!answered && !readOnly && (
-            <div className="mb-1 text-[10px] text-muted">Answer the questions on this card to stake.</div>
-          )}
-          <div className="flex flex-wrap gap-1.5">
-            {stakeOptions.map((s) => (
+      {/* STAKE — per card, at the bottom. stakeMode drives visibility; afterAnswers gates on `answered`. */}
+      {stakeVisible && stakeGated && (
+        <div data-stake-hint className="text-center text-[13.5px] font-semibold" style={{ color: catColor }}>
+          {stakeLabel === "Play" ? "Answer every question to set your stake" : stakeLabel}
+        </div>
+      )}
+      {stakeVisible && !stakeGated && (
+        <div
+          data-stake-footer
+          className="flex flex-wrap items-center justify-center gap-2"
+          style={stakeMode === "afterAnswers" ? { borderTop: `1px dashed ${catColor}`, paddingTop: 13 } : undefined}
+        >
+          <span className="text-xs font-bold uppercase tracking-wide text-muted">{stakeLabel}</span>
+          {stakeOptions.map((s) => {
+            const on = selectedStake === s;
+            return (
               <button
                 key={s}
                 type="button"
                 data-stake={s}
-                disabled={!answered || readOnly || locked}
+                disabled={readOnly || locked}
                 onClick={() => onStake?.(s)}
-                className={cn(
-                  "rounded-md border px-2.5 py-1 text-xs font-bold",
-                  selectedStake === s ? "border-accent text-accent" : "border-border text-foreground",
-                  (!answered || readOnly || locked) && "opacity-40",
-                )}
+                className="min-w-[44px] rounded-[10px] border px-3.5 py-2 text-center text-[15px] font-semibold"
+                style={{
+                  borderColor: on ? "#FC3E01" : "#262E3A",
+                  backgroundColor: on ? "#FC3E01" : "#181E27",
+                  backgroundImage: on ? undefined : PICK_GRADIENT,
+                  color: on ? "#fff" : "#E7E7EB",
+                  boxShadow: on ? SH.chipOn : SH.pick, // raised chip; selected = solid + inset highlight
+                }}
               >
                 {currencyLabel(currency, s)}
               </button>
-            ))}
-          </div>
+            );
+          })}
+          {stakeNote && <span className="w-full text-center text-[12.5px] text-muted">{stakeNote}</span>}
+        </div>
+      )}
+
+      {/* CTA — solid fill, inset highlight, coloured drop shadow. */}
+      {cta && (
+        <button
+          type="button"
+          data-cta
+          disabled={cta.disabled || readOnly}
+          onClick={() => onCta?.()}
+          className="w-full rounded-[13px] p-[17px] text-[17px] font-bold"
+          style={
+            cta.disabled
+              ? { backgroundColor: "#1F262F", backgroundImage: "linear-gradient(180deg,#242C36,#1A212A)", color: "#6E7684", boxShadow: "inset 0 1px 0 rgba(255,255,255,.05)" }
+              : { backgroundColor: "#FC3E01", color: cta.coin ? "#062018" : "#fff", boxShadow: SH.cta }
+          }
+        >
+          {cta.label}
+        </button>
+      )}
+
+      {/* LOCK-IN animation overlay — carried into every mode. */}
+      {locking && (
+        <div data-lockfx className="absolute inset-0 z-[5] flex flex-col items-center justify-center gap-3.5" style={{ background: "rgba(8,9,12,.9)" }}>
+          <LockGlyph size={84} />
+          <div className="text-[14px] font-bold uppercase tracking-[0.16em]" style={{ color: "#FC3E01" }}>Locked in</div>
         </div>
       )}
     </div>
