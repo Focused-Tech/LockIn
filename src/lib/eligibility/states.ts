@@ -7,6 +7,8 @@
  *
  * Do NOT scatter these checks — resolve everything through `resolveEligibility` (./index.ts).
  */
+// Per-state min-age + college-sports lists live in the ONE placeholder file (slice 6.4).
+import { STATE_MIN_AGE, COLLEGE_SPORTS_BLOCKED, DEFAULT_MIN_AGE } from "@/lib/contest/architectSet";
 
 export type FormatTier = "standard" | "restricted";
 
@@ -37,14 +39,6 @@ export const CASH_BLOCKED: StateCode[] = ["HI", "ID", "MT", "NV", "WA", "NY"];
 
 /** RESTRICTED FORMAT — sees the tighter question pool (slice 2.4). */
 export const RESTRICTED_FORMAT: StateCode[] = ["CA", "FL"];
-
-/** ARCHITECT-SET PLACEHOLDER — per-state minimum-age overrides (default 18). */
-export const STATE_MIN_AGE: Partial<Record<StateCode, number>> = {};
-
-/** ARCHITECT-SET PLACEHOLDER — states that block college-sports questions (default: none). */
-export const COLLEGE_SPORTS_BLOCKED: StateCode[] = [];
-
-const DEFAULT_MIN_AGE = 18;
 
 /** The generated one-row-per-state table. Import this (or, preferably, the resolver). */
 export const STATE_CONFIG: Record<StateCode, StateConfig> = Object.fromEntries(
