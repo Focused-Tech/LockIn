@@ -29,8 +29,26 @@ const ROUTES: Record<Journey, string> = {
 
 export function FoxPitLobby() {
   const router = useRouter();
-  // entry sequence: Boss Fox glass-door intro -> welcome/step-inside -> lobby
-  const [phase, setPhase] = useState<"door" | "welcome" | "lobby">("door");
+  // entry sequence: Boss Fox glass-door intro -> welcome/step-inside -> lobby.
+  // The door animation plays ONCE per session — returning here (e.g. quitting the game, or the
+  // hardware back button) lands straight on the choose-path lobby, not a replaying animation.
+  const [phase, setPhase] = useState<"door" | "welcome" | "lobby">(() => {
+    if (typeof window !== "undefined") {
+      try {
+        if (sessionStorage.getItem("foxpit.introSeen") === "1") return "lobby";
+      } catch (e) {
+        console.error("[foxpit] intro-seen read failed:", e);
+      }
+    }
+    return "door";
+  });
+  const markIntroSeen = () => {
+    try {
+      sessionStorage.setItem("foxpit.introSeen", "1");
+    } catch (e) {
+      console.error("[foxpit] intro-seen write failed:", e);
+    }
+  };
   const [popup, setPopup] = useState<Journey | null>(null);
   const [entering, setEntering] = useState<Journey | null>(null);
 
@@ -139,8 +157,8 @@ export function FoxPitLobby() {
       {phase === "door" && (
         <ArenaIntro
           revealTitle="Ready to Boss Up?"
-          onDone={() => setPhase("welcome")}
-          onContinue={() => router.push("/app/foxpit/map")}
+          onDone={() => { markIntroSeen(); setPhase("welcome"); }}
+          onContinue={() => { markIntroSeen(); router.push("/app/foxpit/map"); }}
         />
       )}
 

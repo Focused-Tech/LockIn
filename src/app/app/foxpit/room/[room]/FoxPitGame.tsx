@@ -94,6 +94,7 @@ export function FoxPitGame({
   userCategories,
   opponent = null,
   onExit,
+  onQuitGame,
   onCleared,
 }: {
   roomKey: FoxPitRoomKey;
@@ -101,7 +102,10 @@ export function FoxPitGame({
   /** The seated underling for this table (null = the room boss's own table). Drives the
    *  displayed name + the AI win rate; null falls back to the room boss. */
   opponent?: { name: string; winPct: number } | null;
+  /** Quit the ROUND — back to the room / table picker. */
   onExit: () => void;
+  /** Quit the GAME — all the way out to the Fox Pit landing (leave, not just the board). */
+  onQuitGame: () => void;
   onCleared: () => void;
 }) {
   const rules = ROOM_RULES[roomKey];
@@ -346,8 +350,8 @@ export function FoxPitGame({
         className="sticky top-0 z-40 flex items-center gap-2 border-b border-border px-3 pb-2"
         style={{ background: "#0A0D12", paddingTop: "calc(env(safe-area-inset-top,0px) + 8px)" }}
       >
-        <button onClick={onExit} className="shrink-0 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-muted">
-          ‹ Leave
+        <button onClick={onQuitGame} className="shrink-0 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-muted">
+          ‹ Quit game
         </button>
         <div className="min-w-0 flex-1 text-center">
           <div className="truncate text-xs font-extrabold tracking-wide" style={{ color: accent }}>
@@ -468,7 +472,7 @@ export function FoxPitGame({
           note={`${oppName} reads at ${oppWinPct}% · ${last.bossMode === "top" ? "TOP stakes" : "MATCH stakes"}`}
           cta={roundIndex + 1 >= rules.rounds ? "See the tally ›" : "Next round ›"}
           onCta={nextRound}
-          onQuit={onExit}
+          onQuit={onQuitGame}
           bossName={oppName}
         />
       )}

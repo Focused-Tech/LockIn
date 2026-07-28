@@ -334,6 +334,7 @@ export function FoxPitRoom({
           userCategories={lockerChoice?.categories ?? categories}
           opponent={activeTable !== null && !singleTable ? underlingAt(room.key, activeTable) : null}
           onExit={() => { setPhase("room"); setActiveTable(null); }}
+          onQuitGame={() => router.push("/app/foxpit")}
           onCleared={() => {
             markCleared(room.key);
             router.push("/app/foxpit/map");
@@ -360,6 +361,8 @@ export function FoxPitRoom({
       {phase !== "door" && phase !== "faceoff" && phase !== "locker" && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: 108, zIndex: 63, background: "linear-gradient(180deg,rgba(3,4,7,.9),transparent)" }}>
           <button onClick={() => router.push("/app/foxpit/map")} style={hudBack}>‹ Map</button>
+          {/* Quit the GAME — out to the Fox Pit landing, where you can leave entirely (not just the round). */}
+          <button onClick={() => router.push("/app/foxpit")} style={hudQuit}>Quit game</button>
           <div style={{ position: "absolute", top: 22, left: 0, right: 0, textAlign: "center" }}>
             <div style={{ fontFamily: "Georgia, serif", fontSize: 22, letterSpacing: ".1em", color: "#E7E7EB", textShadow: "0 2px 10px #000" }}>{room.name}</div>
             <div style={{ fontSize: 12, letterSpacing: ".2em", color: room.accent, fontWeight: 700, marginTop: 2 }}>HOST · {room.boss.toUpperCase()}</div>
@@ -638,6 +641,21 @@ const hudBack: React.CSSProperties = {
   border: "1px solid rgba(200,162,75,.5)",
   background: "rgba(3,4,7,.6)",
   color: "#d8c79b",
+  borderRadius: 10,
+  padding: "8px 11px",
+  fontSize: 14,
+  fontWeight: 700,
+  cursor: "pointer",
+};
+
+const hudQuit: React.CSSProperties = {
+  position: "absolute",
+  top: 16,
+  right: 8,
+  zIndex: 65,
+  border: "1px solid rgba(232,84,84,.5)",
+  background: "rgba(3,4,7,.6)",
+  color: "#e88",
   borderRadius: 10,
   padding: "8px 11px",
   fontSize: 14,
