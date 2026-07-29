@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SkillGameDisclaimer } from "@/components/SkillGameDisclaimer";
 import { getCurrentUserProfile } from "@/lib/firebase/session";
@@ -18,6 +19,19 @@ export default async function CreatePage() {
           decide.
         </p>
       </div>
+
+      {/* Creator Engine slice 4 — the new cross-game builder with Lockpick + the pot. */}
+      <Link
+        href="/app/create/pro"
+        className="flex items-center justify-between rounded-xl border p-4"
+        style={{ borderColor: "#A86F2D", background: "linear-gradient(180deg, rgba(252,62,1,.10), rgba(168,111,45,.06))" }}
+      >
+        <span>
+          <span className="block font-serif text-base text-[#F0C463]">Creator mode · new</span>
+          <span className="block text-sm text-muted">Cross-game slates, Lockpick validation, live pot projection.</span>
+        </span>
+        <span className="text-[#FC3E01]">›</span>
+      </Link>
 
       <SlateBuilder categories={[...CATEGORIES]} />
 
