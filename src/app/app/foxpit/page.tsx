@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { FoxPitLobby } from "./Lobby";
 import { FoxPitStyles } from "./styles";
 
@@ -6,7 +7,10 @@ export default function FoxPitPage() {
   return (
     <>
       <FoxPitStyles />
-      <FoxPitLobby />
+      {/* Suspense: the Lobby reads ?enter=1 via useSearchParams to skip the door splash on Quit. */}
+      <Suspense fallback={<div style={{ position: "fixed", inset: 0, background: "#0A0D12" }} />}>
+        <FoxPitLobby />
+      </Suspense>
     </>
   );
 }
