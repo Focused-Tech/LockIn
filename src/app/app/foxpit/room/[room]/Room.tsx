@@ -71,11 +71,14 @@ export function FoxPitRoom({
   username = "Member",
   avatarUrl = null,
   categories = [],
+  coinBalance = 0,
 }: {
   roomKey: FoxPitRoomKey;
   username?: string;
   avatarUrl?: string | null;
   categories?: string[];
+  /** §3.3 — the player's coin balance at entry; the in-game chrome shows it and bumps it on a win. */
+  coinBalance?: number;
 }) {
   const router = useRouter();
   const room = roomByKey(roomKey);
@@ -337,6 +340,7 @@ export function FoxPitRoom({
           roomKey={room.key}
           userCategories={lockerChoice?.categories ?? categories}
           username={username}
+          coinBalance={coinBalance}
           opponent={bossFight || singleTable ? null : (activeTable !== null ? underlingAt(room.key, activeTable) : null)}
           onExit={() => { setPhase("room"); setActiveTable(null); setBossFight(false); }}
           onQuitGame={() => router.push("/app/choose")}

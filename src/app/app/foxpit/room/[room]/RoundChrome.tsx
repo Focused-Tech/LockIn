@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { FOXPIT_BUILD_VERSION } from "@/lib/foxpit/rules";
 
 /**
@@ -11,7 +12,7 @@ import { FOXPIT_BUILD_VERSION } from "@/lib/foxpit/rules";
  */
 export function RoundChrome({
   oppName, roundIndex, rounds, keepN, slatesPerRound, accent,
-  clockVisible, clockLabel, clockAlert, roundsWon, onQuit, onKeydrop,
+  clockVisible, clockLabel, clockAlert, roundsWon, coins, onQuit, onKeydrop,
 }: {
   oppName: string;
   roundIndex: number;
@@ -23,19 +24,51 @@ export function RoundChrome({
   clockLabel: string;
   clockAlert: boolean;
   roundsWon: number;
+  /** §3.3 — the player's live coin balance; pulses green when it goes UP (a won round). */
+  coins?: number;
   onQuit: () => void;
   /** dev keydrop preview — omit to remove the control. It lives in the chrome, never on a card. */
   onKeydrop?: () => void;
 }) {
+  // §3.3 — flash the coin pill when the balance increases, so a win reads, never silent.
+  const [bumped, setBumped] = useState(false);
+  const prevCoins = useRef(coins);
+  useEffect(() => {
+    if (coins != null && prevCoins.current != null && coins > prevCoins.current) {
+      setBumped(true);
+      const t = window.setTimeout(() => setBumped(false), 950);
+      prevCoins.current = coins;
+      return () => window.clearTimeout(t);
+    }
+    prevCoins.current = coins;
+  }, [coins]);
   return (
     <div
       data-round-chrome
       className="sticky top-0 z-40 flex items-center gap-2 border-b border-border px-3 pb-2"
       style={{ background: "#0A0D12", paddingTop: "calc(env(safe-area-inset-top,0px) + 8px)" }}
     >
-      <button onClick={onQuit} data-quit className="shrink-0 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-muted">
-        ‹ Quit
-      </button>
+      <div className="flex shrink-0 flex-col items-start gap-1">
+        <button onClick={onQuit} data-quit className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-muted">
+          ‹ Quit
+        </button>
+        {/* §3.3 — live coin balance; flashes green + scales up on a win so the gain is unmistakable. */}
+        {coins != null && (
+          <div
+            data-coins
+            className="rounded-full border px-2 py-0.5 text-xs font-extrabold tabular-nums transition-transform duration-200"
+            style={{
+              borderColor: "#22C55E",
+              color: "#22C55E",
+              background: bumped ? "rgba(34,197,94,.28)" : "rgba(34,197,94,.10)",
+              transform: bumped ? "scale(1.14)" : "scale(1)",
+              boxShadow: bumped ? "0 0 16px rgba(34,197,94,.7)" : "none",
+            }}
+          >
+            ⛃ {coins.toLocaleString()}
+          </div>
+        )}
+      </div>
       <div className="min-w-0 flex-1 text-center">
         {/* line 1 = opponent only; line 2 = round + keep — short lines, no truncation. */}
         <div data-chrome-title className="truncate text-base font-extrabold tracking-wide" style={{ color: accent }}>

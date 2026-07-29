@@ -95,6 +95,7 @@ export function FoxPitGame({
   roomKey,
   userCategories,
   username = "Member",
+  coinBalance = 0,
   opponent = null,
   onExit,
   onQuitGame,
@@ -104,6 +105,8 @@ export function FoxPitGame({
   userCategories: string[];
   /** the player's username — names the winner at settlement (4.2). */
   username?: string;
+  /** §3.3 — coin balance at entry; the chrome shows it and visibly bumps it when a round is won. */
+  coinBalance?: number;
   /** The seated underling for this table (null = the room boss's own table). Drives the
    *  displayed name + the AI win rate; null falls back to the room boss. `art` (when present) is the
    *  underling's cutout, shown on the underling-beaten screen (§3.2). */
@@ -152,6 +155,9 @@ export function FoxPitGame({
   const [dealPending, setDealPending] = useState(false);
   const [dealError, setDealError] = useState<string | null>(null);
   const [roundsWon, setRoundsWon] = useState(0);
+  // §3.3 — live coin balance shown in the chrome. Bumps optimistically the moment a round settles,
+  // then reconciles to the server's authoritative newBalance.
+  const [coins, setCoins] = useState(coinBalance);
   // Boss stake mode chosen per round (item 4). Persisted WITH the round result (in `last`), not
   // held only as a transient toggle — it affects scoring + the tally.
   const [bossMode, setBossMode] = useState<BossStakeMode>("match");
@@ -257,7 +263,12 @@ export function FoxPitGame({
     // Persist the round's NET COIN result to the wallet (coins only, zero rake). Round net = Σ per-card
     // outcomes. Until this, the tower never touched users/{uid}.coinBalance.
     if (settlement.net !== 0) {
-      applyFoxPitCoins(settlement.net).catch((e) => console.error("[foxpit] coin persist failed", e));
+      // §3.3 — bump the chrome balance NOW (visible + legible on a win), then reconcile to the
+      // server's authoritative newBalance so the number never drifts.
+      setCoins((c) => c + settlement.net);
+      applyFoxPitCoins(settlement.net)
+        .then((r) => { if (r?.ok && typeof r.newBalance === "number") setCoins(r.newBalance); })
+        .catch((e) => console.error("[foxpit] coin persist failed", e));
     }
     setPhase("reveal"); // cards reveal first, then the Locksmith calls it
   };
@@ -358,6 +369,7 @@ export function FoxPitGame({
         clockLabel={clockShow < 0 ? "0:00" : `${Math.floor(clockShow / 60)}:${String(clockShow % 60).padStart(2, "0")}`}
         clockAlert={clockAlert}
         roundsWon={roundsWon}
+        coins={coins}
         onQuit={onQuitGame}
         onKeydrop={() => setKeyPreview(true)}
       />

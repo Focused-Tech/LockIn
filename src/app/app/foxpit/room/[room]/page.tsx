@@ -21,6 +21,7 @@ export default async function FoxPitRoomPage({
         username={profile?.username ?? "Member"}
         avatarUrl={profile?.avatarUrl ?? null}
         categories={profile?.categories ?? []}
+        coinBalance={profile?.coinBalance ?? 0}
       />
     </>
   );
