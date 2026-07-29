@@ -105,8 +105,9 @@ export function FoxPitGame({
   /** the player's username — names the winner at settlement (4.2). */
   username?: string;
   /** The seated underling for this table (null = the room boss's own table). Drives the
-   *  displayed name + the AI win rate; null falls back to the room boss. */
-  opponent?: { name: string; winPct: number } | null;
+   *  displayed name + the AI win rate; null falls back to the room boss. `art` (when present) is the
+   *  underling's cutout, shown on the underling-beaten screen (§3.2). */
+  opponent?: { name: string; winPct: number; art?: string } | null;
   /** Quit the ROUND — back to the room / table picker. */
   onExit: () => void;
   /** Quit the GAME — all the way out to the Fox Pit landing (leave, not just the board). */
@@ -120,6 +121,10 @@ export function FoxPitGame({
   // tables) or the room boss (his own table / solo-boss rooms).
   const oppName = opponent?.name ?? rules.boss;
   const oppWinPct = opponent?.winPct ?? rules.bossWinPct;
+  // §3.2 — you're facing the FLOOR BOSS only when there's no seated underling (his own table /
+  // solo-boss rooms Owl + Fox). The dethrone + key drop fire ONLY here; beating an underling gets
+  // its own screen and never claims the boss's key.
+  const isBoss = opponent == null;
 
   // The Dojo opens on the HOW-TO-PLAY screen (item 5) — its own beat BEFORE category select —
   // unless the player has already dismissed/skipped it (remembered). Every other room starts at
@@ -459,13 +464,28 @@ export function FoxPitGame({
         />
       )}
 
-      {phase === "roomResult" && cleared && (
+      {/* §3.2 — beat the FLOOR BOSS → dethrone + key drop. */}
+      {phase === "roomResult" && cleared && isBoss && (
         <KeyDropPhase
           roomKey={roomKey}
           accent={accent}
           bossName={oppName}
           roundsWon={roundsWon}
           totalRounds={rules.rounds}
+          onDone={onCleared}
+        />
+      )}
+
+      {/* §3.2 — beat an UNDERLING → its own screen: no throne, no key. */}
+      {phase === "roomResult" && cleared && !isBoss && (
+        <UnderlingBeatenPhase
+          accent={accent}
+          name={oppName}
+          winPct={oppWinPct}
+          art={opponent?.art}
+          roundsWon={roundsWon}
+          totalRounds={rules.rounds}
+          bossName={rules.boss}
           onDone={onCleared}
         />
       )}
@@ -1242,6 +1262,59 @@ export function KeyDropPhase({
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+/* ---------------- §3.2 underling beaten: no throne, no key — the seat clears, the boss still waits ---------------- */
+function UnderlingBeatenPhase({
+  accent, name, winPct, art, roundsWon, totalRounds, bossName, onDone,
+}: {
+  accent: string;
+  name: string;
+  winPct: number;
+  art?: string;
+  roundsWon: number;
+  totalRounds: number;
+  bossName: string;
+  onDone: () => void;
+}) {
+  const [showCta, setShowCta] = useState(false);
+  useEffect(() => {
+    const t = window.setTimeout(() => setShowCta(true), 900);
+    return () => window.clearTimeout(t);
+  }, []);
+  return (
+    <div className="relative flex flex-1 flex-col items-center justify-center gap-2 overflow-hidden px-6 text-center">
+      {/* the underling steps back (fades down) — NOT dethroned, NO key. */}
+      {art && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={art}
+          alt={`${name} beaten`}
+          draggable={false}
+          className="mb-1 h-40 w-auto object-contain"
+          style={{ filter: "drop-shadow(0 10px 24px rgba(0,0,0,.7)) grayscale(.35)", opacity: 0.85, animation: "foxpitFadeUp .7s ease both" }}
+        />
+      )}
+      <div className="text-xs font-extrabold tracking-widest" style={{ color: accent }}>TABLE CLEARED</div>
+      <div className="font-serif text-4xl text-foreground" style={{ textShadow: "0 2px 12px #000" }}>You beat {name}</div>
+      <div className="text-sm text-muted">
+        {name} read at {winPct}% — you took {roundsWon} of {totalRounds} rounds. The seat is yours.
+      </div>
+      {/* the KEY is the boss's — say so, so this never reads like a room clear. */}
+      <div className="mt-1 text-sm font-bold" style={{ color: accent }}>
+        {bossName} still holds the key — clear every table, then take the throne.
+      </div>
+      {showCta && (
+        <button
+          onClick={onDone}
+          className="mt-5 rounded-xl border px-8 py-4 text-lg font-extrabold text-foreground"
+          style={{ borderColor: accent, background: `${accent}22`, animation: "foxpitFadeUp .5s ease both" }}
+        >
+          Back to the floor ›
+        </button>
+      )}
     </div>
   );
 }
