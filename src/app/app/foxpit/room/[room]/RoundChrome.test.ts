@@ -53,4 +53,20 @@ describe("RoundChrome (3.3b)", () => {
     expect(el.querySelector("[data-quit]")!.textContent!.trim()).toBe("‹ Quit");
     expect(el.querySelector("[data-keydrop]")).toBeNull();
   });
+
+  // §3.3 — the live coin balance shows in the chrome; omitted when no balance is passed.
+  it("shows the coin balance pill when coins is provided, formatted", () => {
+    const el = render({ ...base, coins: 1500 });
+    expect(errors).toEqual([]);
+    const pill = el.querySelector("[data-coins]") as HTMLElement | null;
+    expect(pill).toBeTruthy();
+    expect(pill!.textContent).toContain("1,500");
+    // it lives inside the chrome, not floating
+    expect(el.querySelector("[data-round-chrome]")!.contains(pill!)).toBe(true);
+  });
+
+  it("omits the coin pill entirely when coins is undefined", () => {
+    const el = render({ ...base });
+    expect(el.querySelector("[data-coins]")).toBeNull();
+  });
 });
