@@ -84,6 +84,8 @@ export function FoxPitRoom({
   const [lockerChoice, setLockerChoice] = useState<LockerChoice | null>(null);
   const [activeTable, setActiveTable] = useState<number | null>(null);
   const [beaten, setBeaten] = useState<Set<number>>(new Set());
+  // C: the floor-boss fight (the throne) vs an underling table. Set when the boss is challenged.
+  const [bossFight, setBossFight] = useState(false);
   const [roomCleared, setRoomCleared] = useState(false);
   const [zoom, setZoom] = useState(false);
   const isFirstLoneRoom = room.key === "dojo";
@@ -178,7 +180,7 @@ export function FoxPitRoom({
           {/* multi-table rooms: the boss waits on the throne — locked until every table is beaten */}
           {!singleTable && (
             <button
-              onClick={() => bossReady && setPhase("faceoff")}
+              onClick={() => { if (bossReady) { setBossFight(true); setActiveTable(null); setPhase("table"); } }}
               disabled={!bossReady}
               style={{
                 position: "absolute",
@@ -233,7 +235,7 @@ export function FoxPitRoom({
             return (
               <button
                 key={i}
-                onClick={() => { setActiveTable(i); setPhase("table"); }}
+                onClick={() => { setBossFight(false); setActiveTable(i); setPhase("table"); }}
                 aria-label={singleTable ? `Sit vs ${room.boss}` : `Table ${i + 1}`}
                 style={{
                   position: "absolute",
@@ -302,16 +304,16 @@ export function FoxPitRoom({
       )}
 
       {/* ---------- TABLE panel ---------- */}
-      {phase === "table" && activeTable !== null && (
+      {phase === "table" && (activeTable !== null || bossFight) && (
         <TablePanel
           room={room}
-          index={activeTable}
-          opponent={singleTable ? null : underlingAt(room.key, activeTable)}
+          index={activeTable ?? 0}
+          opponent={singleTable || bossFight ? null : (activeTable !== null ? underlingAt(room.key, activeTable) : null)}
           freeKeycard={isFirstLoneRoom}
           username={username}
           avatarUrl={avatarUrl}
-          bossTable={singleTable}
-          onClose={() => { setPhase("room"); setActiveTable(null); }}
+          bossTable={singleTable || bossFight}
+          onClose={() => { setPhase("room"); setActiveTable(null); setBossFight(false); }}
           onConfirm={() => setPhase("play")}
         />
       )}
@@ -332,12 +334,20 @@ export function FoxPitRoom({
         <FoxPitGame
           roomKey={room.key}
           userCategories={lockerChoice?.categories ?? categories}
-          opponent={activeTable !== null && !singleTable ? underlingAt(room.key, activeTable) : null}
-          onExit={() => { setPhase("room"); setActiveTable(null); }}
+          opponent={bossFight || singleTable ? null : (activeTable !== null ? underlingAt(room.key, activeTable) : null)}
+          onExit={() => { setPhase("room"); setActiveTable(null); setBossFight(false); }}
           onQuitGame={() => router.push("/app/foxpit")}
           onCleared={() => {
-            markCleared(room.key);
-            router.push("/app/foxpit/map");
+            // C: beating an UNDERLING marks that table beaten (back to the room). The room clears
+            // ONLY when the FLOOR BOSS (throne / single-table boss) is beaten.
+            if (bossFight || singleTable) {
+              markCleared(room.key);
+              router.push("/app/foxpit/map");
+            } else if (activeTable !== null) {
+              setBeaten((prev) => new Set(prev).add(activeTable));
+              setPhase("room");
+              setActiveTable(null);
+            }
           }}
         />
       )}
