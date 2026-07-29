@@ -96,7 +96,9 @@ export function FoxPitGame({
   userCategories,
   username = "Member",
   coinBalance = 0,
+  initialRound = 0,
   opponent = null,
+  onRound,
   onExit,
   onQuitGame,
   onCleared,
@@ -107,6 +109,10 @@ export function FoxPitGame({
   username?: string;
   /** §3.3 — coin balance at entry; the chrome shows it and visibly bumps it when a round is won. */
   coinBalance?: number;
+  /** §3.1 — the round this match starts at (resume). 0 for a fresh table. */
+  initialRound?: number;
+  /** §3.1 — fires whenever the current round changes so the room can checkpoint it. */
+  onRound?: (round: number) => void;
   /** The seated underling for this table (null = the room boss's own table). Drives the
    *  displayed name + the AI win rate; null falls back to the room boss. `art` (when present) is the
    *  underling's cutout, shown on the underling-beaten screen (§3.2). */
@@ -142,7 +148,7 @@ export function FoxPitGame({
     }
     return "tip"; // A5: categories come from the LOCKER now — no in-game category-select beat
   });
-  const [roundIndex, setRoundIndex] = useState(0);
+  const [roundIndex, setRoundIndex] = useState(initialRound);
   // NOTE: no deal at mount. Cards only exist once `dealRound()` runs, which happens
   // after the category-select (and tip) beats have resolved.
   const [slates, setSlates] = useState<FoxSlate[]>([]);
@@ -158,6 +164,13 @@ export function FoxPitGame({
   // §3.3 — live coin balance shown in the chrome. Bumps optimistically the moment a round settles,
   // then reconciles to the server's authoritative newBalance.
   const [coins, setCoins] = useState(coinBalance);
+
+  // §3.1 — report the current round to the room so the resume checkpoint stays current (mount +
+  // every advance). onRound is intentionally out of deps — it's an inline room callback.
+  useEffect(() => {
+    onRound?.(roundIndex);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roundIndex]);
   // Boss stake mode chosen per round (item 4). Persisted WITH the round result (in `last`), not
   // held only as a transient toggle — it affects scoring + the tally.
   const [bossMode, setBossMode] = useState<BossStakeMode>("match");

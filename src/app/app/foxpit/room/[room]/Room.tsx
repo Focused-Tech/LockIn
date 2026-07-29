@@ -16,6 +16,7 @@ import {
   type FoxPitRoomKey,
 } from "@/lib/foxpit";
 import { underlingAt, underlingTableCount, type Underling } from "@/lib/foxpit/underlings";
+import { writeFoxCheckpoint, clearFoxCheckpoint } from "@/lib/foxpit/checkpoint";
 
 type Phase = "locker" | "door" | "room" | "table" | "faceoff" | "play";
 
@@ -72,6 +73,8 @@ export function FoxPitRoom({
   avatarUrl = null,
   categories = [],
   coinBalance = 0,
+  resumeTable = null,
+  resumeRound = 0,
 }: {
   roomKey: FoxPitRoomKey;
   username?: string;
@@ -79,15 +82,25 @@ export function FoxPitRoom({
   categories?: string[];
   /** §3.3 — the player's coin balance at entry; the in-game chrome shows it and bumps it on a win. */
   coinBalance?: number;
+  /** §3.1 — resume: land straight on this table's seat (0-based) at this round. null = normal entry. */
+  resumeTable?: number | null;
+  resumeRound?: number;
 }) {
   const router = useRouter();
   const room = roomByKey(roomKey);
   // The Dojo runs: LOCKER (keys, category + avatar picks) → "Enter the Dojo" → the Locksmith door
   // opens with the Owl reveal (canon steps 2-3) → the room. Every other room skips the locker and
   // opens straight on the door + boss reveal.
-  const [phase, setPhase] = useState<Phase>(roomKey === "dojo" ? "locker" : "door");
+  // §3.1 — a resume deep-link (?table=…) jumps straight to that table's seat (TablePanel), skipping
+  // the door/locker; the round is carried into the game via nextInitialRound.
+  const [phase, setPhase] = useState<Phase>(
+    resumeTable != null ? "table" : roomKey === "dojo" ? "locker" : "door",
+  );
   const [lockerChoice, setLockerChoice] = useState<LockerChoice | null>(null);
-  const [activeTable, setActiveTable] = useState<number | null>(null);
+  const [activeTable, setActiveTable] = useState<number | null>(resumeTable);
+  // §3.1 — the round the NEXT game mounts at: the resumed round for the resumed table, 0 for any
+  // table the player picks fresh afterward (reset in the table/throne tap handlers).
+  const [nextInitialRound, setNextInitialRound] = useState<number>(resumeTable != null ? resumeRound : 0);
   const [beaten, setBeaten] = useState<Set<number>>(new Set());
   // C: the floor-boss fight (the throne) vs an underling table. Set when the boss is challenged.
   const [bossFight, setBossFight] = useState(false);
@@ -185,7 +198,7 @@ export function FoxPitRoom({
           {/* multi-table rooms: the boss waits on the throne — locked until every table is beaten */}
           {!singleTable && (
             <button
-              onClick={() => { if (bossReady) { setBossFight(true); setActiveTable(null); setPhase("table"); } }}
+              onClick={() => { if (bossReady) { setNextInitialRound(0); setBossFight(true); setActiveTable(null); setPhase("table"); } }}
               disabled={!bossReady}
               style={{
                 position: "absolute",
@@ -240,7 +253,7 @@ export function FoxPitRoom({
             return (
               <button
                 key={i}
-                onClick={() => { setBossFight(false); setActiveTable(i); setPhase("table"); }}
+                onClick={() => { setNextInitialRound(0); setBossFight(false); setActiveTable(i); setPhase("table"); }}
                 aria-label={singleTable ? `Sit vs ${room.boss}` : `Table ${i + 1}`}
                 style={{
                   position: "absolute",
@@ -319,7 +332,14 @@ export function FoxPitRoom({
           avatarUrl={avatarUrl}
           bossTable={singleTable || bossFight}
           onClose={() => { setPhase("room"); setActiveTable(null); setBossFight(false); }}
-          onConfirm={() => setPhase("play")}
+          onConfirm={() => {
+            // §3.1 — checkpoint the seat as the player sits (underling/normal tables only; the boss
+            // throne isn't a resumable seat). Round is written from the game via onRound below.
+            if (!bossFight && !singleTable && activeTable !== null) {
+              writeFoxCheckpoint({ room: roomKey, table: activeTable, round: nextInitialRound });
+            }
+            setPhase("play");
+          }}
         />
       )}
 
@@ -341,13 +361,22 @@ export function FoxPitRoom({
           userCategories={lockerChoice?.categories ?? categories}
           username={username}
           coinBalance={coinBalance}
+          initialRound={nextInitialRound}
           opponent={bossFight || singleTable ? null : (activeTable !== null ? underlingAt(room.key, activeTable) : null)}
+          onRound={(r) => {
+            // §3.1 — keep the checkpoint's round current as the match advances (seat tables only).
+            if (!bossFight && !singleTable && activeTable !== null) {
+              writeFoxCheckpoint({ room: roomKey, table: activeTable, round: r });
+            }
+          }}
           onExit={() => { setPhase("room"); setActiveTable(null); setBossFight(false); }}
           onQuitGame={() => router.push("/app/choose")}
           onCleared={() => {
             // C: beating an UNDERLING marks that table beaten (back to the room). The room clears
             // ONLY when the FLOOR BOSS (throne / single-table boss) is beaten.
             if (bossFight || singleTable) {
+              // §3.1 — room done: drop the checkpoint so Continue doesn't resume a finished floor.
+              clearFoxCheckpoint();
               markCleared(room.key);
               router.push("/app/foxpit/map");
             } else if (activeTable !== null) {

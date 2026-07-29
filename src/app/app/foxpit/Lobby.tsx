@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArenaIntro } from "@/app/app/practice/arena/chooser/ArenaIntro";
+import { foxResumeHref } from "@/lib/foxpit/checkpoint";
 
 /** Heavy tower assets (WebP) — preloaded during the lobby intro so the map paints instantly. */
 const MAP_PRELOAD = [
@@ -50,6 +51,10 @@ export function FoxPitLobby() {
     setEntering(j); // corridor push-in, then route
     window.setTimeout(() => router.push(ROUTES[j]), 620);
   };
+
+  // §3.1 — "Continue where you left off" resumes the EXACT room/table/round from the checkpoint;
+  // with nothing saved it falls back to the tower map.
+  const goContinue = () => router.push(foxResumeHref() ?? "/app/foxpit/map");
 
   return (
     <div
@@ -141,14 +146,14 @@ export function FoxPitLobby() {
         <ArenaIntro
           revealTitle="Ready to Boss Up?"
           onDone={() => setPhase("welcome")}
-          onContinue={() => router.push("/app/foxpit/map")}
+          onContinue={goContinue}
         />
       )}
 
       {/* Continue where you left off — also on the lobby, below Boss Fox + the door tokens so it
           never overlaps them. Orange, plaque-translucent. Routes to the tower (resumes current floor). */}
       {phase === "lobby" && (
-        <button onClick={() => router.push("/app/foxpit/map")} style={lobbyContinueBtn}>
+        <button onClick={goContinue} style={lobbyContinueBtn}>
           Continue where you left off ›
         </button>
       )}
