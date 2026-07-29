@@ -339,7 +339,7 @@ export function FoxPitRoom({
           username={username}
           opponent={bossFight || singleTable ? null : (activeTable !== null ? underlingAt(room.key, activeTable) : null)}
           onExit={() => { setPhase("room"); setActiveTable(null); setBossFight(false); }}
-          onQuitGame={() => router.push("/app/foxpit/map")}
+          onQuitGame={() => router.push("/app/choose")}
           onCleared={() => {
             // C: beating an UNDERLING marks that table beaten (back to the room). The room clears
             // ONLY when the FLOOR BOSS (throne / single-table boss) is beaten.
@@ -374,8 +374,9 @@ export function FoxPitRoom({
       {phase !== "door" && phase !== "faceoff" && phase !== "locker" && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: 108, zIndex: 63, background: "linear-gradient(180deg,rgba(3,4,7,.9),transparent)" }}>
           <button onClick={() => router.push("/app/foxpit/map")} style={hudBack}>‹ Map</button>
-          {/* Quit the GAME — out to the Fox Pit landing (the tower map / room select), not the lobby. */}
-          <button onClick={() => router.push("/app/foxpit/map")} style={hudQuit}>Quit game</button>
+          {/* Quit the GAME — always out to the Fox Pit LANDING (/app/choose, "The Fox Pit" front
+              door). You're quitting the game, not dropping back to the lobby or the tower. */}
+          <button onClick={() => router.push("/app/choose")} style={hudQuit}>Quit game</button>
           <div style={{ position: "absolute", top: 22, left: 0, right: 0, textAlign: "center" }}>
             <div style={{ fontFamily: "Georgia, serif", fontSize: 22, letterSpacing: ".1em", color: "#E7E7EB", textShadow: "0 2px 10px #000" }}>{room.name}</div>
             <div style={{ fontSize: 12, letterSpacing: ".2em", color: room.accent, fontWeight: 700, marginTop: 2 }}>HOST · {room.boss.toUpperCase()}</div>

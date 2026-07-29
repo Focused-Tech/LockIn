@@ -27,34 +27,13 @@ const ROUTES: Record<Journey, string> = {
   boss: "/app/foxpit/map",
 };
 
-/** Set once the Boss Fox door intro has played; gates the intro to a first-time-only splash. */
-const INTRO_SEEN_KEY = "foxpit_intro_seen";
-const markIntroSeen = () => { try { window.localStorage.setItem(INTRO_SEEN_KEY, "1"); } catch {} };
-
 export function FoxPitLobby() {
   const router = useRouter();
-  // entry sequence: Boss Fox glass-door intro -> welcome/step-inside -> lobby. The door intro is a
-  // FIRST-TIME intro: it plays once (persisted in localStorage), then every RETURN to the lobby
-  // (‹ Lobby, the map's lobby landmark, etc.) lands straight on "choose your path" — no splash
-  // replay. `phase` starts null (undecided) so the first client effect can read localStorage without
-  // a hydration mismatch or a one-frame flash of the door.
-  const [phase, setPhase] = useState<"door" | "welcome" | "lobby" | null>(null);
+  // entry sequence: Boss Fox glass-door intro -> welcome/step-inside -> lobby. The door animation
+  // ALWAYS plays on entry (never skipped) — the door has a "tap to skip", and Quit-game routes here.
+  const [phase, setPhase] = useState<"door" | "welcome" | "lobby">("door");
   const [popup, setPopup] = useState<Journey | null>(null);
   const [entering, setEntering] = useState<Journey | null>(null);
-
-  // Decide the entry phase on mount (client only): intro already seen -> lobby; else -> door.
-  useEffect(() => {
-    let seen = false;
-    try { seen = window.localStorage.getItem(INTRO_SEEN_KEY) === "1"; } catch {}
-    setPhase(seen ? "lobby" : "door");
-  }, []);
-
-  // Once the intro has been left behind (welcome/lobby), remember it so it never replays.
-  useEffect(() => {
-    if (phase === "welcome" || phase === "lobby") {
-      try { window.localStorage.setItem(INTRO_SEEN_KEY, "1"); } catch {}
-    }
-  }, [phase]);
 
   // Warm the browser cache with the ~1MB of tower WebP while the player is still in the
   // door/welcome/choose-path intro, so /app/foxpit/map renders instantly on arrival instead
@@ -71,11 +50,6 @@ export function FoxPitLobby() {
     setEntering(j); // corridor push-in, then route
     window.setTimeout(() => router.push(ROUTES[j]), 620);
   };
-
-  // undecided (pre-mount): hold on the app background so neither the door nor the lobby flashes.
-  if (phase === null) {
-    return <div style={{ position: "fixed", inset: 0, zIndex: 60, background: "#0A0D12" }} />;
-  }
 
   return (
     <div
@@ -167,7 +141,7 @@ export function FoxPitLobby() {
         <ArenaIntro
           revealTitle="Ready to Boss Up?"
           onDone={() => setPhase("welcome")}
-          onContinue={() => { markIntroSeen(); router.push("/app/foxpit/map"); }}
+          onContinue={() => router.push("/app/foxpit/map")}
         />
       )}
 
