@@ -38,7 +38,7 @@ export function RoundChrome({
       </button>
       <div className="min-w-0 flex-1 text-center">
         {/* line 1 = opponent only; line 2 = round + keep — short lines, no truncation. */}
-        <div data-chrome-title className="truncate text-xs font-extrabold tracking-wide" style={{ color: accent }}>
+        <div data-chrome-title className="truncate text-base font-extrabold tracking-wide" style={{ color: accent }}>
           {oppName.toUpperCase()}
         </div>
         <div className="truncate text-[11px] font-semibold text-muted">

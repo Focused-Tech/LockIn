@@ -94,6 +94,7 @@ const RAVEN_FEATHER = "/foxpit/defeated/raven_drop_feather.png";
 export function FoxPitGame({
   roomKey,
   userCategories,
+  username = "Member",
   opponent = null,
   onExit,
   onQuitGame,
@@ -101,6 +102,8 @@ export function FoxPitGame({
 }: {
   roomKey: FoxPitRoomKey;
   userCategories: string[];
+  /** the player's username — names the winner at settlement (4.2). */
+  username?: string;
   /** The seated underling for this table (null = the room boss's own table). Drives the
    *  displayed name + the AI win rate; null falls back to the room boss. */
   opponent?: { name: string; winPct: number } | null;
@@ -452,6 +455,7 @@ export function FoxPitGame({
           onCta={nextRound}
           onQuit={onQuitGame}
           bossName={oppName}
+          username={username}
         />
       )}
 
@@ -726,9 +730,11 @@ export function DealPhase({
       if (!fired.current) { fired.current = true; onAutoPlay(); }
       return;
     }
+    // 3.3: reading time is not decision time — the clock PAUSES while a card is open full screen.
+    if (opened) return;
     const t = setTimeout(() => setLeft((l) => l - 1), 1000);
     return () => clearTimeout(t);
-  }, [left, onAutoPlay]);
+  }, [left, opened, onAutoPlay]);
 
   // A: the OPENED overlay must be dismissible by hardware/gesture back too — push a history entry on
   // open, close on popstate. Close/tap-outside route through history.back() so every dismissal is one
@@ -769,7 +775,7 @@ export function DealPhase({
               </button>
               <button
                 onClick={() => onToggle(s.id)}
-                className="absolute right-1 top-1 z-10 rounded px-1 text-[8px] font-extrabold uppercase"
+                className="absolute bottom-1 right-1 z-10 rounded px-1 text-[8px] font-extrabold uppercase"
                 style={{ color: kept.has(s.id) ? "#03040A" : tint.color, background: kept.has(s.id) ? tint.color : "rgba(3,4,7,.72)", border: `1px solid ${tint.color}` }}
               >
                 {kept.has(s.id) ? "kept ✓" : "keep"}
@@ -805,8 +811,10 @@ export function DealPhase({
           <div data-opened-overlay className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-background/95 p-4" onClick={closeOpened}>
             {/* proper card container — not edge-to-edge; scrolls if the card is tall. */}
             <div className="flex max-h-[86vh] w-full max-w-[340px] flex-col overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              {/* 3.1: the OPENED card leads with the QUESTION — no face art pushing it off-screen.
+                  (The frozen card_front_single.png face stays on the dealt MINI, not here.) */}
               <SlateCard mode="foxpit" currency="coins" catColor={tint.color}
-                faceImage={CARD_FRONT} eyebrow={opened.category} title={opened.title}
+                eyebrow={opened.category} title={opened.title}
                 readOnly stakeMode="none" legs={legsFor(opened)} />
               <div className="mt-3 flex shrink-0 gap-2">
                 <button onClick={() => onToggle(opened.id)} className="flex-1 rounded-xl border py-3 text-sm font-bold"
@@ -1227,7 +1235,7 @@ export function KeyDropPhase({
 
 /* ---------------- announce: the Locksmith calls it at the table + coin drop ---------------- */
 function AnnouncePhase({
-  roomKey, accent, won, playerCards, bossCards, net, note, cta, onCta, onQuit, bossName,
+  roomKey, accent, won, playerCards, bossCards, net, note, cta, onCta, onQuit, bossName, username,
 }: {
   roomKey: FoxPitRoomKey;
   accent: string;
@@ -1240,12 +1248,14 @@ function AnnouncePhase({
   onCta: () => void;
   onQuit: () => void;
   bossName: string;
+  username: string;
 }) {
   useEffect(() => { playCoinDrop(won); }, [won]);
   // Every Fox Pit opponent is a boss → the BOSS winner-table (her + table baked into ONE sprite).
   // The raised arm points at the winner's seat: player win = RIGHT arm, boss win = LEFT arm.
   const table = won ? WINNER_TABLE_BOSS_RIGHT : WINNER_TABLE_BOSS_LEFT;
-  const winnerName = won ? "You" : bossName;
+  // 4.2: the winner is named by the PLAYER'S USERNAME, never "You".
+  const winnerName = won ? username : bossName;
   // Raised-hand anchor (fraction of the 1264² sprite): name centers here, just above the glove.
   const handX = won ? 68 : 32;
 
@@ -1284,7 +1294,7 @@ function AnnouncePhase({
         <div className="absolute z-[3]" style={{ left: `${handX}%`, top: "5%", transform: "translateX(-50%)", maxWidth: "40%" }}>
           <div
             className="rounded-md px-2 py-0.5 text-center font-serif font-extrabold"
-            style={{ color: won ? COLOR_WIN : "#f5e3ac", background: "rgba(3,4,7,.6)", fontSize: "clamp(11px, 3vw, 19px)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+            style={{ color: won ? COLOR_WIN : "#f5e3ac", background: "rgba(3,4,7,.6)", fontSize: "clamp(15px, 4vw, 26px)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
           >
             {winnerName}
           </div>

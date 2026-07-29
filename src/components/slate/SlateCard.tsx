@@ -108,9 +108,10 @@ export function SlateCard({
         <div className="relative -mx-[17px] -mt-[17px]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img data-face-image src={faceImage} alt="" className="block w-full" />
-          <div className="absolute inset-0 flex flex-col px-4 pt-[27%] text-left">
+          <div className="absolute inset-0 flex flex-col px-2 pt-[27%] text-left">
             {eyebrow && (
-              <div data-eyebrow className="text-[10px] font-bold uppercase tracking-wide" style={{ color: catColor }}>{eyebrow}</div>
+              // 3.2: tighter + wrapping so long categories (e.g. ENTERTAINMENT) don't clip.
+              <div data-eyebrow className="break-words text-[9px] font-bold uppercase leading-tight" style={{ color: catColor }}>{eyebrow}</div>
             )}
             {title && <div data-title className="text-sm font-semibold leading-tight text-white">{title}</div>}
           </div>

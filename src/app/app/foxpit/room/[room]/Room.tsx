@@ -334,6 +334,7 @@ export function FoxPitRoom({
         <FoxPitGame
           roomKey={room.key}
           userCategories={lockerChoice?.categories ?? categories}
+          username={username}
           opponent={bossFight || singleTable ? null : (activeTable !== null ? underlingAt(room.key, activeTable) : null)}
           onExit={() => { setPhase("room"); setActiveTable(null); setBossFight(false); }}
           onQuitGame={() => router.push("/app/foxpit")}
