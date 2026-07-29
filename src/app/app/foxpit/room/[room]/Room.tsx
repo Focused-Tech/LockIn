@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LockGlyph } from "@/components/practice/LockGlyph";
 import { LockerRoom, type LockerChoice } from "./LockerRoom";
 import { FoxPitGame } from "./FoxPitGame";
 import {
@@ -14,6 +13,7 @@ import {
   DOOR_EMBLEM,
   MEMBERSHIP_CARD,
   type FoxPitRoomKey,
+  type BossArt,
 } from "@/lib/foxpit";
 import { underlingAt, underlingTableCount, type Underling } from "@/lib/foxpit/underlings";
 import { writeFoxCheckpoint, clearFoxCheckpoint } from "@/lib/foxpit/checkpoint";
@@ -29,13 +29,22 @@ const PLAYER_TABLE = "/foxpit/tables/table_player_round.png";
 const TABLE_POS: Record<number, [number, number][]> = {
   1: [[50, 66]],
   3: [[34, 68], [50, 71], [66, 68]],
-  // 4 underling tables (High Table): two rows, closest pair first.
-  4: [[36, 74], [64, 74], [38, 60], [62, 60]],
-  // 5 tables in a TIGHT cluster, numbered closest-first: table 1 nearest the
-  // viewer (bottom), 4 & 5 farthest (top). Kept close but non-overlapping.
-  5: [[50, 77], [30, 67], [70, 67], [37, 56], [63, 56]],
+  // High Table — X FORMATION: 4 ravens on the arms of the X; the BOSS table sits at the crossing
+  // (BOSS_TILE_POS.hightable). TL · TR · BL · BR — arms pushed wide so the centre boss has clearance.
+  4: [[30, 52], [70, 52], [30, 82], [70, 82]],
+  // Coliseum — ✳ FORMATION: 5 wolves on the spokes; the BOSS table sits at the centre
+  // (BOSS_TILE_POS.coliseum). Top · upper-right · lower-right · lower-left · upper-left. Tightened to
+  // the X's footprint; the top spoke is pulled DOWN off the throne, rows stay ≥8% apart in Y.
+  5: [[50, 57], [70, 65], [63, 86], [37, 86], [30, 65]],
 };
 const PRIZE_KEY_POS: [number, number] = [50, 38]; // on the throne, above the table ring so it stays uncovered
+
+/** The BOSS TABLE tile position — the last selectable table (Coliseum's 6th, High Table's 5th). Sits
+ *  ABOVE the tuned underling cluster and below the throne/key so it never overlaps a player table. */
+const BOSS_TILE_POS: Partial<Record<FoxPitRoomKey, [number, number]>> = {
+  coliseum: [50, 74], // centre of the ✳ — a clear row below the two upper spokes
+  hightable: [50, 67], // crossing of the X
+};
 
 /** Host intro blurb — shown on the boss name-card when the doors open. The boss is
  *  the HOST of the room (not necessarily the first challenger). */
@@ -64,8 +73,56 @@ const FLOOR_IMG: Record<FoxPitRoomKey, string> = {
 };
 /** Locksmith DEALER tables (top-down: she's seated at the edge, chip stacks, tray,
  *  and the LockIn deck all baked in) — the table that pulls up when you sit. */
-const LOCKSMITH_PLAYER_TABLE = "/foxpit/tables/locksmith_player_table.png";
-const LOCKSMITH_BOSS_TABLE = "/foxpit/tables/locksmith_boss_table.png";
+/** §2.1 — the BALLROOM PLATE art: each opponent seated at the table with their hand of LockIn cards.
+ *  Underlings use their own per-character asset (opponent.art = cutouts/underling_<name>_<clan>.png);
+ *  bosses use the with-cards boss sheet, mapped by bossArt (TL Owl · TR Wolf · BL Raven(female) · BR Fox).
+ *  All are green-screen source — ChromaFigure keys the green out at paint. */
+const BOSS_PLATE_WITH_CARDS: Record<BossArt, string> = {
+  owl: "/foxpit/review/bosses_cards_TL.png",
+  wolf: "/foxpit/review/bosses_cards_TR.png",
+  raven: "/foxpit/review/bosses_cards_BL.png",
+  fox: "/foxpit/review/bosses_cards_BR.png",
+};
+
+/** Draws a green-screen PNG to a canvas and keys the chroma green to transparent, so the seated
+ *  opponent composites onto the plate cleanly (same-origin assets → canvas never taints). */
+function ChromaFigure({ src, alt, style }: { src: string; alt: string; style?: React.CSSProperties }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const img = new Image();
+    img.onload = () => {
+      if (cancelled) return;
+      const c = ref.current;
+      if (!c) return;
+      c.width = img.naturalWidth;
+      c.height = img.naturalHeight;
+      const ctx = c.getContext("2d");
+      if (!ctx) return;
+      ctx.drawImage(img, 0, 0);
+      try {
+        const frame = ctx.getImageData(0, 0, c.width, c.height);
+        const p = frame.data;
+        for (let i = 0; i < p.length; i += 4) {
+          const r = p[i] ?? 0, g = p[i + 1] ?? 0, b = p[i + 2] ?? 0;
+          // chroma green: green clearly dominant over red+blue → cut to transparent; de-spill the
+          // near-edge greens a touch so there's no hard green halo on the figure.
+          if (g > 95 && g > r * 1.35 && g > b * 1.35) {
+            p[i + 3] = 0;
+          } else if (g > r + 24 && g > b + 24) {
+            p[i + 1] = Math.round((r + b) / 2 + 12);
+          }
+        }
+        ctx.putImageData(frame, 0, 0);
+      } catch (err) {
+        console.error("[foxpit] chroma key failed", err);
+      }
+    };
+    img.src = src;
+    return () => { cancelled = true; };
+  }, [src]);
+  return <canvas ref={ref} aria-label={alt} role="img" style={style} />;
+}
 
 export function FoxPitRoom({
   roomKey,
@@ -141,6 +198,11 @@ export function FoxPitRoom({
   const bossReady = singleTable || allBeaten || roomCleared;
   // the table you're currently on = the first not-yet-beaten one (highlighted orange).
   const currentTableIdx = roomCleared ? -1 : tables.findIndex((_, i) => !beaten.has(i));
+  // The BOSS TABLE is the LAST selectable tile in a multi-table room (Coliseum's 6th, High Table's
+  // 5th) — centred in the formation. Single-table rooms (Owl/Fox) already seat you at the boss.
+  const bossTilePos = BOSS_TILE_POS[room.key] ?? [50, 60];
+  const renderTiles: [number, number][] = singleTable ? tables : [...tables, bossTilePos];
+  const bossTileIdx = singleTable ? -1 : tables.length;
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 60, background: "#0A0D12", overflow: "hidden" }}>
@@ -195,52 +257,14 @@ export function FoxPitRoom({
             {KEY_ASSET[room.bossArt].tier.toUpperCase()} KEY
           </div>
 
-          {/* multi-table rooms: the boss waits on the throne — locked until every table is beaten */}
-          {!singleTable && (
-            <button
-              onClick={() => { if (bossReady) { setNextInitialRound(0); setBossFight(true); setActiveTable(null); setPhase("table"); } }}
-              disabled={!bossReady}
-              style={{
-                position: "absolute",
-                left: "50%",
-                top: "29%",
-                transform: "translate(-50%,-50%)",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 3,
-                padding: "8px 14px",
-                borderRadius: 12,
-                background: bossReady ? "rgba(20,10,4,.82)" : "rgba(3,4,7,.8)",
-                border: `2px solid ${bossReady ? room.accent : "#3a4653"}`,
-                boxShadow: bossReady ? `0 0 26px ${room.accent}aa` : "none",
-                color: bossReady ? "#ffe" : "#c8a24b",
-                fontSize: 12,
-                fontWeight: 800,
-                letterSpacing: ".06em",
-                cursor: bossReady ? "pointer" : "not-allowed",
-                filter: bossReady ? "none" : "grayscale(.4)",
-                animation: bossReady ? "foxpitGlow 2.4s ease-in-out infinite" : "none",
-                whiteSpace: "nowrap",
-                textAlign: "center",
-              }}
-            >
-              {bossReady ? (
-                `CHALLENGE ${room.boss.toUpperCase()} ›`
-              ) : (
-                <>
-                  <LockGlyph size={18} />
-                  <span>BEAT ALL {tables.length} TABLES</span>
-                </>
-              )}
-            </button>
-          )}
-
-          {/* PLAYER TABLES — one round-table cutout per playable table (count matches
-              the room). Beaten = dimmed + ✓; the table you're on = lock-in orange. */}
-          {tables.map(([x, y], i) => {
-            const done = roomCleared || beaten.has(i);
-            const u = singleTable ? null : underlingAt(room.key, i);
+          {/* PLAYER TABLES + the BOSS TABLE (last tile) — one round-table cutout per selectable table.
+              Underlings: beaten = dimmed + ✓; current = lock-in orange. Boss tile: locked (🔒) until
+              every underling table is beaten, then it's the centred boss table. */}
+          {renderTiles.map(([x, y], i) => {
+            const isBossTile = i === bossTileIdx;
+            const done = isBossTile ? roomCleared : (roomCleared || beaten.has(i));
+            const bossLocked = isBossTile && !bossReady;
+            const u = (singleTable || isBossTile) ? null : underlingAt(room.key, i);
             const isCurrent = i === currentTableIdx;
             // when a table is picked, the others disperse OUTWARD (radially, in the
             // direction they sit) and fade; the picked one nudges up in scale.
@@ -253,8 +277,16 @@ export function FoxPitRoom({
             return (
               <button
                 key={i}
-                onClick={() => { setNextInitialRound(0); setBossFight(false); setActiveTable(i); setPhase("table"); }}
-                aria-label={singleTable ? `Sit vs ${room.boss}` : `Table ${i + 1}`}
+                onClick={() => {
+                  if (isBossTile) {
+                    if (!bossReady) return; // locked until every underling table is beaten
+                    setNextInitialRound(0); setBossFight(true); setActiveTable(null); setPhase("table");
+                  } else {
+                    setNextInitialRound(0); setBossFight(false); setActiveTable(i); setPhase("table");
+                  }
+                }}
+                disabled={bossLocked}
+                aria-label={isBossTile ? `Boss table · ${room.boss}` : singleTable ? `Sit vs ${room.boss}` : `Table ${i + 1}`}
                 style={{
                   position: "absolute",
                   left: `${x}%`,
@@ -262,13 +294,13 @@ export function FoxPitRoom({
                   transform: `translate(-50%,-50%) translate(${flyX}%, ${flyY}%)${isSel ? " scale(1.12)" : ""} perspective(420px) rotateX(50deg)`,
                   opacity: fly ? 0 : 1,
                   transition: "transform .55s cubic-bezier(.35,0,.2,1), opacity .5s ease",
-                  width: singleTable ? 150 : 92,
+                  width: singleTable ? 150 : isBossTile ? 92 : 80,
                   border: "none",
                   background: "transparent",
                   padding: 0,
-                  cursor: "pointer",
-                  filter: done ? "grayscale(.45) brightness(.72)" : "none",
-                  animation: isCurrent && !selecting ? "foxpitBob 2.6s ease-in-out infinite" : "none",
+                  cursor: bossLocked ? "not-allowed" : "pointer",
+                  filter: bossLocked ? "grayscale(.5) brightness(.62)" : done ? "grayscale(.45) brightness(.72)" : "none",
+                  animation: (isBossTile ? bossReady && !roomCleared : isCurrent) && !selecting ? "foxpitBob 2.6s ease-in-out infinite" : "none",
                 }}
               >
                 <div style={{ position: "relative", width: "100%" }}>
@@ -281,7 +313,9 @@ export function FoxPitRoom({
                       width: "100%",
                       height: "auto",
                       display: "block",
-                      filter: isCurrent
+                      filter: isBossTile && !bossLocked
+                        ? "drop-shadow(0 0 18px #FF3B00) drop-shadow(0 0 8px #FF3B00)" // orange boss bezel
+                        : isCurrent
                         ? "drop-shadow(0 0 14px #FF3B00) drop-shadow(0 0 6px #FF3B00)"
                         : done
                           ? "drop-shadow(0 0 8px #22C55E88)"
@@ -299,14 +333,16 @@ export function FoxPitRoom({
                       fontSize: singleTable ? 13 : 11,
                       fontWeight: 800,
                       letterSpacing: ".06em",
-                      color: done ? "#22C55E" : isCurrent ? "#FF3B00" : "#E7E7EB",
+                      color: isBossTile ? (bossLocked ? "#c8a24b" : "#FF3B00") : done ? "#22C55E" : isCurrent ? "#FF3B00" : "#E7E7EB",
                       textShadow: "0 2px 6px #000, 0 0 8px #000",
                       textAlign: "center",
                       lineHeight: 1.1,
                       pointerEvents: "none",
                     }}
                   >
-                    {singleTable
+                    {isBossTile
+                      ? (roomCleared ? "✓ BOSS" : bossLocked ? `🔒 BEAT ALL ${tables.length}` : `BOSS · ${room.boss.toUpperCase()}`)
+                      : singleTable
                       ? `SIT · ${room.boss.toUpperCase()}`
                       : done
                         ? "✓"
@@ -363,6 +399,9 @@ export function FoxPitRoom({
           coinBalance={coinBalance}
           initialRound={nextInitialRound}
           opponent={bossFight || singleTable ? null : (activeTable !== null ? underlingAt(room.key, activeTable) : null)}
+          oppArt={(bossFight || singleTable)
+            ? BOSS_PLATE_WITH_CARDS[room.bossArt]
+            : ((activeTable !== null ? underlingAt(room.key, activeTable)?.art : undefined) ?? BOSS_PLATE_WITH_CARDS[room.bossArt])}
           onRound={(r) => {
             // §3.1 — keep the checkpoint's round current as the match advances (seat tables only).
             if (!bossFight && !singleTable && activeTable !== null) {
@@ -410,7 +449,9 @@ export function FoxPitRoom({
           {/* Quit the GAME — always out to the Fox Pit LANDING (/app/choose, "The Fox Pit" front
               door). You're quitting the game, not dropping back to the lobby or the tower. */}
           <button onClick={() => router.push("/app/choose")} style={hudQuit}>Quit game</button>
-          <div style={{ position: "absolute", top: 22, left: 0, right: 0, textAlign: "center" }}>
+          {/* title sits BELOW the ‹ Map / Quit game buttons so it never runs under them (the buttons
+              are pinned at top:16; the header drops clear of them). */}
+          <div style={{ position: "absolute", top: 60, left: 0, right: 0, textAlign: "center", pointerEvents: "none" }}>
             <div style={{ fontFamily: "Georgia, serif", fontSize: 22, letterSpacing: ".1em", color: "#E7E7EB", textShadow: "0 2px 10px #000" }}>{room.name}</div>
             <div style={{ fontSize: 12, letterSpacing: ".2em", color: room.accent, fontWeight: 700, marginTop: 2 }}>HOST · {room.boss.toUpperCase()}</div>
           </div>
@@ -568,10 +609,9 @@ function TablePanel({
   onClose: () => void;
   onConfirm: () => void;
 }) {
-  // §2.1 — the ballroom plate matches THIS table's opponent: the seated underling's own cutout, or
-  // (boss table) the room boss's standing art. Name + role/win-rate ride the plate; "Take your seat"
-  // is the CTA below.
-  const plateArt = bossTable ? (REVEAL_IMG[room.key] ?? room.avatarImg) : (opponent?.art ?? room.avatarImg);
+  // §2.1 — the ballroom plate matches THIS table's opponent: the boss (female Boss Raven on the High
+  // Table) or the seated underling, each shown at the table WITH their hand of cards (green keyed).
+  const plateArt = bossTable ? BOSS_PLATE_WITH_CARDS[room.bossArt] : (opponent?.art ?? BOSS_PLATE_WITH_CARDS[room.bossArt]);
   const plateName = bossTable ? room.boss : (opponent?.name ?? room.boss);
   const plateSub = bossTable ? `Host · ${room.floorLabel}` : (opponent ? `${opponent.winPct}% win rate` : "Dealt by the Locksmith");
   return (
@@ -583,44 +623,45 @@ function TablePanel({
 
       <button onClick={onClose} style={hudBack}>‹ Back</button>
 
-      {/* §2.1 — THE BALLROOM PLATE (step 6): the opponent for this table, seated across, on a
-          plaque carrying their portrait + name + win rate. "Take your seat" is the CTA below. */}
-      <div style={{ position: "absolute", top: 54, left: 0, right: 0, display: "flex", justifyContent: "center", padding: "0 16px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", maxWidth: 360, borderRadius: 16, padding: "10px 14px", background: "linear-gradient(180deg, rgba(14,10,6,.9), rgba(6,7,11,.92))", border: `1.5px solid ${room.accent}`, boxShadow: `0 0 26px ${room.accent}44, 0 10px 26px rgba(0,0,0,.6)`, backdropFilter: "blur(2px)" }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={plateArt}
-            alt={plateName}
-            style={{ height: 58, width: 58, flex: "none", borderRadius: "50%", objectFit: "cover", objectPosition: "center top", border: `2px solid ${room.accent}`, background: "rgba(3,4,7,.6)" }}
-          />
-          <div style={{ minWidth: 0, textAlign: "left" }}>
-            <div style={{ fontSize: 10, letterSpacing: ".2em", color: room.accent, fontWeight: 800 }}>
-              {bossTable ? "BOSS TABLE" : `TABLE ${index + 1}`}
-            </div>
-            <div style={{ fontFamily: "Georgia, serif", fontSize: 20, color: "#f5ead0", lineHeight: 1.1, textShadow: "0 2px 12px #000" }}>
-              {plateName}
-            </div>
-            <div style={{ fontSize: 11, color: "#cdd6e2", fontWeight: 600, marginTop: 1 }}>
-              {plateSub}
-            </div>
+      {/* §2.1 — THE BALLROOM PLATE (step 6): the opponent for THIS table, seated across with their
+          hand of cards (the asset you made — green keyed out here). Positioned BELOW the top HUD so
+          ‹ Back / ‹ Map / Quit game never overlap the header. The name/table/win-rate caption rides
+          beneath the figure; "Take your seat" is the CTA at the bottom. */}
+      <div
+        style={{
+          position: "absolute",
+          top: "calc(env(safe-area-inset-top, 0px) + 76px)",
+          left: 0,
+          right: 0,
+          bottom: freeKeycard ? 214 : 132,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "flex-end",
+          padding: "0 16px",
+        }}
+      >
+        <ChromaFigure
+          src={plateArt}
+          alt={`${plateName} seated at the table`}
+          style={{ height: "78%", maxHeight: 460, width: "auto", maxWidth: "94%", display: "block", objectFit: "contain", filter: `drop-shadow(0 18px 34px rgba(0,0,0,.7)) drop-shadow(0 0 26px ${room.accent}55)`, animation: "foxpitFadeUp .5s ease both" }}
+        />
+        <div style={{ marginTop: 8, textAlign: "center" }}>
+          <div style={{ fontSize: 11, letterSpacing: ".24em", color: room.accent, fontWeight: 800 }}>
+            {bossTable ? "BOSS TABLE" : `TABLE ${index + 1}`}
+          </div>
+          <div style={{ fontFamily: "Georgia, serif", fontSize: 26, color: "#f5ead0", lineHeight: 1.1, textShadow: "0 2px 14px #000" }}>
+            {plateName}
+          </div>
+          <div style={{ fontSize: 12, color: "#cdd6e2", fontWeight: 600, marginTop: 2 }}>
+            {plateSub}
           </div>
         </div>
       </div>
 
-      {/* the DEAL — the Locksmith DEALER table (her seated at the edge, chips + tray +
-          deck baked in) pulls up on the floor; you're seated across from her. */}
-      <div style={{ position: "absolute", left: "50%", top: "51%", transform: "translate(-50%,-50%)", height: "82%", width: "96%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={bossTable ? LOCKSMITH_BOSS_TABLE : LOCKSMITH_PLAYER_TABLE}
-          alt="The Locksmith deals"
-          style={{ height: "100%", width: "auto", maxWidth: "100%", objectFit: "contain", display: "block", filter: "drop-shadow(0 22px 34px rgba(0,0,0,.7))", animation: "foxpitTablePull .6s cubic-bezier(.2,.8,.2,1) both" }}
-        />
-      </div>
-
       {freeKeycard && (
-        <div style={{ position: "absolute", left: 0, right: 0, bottom: "calc(env(safe-area-inset-bottom, 0px) + 100px)", display: "flex", justifyContent: "center" }}>
-          <MembershipCard username={username} avatarUrl={avatarUrl} width={170} />
+        <div style={{ position: "absolute", left: 0, right: 0, bottom: "calc(env(safe-area-inset-bottom, 0px) + 96px)", display: "flex", justifyContent: "center" }}>
+          <MembershipCard username={username} avatarUrl={avatarUrl} width={150} />
         </div>
       )}
 

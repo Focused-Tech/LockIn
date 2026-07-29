@@ -98,6 +98,7 @@ export function FoxPitGame({
   coinBalance = 0,
   initialRound = 0,
   opponent = null,
+  oppArt,
   onRound,
   onExit,
   onQuitGame,
@@ -109,6 +110,9 @@ export function FoxPitGame({
   username?: string;
   /** §3.3 — coin balance at entry; the chrome shows it and visibly bumps it when a round is won. */
   coinBalance?: number;
+  /** §2.1 — the opponent's ballroom-plate art (seated with cards), shown as the small deal-screen
+   *  nameplate above the Locksmith so you keep sight of who you're facing while cards are dealt. */
+  oppArt?: string;
   /** §3.1 — the round this match starts at (resume). 0 for a fresh table. */
   initialRound?: number;
   /** §3.1 — fires whenever the current round changes so the room can checkpoint it. */
@@ -431,6 +435,9 @@ export function FoxPitGame({
           count={slates.length}
           /* lead alternates each round: round 1 boss deals first, round 2 player. */
           bossFirst={roundIndex % 2 === 0}
+          oppName={oppName}
+          oppArt={oppArt}
+          oppSub={isBoss ? "Boss table" : `${oppWinPct}% win rate`}
           onDone={() => setPhase("deal")}
         />
       )}
@@ -678,12 +685,16 @@ function BossModePhase({
 }
 
 function DealingTable({
-  roomKey, accent, count, bossFirst, onDone,
+  roomKey, accent, count, bossFirst, oppName, oppArt, oppSub, onDone,
 }: {
   roomKey: FoxPitRoomKey;
   accent: string;
   count: number;
   bossFirst: boolean;
+  /** §2.1 — deal-screen nameplate: who's across the table while the Locksmith deals. */
+  oppName?: string;
+  oppArt?: string;
+  oppSub?: string;
   onDone: () => void;
 }) {
   const TOTAL = Math.max(1, count) * 2; // `count` to the boss, `count` to you
@@ -718,6 +729,24 @@ function DealingTable({
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={FLOOR_IMG[roomKey]} alt="" className="absolute inset-0 h-full w-full object-cover opacity-90" />
       <div className="absolute inset-0" style={{ background: "radial-gradient(70% 55% at 50% 50%, transparent, rgba(3,4,7,.78))" }} />
+      {/* §2.1 — the opponent nameplate pops up ABOVE the Locksmith during the deal (the cropped
+          circle plate, kept from the table screen) so you never lose sight of who you're facing.
+          Brightened so dark figures (the ravens) read against the felt. */}
+      {oppArt && oppName && (
+        <div
+          className="absolute left-1/2 top-2 z-[4] flex -translate-x-1/2 items-center gap-2 rounded-full border px-2.5 py-1"
+          style={{ borderColor: accent, background: "rgba(6,8,12,.85)", backdropFilter: "blur(2px)" }}
+        >
+          <span className="block h-9 w-9 flex-none overflow-hidden rounded-full" style={{ border: `1.5px solid ${accent}` }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={oppArt} alt="" className="h-full w-full object-cover" style={{ objectPosition: "center 24%", filter: "brightness(1.35) contrast(1.05)" }} />
+          </span>
+          <span className="pr-1 text-left leading-tight">
+            <span className="block text-[13px] font-bold text-foreground">{oppName}</span>
+            {oppSub && <span className="block text-[10px] font-semibold" style={{ color: accent }}>{oppSub}</span>}
+          </span>
+        </div>
+      )}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={LOCKSMITH_TABLE} alt="The Locksmith deals" className="relative z-[1] max-h-[78%] w-auto max-w-[96%] object-contain" />
 
