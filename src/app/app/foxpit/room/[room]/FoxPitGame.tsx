@@ -704,7 +704,7 @@ function DealingTable({
 }
 
 /* ---------------- deal / keep-N phase ---------------- */
-function DealPhase({
+export function DealPhase({
   slates, kept, redealsLeft, accent, onToggle, onRedeal, onPlay, onAutoPlay,
 }: {
   slates: FoxSlate[];
@@ -729,6 +729,18 @@ function DealPhase({
     const t = setTimeout(() => setLeft((l) => l - 1), 1000);
     return () => clearTimeout(t);
   }, [left, onAutoPlay]);
+
+  // A: the OPENED overlay must be dismissible by hardware/gesture back too — push a history entry on
+  // open, close on popstate. Close/tap-outside route through history.back() so every dismissal is one
+  // path (the pushed entry is always consumed) and back never leaves the game from the overlay.
+  useEffect(() => {
+    if (!opened) return;
+    window.history.pushState({ fpOpened: 1 }, "");
+    const onPop = () => setOpened(null);
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [opened]);
+  const closeOpened = () => window.history.back();
 
   // FoxSlate questions -> read-only SlateCard legs for the opened full-screen card. No context strip
   // (Fox Pit trivia has none). Reading the question is how you decide keep vs throw-back.
@@ -790,17 +802,18 @@ function DealPhase({
       {opened && (() => {
         const tint = slateTint(opened);
         return (
-          <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-background/95 p-4" onClick={() => setOpened(null)}>
-            <div className="w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+          <div data-opened-overlay className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-background/95 p-4" onClick={closeOpened}>
+            {/* proper card container — not edge-to-edge; scrolls if the card is tall. */}
+            <div className="flex max-h-[86vh] w-full max-w-[340px] flex-col overflow-y-auto" onClick={(e) => e.stopPropagation()}>
               <SlateCard mode="foxpit" currency="coins" catColor={tint.color}
                 faceImage={CARD_FRONT} eyebrow={opened.category} title={opened.title}
                 readOnly stakeMode="none" legs={legsFor(opened)} />
-              <div className="mt-3 flex gap-2">
+              <div className="mt-3 flex shrink-0 gap-2">
                 <button onClick={() => onToggle(opened.id)} className="flex-1 rounded-xl border py-3 text-sm font-bold"
                   style={{ borderColor: tint.color, color: tint.color }}>
                   {kept.has(opened.id) ? "Kept ✓ — throw back" : "Keep this card"}
                 </button>
-                <button onClick={() => setOpened(null)} className="flex-1 rounded-xl border border-border py-3 text-sm font-bold text-foreground">
+                <button data-close onClick={closeOpened} className="flex-1 rounded-xl border border-border py-3 text-sm font-bold text-foreground">
                   Close
                 </button>
               </div>
