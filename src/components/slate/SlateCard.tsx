@@ -76,6 +76,10 @@ export interface SlateCardProps {
   readOnly?: boolean;
   /** FOX PIT face-side: baked card image (card_front_single.png). When set, replaces the code header. */
   faceImage?: string;
+  /** How options render. "button" (default) = tappable pick buttons. "plain" = read-only list rows
+   *  (no button chrome, not tappable-looking) — used where the card is for READING only, e.g. the
+   *  Fox Pit DEAL opened card, where answering happens later. Opt-in; every other caller is unchanged. */
+  pickStyle?: "button" | "plain";
   onPick?: (legIndex: number, pickIndex: number) => void;
   onStake?: (stake: number) => void;
   onCta?: () => void;
@@ -89,7 +93,7 @@ export function SlateCard({
   mode, currency, catColor, legs,
   eyebrow, title, sub,
   stakeMode = "always", stakeOptions = [], selectedStake = null, stakeLabel = "Play", stakeNote, answered = false,
-  cta, locked = false, locking = false, readOnly = false, faceImage,
+  cta, locked = false, locking = false, readOnly = false, faceImage, pickStyle = "button",
   onPick, onStake, onCta,
 }: SlateCardProps) {
   const stakeVisible = stakeMode !== "none" && stakeOptions.length > 0;
@@ -142,34 +146,53 @@ export function SlateCard({
           {leg.qs && <div className="mt-1.5 text-sm text-muted">{leg.qs}</div>}
 
           <div className="mt-3.5 grid gap-2.5">
-            {leg.picks.map((pick, pi) => (
-              <button
-                key={pi}
-                type="button"
-                data-pick
-                data-selected={pick.selected ? "true" : "false"}
-                disabled={readOnly || locked}
-                onClick={() => onPick?.(li, pi)}
-                className="rounded-[11px] border px-3.5 py-3 text-left"
-                style={{
-                  borderColor: pick.selected ? catColor : "#262E3A",
-                  borderWidth: pick.selected ? 1.5 : 1,
-                  backgroundColor: "#181E27",
-                  backgroundImage: PICK_GRADIENT,
-                  boxShadow: pick.selected ? SH.pickSel : SH.pick, // gradient + inset highlight; selected adds a ring
-                }}
-              >
-                <span className="block text-[17px] font-semibold leading-tight text-white">{pick.label}</span>
-                {(pick.secondary ?? []).map((s, si) => (
-                  <span key={si} className="mt-1.5 block text-[14px] leading-snug text-muted">{s}</span>
-                ))}
-                {pick.result && (
-                  <span className={cn("mt-1 block text-sm font-semibold", pick.result === "correct" ? "text-cash" : "text-loss")}>
-                    {pick.result === "correct" ? "✓ correct" : "✗ wrong"}
+            {leg.picks.map((pick, pi) =>
+              pickStyle === "plain" ? (
+                // READ-ONLY list row — no button chrome (no gradient/border-box/shadow), not tappable.
+                // A dashed dot marks it as one of the choices you'll answer LATER, not a live control.
+                <div key={pi} data-pick data-readonly="true" className="flex cursor-default items-start gap-2.5 px-1 py-1.5">
+                  <span aria-hidden className="mt-[3px] h-2 w-2 flex-none rounded-full border" style={{ borderColor: catColor }} />
+                  <span className="min-w-0">
+                    <span className="block text-[16px] font-medium leading-tight text-foreground">{pick.label}</span>
+                    {(pick.secondary ?? []).map((s, si) => (
+                      <span key={si} className="mt-1 block text-[13px] leading-snug text-muted">{s}</span>
+                    ))}
+                    {pick.result && (
+                      <span className={cn("mt-1 block text-sm font-semibold", pick.result === "correct" ? "text-cash" : "text-loss")}>
+                        {pick.result === "correct" ? "✓ correct" : "✗ wrong"}
+                      </span>
+                    )}
                   </span>
-                )}
-              </button>
-            ))}
+                </div>
+              ) : (
+                <button
+                  key={pi}
+                  type="button"
+                  data-pick
+                  data-selected={pick.selected ? "true" : "false"}
+                  disabled={readOnly || locked}
+                  onClick={() => onPick?.(li, pi)}
+                  className="rounded-[11px] border px-3.5 py-3 text-left"
+                  style={{
+                    borderColor: pick.selected ? catColor : "#262E3A",
+                    borderWidth: pick.selected ? 1.5 : 1,
+                    backgroundColor: "#181E27",
+                    backgroundImage: PICK_GRADIENT,
+                    boxShadow: pick.selected ? SH.pickSel : SH.pick, // gradient + inset highlight; selected adds a ring
+                  }}
+                >
+                  <span className="block text-[17px] font-semibold leading-tight text-white">{pick.label}</span>
+                  {(pick.secondary ?? []).map((s, si) => (
+                    <span key={si} className="mt-1.5 block text-[14px] leading-snug text-muted">{s}</span>
+                  ))}
+                  {pick.result && (
+                    <span className={cn("mt-1 block text-sm font-semibold", pick.result === "correct" ? "text-cash" : "text-loss")}>
+                      {pick.result === "correct" ? "✓ correct" : "✗ wrong"}
+                    </span>
+                  )}
+                </button>
+              ),
+            )}
           </div>
 
           {/* display-only context strip (never a threshold) — present for sports slates, omitted for

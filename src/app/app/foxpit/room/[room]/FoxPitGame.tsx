@@ -808,14 +808,27 @@ export function DealPhase({
       {opened && (() => {
         const tint = slateTint(opened);
         return (
-          <div data-opened-overlay className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-background/95 p-4" onClick={closeOpened}>
-            {/* proper card container — not edge-to-edge; scrolls if the card is tall. */}
-            <div className="flex max-h-[86vh] w-full max-w-[340px] flex-col overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-              {/* 3.1: the OPENED card leads with the QUESTION — no face art pushing it off-screen.
-                  (The frozen card_front_single.png face stays on the dealt MINI, not here.) */}
-              <SlateCard mode="foxpit" currency="coins" catColor={tint.color}
-                eyebrow={opened.category} title={opened.title}
-                readOnly stakeMode="none" legs={legsFor(opened)} />
+          // 1.2: FULLY OPAQUE over the deal grid + the bottom bar (was bg-background/95, which let
+          // "Redeal / To the table" bleed through). Column layout — NOT centered — so a tall card scrolls
+          // to its end instead of overflowing past the bezel.
+          <div
+            data-opened-overlay
+            className="fixed inset-0 z-50 flex flex-col bg-background p-4"
+            style={{ paddingTop: "calc(env(safe-area-inset-top,0px) + 16px)", paddingBottom: "calc(env(safe-area-inset-bottom,0px) + 16px)" }}
+            onClick={closeOpened}
+          >
+            <div className="mx-auto flex min-h-0 w-full max-w-[340px] flex-1 flex-col" onClick={(e) => e.stopPropagation()}>
+              {/* 1.1: the card body SCROLLS BY GESTURE (touch/drag) — every question + option reachable,
+                  never a visible scrollbar (global UI rule; belt-and-braces inline for the webview). */}
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain" style={{ scrollbarWidth: "none" }}>
+                {/* 3.1: the OPENED card leads with the QUESTION — no face art pushing it off-screen.
+                    (The frozen card_front_single.png face stays on the dealt MINI, not here.)
+                    1.3: options render READ-ONLY (pickStyle="plain") — you read + decide keep/toss here;
+                    answering happens later at the table. */}
+                <SlateCard mode="foxpit" currency="coins" catColor={tint.color}
+                  eyebrow={opened.category} title={opened.title}
+                  readOnly stakeMode="none" pickStyle="plain" legs={legsFor(opened)} />
+              </div>
               <div className="mt-3 flex shrink-0 gap-2">
                 <button onClick={() => onToggle(opened.id)} className="flex-1 rounded-xl border py-3 text-sm font-bold"
                   style={{ borderColor: tint.color, color: tint.color }}>
