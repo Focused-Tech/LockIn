@@ -1,0 +1,10 @@
+RETIRED — DO NOT WIRE THESE.
+
+tower_layer_10_stairway.png and tower_layer_20_elevator_band.png are FULL-CANVAS
+1620x4500 plates with the position baked into the transparency.
+
+That is the bug. A full-canvas plate is not a separate asset — it cannot be moved,
+so compositing it at 0,0 pastes the art at whatever coordinate it happened to sit
+on the source sheet. That is what put the staircase diagonally across three floors.
+
+Use ../assets/ instead: tight-cropped pieces with an origin, independently placeable.

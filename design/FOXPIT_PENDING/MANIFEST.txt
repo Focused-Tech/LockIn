@@ -1,0 +1,29 @@
+FOX PIT — PENDING ASSETS FOR CC   (cut + green-removed by orchestrator, 2026-07-20)
+All PNGs are transparent (green knocked out with the locked bright-green rule; felt/green
+content preserved via edge-only despill; each verified for fringe + felt survival).
+
+cutouts/
+  grim.png              Grim (raven, top raven underling) — chin-rest pose, LockIn card backs, no chips
+  locksmith_usher.png   Locksmith (dealer fox) STANDING, arm up showing the way (door usher)
+  chip_tray.png         Dealer chip tray — 5 denominations (white/red/blue/green/gold-black), fox mark
+
+tables/
+  table_player_round.png  Regular player table — round circle, top-down, chip-holder rail
+  table_boss_round.png    Boss table — larger round, top-down, gold filigree + brass segments
+
+thrones/  (EMPTY thrones; overlay the seated-boss cutout on top — angles match the ballroom plates)
+  throne_alphawolf_angleL.png  Alpha Wolf gold throne, 3/4 facing right
+  throne_alphawolf_angleR.png  Alpha Wolf gold throne, 3/4 facing left
+  throne_bossraven_angleL.png  Boss Raven purple/gold throne, 3/4 facing right
+  throne_bossraven_angleR.png  Boss Raven purple/gold throne, 3/4 facing left
+
+cards/
+  card_back_deck_stack.png  Face-down LockIn deck (stacked) — card back (neon fox, wordmark, lock)
+  card_front_single.png     Single face-up card FRONT (orange banner, black fox, blank body)
+
+reference/
+  card_design_reference.png  LockIn card design reference sheet (front + badge + back)
+
+STILL OWED (NOT in this zip):
+  - Locksmith LEFT / RIGHT announce poses (mirrored) — never landed clean; corrected prompt ready to run
+  - Ghost full-body standing (in progress; match seated card-player reference)

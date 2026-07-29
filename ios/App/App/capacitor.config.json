@@ -1,0 +1,37 @@
+{
+	"appId": "gg.lockin.app",
+	"appName": "LockIn",
+	"webDir": "public",
+	"server": {
+		"url": "https://lockin-three-zeta.vercel.app",
+		"androidScheme": "https",
+		"cleartext": false
+	},
+	"plugins": {
+		"FirebaseAuthentication": {
+			"skipNativeAuth": true,
+			"providers": [
+				"google.com"
+			]
+		},
+		"PushNotifications": {
+			"presentationOptions": [
+				"badge",
+				"sound",
+				"alert"
+			]
+		},
+		"SplashScreen": {
+			"backgroundColor": "#0A0D12",
+			"launchAutoHide": true,
+			"showSpinner": false,
+			"androidScaleType": "CENTER_CROP"
+		}
+	},
+	"packageClassList": [
+		"FirebaseAuthenticationPlugin",
+		"AppPlugin",
+		"PushNotificationsPlugin",
+		"SplashScreenPlugin"
+	]
+}

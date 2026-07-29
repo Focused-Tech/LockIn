@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>LockIn — The Pit · Tower Hub (hi-fi mockup)</title>
+<!--
+  ISOLATED hi-fi mockup. Inline CSS/JS/SVG, no app imports. Openable by double-click.
+  Phone-framed portrait 1080x2640 logical, scaled to fit. Vertical BUILDING the player
+  climbs to pick a mode. Placeholder crests; padlock = copied brand asset.
+-->
+<style>
+  :root{
+    --orange:#FC3E01; --grey:#E7E7EB; --dark:#0A0D12;
+    --green:#3ED07E; --lockgrey:#6b7688;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%; background:#04060a; color:var(--grey); overflow:hidden;
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif; -webkit-font-smoothing:antialiased;}
+  /* brand rule: no visible scrollbars anywhere */
+  *::-webkit-scrollbar{display:none;} *{scrollbar-width:none;}
+
+  .device{position:fixed; inset:0; display:flex; align-items:center; justify-content:center;}
+  /* PHONE = viewport. flex:none + min-width so the flex row can't shrink its logical width. */
+  #phone{position:relative; flex:0 0 auto; width:1080px; min-width:1080px; height:2640px;
+    background:#04060a; overflow:hidden; transform-origin:center center;
+    border:7px solid #1b222c; border-radius:60px; box-shadow:0 0 0 3px #000, 0 30px 90px rgba(0,0,0,.6);}
+
+  /* camera layer (whole scene) */
+  #cam{position:absolute; top:0; left:0; width:1080px; height:2640px; transform-origin:0 0;
+    transition:transform 1.15s cubic-bezier(.4,0,.2,1);}
+
+  /* ---------------- exterior / sky ---------------- */
+  #sky{position:absolute; inset:0; background:
+    radial-gradient(120% 60% at 50% -10%, #14203a 0%, #0a1120 40%, #05070e 75%);}
+  .star{position:absolute; width:3px; height:3px; border-radius:50%; background:#cfe0ff; opacity:.7;}
+  #cityline{position:absolute; left:0; right:0; bottom:0; height:120px;
+    background:linear-gradient(0deg,#070a12,#0a0f1a); }
+
+  /* ---------------- the TOWER building ---------------- */
+  #tower{position:absolute; left:60px; top:120px; width:960px; height:2420px;}
+  /* outer wall shell with depth: left/right thick walls + top parapet */
+  .wallL,.wallR{position:absolute; top:0; bottom:0; width:96px;}
+  .wallL{left:0;  background:linear-gradient(90deg,#2a3444 0%, #202834 55%, #161d27 100%);
+    box-shadow:inset -8px 0 18px rgba(0,0,0,.55);}
+  .wallR{right:0; background:linear-gradient(270deg,#2a3444 0%, #202834 55%, #161d27 100%);
+    box-shadow:inset 8px 0 18px rgba(0,0,0,.55);}
+  /* stone coursing on the walls */
+  .wallL::before,.wallR::before{content:""; position:absolute; inset:0;
+    background:repeating-linear-gradient(0deg, rgba(0,0,0,.28) 0 2px, transparent 2px 46px);}
+  #shaft{position:absolute; left:96px; right:96px; top:0; bottom:0; overflow:hidden;
+    background:#0b0f16;}
+
+  /* a single LEVEL: back-wall interior + floor plate + railing + door */
+  .level{position:absolute; left:0; right:0; overflow:hidden;}
+  .interior{position:absolute; inset:0;}
+  .interior::after{content:""; position:absolute; inset:0;
+    background:repeating-linear-gradient(90deg, rgba(255,255,255,.03) 0 2px, transparent 2px 60px);}
+  /* floor plate = thick slab: top surface + darker front face + drop shadow */
+  .plate{position:absolute; left:0; right:0; height:56px;}
+  .plate .top{position:absolute; left:0; right:0; top:0; height:20px;
+    background:linear-gradient(180deg,#6a5236,#4a3a26); box-shadow:0 -1px 0 rgba(255,255,255,.15) inset;}
+  .plate .face{position:absolute; left:0; right:0; top:20px; height:36px;
+    background:linear-gradient(180deg,#2b2118,#171009); box-shadow:0 12px 24px rgba(0,0,0,.55);}
+  .plate .lip{position:absolute; left:0; right:0; top:20px; height:3px; background:rgba(0,0,0,.5);}
+  /* front railing with balusters, sitting ON the plate */
+  .railing{position:absolute; left:120px; right:120px; height:54px;}
+  .railing .rail{position:absolute; left:0; right:0; top:0; height:7px; border-radius:4px;
+    background:linear-gradient(180deg,#c9d3df,#8794a5); box-shadow:0 2px 3px rgba(0,0,0,.5);}
+  .railing .bal{position:absolute; bottom:0; width:6px; height:46px; border-radius:3px;
+    background:linear-gradient(180deg,#9aa6b6,#5c6675);}
+
+  /* ---- the DOOR (flush on the plate, set into the back wall) ---- */
+  .door{position:absolute; width:196px; height:322px;
+    border-radius:16px 16px 6px 6px; overflow:hidden; cursor:pointer;
+    border:4px solid #101620; box-shadow:0 18px 34px rgba(0,0,0,.6), 0 0 0 3px rgba(0,0,0,.4);}
+  .door .leaf{position:absolute; inset:0;
+    background:linear-gradient(180deg,#20160e,#160f09); }
+  .door .jamb{position:absolute; inset:0; border-radius:14px 14px 4px 4px;
+    box-shadow:inset 0 0 0 6px rgba(0,0,0,.5), inset 0 0 40px rgba(0,0,0,.6);}
+  .door .archlite{position:absolute; left:0; right:0; top:0; height:70px;
+    background:radial-gradient(120% 90% at 50% 0%, rgba(255,255,255,.16), transparent 70%);}
+  .door .plank{position:absolute; top:0; bottom:0; width:2px; background:rgba(0,0,0,.4);}
+  .door .state{position:absolute; left:0; right:0; bottom:0; height:46px; display:flex;
+    align-items:center; justify-content:center; gap:7px; font-size:19px; font-weight:800;
+    letter-spacing:.06em; text-transform:uppercase;
+    background:linear-gradient(0deg,rgba(0,0,0,.55),transparent);}
+  .door .floornum{position:absolute; top:7px; left:11px; font-size:18px; font-weight:800;
+    color:rgba(255,255,255,.5); letter-spacing:.1em; z-index:4;}
+  /* crest badge */
+  .crest{position:absolute; top:30px; left:50%; transform:translateX(-50%);
+    width:90px; height:90px; border-radius:50%;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border:4px solid #e8b54b; background:radial-gradient(circle at 50% 38%,#26303f,#121821);
+    box-shadow:0 0 0 3px rgba(0,0,0,.5), 0 6px 16px rgba(0,0,0,.5);}
+  .crest .glyph{font-size:38px; line-height:1;}
+  .crest .cname{font-size:12px; font-weight:800; letter-spacing:.04em; margin-top:2px; color:#e8b54b;}
+  .door .modename{position:absolute; left:6px; right:6px; top:128px; text-align:center;
+    font-size:20px; font-weight:800; letter-spacing:.03em; color:#e7e7eb; white-space:nowrap;}
+
+  /* door states */
+  .door.open  .leaf{background:linear-gradient(180deg,#123021,#0c2016);}
+  .door.open  .state{color:var(--green);}
+  .door.open{box-shadow:0 18px 34px rgba(0,0,0,.6), 0 0 34px rgba(62,208,126,.35), 0 0 0 3px rgba(62,208,126,.25);}
+  .door.current .leaf{background:linear-gradient(180deg,#3a1c0c,#241206);}
+  .door.current .state{color:#ffb089;}
+  .door.current{border-color:var(--orange); animation:breathe 2.6s ease-in-out infinite;}
+  @keyframes breathe{0%,100%{box-shadow:0 18px 34px rgba(0,0,0,.6),0 0 26px rgba(252,62,1,.35),0 0 0 3px rgba(252,62,1,.35);}
+    50%{box-shadow:0 18px 40px rgba(0,0,0,.6),0 0 60px rgba(252,62,1,.6),0 0 0 5px rgba(252,62,1,.5);}}
+  .door.locked{filter:saturate(.5) brightness(.62);}
+  .door.locked .state{color:var(--lockgrey);}
+  .door.locked .crest{border-color:#5c6675; }
+  .door.locked .crest .cname{color:#8b97a8;}
+  .padlock{position:absolute; top:158px; left:50%; transform:translateX(-50%);
+    width:58px; height:58px; z-index:3;
+    background:url("assets/icon-padlock.png") center/contain no-repeat;
+    filter:drop-shadow(0 6px 10px rgba(0,0,0,.7));}
+  .keyneed{position:absolute; left:6px; right:6px; top:224px; text-align:center; z-index:3;
+    font-size:18px; font-weight:800; letter-spacing:.03em; color:#e8b54b; white-space:nowrap;}
+  .keyneed small{display:block; font-size:13px; color:#9aa6b6; letter-spacing:.04em; font-weight:700; margin-top:2px;}
+
+  /* ---------------- LADDER (one continuous route, full height) ---------------- */
+  #ladder{position:absolute; top:150px; left:250px; width:96px; height:2360px; z-index:6;}
+  #ladder .rail{position:absolute; top:0; bottom:0; width:12px; border-radius:6px;
+    background:linear-gradient(90deg,#8794a5,#c9d3df,#6b7686);
+    box-shadow:0 0 10px rgba(0,0,0,.6);}
+  #ladder .rail.l{left:6px;} #ladder .rail.r{right:6px;}
+  #ladder .rungs{position:absolute; inset:0;}
+  #ladder .rung{position:absolute; left:6px; right:6px; height:9px; border-radius:5px;
+    background:linear-gradient(180deg,#c9d3df,#7d8a9b); box-shadow:0 2px 3px rgba(0,0,0,.6);}
+  /* the climber avatar */
+  #climber{position:absolute; left:246px; width:104px; height:120px; z-index:8;
+    transition:top 1s cubic-bezier(.4,0,.2,1);}
+  #climber .halo{position:absolute; inset:-14px; border-radius:50%;
+    background:radial-gradient(circle,rgba(252,62,1,.5),transparent 68%); animation:breathe 2.6s ease-in-out infinite;}
+  #climber .body{position:absolute; left:50%; top:16px; transform:translateX(-50%);
+    width:56px; height:92px;}
+  #climber .head{position:absolute; left:50%; top:0; transform:translateX(-50%);
+    width:34px; height:34px; border-radius:50%; background:#e7e7eb; box-shadow:0 0 0 4px var(--orange);}
+  #climber .torso{position:absolute; left:50%; top:30px; transform:translateX(-50%);
+    width:46px; height:56px; border-radius:16px; background:linear-gradient(180deg,var(--orange),#b52c01);}
+  #climber .tag{position:absolute; left:50%; top:-30px; transform:translateX(-50%);
+    white-space:nowrap; font-size:18px; font-weight:800; letter-spacing:.1em; color:#ffb089;}
+
+  /* lobby stair flight (grander approach ground -> F1) */
+  .stairs{position:absolute; z-index:4;}
+  .stairs .step{position:absolute; height:14px; background:linear-gradient(180deg,#5a4632,#2c2016);
+    box-shadow:0 3px 4px rgba(0,0,0,.5);}
+
+  /* the Hare greeter in the lobby */
+  .greeter{position:absolute; z-index:5; width:150px; text-align:center;}
+  .greeter .fig{width:96px; height:150px; margin:0 auto; position:relative;}
+  .greeter .fig .h{position:absolute; left:50%; top:0; transform:translateX(-50%);
+    width:44px; height:44px; border-radius:50%; background:#c9b7a0;}
+  .greeter .fig .ear{position:absolute; top:-30px; width:14px; height:40px; border-radius:8px; background:#c9b7a0;}
+  .greeter .fig .torso{position:absolute; left:50%; top:40px; transform:translateX(-50%);
+    width:64px; height:96px; border-radius:20px; background:linear-gradient(180deg,#7a5230,#4a3220);}
+  .greeter .lbl{font-size:18px; font-weight:800; color:#e8b54b; letter-spacing:.06em; margin-top:4px;}
+  .greeter .role{font-size:14px; color:#9aa6b6; font-weight:700;}
+
+  /* roof / parapet */
+  #roof{position:absolute; left:40px; right:40px; top:60px; height:66px;
+    background:linear-gradient(180deg,#33404f,#1c242f); border-radius:12px 12px 0 0;
+    box-shadow:inset 0 6px 12px rgba(255,255,255,.08), 0 8px 20px rgba(0,0,0,.5);}
+  #roof .sign{position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-size:34px; font-weight:900; letter-spacing:.22em; color:var(--orange);
+    text-shadow:0 0 18px rgba(252,62,1,.6);}
+  #roof .antenna{position:absolute; left:50%; top:-52px; width:6px; height:52px; transform:translateX(-50%);
+    background:#33404f;}
+  #roof .antenna::after{content:""; position:absolute; left:50%; top:-8px; transform:translateX(-50%);
+    width:16px; height:16px; border-radius:50%; background:var(--orange); box-shadow:0 0 16px var(--orange);}
+
+  /* level name plaque on the wall */
+  .plaque{position:absolute; z-index:5; padding:6px 14px; border-radius:8px; font-size:22px;
+    font-weight:900; letter-spacing:.14em; color:#e7e7eb;
+    background:linear-gradient(180deg,rgba(0,0,0,.55),rgba(0,0,0,.3)); border:1px solid rgba(255,255,255,.12);}
+  .plaque small{display:block; font-size:14px; font-weight:700; letter-spacing:.08em; opacity:.7;}
+
+  /* ---------------- HUD ---------------- */
+  .hud{position:absolute; left:0; right:0; z-index:60; pointer-events:none;}
+  .topbar{top:0; height:132px; display:flex; align-items:center; gap:18px; padding:0 34px;
+    background:linear-gradient(180deg,rgba(4,6,10,.92),transparent);}
+  .btn{pointer-events:auto; border:2px solid rgba(231,231,235,.3); background:rgba(4,6,10,.62);
+    color:var(--grey); border-radius:16px; padding:18px 26px; font-size:34px; font-weight:700;
+    cursor:pointer; font-family:inherit;}
+  .btn:active{transform:translateY(1px);} .btn.accent{border-color:var(--orange);
+    background:rgba(252,62,1,.18); color:#ffb89b;}
+  .title{font-size:36px; font-weight:900; letter-spacing:.12em;} .title span{color:var(--orange);}
+  .sub{font-size:22px; color:#8ea0b2; font-weight:700; letter-spacing:.1em;}
+  .spacer{flex:1;}
+  .bottombar{bottom:0; min-height:200px; padding:22px 30px 34px; display:flex; flex-direction:column; gap:14px;
+    background:linear-gradient(0deg,rgba(4,6,10,.95),transparent);}
+  .caption{font-size:30px; line-height:1.4; color:#c3cedb;} .caption b{color:var(--orange);}
+  .row{display:flex; gap:14px; flex-wrap:wrap; pointer-events:auto; justify-content:center;}
+  .floorbtn{pointer-events:auto; font-size:26px; padding:12px 18px; border-radius:14px;
+    border:2px solid #2c3a49; background:rgba(4,6,10,.7); color:#aebccb; font-weight:800; cursor:pointer;
+    font-family:inherit;}
+  .floorbtn.on{border-color:var(--orange); color:#ffb89b; background:rgba(252,62,1,.14);}
+
+  .toast{position:absolute; left:50%; top:150px; transform:translate(-50%,-14px); z-index:70;
+    background:rgba(252,62,1,.2); border:2px solid rgba(252,62,1,.6); color:#ffcdb8;
+    padding:16px 26px; border-radius:14px; font-size:28px; font-weight:700; opacity:0;
+    pointer-events:none; transition:opacity .3s, transform .3s;}
+  .toast.show{opacity:1; transform:translate(-50%,0);}
+</style>
+</head>
+<body>
+<div class="device"><div id="phone">
+  <div id="cam">
+    <div id="sky"></div>
+    <div id="cityline"></div>
+
+    <!-- roof cap + sign -->
+    <div id="roof"><div class="antenna"></div></div>
+
+    <!-- ===================== TOWER ===================== -->
+    <div id="tower">
+      <div class="wallL"></div>
+      <div class="wallR"></div>
+      <div id="shaft"><!-- levels injected here --></div>
+
+      <!-- one continuous ladder over the whole shaft -->
+      <div id="ladder"><div class="rail l"></div><div class="rail r"></div><div class="rungs" id="rungs"></div></div>
+      <div id="climber"><div class="halo"></div>
+        <div class="body"><div class="head"></div><div class="torso"></div></div>
+        <div class="tag">YOU</div></div>
+    </div>
+  </div>
+
+  <!-- ===================== HUD ===================== -->
+  <div class="hud topbar">
+    <button class="btn" id="backBtn">‹ Back</button>
+    <div><div class="title">THE <span>PIT</span></div><div class="sub" id="viewLbl">WHOLE TOWER</div></div>
+    <div class="spacer"></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="hud bottombar">
+    <div class="caption" id="caption">The whole tower — climb the ladder from the lobby to the penthouse. Tap any floor to push in.</div>
+    <div class="row" id="floorRow"></div>
+  </div>
+
+</div></div>
+
+<script>
+const $=s=>document.querySelector(s), el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;};
+
+/* fit the 1080x2640 phone into the window */
+function fit(){ $("#phone").style.transform=`scale(${Math.min(innerWidth/1080, innerHeight/2640)})`; }
+addEventListener("resize",fit); fit();
+
+/* stars */
+(()=>{const sky=$("#sky"); let s=99173;const rnd=()=>(s=(s*1664525+1013904223)%4294967296)/4294967296;
+  for(let i=0;i<70;i++){const st=el("div","star");st.style.left=(rnd()*1080)+"px";st.style.top=(rnd()*900)+"px";
+    st.style.opacity=(.25+rnd()*.6).toFixed(2);st.style.transform=`scale(${(.5+rnd()).toFixed(2)})`;sky.appendChild(st);}})();
+
+/* =========================================================================
+   LEVELS — tower-local coords (tower is 960 wide, 2420 tall, at (60,120) in cam)
+   Each level: interior mood + floor plate (flush) + railing + a crested door
+   sitting ON the plate. Order bottom→top. plateTop = y of the plate's top surface.
+   ========================================================================= */
+const SHAFT_W=768; // shaft inner width (960 - 96*2)
+const LEVELS=[
+  { key:"lobby", name:"THE PIT", tag:"GROUND LOBBY", y0:1980, y1:2420, plateTop:2364,
+    mood:"radial-gradient(120% 80% at 50% 30%, #3a1e0e 0%, #1c1108 60%, #0c0805 100%)",
+    door:{state:"open", crest:"🐇", cname:"HARE", mode:"QUICK BRAWL", num:"LOBBY", key:null},
+    isHub:true },
+  { key:"dojo", name:"THE DOJO", tag:"FLOOR 1 · PRACTICE", y0:1520, y1:1980, plateTop:1924,
+    mood:"radial-gradient(120% 80% at 50% 20%, #4a3313 0%, #2a1d0b 55%, #120c06 100%)",
+    door:{state:"current", crest:"🦉", cname:"OWL", mode:"DOJO", num:"F1", key:null} },
+  { key:"coliseum", name:"THE COLISEUM", tag:"FLOOR 2 · TOURNAMENTS", y0:1060, y1:1520, plateTop:1464,
+    mood:"radial-gradient(120% 80% at 50% 20%, #5a1616 0%, #2c0d0d 55%, #140708 100%)",
+    door:{state:"locked", crest:"🐺", cname:"WOLF", mode:"COLISEUM", num:"F2", key:"OWL"} },
+  { key:"hightable", name:"THE HIGH TABLE", tag:"FLOOR 3 · PARLAYS", y0:600, y1:1060, plateTop:1004,
+    mood:"radial-gradient(120% 80% at 50% 20%, #241653 0%, #160f36 55%, #0a0820 100%)",
+    door:{state:"locked", crest:"🐦‍⬛", cname:"RAVEN", mode:"HIGH TABLE", num:"F3", key:"WOLF"} },
+  { key:"suite", name:"BOSS FOX'S SUITE", tag:"PENTHOUSE · CHAMPIONSHIP", y0:150, y1:600, plateTop:544,
+    mood:"radial-gradient(120% 80% at 50% 25%, #10331f 0%, #0b2016 55%, #060f0b 100%)",
+    door:{state:"locked", crest:"🦊", cname:"BOSS FOX", mode:"SUITE", num:"PH", key:"RAVEN"} }
+];
+
+const shaft=$("#shaft");
+LEVELS.forEach(L=>{
+  const lv=el("div","level"); lv.style.top=L.y0+"px"; lv.style.height=(L.y1-L.y0)+"px";
+  // interior mood wall
+  const inte=el("div","interior"); inte.style.background=L.mood; lv.appendChild(inte);
+  // per-floor interior hinting
+  lv.appendChild(interiorHint(L));
+  // floor plate (flush slab)
+  const plateY=L.plateTop-L.y0;
+  const plate=el("div","plate","<div class='top'></div><div class='lip'></div><div class='face'></div>");
+  plate.style.top=plateY+"px"; lv.appendChild(plate);
+  // railing on the plate front
+  const rail=el("div","railing"); rail.style.top=(plateY-50)+"px";
+  rail.appendChild(el("div","rail"));
+  for(let i=0;i<=SHAFT_W-240;i+=42){ const b=el("div","bal"); b.style.left=(i)+"px"; rail.appendChild(b); }
+  lv.appendChild(rail);
+  // level plaque on the wall (screen-right, clear of the ladder on the left)
+  const pl=el("div","plaque",`${L.name}<small>${L.tag}</small>`);
+  pl.style.right="16px"; pl.style.top="14px"; lv.appendChild(pl);
+  // the DOOR — base flush to the plate top
+  lv.appendChild(makeDoor(L, plateY));
+  shaft.appendChild(lv);
+});
+
+/* per-floor interior detail so it doesn't read as a wireframe */
+function interiorHint(L){
+  const g=el("div","interior"); g.style.pointerEvents="none";
+  if(L.key==="lobby"){
+    g.innerHTML=`<div style="position:absolute;left:60px;right:60px;top:40px;height:120px;
+      background:radial-gradient(60% 100% at 50% 0,rgba(252,62,1,.28),transparent 70%)"></div>`;
+  }else if(L.key==="dojo"){
+    g.innerHTML=`<div style="position:absolute;inset:0;background:
+      repeating-linear-gradient(90deg,rgba(255,200,120,.05) 0 60px,transparent 60px 64px),
+      repeating-linear-gradient(0deg,rgba(0,0,0,.18) 0 2px,transparent 2px 40px)"></div>
+      <div style="position:absolute;left:40px;top:60px;width:120px;height:180px;border:4px solid #6a4a26;border-radius:6px;opacity:.5"></div>`;
+  }else if(L.key==="coliseum"){
+    g.innerHTML=`<div style="position:absolute;left:40px;top:40px;width:70px;height:150px;background:linear-gradient(180deg,#c22b22,#7e1512);clip-path:polygon(0 0,100% 0,100% 82%,50% 100%,0 82%);opacity:.7"></div>
+      <div style="position:absolute;right:40px;top:40px;width:70px;height:150px;background:linear-gradient(180deg,#c22b22,#7e1512);clip-path:polygon(0 0,100% 0,100% 82%,50% 100%,0 82%);opacity:.7"></div>
+      <div style="position:absolute;left:0;right:0;top:22px;height:60px;background:repeating-linear-gradient(90deg,transparent 0 44px,rgba(232,181,75,.25) 44px 48px)"></div>`;
+  }else if(L.key==="hightable"){
+    g.innerHTML=`<div style="position:absolute;left:60px;right:60px;top:60px;height:8px;border-radius:6px;background:#00e0ff;box-shadow:0 0 24px #00e0ff,0 0 60px #7a4dff"></div>
+      <div style="position:absolute;left:120px;right:120px;top:150px;height:6px;border-radius:6px;background:#b64dff;box-shadow:0 0 20px #b64dff"></div>
+      <div style="position:absolute;left:40px;bottom:70px;width:90px;height:90px;border:3px solid #00e0ff;border-radius:50%;opacity:.4;box-shadow:0 0 30px #00e0ff"></div>`;
+  }else if(L.key==="suite"){
+    g.innerHTML=`<div style="position:absolute;left:50px;right:50px;top:50px;height:130px;border:3px solid #caa15a;border-radius:8px;opacity:.4"></div>
+      <div style="position:absolute;left:50%;top:70px;transform:translateX(-50%);width:120px;height:8px;background:#2fae6a;box-shadow:0 0 22px #2fae6a"></div>
+      <div style="position:absolute;left:0;right:0;bottom:56px;height:70px;background:linear-gradient(0deg,rgba(202,161,90,.12),transparent)"></div>`;
+  }
+  return g;
+}
+
+/* build a crested door, base flush to the plate top */
+function makeDoor(L, plateY){
+  const D=L.door;
+  const d=el("div","door "+D.state); d.dataset.key=L.key;
+  d.style.left="470px"; d.style.top=(plateY-322)+"px";   // bottom edge = plate top (flush)
+  let inner=`<div class="leaf"></div><div class="jamb"></div><div class="archlite"></div>
+    <div class="plank" style="left:65px"></div><div class="plank" style="left:130px"></div>
+    <div class="floornum">${D.num}</div>
+    <div class="crest"><div class="glyph">${D.crest}</div><div class="cname">${D.cname}</div></div>
+    <div class="modename">${D.mode}</div>`;
+  if(D.state==="open")    inner+=`<div class="state">● OPEN</div>`;
+  if(D.state==="current") inner+=`<div class="state">▸ YOU'RE HERE</div>`;
+  if(D.state==="locked"){ inner+=`<div class="padlock"></div>
+    <div class="keyneed">${D.key} KEY<small>win the boss below</small></div>
+    <div class="state">🔒 LOCKED</div>`; }
+  d.innerHTML=inner;
+  d.addEventListener("click",()=>{ zoomTo(L.key); });
+  return d;
+}
+
+/* ladder rungs across the FULL height — one continuous run */
+(()=>{const r=$("#rungs"); const H=2360;
+  for(let y=6;y<H-6;y+=44){ const g=el("div","rung"); g.style.top=y+"px"; r.appendChild(g); }})();
+
+/* place the climber at Floor 1 (Dojo), the "current" level */
+function placeClimber(key){
+  const L=LEVELS.find(l=>l.key===key)||LEVELS[1];
+  // ladder is inside #tower; climber top is tower-local. Put marker at that plate.
+  $("#climber").style.top=(L.plateTop-120-30)+"px";
+}
+placeClimber("dojo");
+
+/* stairs: a grander approach from the lobby floor up onto Floor 1 (supplements the ladder) */
+(()=>{const s=el("div","stairs"); s.style.left="470px"; s.style.top="0"; s.style.width="300px"; s.style.height="2420px";
+  // a short flight rising from lobby plate (2364) toward F1 plate (1924), screen-right of the ladder
+  for(let i=0;i<7;i++){ const st=el("div","step");
+    st.style.width=(190-i*10)+"px"; st.style.left=(i*8)+"px"; st.style.top=(2352-i*26)+"px"; s.appendChild(st); }
+  $("#tower").appendChild(s);
+})();
+
+/* the Hare greeter in the lobby */
+(()=>{const g=el("div","greeter",
+  `<div class="fig"><div class="ear" style="left:28px;transform:rotate(-12deg)"></div>
+     <div class="ear" style="left:52px;transform:rotate(12deg)"></div>
+     <div class="h"></div><div class="torso"></div></div>
+   <div class="lbl">THE HARE</div><div class="role">lobby greeter</div>`);
+  g.style.left="120px"; g.style.top="2150px"; $("#tower").appendChild(g);
+})();
+
+/* =========================================================================
+   CAMERA — establishing (whole tower) + push-in to a floor
+   ========================================================================= */
+const VW=1080, VH=2640;
+// establishing: whole 2640-tall scene fits the 2640 viewport at scale 1 (roof→street)
+const EST={s:1, tx:0, ty:0};
+function focusFor(key){
+  const L=LEVELS.find(l=>l.key===key); const s=1.9;
+  const cx=60+ /*tower*/ 96 + 470 + 95;     // door centre x in cam coords
+  const cy=120 + (L.plateTop-150);          // roughly the door centre in cam coords
+  return {s, tx:VW/2 - cx*s, ty:VH/2 - cy*s};
+}
+function cam(p){ $("#cam").style.transform=`translate(${p.tx.toFixed(1)}px,${p.ty.toFixed(1)}px) scale(${p.s})`; }
+
+let view="establishing";
+const NAMES={establishing:"WHOLE TOWER", lobby:"THE PIT · LOBBY", dojo:"THE DOJO · F1",
+  coliseum:"THE COLISEUM · F2", hightable:"THE HIGH TABLE · F3", suite:"BOSS FOX'S SUITE · PH"};
+const CAPS={
+  establishing:"The whole tower — climb the ladder from the lobby to the penthouse. Tap any floor to push in.",
+  lobby:"<b>THE PIT</b> — the venue you walk into. Quick-entry brawl + the Hare greeter. This is the hub, not a floor.",
+  dojo:"<b>THE DOJO</b> · practice, always open. You are here — the climber's current floor (orange, breathing).",
+  coliseum:"<b>THE COLISEUM</b> · tournaments. Locked — win the <b>OWL</b> boss on the Dojo below for its key.",
+  hightable:"<b>THE HIGH TABLE</b> · multi-slate parlays. Locked — needs the <b>WOLF</b> key from the Coliseum.",
+  suite:"<b>BOSS FOX'S SUITE</b> · championship apex. Locked — needs the <b>RAVEN</b> key from the High Table."
+};
+function zoomTo(key){
+  view=key;
+  cam(key==="establishing"?EST:focusFor(key));
+  $("#viewLbl").textContent=NAMES[key];
+  $("#caption").innerHTML=CAPS[key];
+  $("#backBtn").textContent = key==="establishing" ? "‹ Exit to home" : "‹ Back to tower";
+  document.querySelectorAll(".floorbtn").forEach(b=>b.classList.toggle("on",b.dataset.k===key));
+  const L=LEVELS.find(l=>l.key===key);
+  if(L && L.door.state==="locked") toast(`LOCKED · needs the ${L.door.key} key`);
+}
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),1800);}
+
+/* controls */
+$("#backBtn").addEventListener("click",()=>{
+  if(view==="establishing") toast("EXIT → HOME (placeholder)");
+  else zoomTo("establishing");
+});
+const row=$("#floorRow");
+[["establishing","Tower"],["lobby","Pit"],["dojo","Dojo"],["coliseum","Coliseum"],["hightable","High Table"],["suite","Suite"]]
+  .forEach(([k,lbl])=>{const b=el("button","floorbtn",lbl); b.dataset.k=k; b.onclick=()=>zoomTo(k); row.appendChild(b);});
+
+/* headless hooks */
+window.zoomTo=zoomTo;
+window.jump=(k)=>{ $("#cam").style.transition="none"; zoomTo(k); void $("#cam").offsetWidth; $("#cam").style.transition=""; };
+
+zoomTo("establishing");
+</script>
+</body>
+</html>

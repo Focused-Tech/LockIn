@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>LockIn — Creator Mode</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;scrollbar-width:none;-ms-overflow-style:none}
+*::-webkit-scrollbar{display:none;width:0;height:0}
+:root{--orange:#FC3E01;--orange-hi:#FF6A2E;--gold:#A86F2D;--gold-hi:#F0C463;
+ --ink:#0A0D12;--panel:#12161d;--panel2:#171b23;--edge:#232a35;--grey:#E7E7EB;--dim:#8B93A1;
+ --ok:#5DCAA5;--bad:#E0432C;--warn:#EF9F27}
+html,body{margin:0;height:100%;background:var(--ink);color:var(--grey);
+ font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+#app{max-width:520px;margin:0 auto;padding:calc(12px + env(safe-area-inset-top)) 14px calc(12px + env(safe-area-inset-bottom));
+ min-height:100%;display:flex;flex-direction:column}
+h1{font:600 19px Georgia,serif;color:var(--gold-hi);margin:0 0 2px;letter-spacing:.01em}
+.sub{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-bottom:14px}
+.card{background:var(--panel);border:1px solid var(--edge);border-radius:12px;padding:12px;margin-bottom:10px}
+.card h2{font:600 12px/1.3 Georgia,serif;letter-spacing:.14em;text-transform:uppercase;
+ color:var(--gold-hi);margin:0 0 9px}
+.gm{display:flex;align-items:center;gap:9px;padding:8px 9px;border:1px solid var(--edge);
+ border-radius:9px;margin-bottom:6px;cursor:pointer;background:var(--panel2)}
+.gm.on{border-color:var(--orange);box-shadow:0 0 0 1px var(--orange) inset}
+.gm .tk{width:16px;height:16px;border-radius:4px;border:1px solid var(--dim);flex:none;
+ display:grid;place-items:center;font-size:10px;color:var(--ink)}
+.gm.on .tk{background:var(--orange);border-color:var(--orange);color:#fff}
+.gm .nm{flex:1;font-size:13.5px}
+.gm .mt{font-size:10.5px;color:var(--dim)}
+.leg{border:1px solid var(--edge);border-radius:10px;padding:10px;margin-bottom:8px;background:var(--panel2)}
+.leg.bad{border-color:var(--bad)}
+.leg.ok{border-color:#2b6b52}
+.leg .q{font-size:13.5px;margin-bottom:7px}
+.picks{display:flex;flex-wrap:wrap;gap:5px}
+.pk{border:1px solid var(--edge);border-radius:7px;padding:5px 8px;font-size:11.5px;cursor:pointer;background:var(--panel)}
+.pk.sel{border-color:var(--gold-hi);color:var(--gold-hi)}
+.pk .g{color:var(--dim);font-size:10px}
+.flag{margin-top:8px;font-size:11.5px;padding:7px 9px;border-radius:7px;line-height:1.45}
+.flag.bad{background:rgba(224,67,44,.13);color:#ffb3a5;border-left:3px solid var(--bad)}
+.flag.ok{background:rgba(93,202,165,.10);color:var(--ok);border-left:3px solid var(--ok)}
+.flag b{color:#fff}
+.reach{display:flex;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--edge);
+ border-radius:10px;padding:10px 12px;margin-bottom:10px}
+.reach .n{font:600 22px Georgia,serif;color:var(--gold-hi);line-height:1}
+.reach .t{flex:1;font-size:11.5px;color:var(--dim);line-height:1.4}
+.row{display:flex;gap:8px;align-items:center;margin-bottom:7px}
+.row label{font-size:12px;color:var(--dim);width:96px;flex:none}
+input[type=number],select{background:var(--ink);color:var(--grey);border:1px solid var(--edge);
+ border-radius:7px;padding:7px 9px;font:13px inherit;flex:1;min-width:0}
+table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+th{text-align:left;font-weight:400;color:var(--dim);font-size:10.5px;letter-spacing:.1em;
+ text-transform:uppercase;padding:0 0 5px;border-bottom:1px solid var(--edge)}
+td{padding:6px 0;border-bottom:1px solid #1b212a;font-variant-numeric:tabular-nums}
+td.r,th.r{text-align:right}
+.rk{color:var(--warn)}
+.pot{background:var(--panel2);border:1px solid var(--gold);border-radius:10px;
+ padding:12px;text-align:center;margin:4px 0 8px}
+.potn{font:600 30px Georgia,serif;color:var(--gold-hi);line-height:1;letter-spacing:.01em}
+.potl{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin:5px 0 9px}
+.bar{height:7px;background:#0b0f14;border-radius:99px;overflow:hidden}
+.fill{height:100%;background:linear-gradient(90deg,var(--orange),var(--gold-hi));transition:width .25s}
+.potsub{font-size:11.5px;color:var(--dim);margin-top:8px;line-height:1.5}
+input[type=range]{accent-color:var(--orange)}
+.proj{font-size:11.5px;line-height:1.5;margin-top:9px;padding-top:9px;border-top:1px solid #24303c;color:var(--dim)}
+.proj b{color:var(--grey)}
+.proj .v{display:block;margin-top:4px;font-size:11px}
+.proj .stretch{color:var(--warn)}
+.proj .under{color:var(--ok)}
+.proj .onpace{color:var(--gold-hi)}
+.fill.over{background:linear-gradient(90deg,var(--gold-hi),#fff2c9)}
+.sect{font:600 10.5px/1.4 Georgia,serif;letter-spacing:.14em;text-transform:uppercase;
+ color:var(--gold-hi);margin:12px 0 2px}
+tr.now td{background:rgba(252,62,1,.10)}
+tr.now td:first-child{box-shadow:inset 3px 0 0 var(--orange)}
+.note{font-size:11px;color:var(--dim);line-height:1.5;margin-top:8px}
+.note b{color:var(--warn)}
+button.go{width:100%;padding:13px;border-radius:10px;border:1px solid var(--gold);
+ background:var(--orange);color:#fff;font:600 15px Georgia,serif;letter-spacing:.04em;cursor:pointer}
+button.go:disabled{background:#2a2f38;border-color:var(--edge);color:var(--dim);cursor:not-allowed}
+.mini{background:none;border:1px solid var(--edge);color:var(--dim);border-radius:7px;
+ padding:5px 9px;font-size:11.5px;cursor:pointer}
+</style></head><body><div id="app">
+
+<h1>Creator mode</h1>
+<div class="sub">Build a slate &middot; Lockpick is watching</div>
+
+<div class="card">
+  <h2>1 &middot; Tonight's games</h2>
+  <div id="games"></div>
+  <div class="note">Pulled from the live feed. Pick the games you want; the player pool fills from those rosters.</div>
+</div>
+
+<div class="card">
+  <h2>2 &middot; Your questions</h2>
+  <div id="legs"></div>
+  <button class="mini" id="addLeg">+ Add a question</button>
+</div>
+
+<div class="reach">
+  <span class="n" id="reachN">0</span>
+  <span class="t" id="reachT">Pick games and build a leg to see your reach.</span>
+</div>
+
+<div class="card">
+  <h2>3 &middot; The pot</h2>
+  <div class="row"><label>Stakes you allow</label><span id="stakeBox" style="display:flex;gap:5px;flex-wrap:wrap;flex:1"></span></div>
+  <div class="row"><label>Your division</label><select id="div">
+    <option value="hawk">Hawk &middot; under 100K</option>
+    <option value="wolf" selected>Wolf &middot; 100K&ndash;500K</option>
+    <option value="shark">Shark &middot; 500K&ndash;1M</option>
+    <option value="boss">Boss &middot; 1M+</option>
+  </select></div>
+  <div class="row"><label>Target pot</label><input type="number" id="target" value="150000" min="0" step="5000"></div>
+  <div class="row"><label>Your host fee</label><select id="host">
+    <option value="1">$1 &middot; Hawk</option><option value="2" selected>$2 &middot; Wolf / Shark</option>
+    <option value="3">$3 &middot; Boss</option>
+  </select></div>
+  <div class="row"><label>Entries so far</label><input type="range" id="ents" min="0" max="120000" step="500" value="30000" style="flex:1"></div>
+
+  <div class="pot">
+    <div class="potn" id="potN">$0</div>
+    <div class="potl">in the pot &middot; grows with every entry</div>
+    <div class="bar"><div class="fill" id="potBar"></div></div>
+    <div class="potsub" id="potSub"></div>
+    <div class="proj" id="proj"></div>
+  </div>
+
+  <div class="sect">What you earn</div>
+  <table><thead><tr><th>Entries</th><th class="r">Host fees</th><th class="r">Your cut</th><th class="r">You keep</th></tr></thead>
+  <tbody id="earn"></tbody></table>
+  <div class="sect">How wagers pay</div>
+  <table><thead><tr><th>Wager</th><th class="r">Weight in the pot</th></tr></thead>
+  <tbody id="shares"></tbody></table>
+  <div class="note">One pot per slate. Players wager what they want; <b>payout scales with what you put up</b>
+  and whether you were right. The pot converts on the house economy &mdash; you can't change it, only post it.
+  The one number that's yours is the <b>host fee</b>. Your cut of it slides as the pot grows, capped at
+  $500,000 a slate. Cut slide points and host-fee tiers are <b>architect-set</b> placeholders.</div>
+  <div class="note" id="feeLine"></div>
+</div>
+
+<button class="go" id="pub" disabled>Publish slate</button>
+<div class="note" id="pubNote" style="text-align:center">Fix the flagged questions to publish.</div>
+
+</div>
+<script>
+var GAMES=[
+ {id:"g1",away:"Lakers",home:"Celtics",t:"7:10p",
+  players:[{n:"Luka",tm:"Lakers"},{n:"LeBron",tm:"Lakers"},{n:"Tatum",tm:"Celtics"},{n:"Brown",tm:"Celtics"}]},
+ {id:"g2",away:"76ers",home:"Warriors",t:"10:00p",
+  players:[{n:"Embiid",tm:"76ers"},{n:"Maxey",tm:"76ers"},{n:"Curry",tm:"Warriors"},{n:"Green",tm:"Warriors"}]},
+ {id:"g3",away:"Bucks",home:"Heat",t:"7:30p",
+  players:[{n:"Giannis",tm:"Bucks"},{n:"Lillard",tm:"Bucks"},{n:"Adebayo",tm:"Heat"},{n:"Herro",tm:"Heat"}]}
+];
+var TEMPLATES=["Who has the bigger night?","Who takes over in the fourth?","Who's due for a bounce-back?","Who does the most damage?"];
+var STAKES=[5,10,15,25,50];
+var S={games:[],legs:[],stakes:[5,10,15]};
+
+// Rake is a FUNCTION of pool size. House formula — never a constant.
+// Anchors: 40% at $10K, ~6.75% per 10x above, hard cap 65%.
+// Sub-$10K bands are ARCHITECT-SET placeholders.
+function rake(pool){
+  if(pool<1000) return 0.15;
+  if(pool<5000) return 0.20;
+  if(pool<10000) return 0.30;
+  var r=0.40+0.0675*(Math.log10(pool/10000));
+  return Math.min(0.65,r);
+}
+// Creator cut slides 50% -> 20% by pool size, capped $500K/slate.
+// The SLIDE POINTS are ARCHITECT-SET placeholders — anchors only.
+// Division -> typical followers and the share of them who enter a slate.
+// BOTH the follower midpoints and the conversion band are ARCHITECT-SET placeholders.
+var DIV={
+  hawk :{name:"Hawk",  followers:50000},
+  wolf :{name:"Wolf",  followers:300000},
+  shark:{name:"Shark", followers:750000},
+  boss :{name:"Boss",  followers:2000000}
+};
+// FRANK'S FLOOR: at least 1 in 10 followers enters. Top band 1 in 4 on a hot slate.
+var CONV_LO=0.10, CONV_HI=0.25;
+function project(divKey,avgWager){
+  var d=DIV[divKey]||DIV.wolf;
+  var eLo=Math.round(d.followers*CONV_LO), eHi=Math.round(d.followers*CONV_HI);
+  var pLo=Math.round(eLo*avgWager*(1-rake(eLo*avgWager)));
+  var pHi=Math.round(eHi*avgWager*(1-rake(eHi*avgWager)));
+  return {eLo:eLo,eHi:eHi,pLo:pLo,pHi:pHi,name:d.name,followers:d.followers};
+}
+function creatorCut(pool){
+  if(pool<=1000) return 0.50;
+  if(pool>=1000000) return 0.20;
+  var t=Math.log10(pool/1000)/Math.log10(1000);
+  return 0.50-(0.30*t);
+}
+function seatsFor(prize,fee){
+  var n=Math.ceil(prize/fee), guard=0;
+  while(guard++<200){
+    var pool=n*fee, net=pool*(1-rake(pool));
+    if(net>=prize) return n;
+    n++;
+  }
+  return n;
+}
+function $(q){return document.querySelector(q);}
+function gameOf(name){
+  for(var i=0;i<GAMES.length;i++)
+    for(var j=0;j<GAMES[i].players.length;j++)
+      if(GAMES[i].players[j].n===name) return GAMES[i];
+  return null;
+}
+function teamOf(name){
+  for(var i=0;i<GAMES.length;i++)
+    for(var j=0;j<GAMES[i].players.length;j++)
+      if(GAMES[i].players[j].n===name) return GAMES[i].players[j].tm;
+  return null;
+}
+function checkLeg(L){
+  if(L.sel.length<2) return {ok:false,msg:"Pick at least two players."};
+  var seen={},dupGame=null,dupNames=[];
+  for(var i=0;i<L.sel.length;i++){
+    var g=gameOf(L.sel[i]); if(!g) continue;
+    if(seen[g.id]){ dupGame=g; dupNames=[seen[g.id],L.sel[i]]; }
+    else seen[g.id]=L.sel[i];
+  }
+  if(dupGame){
+    var alt=null;
+    for(var k=0;k<GAMES.length;k++){
+      if(seen[GAMES[k].id]) continue;
+      if(S.games.indexOf(GAMES[k].id)<0) continue;
+      alt=GAMES[k].players[0].n; break;
+    }
+    return {ok:false,msg:"<b>"+dupNames[0]+"</b> and <b>"+dupNames[1]+"</b> are both in "+
+      dupGame.away+" at "+dupGame.home+". One player per game &mdash; drop one"+
+      (alt?" or swap to <b>"+alt+"</b>.":", or add another game above.")};
+  }
+  var n=0; for(var z in seen) n++;
+  return {ok:true,msg:n+" players, "+n+" different games. Clean."};
+}
+function render(){
+  var gh="";
+  for(var i=0;i<GAMES.length;i++){
+    var g=GAMES[i],on=S.games.indexOf(g.id)>=0;
+    gh+='<div class="gm'+(on?' on':'')+'" data-g="'+g.id+'"><span class="tk">'+(on?'&#10003;':'')+'</span>'+
+        '<span class="nm">'+g.away+' at '+g.home+'</span><span class="mt">'+g.t+'</span></div>';
+  }
+  $("#games").innerHTML=gh;
+
+  var pool=[];
+  for(var a=0;a<GAMES.length;a++) if(S.games.indexOf(GAMES[a].id)>=0)
+    for(var b=0;b<GAMES[a].players.length;b++) pool.push(GAMES[a].players[b]);
+
+  var lh="",allOk=S.legs.length>0;
+  for(var L=0;L<S.legs.length;L++){
+    var leg=S.legs[L],v=checkLeg(leg);
+    if(!v.ok) allOk=false;
+    lh+='<div class="leg '+(v.ok?'ok':'bad')+'"><div class="q">'+leg.q+'</div><div class="picks">';
+    for(var p=0;p<pool.length;p++){
+      var nm=pool[p].n,sel=leg.sel.indexOf(nm)>=0;
+      lh+='<span class="pk'+(sel?' sel':'')+'" data-l="'+L+'" data-p="'+nm+'">'+nm+
+          ' <span class="g">'+pool[p].tm+'</span></span>';
+    }
+    lh+='</div><div class="flag '+(v.ok?'ok':'bad')+'">'+v.msg+'</div></div>';
+  }
+  $("#legs").innerHTML=lh||'<div class="note">No questions yet.</div>';
+
+  var reach = (S.legs.length&&allOk) ? 45 : 0;
+  $("#reachN").textContent=reach;
+  $("#reachT").innerHTML = reach
+    ? "states can play this slate.<br>Restricted states use the tighter set automatically."
+    : "Every question must span two different games before this slate can reach any state.";
+
+  var host=+$("#host").value||2, ents=+$("#ents").value||0;
+  var sh="";
+  for(var k=0;k<STAKES.length;k++){
+    var v=STAKES[k];
+    sh+='<span class="pk'+(S.stakes.indexOf(v)>=0?' sel':'')+'" data-s="'+v+'">$'+v+'</span>';
+  }
+  $("#stakeBox").innerHTML=sh;
+
+  // average wager across the stakes the creator allows
+  var avg=0;
+  for(var a=0;a<S.stakes.length;a++) avg+=S.stakes[a];
+  avg = S.stakes.length ? avg/S.stakes.length : 0;
+
+  var pool=Math.round(ents*avg), rk=rake(pool), net=Math.round(pool*(1-rk));
+  var target=+$("#target").value||0;
+  $("#potN").textContent="$"+net.toLocaleString();
+  var pct = target>0 ? (net/target)*100 : 0;
+  $("#potBar").style.width=Math.min(100,pct)+"%";
+  $("#potBar").className="fill"+(net>=target&&target>0?" over":"");
+  $("#potSub").innerHTML = target>0
+    ? ents.toLocaleString()+" entries &middot; "+Math.round(pct)+"% of your $"+target.toLocaleString()+" target"+
+      (net>=target?" &mdash; <b style=\'color:var(--gold-hi)\'>target passed, it keeps climbing</b>":"")
+    : ents.toLocaleString()+" entries &middot; no target set";
+
+  var pj=project($("#div").value,avg);
+  var verdict, vcls;
+  if(!target){ verdict="Set a target and I'll tell you if it's realistic."; vcls=""; }
+  else if(target>pj.pHi){ verdict="That's a stretch at your following &mdash; expect the meter to stall around $"+pj.pHi.toLocaleString()+"."; vcls="stretch"; }
+  else if(target<pj.pLo){ verdict="You're aiming low &mdash; slates like this usually clear $"+pj.pLo.toLocaleString()+" on their own."; vcls="under"; }
+  else { verdict="Right in range for your following."; vcls="onpace"; }
+  $("#proj").innerHTML="At <b>"+pj.name+"</b> ("+(pj.followers>=1e6?(pj.followers/1e6)+"M":(pj.followers/1000)+"K")+" followers) slates like this usually draw <b>"+
+    pj.eLo.toLocaleString()+"&ndash;"+pj.eHi.toLocaleString()+"</b> entries, landing a pot of <b>$"+
+    pj.pLo.toLocaleString()+"&ndash;$"+pj.pHi.toLocaleString()+"</b>."+
+    "<span class=\'v "+vcls+"\'>"+verdict+"</span>";
+
+  var th="";
+  for(var q=0;q<S.stakes.length;q++){
+    var w=S.stakes[q], share=avg?(w/avg):0;
+    th+='<tr><td>$'+w+'</td><td class="r">'+share.toFixed(2)+'&times; the average entry</td></tr>';
+  }
+  $("#shares").innerHTML=th||'<tr><td colspan="2" style="color:var(--dim)">Allow at least one stake.</td></tr>';
+
+  var marks=[5000,15000,30000,75000,150000], eh="";
+  var shown=marks.slice();
+  if(shown.indexOf(ents)<0 && ents>0){ shown.push(ents); shown.sort(function(a,b){return a-b;}); }
+  for(var m=0;m<shown.length;m++){
+    var n=shown[m], gross=n*host, mpool=Math.round(n*avg),
+        cut=creatorCut(mpool), keep=Math.min(500000,Math.round(gross*cut));
+    eh+='<tr'+(n===ents?' class="now"':'')+'><td>'+n.toLocaleString()+'</td>'+
+        '<td class="r">$'+gross.toLocaleString()+'</td>'+
+        '<td class="r">'+(cut*100).toFixed(0)+'%</td>'+
+        '<td class="r" style="color:var(--ok)">$'+keep.toLocaleString()+'</td></tr>';
+  }
+  $("#earn").innerHTML=eh;
+  var gN=ents*host, cN=creatorCut(pool), kN=Math.min(500000,Math.round(gN*cN));
+  $("#feeLine").innerHTML="Right now: "+ents.toLocaleString()+" entries &times; $"+host+
+    " host fee = $"+gN.toLocaleString()+" in fees, and you keep <b>$"+kN.toLocaleString()+"</b>.";
+  $("#pub").disabled=!allOk;
+  $("#pubNote").textContent=allOk?"Every leg spans two games. Ready.":"Fix the flagged questions to publish.";
+}
+document.addEventListener("click",function(e){
+  var g=e.target.closest?e.target.closest(".gm"):null;
+  if(g){var id=g.getAttribute("data-g"),i=S.games.indexOf(id);
+    if(i>=0){S.games.splice(i,1);
+      for(var L=0;L<S.legs.length;L++){
+        var keep=[];
+        for(var k=0;k<S.legs[L].sel.length;k++){var gg=gameOf(S.legs[L].sel[k]);
+          if(gg&&S.games.indexOf(gg.id)>=0) keep.push(S.legs[L].sel[k]);}
+        S.legs[L].sel=keep;
+      }
+    } else S.games.push(id);
+    render(); return;}
+  var st=e.target.closest?e.target.closest("[data-s]"):null;
+  if(st){var v=+st.getAttribute("data-s"),i2=S.stakes.indexOf(v);
+    if(i2>=0) S.stakes.splice(i2,1); else S.stakes.push(v);
+    S.stakes.sort(function(a,b){return a-b;}); render(); return;}
+  var p=e.target.closest?e.target.closest(".pk[data-l]"):null;
+  if(p){var L2=+p.getAttribute("data-l"),nm=p.getAttribute("data-p"),
+        arr=S.legs[L2].sel,j=arr.indexOf(nm);
+    if(j>=0) arr.splice(j,1); else arr.push(nm);
+    render(); return;}
+});
+$("#addLeg").onclick=function(){
+  S.legs.push({q:TEMPLATES[S.legs.length%TEMPLATES.length],sel:[]});
+  render();
+};
+$("#host").onchange=render; $("#ents").oninput=render; $("#div").onchange=render; $("#target").oninput=render; 
+S.games=["g1","g2"];
+S.legs=[{q:TEMPLATES[0],sel:["Luka","LeBron"]}];
+render();
+</script></body></html>

@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>The Fox Pit — Tower Cutaway (layout & mood reference v3)</title>
+<!--
+  LAYOUT + MOOD REFERENCE (not final art). Proportions by real feet.
+  Ceilings: Dojo 10ft, Lobby 12ft, Coliseum 20ft (tallest, indoor stadium),
+            High Table 15ft (open high ceiling), Boss Suite 12ft (luxurious).
+  Doors a constant 7ft everywhere (taller rooms show more headroom). Elevator car = door height.
+  Elevator: full-height shaft, FAR LEFT, stops at every floor; locked in practice, unlocks at the High Table.
+  Stairs serve the 3 practice floors only (Dojo->Lobby->Coliseum).
+-->
+<style>
+  :root{--ink:#0A0D12;--void:#05070B;--orange:#FC3E01;--brass:#C8A24B;--brass-dim:#7d6229;
+    --grey:#E7E7EB;--mute:#8b98a6;--serif:"Iowan Old Style",Georgia,"Times New Roman",serif;
+    --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;background:#030407;color:var(--grey);overflow:hidden;font-family:var(--sans);-webkit-font-smoothing:antialiased;}
+  *::-webkit-scrollbar{display:none;} *{scrollbar-width:none;}
+  .device{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+  #phone{position:relative;flex:0 0 auto;width:1080px;min-width:1080px;height:2640px;overflow:hidden;background:var(--void);
+    transform-origin:center center;border:7px solid #161c24;border-radius:60px;box-shadow:0 0 0 3px #000,0 40px 120px rgba(0,0,0,.7);}
+  #cam{position:absolute;top:0;left:0;width:1080px;height:2640px;transform-origin:0 0;transition:transform 1.15s cubic-bezier(.4,0,.2,1);}
+  #sky{position:absolute;left:0;right:0;top:0;height:210px;background:radial-gradient(120% 120% at 50% 120%,#101a30,#080d18 55%,#03040a 100%);}
+  .star{position:absolute;width:2px;height:2px;border-radius:50%;background:#bcd0f5;}
+  #roof{position:absolute;left:56px;right:56px;top:150px;height:62px;background:linear-gradient(180deg,#232d39,#12181f);
+    border-bottom:2px solid #0a0e13;box-shadow:inset 0 4px 10px rgba(255,255,255,.05);}
+  #sign{position:absolute;left:0;right:0;top:168px;text-align:center;font-family:var(--serif);font-size:34px;letter-spacing:.34em;
+    color:var(--orange);text-shadow:0 0 26px rgba(252,62,1,.55);text-transform:uppercase;font-weight:700;}
+  #shell{position:absolute;left:56px;right:56px;top:212px;bottom:0;}
+  .wall{position:absolute;top:0;bottom:0;width:52px;background:repeating-linear-gradient(0deg,rgba(0,0,0,.35) 0 1px,transparent 1px 40px),linear-gradient(90deg,#1c2530,#141b24);}
+  .wall.l{left:0;box-shadow:inset -6px 0 14px rgba(0,0,0,.6);} .wall.r{right:0;transform:scaleX(-1);box-shadow:inset -6px 0 14px rgba(0,0,0,.6);}
+  #interior{position:absolute;left:52px;right:52px;top:0;bottom:0;overflow:hidden;background:var(--void);}
+  .level{position:absolute;left:0;right:0;overflow:hidden;}
+  .plate{position:absolute;left:0;right:0;height:30px;} .plate .t{position:absolute;left:0;right:0;top:0;height:11px;background:linear-gradient(180deg,#4a3c26,#332918);}
+  .plate .f{position:absolute;left:0;right:0;top:11px;height:19px;background:linear-gradient(180deg,#1a140d,#0c0805);box-shadow:0 14px 26px rgba(0,0,0,.6);}
+  .lvlname{position:absolute;right:20px;top:14px;font-family:var(--serif);text-transform:uppercase;text-align:right;color:#cdbb90;text-shadow:0 1px 0 #000;}
+  .lvlname b{display:block;font-size:25px;letter-spacing:.16em;font-weight:700;} .lvlname small{display:block;font-size:14px;letter-spacing:.22em;color:var(--mute);margin-top:3px;font-family:var(--sans);}
+  /* real-feet dimension mark on the right wall */
+  .dim{position:absolute;right:6px;top:6px;bottom:6px;width:0;border-right:1px solid rgba(200,162,75,.28);}
+  .dim::before,.dim::after{content:"";position:absolute;right:-4px;width:9px;height:1px;background:rgba(200,162,75,.4);}
+  .dim::before{top:0;} .dim::after{bottom:0;}
+  .dimlbl{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:13px;letter-spacing:.14em;color:#8b7a4a;font-weight:800;}
+
+  .door{position:absolute;width:170px;height:199px;border-radius:13px 13px 4px 4px;overflow:hidden;cursor:pointer;border:3px solid #0c1017;
+    box-shadow:0 18px 36px rgba(0,0,0,.6),0 0 0 2px rgba(0,0,0,.5);}
+  .door .leaf{position:absolute;inset:0;background:linear-gradient(180deg,#171009,#0e0a06);} .door .seam{position:absolute;top:0;bottom:0;left:50%;width:2px;background:rgba(0,0,0,.5);}
+  .door .glow{position:absolute;left:0;right:0;top:0;height:52px;background:radial-gradient(120% 100% at 50% 0,rgba(255,255,255,.10),transparent 70%);}
+  .door.open{border-color:var(--brass-dim);box-shadow:0 18px 36px rgba(0,0,0,.6),0 0 30px rgba(200,162,75,.22);}
+  .door.current{border-color:var(--orange);animation:breathe 3s ease-in-out infinite;}
+  @keyframes breathe{0%,100%{box-shadow:0 18px 36px rgba(0,0,0,.6),0 0 24px rgba(252,62,1,.35);}50%{box-shadow:0 18px 42px rgba(0,0,0,.6),0 0 56px rgba(252,62,1,.6);}}
+  .door.locked{filter:brightness(.66) saturate(.7);}
+  .sigil{position:absolute;left:50%;top:16px;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(circle at 50% 36%,#2a323d,#0f141b);border:3px solid var(--brass);box-shadow:0 0 0 2px rgba(0,0,0,.5),inset 0 2px 8px rgba(0,0,0,.6),0 6px 14px rgba(0,0,0,.5);}
+  .sigil span{font-family:var(--serif);font-size:34px;font-weight:700;color:var(--brass);text-shadow:0 1px 0 #000;}
+  .door.locked .sigil{border-color:#54627140;} .door.locked .sigil span{color:#7a8794;}
+  .boss{position:absolute;left:0;right:0;top:90px;text-align:center;font-size:13px;letter-spacing:.22em;color:#cdbb90;text-transform:uppercase;font-family:var(--sans);font-weight:800;}
+  .state{position:absolute;left:0;right:0;bottom:0;height:30px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:14px;font-weight:800;letter-spacing:.1em;
+    text-transform:uppercase;font-family:var(--sans);background:linear-gradient(0deg,rgba(0,0,0,.6),transparent);}
+  .door.open .state{color:var(--brass);} .door.current .state{color:#ffb089;} .door.locked .state{color:#7a8794;}
+  .padlock{position:absolute;left:50%;top:108px;transform:translateX(-50%);width:38px;height:44px;}
+
+  #elevator{position:absolute;overflow:hidden;border:2px solid var(--brass-dim);border-radius:6px;background:linear-gradient(180deg,rgba(200,162,75,.05),rgba(0,0,0,.28));}
+  #elevator .rail{position:absolute;left:50%;top:0;bottom:0;width:2px;background:rgba(200,162,75,.22);}
+  #elevator .stop{position:absolute;left:6px;right:6px;height:2px;background:rgba(200,162,75,.32);}
+  #elevator .car{position:absolute;left:9px;right:9px;border-radius:4px;background:linear-gradient(180deg,#2a323d,#12181f);border:1px solid #3a4652;box-shadow:0 0 18px rgba(0,0,0,.5);}
+  #elevator .cardoor{position:absolute;top:50%;left:50%;width:1px;top:8px;bottom:8px;background:rgba(0,0,0,.5);}
+  #elevator .tag{position:absolute;left:0;right:0;top:8px;text-align:center;font-size:12px;letter-spacing:.14em;color:#8b7a4a;font-weight:800;font-family:var(--sans);line-height:1.5;padding:0 6px;}
+  .marker{position:absolute;z-index:9;transform:translate(-50%,-100%);text-align:center;}
+  .marker .pin{width:0;height:0;border-left:13px solid transparent;border-right:13px solid transparent;border-top:20px solid var(--orange);margin:0 auto;filter:drop-shadow(0 0 10px rgba(252,62,1,.7));}
+  .marker .lbl{font-size:14px;letter-spacing:.18em;color:#ffb089;font-weight:800;margin-bottom:4px;white-space:nowrap;font-family:var(--sans);}
+
+  .hud{position:absolute;left:0;right:0;z-index:40;pointer-events:none;}
+  .top{top:0;height:132px;display:flex;align-items:center;gap:18px;padding:0 34px;background:linear-gradient(180deg,rgba(3,4,7,.92),transparent);}
+  .brand{font-family:var(--serif);font-size:30px;letter-spacing:.2em;text-transform:uppercase;color:var(--grey);} .brand span{color:var(--orange);}
+  .viewlbl{font-size:19px;letter-spacing:.22em;color:var(--mute);font-weight:700;margin-top:2px;}
+  .btn{pointer-events:auto;border:1px solid rgba(200,162,75,.4);background:rgba(3,4,7,.6);color:#cdbb90;border-radius:12px;padding:16px 22px;font-size:26px;font-weight:700;cursor:pointer;font-family:var(--sans);letter-spacing:.04em;}
+  .btn:active{transform:translateY(1px);} .spacer{flex:1;}
+  .bottom{bottom:0;padding:26px 32px 34px;display:flex;flex-direction:column;gap:16px;background:linear-gradient(0deg,rgba(3,4,7,.96) 74%,transparent);}
+  .cap{font-size:28px;line-height:1.45;color:#c3cedb;} .cap b{color:#cdbb90;font-weight:700;}
+  .sel{display:flex;gap:10px;pointer-events:auto;flex-wrap:wrap;}
+  .chip{pointer-events:auto;border:1px solid #2c3a49;background:rgba(3,4,7,.7);color:#9fb0c2;border-radius:11px;padding:12px 16px;font-size:22px;font-weight:800;letter-spacing:.06em;cursor:pointer;font-family:var(--sans);text-transform:uppercase;}
+  .chip.on{border-color:var(--orange);color:#ffb089;background:rgba(252,62,1,.13);}
+  .toast{position:absolute;left:50%;top:150px;transform:translate(-50%,-10px);z-index:50;background:rgba(10,13,18,.9);border:1px solid rgba(200,162,75,.5);color:#e7d9b4;padding:15px 24px;border-radius:12px;font-size:25px;font-weight:700;letter-spacing:.04em;opacity:0;pointer-events:none;transition:opacity .3s,transform .3s;font-family:var(--sans);}
+  .toast.show{opacity:1;transform:translate(-50%,0);}
+</style>
+</head>
+<body>
+<div class="device"><div id="phone">
+  <div id="cam">
+    <div id="sky"></div><div id="roof"></div><div id="sign">The Fox Pit</div>
+    <div id="shell"><div class="wall l"></div><div class="wall r"></div><div id="interior"></div></div>
+  </div>
+  <div class="hud top"><button class="btn" id="back">&lsaquo; Back</button>
+    <div><div class="brand">THE FOX <span>PIT</span></div><div class="viewlbl" id="viewlbl">THE WHOLE HOUSE</div></div><div class="spacer"></div></div>
+  <div class="toast" id="toast"></div>
+  <div class="hud bottom"><div class="cap" id="cap"></div><div class="sel" id="sel"></div></div>
+</div></div>
+<script>
+const $=s=>document.querySelector(s), el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;};
+function fit(){$("#phone").style.transform=`scale(${Math.min(innerWidth/1080,innerHeight/2640)})`;} addEventListener("resize",fit);fit();
+(()=>{let s=42;const rnd=()=>(s=(s*1103515245+12345)%2147483648)/2147483648;const sky=$("#sky");
+ for(let i=0;i<46;i++){const st=el("div","star");st.style.left=(rnd()*1080)+"px";st.style.top=(rnd()*200)+"px";st.style.opacity=(.2+rnd()*.6).toFixed(2);sky.appendChild(st);}})();
+
+const IW=864, ITOP=212, IBOT=2172, STREET_Y=1888, DOORH=199, DOORW=170;
+// bands derived from real-feet ceilings (see header)
+const BANDS=[
+  {key:"penthouse",top:212, bot:553, ft:12},
+  {key:"hightable",top:553, bot:979, ft:15},
+  {key:"coliseum", top:979, bot:1547,ft:20},   // tallest
+  {key:"lobby",    top:1547,bot:1888,ft:12},
+  {key:"dojo",     top:1888,bot:2172,ft:10},    // basement
+];
+const LEVELS={
+  dojo:     {name:"The Dojo",       tag:"Basement · Training",       boss:"Owl",    mono:"O", state:"current",  mood:"radial-gradient(120% 90% at 50% 30%,#3a2b17,#1c150c 55%,#0d0a06 100%)"},
+  lobby:    {name:"The Lobby",      tag:"Street · Entrance & Hub",   boss:"Fox",    mono:"F", state:"open",     mood:"radial-gradient(120% 90% at 50% 20%,#2a1c12,#150f0a 55%,#0a0806 100%)"},
+  coliseum: {name:"The Coliseum",   tag:"Level 2 · Indoor Stadium",  boss:"Wolf",   mono:"W", state:"locked",   mood:"radial-gradient(120% 90% at 50% 25%,#4a1614,#280e0d 55%,#120708 100%)"},
+  hightable:{name:"The High Table", tag:"Level 3 · VIP Boxes",       boss:"Raven",  mono:"R", state:"locked",   mood:"radial-gradient(120% 90% at 50% 22%,#241a52,#150f36 55%,#0a0820 100%)"},
+  penthouse:{name:"Boss Fox's Suite",tag:"Penthouse · Private Suite",boss:"Boss Fox",mono:"※",state:"locked",   mood:"radial-gradient(120% 90% at 50% 28%,#2b2110,#191207 55%,#0b0805 100%)"},
+};
+const KEYFROM={coliseum:"Owl",hightable:"Wolf",penthouse:"Raven"};
+const PAD=`<svg class="padlock" viewBox="0 0 44 52"><path d="M13 24V16a9 9 0 0 1 18 0v8" fill="none" stroke="#9aa6b6" stroke-width="5" stroke-linecap="round"/><rect x="7" y="24" width="30" height="24" rx="5" fill="rgba(26,33,43,.85)" stroke="#9aa6b6" stroke-width="3"/><circle cx="22" cy="34" r="3.4" fill="#9aa6b6"/><rect x="20.6" y="34" width="2.8" height="9" rx="1.4" fill="#9aa6b6"/></svg>`;
+const interior=$("#interior");
+
+// a felt table seen in the cutaway: elliptical top on two legs. felt='green' game table, 'wood' training.
+function tbl(cx,baseY,w,felt){
+  const topH=Math.round(w*0.34), legH=Math.round(w*0.40), lx=Math.round(w*0.20);
+  const top = felt==="wood"
+    ? "radial-gradient(circle at 50% 34%,#4a3418,#241a0e 72%)"
+    : "radial-gradient(circle at 50% 34%,#1c6b40,#0e3a23 72%)";
+  return `<div style="position:absolute;left:${cx-w/2}px;top:${baseY-topH-legH}px;width:${w}px;height:${topH+legH}px;">
+    <div style="position:absolute;left:${lx}px;bottom:0;width:5px;height:${legH+2}px;background:#160f08;border-radius:2px"></div>
+    <div style="position:absolute;right:${lx}px;bottom:0;width:5px;height:${legH+2}px;background:#160f08;border-radius:2px"></div>
+    <div style="position:absolute;left:0;top:0;width:${w}px;height:${topH}px;border-radius:50%;background:${top};
+      border:1px solid rgba(200,162,75,.4);box-shadow:0 5px 9px rgba(0,0,0,.5),inset 0 2px 6px rgba(255,255,255,.06)"></div>
+  </div>`;
+}
+function hint(key,h){
+  const g=el("div"); g.style.cssText="position:absolute;inset:0;pointer-events:none;";
+  const base=h-34;
+  if(key==="dojo"){
+    // training room: heavy bags + one low wood table
+    g.innerHTML=`<div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.02) 0 1px,transparent 1px 26px)"></div>
+      <div style="position:absolute;left:150px;top:20px;width:26px;height:110px;border-radius:13px;background:linear-gradient(180deg,#2a1e11,#120c07);box-shadow:0 0 14px rgba(0,0,0,.4)"></div>
+      <div style="position:absolute;left:196px;top:20px;width:22px;height:88px;border-radius:11px;background:linear-gradient(180deg,#2a1e11,#120c07)"></div>
+      ${tbl(360,base,120,"wood")}
+      <div style="position:absolute;left:40%;top:6px;width:150px;height:80px;background:radial-gradient(circle at 50% 0,rgba(201,135,63,.22),transparent 70%)"></div>`;
+  }else if(key==="lobby"){
+    // entrance/hub: fox-arch glow + a front desk (not a game table)
+    g.innerHTML=`<div style="position:absolute;left:44%;top:12px;transform:translateX(-50%);width:150px;height:150px;border-radius:80px 80px 0 0;background:radial-gradient(circle at 50% 40%,rgba(252,62,1,.15),transparent 70%);border-top:2px solid rgba(252,62,1,.4)"></div>
+      <div style="position:absolute;left:130px;top:${base-52}px;width:250px;height:46px;border-radius:8px 8px 4px 4px;background:linear-gradient(180deg,#2a2012,#140d07);border-top:2px solid rgba(200,162,75,.35);box-shadow:0 6px 14px rgba(0,0,0,.5)"></div>
+      <div style="position:absolute;left:150px;top:${base-70}px;font-size:12px;letter-spacing:.2em;color:#8b7a4a;font-weight:800">FRONT DESK</div>`;
+  }else if(key==="coliseum"){
+    // indoor stadium: tiered seating + arena floor with several tables
+    g.innerHTML=`<div style="position:absolute;left:0;right:0;top:0;height:26px;background:linear-gradient(180deg,#0c0708,transparent)"></div>
+      ${[0,1,2,3,4,5].map(i=>`<div style="position:absolute;left:${40+i*7}px;right:${40+i*7}px;top:${28+i*30}px;height:18px;border-radius:46px;background:linear-gradient(180deg,#5a1a17,#320f0e);box-shadow:0 2px 0 rgba(0,0,0,.4)"></div>`).join("")}
+      <div style="position:absolute;left:50%;bottom:52px;transform:translateX(-50%);width:380px;height:96px;border-radius:50%;background:radial-gradient(circle,#22100e,#0d0606);border:2px solid rgba(200,162,75,.3)"></div>
+      ${tbl(200,base,86,"green")}${tbl(330,base-6,86,"green")}${tbl(460,base,86,"green")}`;
+  }else if(key==="hightable"){
+    // VIP winners' lounge: several premium felt tables + violet ambience
+    g.innerHTML=`<div style="position:absolute;left:0;right:0;top:20px;height:2px;background:linear-gradient(90deg,transparent,rgba(182,77,255,.5),transparent)"></div>
+      <div style="position:absolute;left:0;right:0;top:0;height:80px;background:radial-gradient(120% 100% at 50% 0,rgba(120,60,200,.18),transparent 70%)"></div>
+      ${tbl(150,base,104,"green")}${tbl(320,base,104,"green")}${tbl(490,base,104,"green")}`;
+  }else if(key==="penthouse"){
+    // private 1v1: ONE chair BEHIND, ONE table in front (table drawn last = on top, chair reads behind)
+    g.innerHTML=`<div style="position:absolute;left:0;right:0;top:0;height:64px;background:radial-gradient(120% 100% at 50% 0,rgba(200,162,75,.18),transparent 70%)"></div>
+      <div style="position:absolute;left:calc(300px - 40px);top:${base-176}px;width:80px;height:120px;border-radius:22px 22px 6px 6px;background:linear-gradient(180deg,#2c2011,#140d06);border:1px solid rgba(200,162,75,.4);box-shadow:0 6px 16px rgba(0,0,0,.6);z-index:1"></div>
+      <div style="position:absolute;left:calc(300px - 22px);top:${base-70}px;width:44px;height:40px;background:linear-gradient(180deg,#241a0e,#140d06);z-index:1"></div>
+      <div style="position:absolute;z-index:2">${tbl(300,base,168,"green")}</div>`;
+  }
+  return g;
+}
+
+const doorPos={};
+BANDS.forEach(B=>{
+  const L=LEVELS[B.key]; const y0=B.top-ITOP, y1=B.bot-ITOP, h=y1-y0;
+  const lv=el("div","level"); lv.style.top=y0+"px"; lv.style.height=h+"px"; lv.style.background=L.mood;
+  if(B.key==="dojo") lv.style.boxShadow="inset 0 26px 40px rgba(0,0,0,.6)";
+  lv.appendChild(hint(B.key,h));
+  const plate=el("div","plate","<div class='t'></div><div class='f'></div>"); plate.style.top=(h-30)+"px"; lv.appendChild(plate);
+  lv.appendChild(el("div","lvlname",`<b>${L.name}</b><small>${L.tag}</small>`));
+  // real-feet dimension mark
+  lv.appendChild(el("div","dim")); lv.appendChild(el("div","dimlbl",`${B.ft} FT`));
+  // door: constant 7ft height, base flush to plate top
+  const dyBase=(h-30), dyTop=dyBase-DOORH, dx=IW-DOORW-140;
+  const d=el("div","door "+L.state); d.dataset.key=B.key;
+  d.style.left=dx+"px"; d.style.top=dyTop+"px";
+  let inner=`<div class="leaf"></div><div class="glow"></div><div class="seam"></div><div class="sigil"><span>${L.mono}</span></div><div class="boss">${L.boss}</div>`;
+  if(L.state==="open")    inner+=`<div class="state">Open</div>`;
+  if(L.state==="current") inner+=`<div class="state">▸ You are here</div>`;
+  if(L.state==="locked")  inner+=PAD+`<div class="state">Locked · ${KEYFROM[B.key]} key</div>`;
+  d.innerHTML=inner; d.onclick=()=>focus(B.key); lv.appendChild(d);
+  interior.appendChild(lv);
+  doorPos[B.key]={x:dx, cx:dx+DOORW/2, yPlate:y0+(h-30), cyMid:y0+dyTop+DOORH/2, mid:y0+h/2};
+});
+
+(()=>{const s=el("div"); s.style.cssText=`position:absolute;left:0;right:0;top:${STREET_Y-ITOP}px;height:3px;background:linear-gradient(90deg,transparent,rgba(200,162,75,.55),transparent);`;
+  const lbl=el("div",null,"STREET"); lbl.style.cssText=`position:absolute;left:8px;top:${STREET_Y-ITOP-22}px;font-size:14px;letter-spacing:.24em;color:#8b7a4a;font-weight:800;`;
+  interior.appendChild(s); interior.appendChild(lbl);})();
+
+// ELEVATOR: full-height shaft, far left; car height = door height; locked in practice.
+(()=>{
+  const ex=18, ew=112;
+  const elev=el("div"); elev.id="elevator"; elev.style.left=ex+"px"; elev.style.top="0px"; elev.style.width=ew+"px"; elev.style.height=(IBOT-ITOP)+"px";
+  // stops sit at each floor's plate (landing level), not mid-room
+  let stops=""; ["penthouse","hightable","coliseum","lobby","dojo"].forEach(k=>{stops+=`<div class="stop" style="top:${doorPos[k].yPlate}px"></div>`;});
+  const carY=doorPos.hightable.yPlate-DOORH;   // car base RESTS on the High Table plate (stopped on a floor)
+  elev.innerHTML=`<div class="rail"></div>${stops}<div class="tag">ELEVATOR<br>locked in practice<br>· unlocks at the<br>High Table</div>
+    <div class="car" style="top:${carY}px;height:${DOORH}px"><div class="cardoor"></div></div>`;
+  interior.appendChild(elev);
+})();
+
+// STAIRS: practice floors only (Dojo->Lobby->Coliseum)
+(()=>{
+  const L=k=>doorPos[k];
+  const nodes=[{x:230,y:L("dojo").yPlate-8},{x:410,y:L("lobby").yPlate-8},{x:230,y:L("coliseum").yPlate-8}];
+  const svg=document.createElementNS("http://www.w3.org/2000/svg","svg"); svg.setAttribute("width",IW); svg.setAttribute("height",IBOT-ITOP);
+  svg.setAttribute("viewBox",`0 0 ${IW} ${IBOT-ITOP}`); svg.style.cssText="position:absolute;left:0;top:0;pointer-events:none;";
+  const pts=nodes.map(n=>`${n.x},${n.y}`).join(" ");
+  let ticks=""; for(let i=0;i<nodes.length-1;i++){const a=nodes[i],b=nodes[i+1];for(let t=1;t<9;t++){const x=a.x+(b.x-a.x)*t/9,y=a.y+(b.y-a.y)*t/9;ticks+=`<line x1="${x-16}" y1="${y}" x2="${x+16}" y2="${y}" stroke="#b98a3a" stroke-width="3" opacity=".55"/>`;}}
+  let bridges=""; ["dojo","lobby","coliseum"].forEach((k,i)=>{const n=nodes[i];bridges+=`<line x1="${n.x}" y1="${n.y}" x2="${L(k).x}" y2="${L(k).yPlate-8}" stroke="url(#g)" stroke-width="5" stroke-dasharray="2 10" stroke-linecap="round"/>`;});
+  svg.innerHTML=`<defs><linearGradient id="g" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#FC3E01"/><stop offset=".6" stop-color="#C8A24B"/><stop offset="1" stop-color="#8b7a4a"/></linearGradient><filter id="blur"><feGaussianBlur stdDeviation="6"/></filter></defs>
+    <polyline points="${pts}" fill="none" stroke="url(#g)" stroke-width="12" opacity=".35" filter="url(#blur)"/>
+    <polyline points="${pts}" fill="none" stroke="url(#g)" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>${ticks}${bridges}`;
+  interior.appendChild(svg);
+  const m=el("div","marker",`<div class="lbl">YOU</div><div class="pin"></div>`); m.style.left=nodes[0].x+"px"; m.style.top=(nodes[0].y-6)+"px"; interior.appendChild(m);
+})();
+
+const VW=1080,VH=2640;
+const CAP={
+  whole:"<b>The Fox Pit</b> — climb the three practice floors on foot. Clear the Coliseum to earn the elevator and the high-stakes tier above.",
+  dojo:"<b>The Dojo</b> · basement training, 10 ft. Your climb starts here.",
+  lobby:"<b>The Lobby</b> · street entrance and hub, 12 ft. Return here with each key you win.",
+  coliseum:"<b>The Coliseum</b> · indoor stadium, 20 ft — the tallest room and the top of practice. Clear it to earn the elevator up.",
+  hightable:"<b>The High Table</b> · VIP boxes, 15 ft open ceiling. Winners play the big stakes for a shot at Boss Fox. Elevator only.",
+  penthouse:"<b>Boss Fox's Suite</b> · a private 12 ft room, one-on-one with the boss. The apex. Elevator only.",
+};
+const VLBL={whole:"THE WHOLE HOUSE",dojo:"THE DOJO",lobby:"THE LOBBY",coliseum:"THE COLISEUM",hightable:"THE HIGH TABLE",penthouse:"BOSS FOX'S SUITE"};
+function camWhole(){$("#cam").style.transform="translate(0,0) scale(1)";}
+function camFocus(key){const p=doorPos[key],s=1.85;const cx=56+52+p.cx;const cy=ITOP+p.cyMid;$("#cam").style.transform=`translate(${(VW/2-cx*s).toFixed(1)}px,${(VH/2-cy*s).toFixed(1)}px) scale(${s})`;}
+let view="whole";
+function focus(key){view=key;if(key==="whole")camWhole();else camFocus(key);
+  $("#viewlbl").textContent=VLBL[key];$("#cap").innerHTML=CAP[key];$("#back").textContent=key==="whole"?"‹ Exit":"‹ Back";
+  document.querySelectorAll(".chip").forEach(c=>c.classList.toggle("on",c.dataset.k===key));
+  if(key!=="whole"&&LEVELS[key]&&LEVELS[key].state==="locked")toast(`Locked · needs the ${KEYFROM[key]} key`);}
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),1700);}
+$("#back").onclick=()=>{if(view==="whole")toast("Exit → home");else focus("whole");};
+[["whole","House"],["dojo","Dojo"],["lobby","Lobby"],["coliseum","Coliseum"],["hightable","High Table"],["penthouse","Suite"]].forEach(([k,l])=>{const c=el("button","chip",l);c.dataset.k=k;c.onclick=()=>focus(k);$("#sel").appendChild(c);});
+window.focusFloor=focus; focus("whole");
+</script>
+</body>
+</html>

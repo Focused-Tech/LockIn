@@ -1,0 +1,736 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>LockIn — Coliseum (Floor 2) — Room Mockup</title>
+<style>
+  :root{ --orange:#FC3E01; --grey:#E7E7EB; --dark:#0A0D12; --gold:#E8B54B; }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{background:#05070A; color:var(--grey);
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif; -webkit-font-smoothing:antialiased;}
+  .wrap{width:600px; margin:0 auto;}
+  .stage{position:relative; width:600px; height:900px; overflow:hidden; background:var(--dark);}
+  svg.scene{display:block; width:600px; height:900px;}
+
+  .topbar{position:absolute; top:0; left:0; right:0; height:50px; display:flex; align-items:center;
+    gap:10px; padding:0 12px; z-index:30;
+    background:linear-gradient(180deg,rgba(10,13,18,.9),rgba(10,13,18,0));}
+  .title{font-size:12.5px; font-weight:700; letter-spacing:.14em; text-transform:uppercase;}
+  .title span{color:var(--orange);}
+  .btn{border:1px solid rgba(231,231,235,.24); background:rgba(10,13,18,.55); color:var(--grey);
+    border-radius:8px; padding:7px 11px; font-size:12px; font-weight:600; cursor:pointer;}
+  .btn:hover{background:rgba(231,231,235,.14);}
+  .btn.accent{border-color:rgba(252,62,1,.55); background:rgba(252,62,1,.16); color:#FFB89B;}
+  .spacer{flex:1;}
+
+  .bottombar{position:absolute; left:0; right:0; bottom:0; height:62px; z-index:30; display:flex;
+    align-items:center; gap:10px; padding:0 12px;
+    background:linear-gradient(0deg,rgba(10,13,18,.96),rgba(10,13,18,0));}
+  .hint{font-size:11px; color:rgba(231,231,235,.6); line-height:1.35;}
+
+  .panel{position:absolute; inset:0; z-index:40; background:rgba(5,7,10,.93); display:none;
+    flex-direction:column; padding:16px;}
+  .panel.open{display:flex;}
+  .panel-head{display:flex; align-items:center; gap:10px; margin-bottom:16px;}
+  .panel-title{font-size:13px; font-weight:700; letter-spacing:.12em; text-transform:uppercase;}
+  .keys-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:12px;}
+  .keycard{border:1px solid rgba(231,231,235,.16); background:rgba(231,231,235,.05);
+    border-radius:10px; padding:12px; text-align:center;}
+  .keycard.empty{opacity:.35; border-style:dashed;}
+  .keycard .lbl{font-size:10px; letter-spacing:.08em; text-transform:uppercase;
+    color:rgba(231,231,235,.7); margin-top:6px;}
+  .empty-note{font-size:12px; color:rgba(231,231,235,.5); margin-top:14px;}
+
+  .toast{position:absolute; left:50%; top:58px; transform:translate(-50%,-14px); z-index:45;
+    background:rgba(252,62,1,.18); border:1px solid rgba(252,62,1,.6); color:#FFCDB8;
+    border-radius:9px; padding:9px 14px; font-size:12px; font-weight:600; opacity:0;
+    pointer-events:none; transition:opacity .3s, transform .3s;}
+  .toast.show{opacity:1; transform:translate(-50%,0);}
+
+  /* ===== WIN CHOREOGRAPHY — key inserts, turns, shackle springs, gate opens ===== */
+  /* All key transforms pivot on the fox keyhole itself (300,299 in viewBox space). */
+  #winKey{ transform-box:view-box; transform-origin:300px 300px;
+    transform:translate(36px,146px) scale(.9); opacity:0; }
+  .stage.k-show   #winKey{ opacity:1; transition:opacity .2s; }
+  .stage.k-insert #winKey{ transform:translate(0,0) scale(1);
+    transition:transform .85s cubic-bezier(.35,.05,.2,1); }
+  .stage.k-turn   #winKey{ transform:translate(0,0) scale(1) rotate(90deg);
+    transition:transform .6s cubic-bezier(.5,-0.3,.3,1.4); }
+  .stage.k-drop   #winKey{ transform:translate(-192px,436px) scale(1.5) rotate(90deg); opacity:0;
+    transition:transform 1s cubic-bezier(.5,0,.5,1), opacity 1s; }
+
+  /* shackle = the LockIn lock's shackle. Its close motion is slide-DOWN into the
+     base (LockAnimation.tsx / globals.css lockin-slide-down); the UNLOCK is the
+     exact reverse — it springs UP out of the base. */
+  #lockShackle{ transform-box:view-box; transform-origin:300px 271px; }
+  .stage.sprung #lockShackle{ transform:translateY(-17px);
+    transition:transform .5s cubic-bezier(.2,1.8,.4,1); }
+
+  #gateL,#gateR{ transition:transform 1.1s cubic-bezier(.4,0,.2,1); }
+  .stage.opened #gateL{ transform:translateX(-54px) skewY(2deg); }
+  .stage.opened #gateR{ transform:translateX(54px) skewY(-2deg); }
+  #gateGlow{ opacity:0; transition:opacity 1s; }
+  .stage.opened #gateGlow{ opacity:1; }
+  #lockBody{ transition:filter .4s; }
+  .stage.sprung #lockBody{ filter:drop-shadow(0 0 12px rgba(252,60,2,.95)); }
+  /* the opened lock drops away, clearing the gateway; the key then flies to the panel */
+  #padlock{ transition:transform .9s cubic-bezier(.4,0,.7,1), opacity .9s; }
+  .stage.lockfall #padlock{ transform:translateY(78px) rotate(16deg); opacity:0; }
+
+  @keyframes flicker{0%,100%{opacity:.95; transform:scaleY(1);} 50%{opacity:.72; transform:scaleY(.86);}}
+  .flame{transform-origin:center bottom; animation:flicker 1.5s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:.5;} 50%{opacity:.95;}}
+  .bossglow{animation:pulse 2.6s ease-in-out infinite;}
+  @keyframes dash{to{stroke-dashoffset:-40;}}
+  #trailDash{animation:dash 2.4s linear infinite;}
+  .lbrow{transition:transform .6s cubic-bezier(.4,0,.2,1);}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="stage" id="stage">
+
+  <svg class="scene" viewBox="0 0 600 900" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#3E77AE"/><stop offset=".5" stop-color="#7EAED4"/>
+        <stop offset="1" stop-color="#DCCDB2"/>
+      </linearGradient>
+      <linearGradient id="stoneTop" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#F0CE95"/><stop offset="1" stop-color="#B8873F"/>
+      </linearGradient>
+      <linearGradient id="stoneBot" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#D6A566"/><stop offset="1" stop-color="#8F6631"/>
+      </linearGradient>
+      <linearGradient id="sandG" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#AE8A55"/><stop offset="1" stop-color="#E6C892"/>
+      </linearGradient>
+      <linearGradient id="feltG" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#2E8A4F"/><stop offset="1" stop-color="#14522C"/>
+      </linearGradient>
+      <linearGradient id="feltBoss" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#3A9C5C"/><stop offset="1" stop-color="#124A28"/>
+      </linearGradient>
+      <linearGradient id="bannerG" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#C93129"/><stop offset="1" stop-color="#7E1512"/>
+      </linearGradient>
+      <linearGradient id="jambG" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#120D08"/><stop offset="1" stop-color="#3A2A1B"/>
+      </linearGradient>
+      <linearGradient id="jambGR" x1="1" y1="0" x2="0" y2="0">
+        <stop offset="0" stop-color="#120D08"/><stop offset="1" stop-color="#3A2A1B"/>
+      </linearGradient>
+      <radialGradient id="torchG"><stop offset="0" stop-color="#FFD9A0" stop-opacity=".95"/>
+        <stop offset="1" stop-color="#FC3E01" stop-opacity="0"/></radialGradient>
+      <radialGradient id="bossG"><stop offset="0" stop-color="#CFE2FF" stop-opacity=".9"/>
+        <stop offset="1" stop-color="#4A7FD0" stop-opacity="0"/></radialGradient>
+      <radialGradient id="openG"><stop offset="0" stop-color="#FFE6C8" stop-opacity=".95"/>
+        <stop offset="1" stop-color="#FC3E01" stop-opacity="0"/></radialGradient>
+      <linearGradient id="trailG" x1="0" y1="1" x2="0" y2="0">
+        <stop offset="0" stop-color="#FC3E01" stop-opacity=".22"/>
+        <stop offset="1" stop-color="#FFC79A" stop-opacity=".85"/>
+      </linearGradient>
+
+      <symbol id="crest" viewBox="0 0 40 40">
+        <path d="M20 6 L9 2 L8 13 Z" fill="#E8B54B"/><path d="M20 6 L31 2 L32 13 Z" fill="#E8B54B"/>
+        <path d="M20 5 C29 5 34 12 34 20 C34 30 27 36 20 36 C13 36 6 30 6 20 C6 12 11 5 20 5 Z" fill="#E8B54B"/>
+        <path d="M20 12 C25 12 28 16 28 21 C28 27 24 31 20 31 C16 31 12 27 12 21 C12 16 15 12 20 12 Z" fill="#7E1512"/>
+        <circle cx="15.5" cy="19" r="1.9" fill="#E8B54B"/><circle cx="24.5" cy="19" r="1.9" fill="#E8B54B"/>
+        <path d="M20 24 l3 3 -3 2 -3 -2 Z" fill="#E8B54B"/>
+      </symbol>
+      <symbol id="foxhole" viewBox="0 0 24 24">
+        <path d="M12 3 L5.5 1 L5 8 Z M12 3 L18.5 1 L19 8 Z
+                 M12 2.5 C17.5 2.5 21 7 21 12 C21 18 16.5 22 12 22 C7.5 22 3 18 3 12 C3 7 6.5 2.5 12 2.5 Z"
+              fill="#0A0D12"/>
+      </symbol>
+      <clipPath id="stageClip"><rect x="0" y="0" width="600" height="900"/></clipPath>
+    </defs>
+
+    <g clip-path="url(#stageClip)">
+
+      <!-- ===== SKY ===== -->
+      <rect x="0" y="0" width="600" height="200" fill="url(#sky)"/>
+      <g fill="#FFFFFF" opacity=".6">
+        <ellipse cx="130" cy="96" rx="72" ry="24"/><ellipse cx="186" cy="88" rx="50" ry="20"/>
+        <ellipse cx="470" cy="80" rx="76" ry="26"/><ellipse cx="410" cy="94" rx="48" ry="18"/>
+        <ellipse cx="300" cy="72" rx="56" ry="17"/>
+      </g>
+      <g fill="#FFFFFF" opacity=".3">
+        <ellipse cx="250" cy="132" rx="86" ry="18"/><ellipse cx="530" cy="136" rx="64" ry="16"/>
+      </g>
+
+      <!-- ===== TIERED ARCHED GALLERIES (sparse crowd injected by JS) ===== -->
+      <rect x="0" y="176" width="600" height="96" fill="url(#stoneTop)"/>
+      <rect x="0" y="176" width="600" height="7" fill="#F3D6A2"/>
+      <g id="archesTop"></g>
+      <rect x="0" y="270" width="600" height="13" fill="#E9BE7E"/>
+      <rect x="0" y="281" width="600" height="4" fill="#7A5730" opacity=".55"/>
+      <rect x="0" y="284" width="600" height="88" fill="url(#stoneBot)"/>
+      <g id="archesBot"></g>
+      <rect x="0" y="370" width="600" height="26" fill="#8A6236"/>
+      <rect x="0" y="370" width="600" height="5" fill="#E0B478"/>
+      <g id="podiumTicks"></g>
+
+      <!-- ===== ARENA FLOOR ===== -->
+      <path d="M0 396 L600 396 L600 900 L0 900 Z" fill="url(#sandG)"/>
+      <ellipse cx="300" cy="660" rx="430" ry="290" fill="#CFAA6E" opacity=".4"/>
+      <g id="sandSpecks"></g>
+
+      <!-- ===== BOSS GATE (locked, in the far wall — BEHIND the Wolf) ===== -->
+      <g id="gateAssembly">
+        <path d="M240 396 L240 310 A60 60 0 0 1 360 310 L360 396 Z" fill="#140D08"/>
+        <ellipse id="gateGlow" cx="300" cy="330" rx="62" ry="56" fill="url(#openG)"/>
+        <g id="gateL">
+          <path d="M240 396 L240 310 A60 60 0 0 1 300 250 L300 396 Z" fill="#3E2C1D" stroke="#1B120B" stroke-width="2"/>
+          <g stroke="#75593A" stroke-width="3">
+            <line x1="254" y1="396" x2="254" y2="306"/><line x1="268" y1="396" x2="268" y2="288"/>
+            <line x1="282" y1="396" x2="282" y2="270"/><line x1="296" y1="396" x2="296" y2="256"/>
+          </g>
+          <line x1="240" y1="352" x2="300" y2="352" stroke="#75593A" stroke-width="4"/>
+        </g>
+        <g id="gateR">
+          <path d="M360 396 L360 310 A60 60 0 0 0 300 250 L300 396 Z" fill="#3E2C1D" stroke="#1B120B" stroke-width="2"/>
+          <g stroke="#75593A" stroke-width="3">
+            <line x1="346" y1="396" x2="346" y2="306"/><line x1="332" y1="396" x2="332" y2="288"/>
+            <line x1="318" y1="396" x2="318" y2="270"/><line x1="304" y1="396" x2="304" y2="256"/>
+          </g>
+          <line x1="300" y1="352" x2="360" y2="352" stroke="#75593A" stroke-width="4"/>
+        </g>
+        <path d="M233 396 L233 310 A67 67 0 0 1 367 310 L367 396" fill="none" stroke="#E0B478" stroke-width="8"/>
+        <path d="M233 396 L233 310 A67 67 0 0 1 367 310 L367 396" fill="none" stroke="#8A6236" stroke-width="2"/>
+
+        <!-- ============================================================
+             THE REAL LockIn PADLOCK — the brand asset
+             (design-reference/icon-padlock-transparent, orange body + orange
+             shackle + BLACK FOX-HEAD keyhole), copied into ./assets/icon-padlock.png.
+             The 432x432 art is drawn at (235.5,217.2) size 129.6 (scale 0.30), so
+             the fox keyhole centre (art 215,276) lands at scene (300,300) — the
+             key's insertion point. It's split into two clipped layers (art split
+             row y178 → scene y271) so the shackle can spring up on unlock while
+             the body + fox keyhole stay put.
+             ============================================================ -->
+        <clipPath id="clipShackle"><rect x="230" y="228" width="140" height="43"/></clipPath>
+        <clipPath id="clipBody"><rect x="230" y="271" width="140" height="120"/></clipPath>
+        <g id="padlock">
+          <image id="lockShackle" href="assets/icon-padlock.png"
+                 x="235.5" y="217.2" width="129.6" height="129.6" clip-path="url(#clipShackle)"/>
+          <image id="lockBody" href="assets/icon-padlock.png"
+                 x="235.5" y="217.2" width="129.6" height="129.6" clip-path="url(#clipBody)"/>
+        </g>
+      </g>
+
+      <!-- ===== COLUMNS + TORCHES ===== -->
+      <g id="columns"></g>
+
+      <!-- ===== BANNERS hung FROM the crossbar ===== -->
+      <rect x="14" y="166" width="572" height="9" rx="4" fill="#453424"/>
+      <rect x="14" y="166" width="572" height="3" rx="1.5" fill="#6B5236"/>
+      <circle cx="16" cy="170" r="7" fill="#8A6236"/><circle cx="584" cy="170" r="7" fill="#8A6236"/>
+      <g id="banners"></g>
+
+      <!-- ===== THE WOLF (stands behind his own alpha table) ===== -->
+      <g id="boss">
+        <ellipse class="bossglow" cx="300" cy="432" rx="96" ry="52" fill="url(#bossG)"/>
+        <ellipse cx="300" cy="486" rx="86" ry="24" fill="#8A6236"/>
+        <ellipse cx="300" cy="478" rx="70" ry="19" fill="#A67A47"/>
+        <g id="wolf">
+          <path d="M276 468 L266 396 L334 396 L324 468 Z" fill="#232A36"/>
+          <path d="M272 462 L263 402 L284 398 L280 462 Z" fill="#39424F"/>
+          <path d="M328 462 L337 402 L316 398 L320 462 Z" fill="#39424F"/>
+          <rect x="281" y="396" width="38" height="52" rx="8" fill="#5A6473"/>
+          <rect x="281" y="406" width="38" height="6" fill="#96A2B3"/>
+          <rect x="281" y="422" width="38" height="6" fill="#96A2B3"/>
+          <rect x="266" y="402" width="14" height="34" rx="7" fill="#6E7889"/>
+          <rect x="320" y="402" width="14" height="34" rx="7" fill="#6E7889"/>
+          <circle cx="273" cy="440" r="8" fill="#8E9AAB"/><circle cx="327" cy="440" r="8" fill="#8E9AAB"/>
+          <path d="M300 358 L286 344 L288 364 Z" fill="#8E9AAB"/>
+          <path d="M300 358 L314 344 L312 364 Z" fill="#8E9AAB"/>
+          <path d="M291 348 L286 344 L287 356 Z" fill="#39424F"/>
+          <path d="M309 348 L314 344 L313 356 Z" fill="#39424F"/>
+          <ellipse cx="300" cy="376" rx="21" ry="19" fill="#8E9AAB"/>
+          <path d="M300 384 q-11 2 -11 8 q11 8 22 0 q0 -6 -11 -8 Z" fill="#C3CCD9"/>
+          <ellipse cx="300" cy="392" rx="4.5" ry="3.5" fill="#1B2029"/>
+          <path d="M291 374 l9 3 -9 3 Z" fill="#FC3E01"/><path d="M309 374 l-9 3 9 3 Z" fill="#FC3E01"/>
+          <path d="M293 397 l3 5 3 -5 Z M301 397 l3 5 3 -5 Z" fill="#FFF"/>
+          <!-- the key on his belt (leaves when won) -->
+          <g id="bossKey">
+            <circle cx="336" cy="446" r="8" fill="#E8B54B" stroke="#7E5A16" stroke-width="1"/>
+            <circle cx="336" cy="446" r="4" fill="#7E1512"/>
+            <rect x="334.5" y="450" width="3.4" height="16" fill="#E8B54B"/>
+            <rect x="334.5" y="461" width="9" height="3" fill="#E8B54B"/>
+          </g>
+        </g>
+        <!-- named off to the side: his own table sits in front of him -->
+        <text x="372" y="410" font-size="12" font-weight="700"
+              letter-spacing="3" fill="#E7E7EB">THE WOLF</text>
+        <text x="372" y="423" font-size="8" letter-spacing="1.8" fill="#FC3E01">BOSS · FLOOR 2</text>
+      </g>
+
+      <!-- ===== LEADERBOARD staked in the sand, screen-LEFT of the Wolf ===== -->
+      <g id="leaderboard"></g>
+
+      <!-- ===== WINDING LIT TRAIL (built in JS FROM the table centres) ===== -->
+      <path id="trailBase" fill="none" stroke="url(#trailG)" stroke-width="26"
+            stroke-linecap="round" opacity=".36"/>
+      <path id="trailDash" fill="none" stroke="#FFD3B4" stroke-width="3" stroke-linecap="round"
+            stroke-dasharray="9 11" opacity=".8"/>
+      <g id="trailLamps"></g>
+
+      <!-- ===== TABLES (3 pack + boss alpha table) ===== -->
+      <g id="tables"></g>
+
+      <!-- ===== THE KEY that inserts into the fox keyhole ===== -->
+      <!-- drawn in its INSERTED pose at the keyhole; CSS starts it at the Wolf's belt -->
+      <g id="winKey">
+        <rect x="297.4" y="296" width="5.2" height="27" rx="1" fill="#E8B54B" stroke="#7E5A16" stroke-width=".7"/>
+        <rect x="302.6" y="300" width="5" height="2.6" fill="#E8B54B"/>
+        <rect x="302.6" y="306" width="4" height="2.6" fill="#E8B54B"/>
+        <circle cx="300" cy="331" r="9.5" fill="#E8B54B" stroke="#7E5A16" stroke-width="1"/>
+        <use href="#crest" x="292" y="323" width="16" height="16"/>
+      </g>
+
+      <!-- ===== POV GATE FRAME ===== -->
+      <g id="povGate">
+        <rect x="0" y="0" width="600" height="34" fill="#100B07"/>
+        <rect x="0" y="30" width="600" height="8" fill="#2A1E14"/>
+        <g id="teeth"></g>
+        <path d="M0 0 L54 0 L44 900 L0 900 Z" fill="url(#jambG)"/>
+        <path d="M54 0 L44 900" stroke="#4A3524" stroke-width="3" fill="none"/>
+        <g id="jambBricksL"></g>
+        <path d="M600 0 L546 0 L556 900 L600 900 Z" fill="url(#jambGR)"/>
+        <path d="M546 0 L556 900" stroke="#4A3524" stroke-width="3" fill="none"/>
+        <g id="jambBricksR"></g>
+        <g id="jambTorches"></g>
+      </g>
+
+    </g>
+  </svg>
+
+  <div class="topbar">
+    <button class="btn" id="backRoom">‹ Back</button>
+    <div class="title">Coliseum <span>· Floor 2</span></div>
+    <div class="spacer"></div>
+    <button class="btn" id="openKeys">Keys <span id="keyCount">0</span>/3</button>
+  </div>
+
+  <div class="bottombar">
+    <button class="btn accent" id="winBtn">Win the Wolf</button>
+    <div class="hint">Take his key, turn it in the lock,<br/>open the gate to Floor 3.</div>
+  </div>
+
+  <div class="toast" id="toast">Key won — the gate is open.</div>
+
+  <div class="panel" id="keysPanel">
+    <div class="panel-head">
+      <button class="btn" id="keysBack">‹ Back</button>
+      <div class="panel-title">Keys</div>
+    </div>
+    <div class="keys-grid" id="keysGrid"></div>
+    <div class="empty-note" id="keysNote">Win a floor boss to earn their crested key.</div>
+  </div>
+
+</div>
+</div>
+
+<script>
+const NS="http://www.w3.org/2000/svg";
+const el=(n,a={})=>{const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);return e;};
+let _s=20260714;
+const rnd=()=>(_s=(_s*1664525+1013904223)%4294967296)/4294967296;
+const pick=a=>a[Math.floor(rnd()*a.length)];
+const DEG=180/Math.PI;
+
+/* =========================================================================
+   1. TABLE CENTRES ARE DEFINED FIRST. The trail is then built THROUGH them,
+      so no table can ever sit off the path.
+   ========================================================================= */
+const TABLES=[
+  {id:"t1",  name:"TABLE 1", x:198, y:768, s:0.80},
+  {id:"t2",  name:"TABLE 2", x:425, y:700, s:0.60},
+  {id:"t3",  name:"TABLE 3", x:240, y:640, s:0.45},
+  {id:"boss",name:"ALPHA TABLE", x:300, y:538, s:0.54, boss:true}
+];
+// entrance → T1 → T2 → T3 → boss table
+const TRAIL_PTS=[{x:300,y:900},...TABLES.map(t=>({x:t.x,y:t.y}))];
+
+/* Catmull-Rom spline → cubic bezier: the curve passes EXACTLY through each point. */
+function splineThrough(pts){
+  let d=`M${pts[0].x} ${pts[0].y}`;
+  for(let i=0;i<pts.length-1;i++){
+    const p0=pts[i-1]||pts[i], p1=pts[i], p2=pts[i+1], p3=pts[i+2]||pts[i+1];
+    const c1={x:p1.x+(p2.x-p0.x)/6, y:p1.y+(p2.y-p0.y)/6};
+    const c2={x:p2.x-(p3.x-p1.x)/6, y:p2.y-(p3.y-p1.y)/6};
+    d+=` C${c1.x.toFixed(1)} ${c1.y.toFixed(1)}, ${c2.x.toFixed(1)} ${c2.y.toFixed(1)}, ${p2.x} ${p2.y}`;
+  }
+  return d;
+}
+const TRAIL_D=splineThrough(TRAIL_PTS);
+document.getElementById("trailBase").setAttribute("d",TRAIL_D);
+document.getElementById("trailDash").setAttribute("d",TRAIL_D);
+
+/* =========================================================================
+   5. CROWD — sparse and readable (not a packed house). Spacing > body width
+      so figures never overlap; ~35% of the seats are left empty.
+   ========================================================================= */
+const SKIN=["#F0D0AC","#E3B98E","#CE9A6C","#B98455","#DCA97B","#A97247"];
+const CLOTH=["#7A5240","#4E5A6B","#6B4A38","#8A6248","#5F4638","#6E4038","#485266","#7C6A52"];
+
+function crowdInArch(parent,cx,top,w,h,rows,perRow,sc){
+  const id="ac"+Math.floor(rnd()*1e9), r=w/2;
+  const shape=`M${cx-r} ${top+h} L${cx-r} ${top+r} A${r} ${r} 0 0 1 ${cx+r} ${top+r} L${cx+r} ${top+h} Z`;
+  const cp=el("clipPath",{id}); cp.appendChild(el("path",{d:shape})); parent.appendChild(cp);
+  const g=el("g",{"clip-path":`url(#${id})`});
+  g.appendChild(el("path",{d:shape,fill:"#2C1F15"}));
+  g.appendChild(el("path",{d:shape,fill:"#120C07",opacity:".35"}));
+  // stepped stone benches, so the stand reads as tiered seating even where empty
+  for(let row=0;row<rows;row++){
+    const y=top+h-4-row*((h-10)/rows);
+    g.appendChild(el("rect",{x:cx-r,y:y+1,width:w,height:2.2,fill:"#7A5730",opacity:".35"}));
+  }
+  const step=(w-12)/perRow;
+  for(let row=0;row<rows;row++){
+    const yBase=top+h-4-row*((h-10)/rows);
+    const depth=row/(rows-1);
+    const op=(1-depth*0.35).toFixed(2);
+    const S=sc*(1-depth*0.12);
+    for(let i=0;i<perRow;i++){
+      if(rnd()<0.35) continue;                       // sparse: leave gaps in the stand
+      const x=cx-r+6+(i+(row%2)*0.5)*step+(rnd()-0.5)*1.4;
+      const y=yBase+(rnd()-0.5)*1.2;
+      const hr=2.7*S, sw=3.4*S;                      // body width 6.8*S < step → no overlap
+      const gp=el("g",{opacity:op});
+      gp.appendChild(el("path",{d:`M${x-sw} ${y} q${sw} ${-sw*1.45} ${sw*2} 0 Z`,fill:pick(CLOTH)}));
+      gp.appendChild(el("circle",{cx:x,cy:y-sw*1.5,r:hr,fill:pick(SKIN)}));
+      gp.appendChild(el("ellipse",{cx:x,cy:y-sw*0.95,rx:hr*0.7,ry:hr*0.28,fill:"#000",opacity:".2"}));
+      g.appendChild(gp);
+    }
+  }
+  parent.appendChild(g);
+}
+function buildArches(gid,top,h,count,rows,perRow,sc){
+  const g=document.getElementById(gid);
+  const pad=7,w=(600-pad)/count-pad;
+  for(let i=0;i<count;i++){
+    const cx=pad+w/2+i*(w+pad), r=w/2;
+    crowdInArch(g,cx,top,w,h,rows,perRow,sc);
+    const d=`M${cx-r} ${top+h} L${cx-r} ${top+r} A${r} ${r} 0 0 1 ${cx+r} ${top+r} L${cx+r} ${top+h}`;
+    g.appendChild(el("path",{d,fill:"none",stroke:"#F0CE95","stroke-width":5}));
+    g.appendChild(el("path",{d,fill:"none",stroke:"#8A6236","stroke-width":1.2}));
+    g.appendChild(el("rect",{x:cx+r+1,y:top,width:pad-2,height:h,fill:"#C2914F"}));
+  }
+}
+buildArches("archesTop",178,92,8,4,6,1.15);
+buildArches("archesBot",286,84,7,4,6,1.3);
+
+(()=>{const g=document.getElementById("podiumTicks");
+  for(let x=8;x<600;x+=26) g.appendChild(el("rect",{x,y:376,width:13,height:16,rx:2,fill:"#5E4222",opacity:".45"}));})();
+(()=>{const g=document.getElementById("sandSpecks");
+  for(let i=0;i<140;i++) g.appendChild(el("ellipse",{cx:rnd()*600,cy:400+rnd()*500,
+    rx:1+rnd()*2.5,ry:.6+rnd()*1.2,fill:rnd()>.5?"#A8834C":"#EBD3A4",opacity:(.16+rnd()*.28).toFixed(2)}));})();
+
+/* =========================================================================
+   1. TORCHES — flame points UP out of the cup; glow sits ON the flame.
+      cup ~y282 · flame tip ~y258 · glow cy ~268 · pole runs DOWN from the cup.
+   ========================================================================= */
+function torch(g,x,cupY,scale){
+  const s=scale||1;
+  // pole hangs DOWN from the cup (nothing burning halfway down it)
+  g.appendChild(el("rect",{x:x-3*s,y:cupY+2,width:6*s,height:46*s,fill:"#3A2A1B"}));
+  // bracket cup
+  g.appendChild(el("path",{d:`M${x-9*s} ${cupY-4} L${x+9*s} ${cupY-4} L${x+6*s} ${cupY+4} L${x-6*s} ${cupY+4} Z`,
+    fill:"#6B5236",stroke:"#3A2A1B","stroke-width":1}));
+  // glow ON the flame, above the cup
+  g.appendChild(el("ellipse",{cx:x,cy:cupY-14*s,rx:30*s,ry:30*s,fill:"url(#torchG)"}));
+  // flame: base at the cup, tip UP
+  const f=el("g",{class:"flame"});
+  f.appendChild(el("path",{d:`M${x} ${cupY-3} c-8 -7 -7 -16 0 -24 c7 8 8 17 0 24 Z`,fill:"#FC3E01"}));
+  f.appendChild(el("path",{d:`M${x} ${cupY-6} c-4.5 -4 -4 -9.5 0 -15 c4 5.5 4.5 11 0 15 Z`,fill:"#FFD08A"}));
+  g.appendChild(f);
+}
+(()=>{const g=document.getElementById("columns");
+  [78,168,432,522].forEach(x=>{
+    g.appendChild(el("rect",{x:x-12,y:286,width:24,height:110,fill:"#E0B478"}));
+    g.appendChild(el("rect",{x:x-12,y:286,width:7,height:110,fill:"#F3D6A2"}));
+    g.appendChild(el("rect",{x:x-15,y:280,width:30,height:10,rx:2,fill:"#EFC98F"}));
+    g.appendChild(el("rect",{x:x-15,y:388,width:30,height:10,rx:2,fill:"#A67A47"}));
+    torch(g,x,282,1);                       // cup at y=282, flame tip ≈258, glow cy≈268
+  });})();
+
+(()=>{const g=document.getElementById("banners");
+  [96,178,422,504].forEach(x=>{
+    const w=66,h=108,top=172;
+    g.appendChild(el("circle",{cx:x-20,cy:170,r:3.4,fill:"#8A6236"}));
+    g.appendChild(el("circle",{cx:x+20,cy:170,r:3.4,fill:"#8A6236"}));
+    g.appendChild(el("line",{x1:x-20,y1:170,x2:x-w/2+7,y2:top+5,stroke:"#6B5236","stroke-width":1.8}));
+    g.appendChild(el("line",{x1:x+20,y1:170,x2:x+w/2-7,y2:top+5,stroke:"#6B5236","stroke-width":1.8}));
+    g.appendChild(el("path",{d:`M${x-w/2} ${top} L${x+w/2} ${top} L${x+w/2-2} ${top+h}
+      L${x} ${top+h+14} L${x-w/2+2} ${top+h} Z`,fill:"url(#bannerG)",stroke:"#5E0F0C","stroke-width":1}));
+    g.appendChild(el("rect",{x:x-w/2,y:top,width:w,height:6,fill:"#E8B54B"}));
+    g.appendChild(el("rect",{x:x-9,y:top+6,width:6,height:h-6,fill:"#000",opacity:".10"}));
+    g.appendChild(el("use",{href:"#crest",x:x-22,y:top+28,width:44,height:44}));
+  });})();
+
+/* trail lamps ride the same spline */
+(()=>{const g=document.getElementById("trailLamps");
+  const p=document.getElementById("trailBase"), L=p.getTotalLength();
+  for(let i=1;i<14;i++){
+    const pt=p.getPointAtLength((i/14)*L), s=.5+(pt.y/900)*.8;
+    [-1,1].forEach(side=>{
+      const x=pt.x+side*19*s;
+      g.appendChild(el("ellipse",{cx:x,cy:pt.y,rx:10*s,ry:10*s,fill:"url(#torchG)",opacity:".85"}));
+      g.appendChild(el("circle",{cx:x,cy:pt.y,r:2.6*s,fill:"#FFD3B4"}));
+    });
+  }})();
+
+/* =========================================================================
+   3+4. TABLE UNIT — 5 seats, evenly spaced, each figure ROTATED to face the
+        table centre. "YOU" is pinned to the front-nearest seat (bottom, +y).
+   ========================================================================= */
+// seated players: cool/dark tones so they never blend into the warm brown chairs
+const PLAYER=["#3F4A5C","#4E5A6B","#5A3F4E","#2E3B44","#6E4038","#455449","#54486B"];
+const CHIP={red:"#C0392B",blue:"#2C63B0",black:"#1E2229",white:"#DDE1E7"};
+function chipStack(g,x,y,n,color,s){
+  for(let i=0;i<n;i++){
+    const yy=y-i*2.7*s;
+    g.appendChild(el("ellipse",{cx:x,cy:yy,rx:7.5*s,ry:2.9*s,fill:color,stroke:"#0A0D12","stroke-width":.5}));
+    g.appendChild(el("ellipse",{cx:x,cy:yy-.8*s,rx:7.5*s,ry:2.9*s,fill:"#FFF",opacity:i%2?.18:.06}));
+  }
+}
+function chipCluster(g,x,y,s){
+  const cols=[CHIP.red,CHIP.blue,CHIP.black,CHIP.white];
+  [[-10,0],[0,2],[10,0],[4,-4]].forEach((o,i)=>chipStack(g,x+o[0]*s,y+o[1]*s,4+Math.floor(rnd()*3),cols[i],s));
+}
+const SLATES=[{t:"POLITICS",c:"#C0392B"},{t:"CRYPTO",c:"#E08A1E"},{t:"WEATHER",c:"#2C86C7"}];
+function slateCard(g,x,y,s,i,rot){
+  const w=28*s,h=36*s;
+  const c=el("g",{transform:`translate(${x},${y}) rotate(${rot})`});
+  c.appendChild(el("rect",{x:-w/2,y:-h/2,width:w,height:h,rx:2.5*s,fill:"#1B222C",stroke:"#0A0D12","stroke-width":.8}));
+  c.appendChild(el("rect",{x:-w/2,y:-h/2,width:w,height:8.5*s,rx:2.5*s,fill:SLATES[i].c}));
+  const t=el("text",{x:0,y:-h/2+6.2*s,"text-anchor":"middle","font-size":4.2*s,"font-weight":700,fill:"#FFF"});
+  t.textContent=SLATES[i].t; c.appendChild(t);
+  for(let r=0;r<3;r++){
+    const yy=-h/2+(14+r*6.8)*s;
+    c.appendChild(el("rect",{x:-w/2+2.6*s,y:yy,width:w-9.5*s,height:1.8*s,rx:.8,fill:"#8C97A6"}));
+    c.appendChild(el("circle",{cx:w/2-3.8*s,cy:yy+.9*s,r:1.6*s,fill:"#2FB56B"}));
+  }
+  g.appendChild(c);
+}
+
+function seatGroup(a,CRX,CRY,isYou,facingBoss){
+  const cx=Math.cos(a)*CRX, cy=Math.sin(a)*CRY;
+  // face the table centre: local -y ends up pointing OUTWARD, local +y INWARD
+  const theta=(a*DEG)+90;
+  const seat=el("g",{transform:`translate(${cx.toFixed(1)},${cy.toFixed(1)}) rotate(${theta.toFixed(1)})`});
+  seat.appendChild(el("ellipse",{cx:0,cy:9,rx:17,ry:7,fill:"#000",opacity:".22"}));
+  // chair back sits OUTWARD (local -y) because of the rotation above. Kept dark so
+  // the seated figure in front of it reads as a person, not a blob.
+  seat.appendChild(el("rect",{x:-13,y:-25,width:26,height:16,rx:3,
+    fill:isYou?"none":"#3E2C1D",stroke:isYou?"#FC3E01":"#241A11",
+    "stroke-width":isYou?2:1.2,"stroke-dasharray":isYou?"5 4":"none"}));
+  seat.appendChild(el("rect",{x:-15,y:-10,width:30,height:17,rx:4,
+    fill:isYou?"rgba(252,62,1,.18)":"#5C4229",stroke:isYou?"#FC3E01":"#2E2015",
+    "stroke-width":isYou?2.5:1.5,"stroke-dasharray":isYou?"5 4":"none"}));
+  if(isYou){
+    const t=el("text",{x:0,y:24,"text-anchor":"middle","font-size":12,"font-weight":700,
+      "letter-spacing":1.6,fill:"#FC3E01",transform:"rotate(180)"});
+    t.textContent="YOU"; seat.appendChild(t);
+    if(facingBoss){
+      const g2=el("g",{transform:"rotate(180)"});
+      g2.appendChild(el("circle",{cx:0,cy:0,r:22,fill:"none",stroke:"#FC3E01",
+        "stroke-width":1.6,"stroke-dasharray":"3 5",opacity:".8"}));
+      seat.appendChild(g2);
+    }
+  }else{
+    // seated figure, drawn upright — the group rotation makes it FACE the felt.
+    // PLAYER palette is cool/dark so the body separates from the warm chair.
+    const p=el("g");
+    p.appendChild(el("path",{d:"M-13 5 q13 -19 26 0 Z",fill:pick(PLAYER)}));
+    p.appendChild(el("circle",{cx:0,cy:-11,r:7.6,fill:pick(SKIN)}));
+    p.appendChild(el("path",{d:"M-7.6 -15 q7.6 -7 15.2 0 q-7.6 -3.6 -15.2 0 Z",fill:"#241C16"}));
+    p.appendChild(el("ellipse",{cx:0,cy:-4.5,rx:5,ry:1.8,fill:"#000",opacity:".2"}));
+    seat.appendChild(p);
+  }
+  return {seat,cy};
+}
+
+function buildTable(T){
+  const g=el("g",{transform:`translate(${T.x},${T.y}) scale(${T.s})`});
+  const RX=92,RY=50,CRX=132,CRY=78,N=5;
+  g.appendChild(el("ellipse",{cx:0,cy:16,rx:CRX+18,ry:CRY-6,fill:"#000",opacity:".2"}));
+
+  // seat angles: +90° offset puts seat 0 at the BOTTOM = front-nearest = YOU
+  const seats=[];
+  for(let i=0;i<N;i++){
+    const a=(Math.PI*2*i)/N+Math.PI/2;
+    seats.push(seatGroup(a,CRX,CRY,i===0,!!T.boss));
+  }
+  // depth sort: far seats behind the felt, near seats in front of it
+  seats.filter(s=>s.cy<0).forEach(s=>g.appendChild(s.seat));
+
+  g.appendChild(el("ellipse",{cx:0,cy:0,rx:RX+14,ry:RY+11,fill:"#2E2015"}));
+  g.appendChild(el("ellipse",{cx:0,cy:-2,rx:RX+13,ry:RY+10,fill:T.boss?"#7E5A2E":"#6E4F2F"}));
+  g.appendChild(el("ellipse",{cx:0,cy:-3,rx:RX+6,ry:RY+4,fill:"#3C2A1A"}));
+  g.appendChild(el("ellipse",{cx:0,cy:-3,rx:RX,ry:RY,fill:T.boss?"url(#feltBoss)":"url(#feltG)"}));
+  g.appendChild(el("ellipse",{cx:0,cy:-3,rx:RX-12,ry:RY-9,fill:"none",
+    stroke:T.boss?"#E8B54B":"#0F3D22","stroke-width":1.5,opacity:T.boss?".5":".7"}));
+
+  slateCard(g,-36,-8,1,0,-9); slateCard(g,0,-12,1,1,0); slateCard(g,36,-8,1,2,9);
+  chipCluster(g,-62,20,1); chipCluster(g,60,18,1);
+  chipStack(g,76,-14,5,CHIP.black,.85); chipStack(g,-76,-12,4,CHIP.red,.85);
+
+  seats.filter(s=>s.cy>=0).forEach(s=>g.appendChild(s.seat));
+
+  // label ABOVE the felt, in the empty gap between the two back chairs — keeps it
+  // clear of the front "YOU" seat and its label.
+  const lab=el("text",{x:0,y:-(RY+34),"text-anchor":"middle","font-size":13,"font-weight":700,
+    "letter-spacing":2.2,fill:T.boss?"#E8B54B":"#E7E7EB",opacity:".95"});
+  lab.textContent=T.name; g.appendChild(lab);
+  document.getElementById("tables").appendChild(g);
+}
+// far → near so nearer tables overlap further ones
+[...TABLES].sort((a,b)=>a.y-b.y).forEach(buildTable);
+
+/* =========================================================================
+   6. LEADERBOARD — staked in the sand screen-LEFT of the Wolf. One row per
+      table. Every "round" leaders earn and the rows RE-SORT, so you can see
+      rivals climbing toward the Wolf while your clock runs down.
+   ========================================================================= */
+const RIVALS=["VEGA","KANE","ROOK","MARLO","SABLE","DRIFT","ONYX"];
+let board=TABLES.map((t,i)=>({
+  table:t.name, leader:RIVALS[i], earn:820-i*140+Math.floor(rnd()*90)
+}));
+let round=3, clock=45;
+const LB={x:126,y:520,w:150,h:118};
+const lbRows=[];
+let lbRound,lbClock;
+
+(()=>{
+  const g=document.getElementById("leaderboard");
+  const G=el("g",{transform:`translate(${LB.x},${LB.y}) rotate(-5)`});
+  // stakes driven into the sand
+  G.appendChild(el("rect",{x:-42,y:LB.h/2-6,width:9,height:34,fill:"#4A3524"}));
+  G.appendChild(el("rect",{x:33,y:LB.h/2-6,width:9,height:34,fill:"#4A3524"}));
+  G.appendChild(el("ellipse",{cx:0,cy:LB.h/2+30,rx:52,ry:7,fill:"#000",opacity:".2"}));
+  // board
+  G.appendChild(el("rect",{x:-LB.w/2,y:-LB.h/2,width:LB.w,height:LB.h,rx:5,fill:"#3E2C1D",
+    stroke:"#E8B54B","stroke-width":2}));
+  G.appendChild(el("rect",{x:-LB.w/2+4,y:-LB.h/2+4,width:LB.w-8,height:LB.h-8,rx:3,
+    fill:"none",stroke:"#8A6236","stroke-width":1}));
+  const t1=el("text",{x:0,y:-LB.h/2+17,"text-anchor":"middle","font-size":9.5,"font-weight":700,
+    "letter-spacing":1.6,fill:"#E8B54B"}); t1.textContent="LEADERBOARD"; G.appendChild(t1);
+  lbRound=el("text",{x:0,y:-LB.h/2+28,"text-anchor":"middle","font-size":7.5,"font-weight":700,
+    "letter-spacing":1,fill:"#FC3E01"}); G.appendChild(lbRound);
+  G.appendChild(el("line",{x1:-LB.w/2+8,y1:-LB.h/2+33,x2:LB.w/2-8,y2:-LB.h/2+33,
+    stroke:"#8A6236","stroke-width":1}));
+  for(let i=0;i<board.length;i++){
+    const row=el("g",{class:"lbrow"});
+    const rank=el("text",{x:-LB.w/2+9,y:0,"font-size":7.5,"font-weight":700,fill:"#E8B54B"});
+    const name=el("text",{x:-LB.w/2+20,y:0,"font-size":7.5,fill:"#E7E7EB"});
+    const earn=el("text",{x:LB.w/2-9,y:0,"text-anchor":"end","font-size":8,"font-weight":700,fill:"#4ED07E"});
+    row.append(rank,name,earn); G.appendChild(row);
+    lbRows.push({row,rank,name,earn});
+  }
+  lbClock=el("text",{x:0,y:LB.h/2-7,"text-anchor":"middle","font-size":7,fill:"#E7E7EB",opacity:".65"});
+  G.appendChild(lbClock);
+  g.appendChild(G);
+})();
+
+function renderBoard(){
+  board.sort((a,b)=>b.earn-a.earn);
+  board.forEach((b,i)=>{
+    const r=lbRows[i];
+    r.row.setAttribute("transform",`translate(0,${-LB.h/2+46+i*17})`);
+    r.rank.textContent=(i+1)+".";
+    r.name.textContent=`${b.table.replace("ALPHA TABLE","ALPHA")} · ${b.leader}`;
+    r.earn.textContent="$"+b.earn.toLocaleString();
+    // the Wolf's alpha table glows gold — that's the seat you're chasing
+    const alpha=b.table==="ALPHA TABLE";
+    r.name.setAttribute("fill",alpha?"#E8B54B":"#E7E7EB");
+    r.earn.setAttribute("fill",alpha?"#E8B54B":"#4ED07E");
+  });
+  lbRound.textContent=`ROUND ${round} · LIMITED TIME`;
+  lbClock.textContent=`next round in 0:${String(clock).padStart(2,"0")}`;
+}
+renderBoard();
+// a "round" every 2.5s: rivals earn, board re-sorts, leaders visibly climb
+setInterval(()=>{
+  board.forEach(b=>{ b.earn+=40+Math.floor(rnd()*220); });
+  if(rnd()<0.4){ const b=board[Math.floor(rnd()*board.length)];
+    b.leader=RIVALS[Math.floor(rnd()*RIVALS.length)]; }   // a new rival takes the seat
+  round++; clock=45;
+  renderBoard();
+},2500);
+setInterval(()=>{ clock=clock>0?clock-1:45;
+  lbClock.textContent=`next round in 0:${String(clock).padStart(2,"0")}`; },1000);
+
+/* POV gate details + jamb torches (same upright flame) */
+(()=>{
+  const t=document.getElementById("teeth");
+  for(let x=16;x<600;x+=32) t.appendChild(el("path",{d:`M${x} 38 l11 0 l-5.5 17 Z`,fill:"#2A1E14"}));
+  const bl=document.getElementById("jambBricksL");
+  for(let y=0;y<900;y+=44){const w=54-(y/900)*10;
+    bl.appendChild(el("line",{x1:0,y1:y,x2:w,y2:y+1,stroke:"#000","stroke-width":1.5,opacity:".4"}));}
+  const br=document.getElementById("jambBricksR");
+  for(let y=0;y<900;y+=44){const w=546+(y/900)*10;
+    br.appendChild(el("line",{x1:600,y1:y,x2:w,y2:y+1,stroke:"#000","stroke-width":1.5,opacity:".4"}));}
+  const jt=document.getElementById("jambTorches");
+  [[32,340],[568,340],[38,660],[562,660]].forEach(([x,y])=>torch(jt,x,y,1.05));
+})();
+
+/* =========================================================================
+   7. WIN CHOREOGRAPHY — insert → turn → shackle springs → gate opens → key drops
+   ========================================================================= */
+const stage=document.getElementById("stage"), toast=document.getElementById("toast");
+const keysPanel=document.getElementById("keysPanel"), keysGrid=document.getElementById("keysGrid");
+const keyCount=document.getElementById("keyCount");
+let keys=[];
+function renderKeys(){
+  keysGrid.innerHTML="";
+  [{n:"Fox Pit",k:"fox"},{n:"The Wolf",k:"wolf"},{n:"Floor 3",k:"f3"}].forEach(s=>{
+    const won=keys.includes(s.k), c=won?"#E8B54B":"#5A5F68";
+    const d=document.createElement("div");
+    d.className="keycard"+(won?"":" empty");
+    d.innerHTML=`<svg viewBox="0 0 40 60" width="34" height="50">
+      <circle cx="20" cy="15" r="12" fill="${c}"/><circle cx="20" cy="15" r="7" fill="#7E1512" opacity="${won?1:.3}"/>
+      <path d="M20 9 l-4 -3 v5 Z M20 9 l4 -3 v5 Z" fill="${c}"/>
+      <rect x="18" y="26" width="4" height="26" fill="${c}"/>
+      <rect x="18" y="42" width="11" height="4" fill="${c}"/>
+      <rect x="18" y="49" width="8" height="4" fill="${c}"/></svg><div class="lbl">${s.n}</div>`;
+    keysGrid.appendChild(d);
+  });
+  keyCount.textContent=keys.length;
+  document.getElementById("keysNote").textContent=keys.length
+    ?"The Wolf's crested key turned the lock. Floor 3 is open."
+    :"Win a floor boss to earn their crested key.";
+}
+renderKeys();
+
+document.getElementById("winBtn").addEventListener("click",()=>{
+  if(keys.includes("wolf")){keysPanel.classList.add("open");return;}
+  const S=stage.classList;
+  // (a) key leaves the Wolf's belt and INSERTS into the fox keyhole
+  document.getElementById("bossKey").style.opacity="0";
+  S.add("k-show"); requestAnimationFrame(()=>S.add("k-insert"));
+  // (b) it TURNS 90° in the lock
+  setTimeout(()=>S.add("k-turn"),1000);
+  // (c) the shackle SPRINGS open on that turn
+  setTimeout(()=>S.add("sprung"),1550);
+  // (d) THEN the gate swings open and lights up; the broken lock falls away
+  setTimeout(()=>S.add("opened"),2150);
+  setTimeout(()=>S.add("lockfall"),2650);
+  // (e) finally the key drops into the keys panel + toast
+  setTimeout(()=>S.add("k-drop"),3400);
+  setTimeout(()=>{keys.push("wolf");renderKeys();toast.classList.add("show");
+    setTimeout(()=>toast.classList.remove("show"),2800);},4100);
+});
+document.getElementById("openKeys").addEventListener("click",()=>keysPanel.classList.add("open"));
+document.getElementById("keysBack").addEventListener("click",()=>keysPanel.classList.remove("open"));
+document.getElementById("backRoom").addEventListener("click",()=>{
+  toast.textContent="‹ Back → The Fox Pit (mockup)"; toast.classList.add("show");
+  setTimeout(()=>{toast.classList.remove("show");
+    setTimeout(()=>toast.textContent="Key won — the gate is open.",400);},1600);
+});
+</script>
+</body>
+</html>

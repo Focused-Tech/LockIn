@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>LockIn — Slate Card</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;scrollbar-width:none;-ms-overflow-style:none}
+*::-webkit-scrollbar{display:none;width:0;height:0}
+:root{--orange:#FC3E01;--gold-hi:#F0C463;--cash:#2FB98A;--cash-hi:#3ECFA0;--bad:#E0432C;
+ --cat-music:#B77BFF;--cat-ent:#FF6BD6;--cat-sport:#54B9FF;
+ --ink:#0A0D12;--card:#0D1117;--panel:#161B22;--panel-hi:#1B212B;--edge:#262E3A;
+ --grey:#E7E7EB;--dim:#8B93A1;--dim2:#727A88;
+ /* depth — the 3D the approved mockup has */
+ --rise:inset 0 1px 0 rgba(255,255,255,.045), 0 2px 6px rgba(0,0,0,.45);
+ --rise2:inset 0 1px 0 rgba(255,255,255,.06), 0 1px 3px rgba(0,0,0,.5);}
+html,body{margin:0;background:#08090C;color:var(--grey);
+ font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+h2.sec{width:100%;max-width:1180px;margin:36px auto 4px;padding:0 14px;font:700 13px inherit;
+ letter-spacing:.18em;text-transform:uppercase;color:var(--orange)}
+p.secn{width:100%;max-width:1180px;margin:0 auto 10px;padding:0 14px;font-size:13.5px;color:var(--dim)}
+.row{display:flex;flex-wrap:wrap;gap:20px;padding:10px 14px;max-width:1180px;margin:0 auto;align-items:flex-start}
+.lbl{width:340px;font:600 11px inherit;letter-spacing:.15em;text-transform:uppercase;color:var(--dim2);margin-bottom:-6px}
+.col{display:flex;flex-direction:column;gap:10px}
+
+/* ===== SCREEN CHROME — keydrop and the round timer live HERE, never on the card ===== */
+.chrome{width:340px;display:flex;align-items:center;gap:10px;justify-content:center;padding:2px 0 6px}
+.chrome .tmr{border:1.5px solid var(--gold-hi);color:var(--gold-hi);border-radius:99px;
+ padding:6px 16px;font:700 15px inherit}
+.chrome .kd{border:1.5px solid var(--orange);color:var(--orange);border-radius:10px;
+ padding:6px 12px;font:700 14px inherit;display:inline-flex;gap:6px;align-items:center;background:transparent}
+
+/* ===== THE CARD. Bezel = category. ===== */
+.slate{width:340px;background:var(--card);border:2px solid var(--cat);border-radius:22px;
+ padding:17px;position:relative;display:flex;flex-direction:column;gap:13px;overflow:hidden;
+ box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.slate.full{width:360px;min-height:720px}
+.slate.full .title{font-size:29px}
+.slate.full .leg .q{font-size:20px}
+
+/* floating pill wordmark — Fox Pit surfaces only */
+.mark{align-self:flex-start;background:var(--orange);border-radius:8px;padding:4px 10px;
+ display:inline-flex;align-items:center;gap:6px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 1px 3px rgba(0,0,0,.5)}
+.mark svg{width:19px;height:19px;flex:none}
+.mark .wm{font:700 17px Georgia,serif;color:var(--ink);line-height:1}
+.mark .wm b{color:#fff}
+
+.top{display:flex;align-items:flex-start;gap:10px}
+.top .l{flex:1;min-width:0}
+.eyebrow{font:600 13px/1.2 inherit;letter-spacing:.11em;color:var(--accent)}
+.who{display:flex;align-items:center;gap:10px;margin-top:9px}
+.av{width:36px;height:36px;border-radius:50%;border:1px solid var(--edge);flex:none;display:grid;
+ place-items:center;font:700 12.5px inherit;color:var(--dim);background:var(--panel);box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 1px 3px rgba(0,0,0,.5)}
+.who .n{flex:1;min-width:0}
+.who .nm{font:700 15px/1.2 inherit;color:#fff}
+.who .rec{font-size:12.5px;color:var(--dim2);font-style:italic;margin-top:2px}
+.tags{display:flex;gap:6px;flex-wrap:wrap}
+.tag{border:1px solid var(--cat);color:var(--cat);border-radius:99px;padding:4px 10px;
+ font:700 11.5px inherit;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.tag.mute{border-color:var(--edge);color:var(--dim)}
+.badge{flex:none;background:var(--badge-bg);color:var(--ink);border-radius:99px;padding:7px 13px;
+ font-size:12.5px;font-weight:600;white-space:nowrap;box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 1px 3px rgba(0,0,0,.5)}
+.title{font:600 26px/1.15 inherit;color:#fff;letter-spacing:-.015em}
+.sub{font-size:14px;color:var(--dim);margin-top:-7px}
+
+.guide{background:var(--panel);border:1px solid var(--cat);border-radius:13px;padding:14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.045), 0 2px 6px rgba(0,0,0,.45)}
+.guide .st{font:700 11px inherit;letter-spacing:.14em;text-transform:uppercase;color:var(--cat);margin-bottom:6px}
+.guide h4{margin:0 0 5px;font:700 15px inherit;color:#fff}
+.guide p{margin:0;font-size:13.5px;color:var(--grey);line-height:1.5;opacity:.85}
+.guide .eg{margin-top:10px;background:var(--card);border-radius:9px;padding:10px;font-size:12.5px;color:var(--dim)}
+.guide .eg b{color:var(--cat);font-weight:600}
+.box{background:var(--panel);border-radius:13px;padding:14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.045), 0 2px 6px rgba(0,0,0,.45)}
+.box h4{font:700 14.5px inherit;color:#fff;margin:0 0 6px}
+.box p{margin:0;font-size:13.5px;color:var(--dim);line-height:1.5}
+
+.score{display:flex;align-items:center;gap:10px;background:var(--panel);border-radius:13px;
+ padding:12px 14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.045), 0 2px 6px rgba(0,0,0,.45)}
+.score .yb{flex:1;font-size:13px;line-height:1.3}
+.score .y{color:var(--cash);font-weight:600}
+.score .n2{color:var(--bad);font-weight:600}
+.score .dl{font:700 21px inherit;color:var(--gold-hi)}
+
+/* raised leg panel */
+.leg{background:var(--panel);border-radius:15px;padding:16px;box-shadow:inset 0 1px 0 rgba(255,255,255,.045), 0 2px 6px rgba(0,0,0,.45)}
+.leg.spot{outline:2px solid var(--cat);outline-offset:2px}
+.leg .q{font:600 19px/1.3 inherit;color:#fff}
+.leg .qs{font-size:14px;color:var(--dim2);margin-top:6px}
+.picks{display:grid;gap:10px;margin-top:14px}
+.picks.lettered,.picks.consensus{grid-template-columns:1fr}
+.picks.contest.c2{grid-template-columns:1fr 1fr}
+/* raised pick — gradient + inset highlight + drop shadow */
+.pick{border:1px solid var(--edge);border-radius:11px;padding:13px 14px;
+ background-color:#181E27;background-image:linear-gradient(180deg,#1B212B 0%,#151A22 100%);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 1px 3px rgba(0,0,0,.5);font:inherit;color:inherit;text-align:left;cursor:pointer;width:100%;
+ transition:border-color .12s,box-shadow .12s}
+.pick:hover{border-color:#33404F}
+.pick.sel{border-color:var(--accent);border-width:1.5px;padding:12.5px 13.5px;
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.09), 0 0 0 3px rgba(255,255,255,.07), 0 3px 9px rgba(0,0,0,.55)}
+.picks.lettered .pick{display:flex;gap:11px;align-items:baseline}
+.pick .ltr{font:700 13px inherit;color:var(--dim);flex:none}
+.pick .nm{font:600 17px/1.2 inherit;color:#fff}
+.pick .cx{font-size:14px;color:var(--dim2);line-height:1.4;margin-top:6px}
+.pick .cx.hl{color:var(--cat)}
+.pick.chip{text-align:center;padding:16px 8px}
+.pick .cr{display:flex;align-items:baseline;gap:10px}
+.pick .cr .nm{flex:1}
+.pick .pc{font-size:13.5px;color:var(--dim)}
+.cbar{height:6px;background:#0F141B;border-radius:99px;overflow:hidden;margin-top:10px;
+ box-shadow:inset 0 1px 2px rgba(0,0,0,.7)}
+.cbar i{display:block;height:100%;background:var(--gold-hi);border-radius:99px}
+.res{font-size:15px;font-weight:600;margin-top:10px}
+.res.right{color:var(--cash)}
+.res.wrong{color:var(--bad)}
+
+.pool{background:var(--panel);border-radius:13px;padding:14px;display:flex;gap:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.045), 0 2px 6px rgba(0,0,0,.45)}
+.pool .c{flex:1}
+.pool .k{font-size:12.5px;color:var(--dim)}
+.pool .v{font:700 25px inherit;color:var(--money);line-height:1.15;margin-top:3px}
+.pool .r{text-align:right}
+.pool .r .v{color:#fff}
+.pool .mx{font-size:13px;color:var(--dim);font-weight:400}
+.meter .mlbl{display:flex;justify-content:space-between;font-size:13.5px;color:var(--dim);margin-bottom:8px}
+.bar{height:8px;background:#0F141B;border-radius:99px;overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.7)}
+.fill{height:100%;background:var(--money);border-radius:99px;box-shadow:0 0 8px rgba(255,255,255,.18)}
+
+.stake{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center}
+.stake.reveal{border-top:1px dashed var(--cat);padding-top:13px}
+.stake .lb2{font:700 12px inherit;letter-spacing:.09em;text-transform:uppercase;color:var(--dim)}
+.chipb{border:1px solid var(--edge);border-radius:10px;padding:9px 14px;
+ background-color:#181E27;background-image:linear-gradient(180deg,#1B212B 0%,#151A22 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 1px 3px rgba(0,0,0,.5);
+ font:600 15px inherit;color:var(--grey);cursor:pointer;min-width:44px;text-align:center}
+.chipb.on{background:var(--accent);border-color:var(--accent);color:#fff;
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.28), 0 4px 12px rgba(0,0,0,.5)}
+.stake .nt{width:100%;text-align:center;font-size:12.5px;color:var(--dim)}
+.econ{display:flex;align-items:baseline;gap:8px;font-size:13.5px}
+.econ .e1{flex:1;color:var(--money);font-weight:700}
+.econ .e2{color:var(--dim)}
+.status{text-align:center;font-size:13px;color:var(--dim)}
+.hint{text-align:center;font-size:13.5px;font-weight:600;color:var(--bad)}
+.hint.calm{color:var(--cat)}
+/* CTA — solid fill, inset highlight, coloured drop shadow */
+.cta{width:100%;border:none;border-radius:13px;padding:17px;background:var(--accent);color:#fff;
+ font:700 17px inherit;cursor:pointer;
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.3), 0 6px 18px rgba(0,0,0,.55)}
+.cta.coin{color:#062018}
+.cta:disabled{background-color:#1F262F;background-image:linear-gradient(180deg,#242C36,#1A212A);color:#6E7684;cursor:not-allowed;
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+.sec2{width:100%;border:1px solid var(--edge);border-radius:13px;padding:15px;
+ background-color:#181E27;background-image:linear-gradient(180deg,#1B212B,#151A22);box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 1px 3px rgba(0,0,0,.5);
+ color:var(--grey);font:600 15px inherit;cursor:pointer}
+
+.lockfx{position:absolute;inset:0;background:rgba(8,9,12,.9);display:none;z-index:5;
+ align-items:center;justify-content:center;flex-direction:column;gap:14px}
+.slate.locking .lockfx{display:flex}
+.lockfx svg{width:84px;height:84px;filter:drop-shadow(0 6px 18px rgba(252,62,1,.45))}
+.slate.locking .shackle{animation:shackle .42s cubic-bezier(.5,-0.4,.3,1.5) .1s both}
+.slate.locking .body{animation:pop .3s ease-out both}
+.slate.locking .ring{animation:ring .7s ease-out .42s both}
+.lockfx .lw{font:700 14px inherit;letter-spacing:.16em;text-transform:uppercase;color:var(--orange);opacity:0}
+.slate.locking .lw{animation:fade .3s ease-out .45s both}
+@keyframes shackle{from{transform:translateY(-13px)}to{transform:translateY(0)}}
+@keyframes pop{from{transform:scale(.55);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes ring{from{transform:scale(.7);opacity:.9}to{transform:scale(1.9);opacity:0}}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* dealt mini — tap target only */
+.deal{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:340px}
+.mini{background:var(--card);border:2px solid var(--cat);border-radius:16px;padding:11px;
+ cursor:pointer;text-align:left;font:inherit;color:inherit;display:flex;flex-direction:column;
+ gap:8px;min-height:176px;box-shadow:0 6px 18px rgba(0,0,0,.5)}
+.mini .mk{align-self:flex-start;background:var(--orange);border-radius:6px;padding:3px 7px;
+ display:inline-flex;align-items:center;gap:5px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 1px 3px rgba(0,0,0,.5)}
+.mini .mk svg{width:14px;height:14px}
+.mini .mk .wm{font:700 12px Georgia,serif;color:var(--ink)}
+.mini .mk .wm b{color:#fff}
+.mini .mcat{font:700 10.5px inherit;letter-spacing:.1em;text-transform:uppercase;color:var(--cat)}
+.mini .mt{font:400 17px/1.2 Georgia,serif;color:#fff;flex:1}
+.mini .mf{font-size:12px;color:var(--dim);display:flex;justify-content:space-between;align-items:center}
+.mini .mf b{color:var(--cat);font-weight:700}
+.tapnote{width:340px;font-size:13px;color:var(--dim);text-align:center}
+</style></head><body><div id="app"></div>
+<script>
+var CAT={music:'var(--cat-music)',ent:'var(--cat-ent)',sport:'var(--cat-sport)'};
+function el(t,c){var n=document.createElement(t);if(c)n.className=c;return n;}
+function txt(t,c,s){var n=el(t,c);n.textContent=s;return n;}
+var NS='http://www.w3.org/2000/svg';
+function sv(t,a){var n=document.createElementNS(NS,t);for(var k in a)n.setAttribute(k,a[k]);return n;}
+/* PLACEHOLDER fox — CC swaps in the real repo asset */
+function foxSVG(){var s=sv('svg',{viewBox:'0 0 24 24'});
+ s.appendChild(sv('path',{d:'M2.6 1.8 L9 6.6 H15 L21.4 1.8 L20.3 11.2 C20.3 17 16.6 21.2 12 22.4 C7.4 21.2 3.7 17 3.7 11.2 Z',fill:'#0A0D12'}));
+ s.appendChild(sv('circle',{cx:'8.6',cy:'12',r:'1.05',fill:'#FC3E01'}));
+ s.appendChild(sv('circle',{cx:'15.4',cy:'12',r:'1.05',fill:'#FC3E01'}));return s;}
+function markEl(mini){var m=el('div',mini?'mk':'mark');m.appendChild(foxSVG());
+ var w=el('span','wm');w.innerHTML='L\u00f4ck<b>In</b>';m.appendChild(w);return m;}
+function lockFX(){var w=el('div','lockfx'),s=sv('svg',{viewBox:'0 0 64 64'});
+ s.appendChild(sv('circle',{'class':'ring',cx:'32',cy:'38',r:'20',fill:'none',stroke:'#FC3E01','stroke-width':'2'}));
+ s.appendChild(sv('path',{'class':'shackle',d:'M20 28 V21 a12 12 0 0 1 24 0 V28',fill:'none',stroke:'#FC3E01','stroke-width':'5','stroke-linecap':'round'}));
+ s.appendChild(sv('rect',{'class':'body',x:'14',y:'28',width:'36',height:'26',rx:'6',fill:'#FC3E01'}));
+ w.appendChild(s);w.appendChild(txt('div','lw','Locked in'));return w;}
+/* SCREEN CHROME — where keydrop actually lives */
+function chromeEl(o){var c=el('div','chrome');
+ if(o.timer)c.appendChild(txt('div','tmr',o.timer));
+ if(o.keydrop){var k=el('button','kd');k.type='button';
+   k.appendChild(txt('span',null,'\uD83D\uDD11'));k.appendChild(txt('span',null,'keydrop'));c.appendChild(k);}
+ return c;}
+
+function renderPick(p,style){
+  var b=el('button','pick'+(p.sel?' sel':'')+(p.lead?' lead':'')+(p.chip?' chip':''));b.type='button';
+  if(style==='lettered'&&p.ltr)b.appendChild(txt('span','ltr',p.ltr));
+  var bd=el('div','bd');
+  if(style==='consensus'){var cr=el('div','cr');cr.appendChild(txt('div','nm',p.nm));
+    cr.appendChild(txt('div','pc',p.pct+'% agree'));bd.appendChild(cr);
+    (p.cx||[]).forEach(function(l){bd.appendChild(txt('div','cx',l));});
+    var cb=el('div','cbar'),i=el('i');i.style.width=p.pct+'%';cb.appendChild(i);bd.appendChild(cb);
+  }else{bd.appendChild(txt('div','nm',p.nm));
+    (p.cx||[]).forEach(function(l,ix){bd.appendChild(txt('div','cx'+(p.hl&&ix===p.hl-1?' hl':''),l));});}
+  b.appendChild(bd);return b;}
+function renderLeg(lg,d){
+  var w=el('div','leg'+(lg.spot?' spot':''));
+  w.appendChild(txt('div','q',lg.q));
+  if(lg.qs)w.appendChild(txt('div','qs',lg.qs));
+  if(d.state==='reveal'){
+    w.appendChild(txt('div','res right','\u2713 '+lg.right+(lg.correct?' (your pick)':'')));
+    if(!lg.correct)w.appendChild(txt('div','res wrong','\u2717 You picked: '+lg.yours));
+    return w;}
+  var st=lg.pickStyle||'contest';
+  var g=el('div','picks '+st+(st==='contest'?' c'+(lg.cols||2):''));
+  var L='ABCDEFGH';
+  lg.picks.forEach(function(p,i){if(st==='lettered')p.ltr=L[i];g.appendChild(renderPick(p,st));});
+  w.appendChild(g);return w;}
+
+function renderCard(d){
+  var c=el('div','slate'+(d.full?' full':''));
+  c.id='card-'+d.id;
+  c.style.setProperty('--cat',CAT[d.cat]);
+  c.style.setProperty('--accent',d.accent);
+  c.style.setProperty('--money',d.money);
+  c.style.setProperty('--badge-bg',d.badgeBg);
+  if(d.mark)c.appendChild(markEl(false));
+  var top=el('div','top'),l=el('div','l');
+  if(d.eyebrow)l.appendChild(txt('div','eyebrow',d.eyebrow));
+  if(d.creator){var who=el('div','who');who.appendChild(txt('div','av',d.creator.initials));
+    var n=el('div','n');n.appendChild(txt('div','nm',d.creator.name));
+    n.appendChild(txt('div','rec',d.creator.record));who.appendChild(n);
+    var tg=el('div','tags');
+    (d.tags||[]).forEach(function(t){tg.appendChild(txt('span','tag',t));});
+    (d.tagsMute||[]).forEach(function(t){tg.appendChild(txt('span','tag mute',t));});
+    who.appendChild(tg);l.appendChild(who);}
+  top.appendChild(l);top.appendChild(txt('div','badge',d.badge));c.appendChild(top);
+  c.appendChild(txt('div','title',d.title));
+  if(d.sub)c.appendChild(txt('div','sub',d.sub));
+  if(d.guide){var g2=el('div','guide');
+    g2.appendChild(txt('div','st','Step '+d.guide.step+' of '+d.guide.total));
+    g2.appendChild(txt('h4',null,d.guide.h));g2.appendChild(txt('p',null,d.guide.p));
+    if(d.guide.eg){var e=el('div','eg');e.innerHTML=d.guide.eg;g2.appendChild(e);}
+    c.appendChild(g2);}
+  if(d.premise){var pb=el('div','box');pb.appendChild(txt('p',null,d.premise));c.appendChild(pb);}
+  if(d.score){var s=el('div','score'),yb=el('div','yb');
+    var y=el('div');y.innerHTML='<span class="'+(d.score.you?'y':'n2')+'">you '+(d.score.you?'\u2713':'\u2717')+'</span>';
+    var bo=el('div');bo.innerHTML='<span class="'+(d.score.boss?'y':'n2')+'">boss '+(d.score.boss?'\u2713':'\u2717')+'</span>';
+    yb.appendChild(y);yb.appendChild(bo);s.appendChild(yb);
+    s.appendChild(txt('div','dl',d.score.delta));c.appendChild(s);}
+  (d.legs||[]).forEach(function(lg){c.appendChild(renderLeg(lg,d));});
+  if(d.pool){var pl=el('div','pool'),a=el('div','c'),b2=el('div','c r');
+    a.appendChild(txt('div','k',d.pool.k1||'Prize pool'));a.appendChild(txt('div','v',d.pool.pool));
+    b2.appendChild(txt('div','k',d.pool.k2||'1st place'));
+    var v=el('div','v');v.textContent=d.pool.first+' ';
+    if(d.pool.mult)v.appendChild(txt('span','mx',d.pool.mult));
+    b2.appendChild(v);pl.appendChild(a);pl.appendChild(b2);c.appendChild(pl);}
+  if(d.meter){var m2=el('div','meter'),pct=Math.round(d.meter.have/d.meter.want*100),lb=el('div','mlbl');
+    lb.appendChild(txt('span',null,'$'+d.meter.have.toLocaleString()+' of $'+d.meter.want.toLocaleString()+' funded'));
+    lb.appendChild(txt('span',null,pct+'%'));m2.appendChild(lb);
+    var bar=el('div','bar'),f=el('div','fill');f.style.width=pct+'%';
+    bar.appendChild(f);m2.appendChild(bar);c.appendChild(m2);}
+  if(d.statusMsg){var sm=el('div','box');sm.appendChild(txt('p',null,d.statusMsg));c.appendChild(sm);}
+  if(d.stake&&d.stakeMode!=='none'){
+    if(d.stakeMode==='afterAnswers'&&!d.answered){
+      c.appendChild(txt('div','hint calm',d.stakeLockedHint||'Answer every question to set your stake'));
+    }else{var st2=el('div','stake'+(d.stakeMode==='afterAnswers'?' reveal':''));
+      st2.appendChild(txt('span','lb2',d.stake.label));
+      d.stake.opts.forEach(function(o){
+        var b3=el('button','chipb'+(o===d.stake.sel?' on':''));b3.type='button';b3.textContent=o;
+        b3.addEventListener('click',function(){st2.querySelectorAll('.chipb').forEach(function(x){x.classList.remove('on');});b3.classList.add('on');});
+        st2.appendChild(b3);});
+      st2.appendChild(txt('span','nt',d.stake.note));c.appendChild(st2);}}
+  if(d.econ){var e2=el('div','econ');e2.appendChild(txt('span','e1',d.econ.play));
+    e2.appendChild(txt('span','e2',d.econ.closes));c.appendChild(e2);}
+  if(d.status)c.appendChild(txt('div','status',d.status));
+  if(d.hint)c.appendChild(txt('div','hint',d.hint));
+  if(d.cta){var cta=el('button','cta'+(d.coinCta?' coin':''));cta.type='button';cta.textContent=d.cta;
+    if(d.ctaOff)cta.disabled=true;
+    cta.addEventListener('click',function(){if(cta.disabled)return;
+      c.classList.add('locking');setTimeout(function(){c.classList.remove('locking');},1700);});
+    c.appendChild(cta);}
+  if(d.secondary){var sc=el('button','sec2');sc.type='button';sc.textContent=d.secondary;c.appendChild(sc);}
+  c.appendChild(lockFX());return c;}
+
+function renderMini(m){
+  var b=el('button','mini');b.type='button';b.id='mini-'+m.id;
+  b.style.setProperty('--cat',CAT[m.cat]);
+  b.appendChild(markEl(true));
+  b.appendChild(txt('div','mcat',m.catLabel));
+  b.appendChild(txt('div','mt',m.title));
+  var f=el('div','mf');f.appendChild(txt('span',null,m.foot));
+  f.appendChild(txt('b',null,'TAP \u203a'));b.appendChild(f);
+  b.addEventListener('click',function(){
+    var full=document.getElementById('fullstage');full.innerHTML='';
+    full.appendChild(renderCard(Object.assign({},m.card,{full:true,id:'opened'})));});
+  return b;}
+
+var CR_BF={initials:'BF',name:'Boss Fox',record:'42 slates \u00b7 68% hit rate'};
+var CR_SO={initials:'SO',name:'Sensei Owl',record:'Dojo \u00b7 round 3 of 3'};
+var CR_LK={initials:'LK',name:'LockIn',record:'no track record yet'};
+/* gold = coins, green = cash. PENDING ARCHITECT RULING. */
+var COIN={accent:'var(--cash)',money:'var(--gold-hi)',badgeBg:'var(--cash-hi)',
+  badge:'Coins \u00b7 all 50 states',coinCta:true};
+var CASH={accent:'var(--orange)',money:'var(--cash-hi)',badgeBg:'var(--gold-hi)',badge:'Cash \u00b7 42 states'};
+
+/* THE APPROVED CARD, rebuilt exactly — eyebrow, badge, three legs, one CTA */
+var APPROVED=Object.assign({id:'approved',cat:'sport',eyebrow:'QUILL \u00b7 HAWK',
+  title:'Tuesday Night Five',sub:'Five games \u00b7 locks 7:10 pm',
+  legs:[
+   {q:'Who has the bigger night?',pickStyle:'contest',cols:2,picks:[
+     {nm:'Luka',cx:['Lakers at Celtics','32 a night \u00b7 41 last out'],sel:true},
+     {nm:'Joki\u0107',cx:['Denver vs Phoenix','26 \u00b7 12 \u00b7 9 on the season']}]},
+   {q:'Who leads the floor tonight?',qs:'Best line across all five games',pickStyle:'contest',cols:2,picks:[
+     {nm:'Luka',cx:['Lakers at Celtics','32 a night']},{nm:'Giannis',cx:['Milwaukee at Miami','31 a night']},
+     {nm:'Curry',cx:['Golden State vs Sacramento','28 a night']},{nm:'Booker',cx:['Denver vs Phoenix','27 a night']}]},
+   {q:'How many of the five clear 30?',qs:'Call the shape of the night',pickStyle:'contest',cols:3,picks:[
+     {nm:'None or one',chip:true},{nm:'Two or three',chip:true},{nm:'Four or five',chip:true}]}],
+  stakeMode:'always',stake:{label:'Play',opts:['100','250','500'],sel:'250',note:'more = higher stakes'},
+  cta:'Play \u00b7 250 coins'},COIN);
+
+var PIT_FULL=Object.assign({cat:'music',mark:true,creator:CR_SO,tags:['Music'],
+  title:'Slate 1 \u00b7 halftime shows',sub:'Round 3 of 3 \u00b7 keep 3 of 5',
+  legs:[{q:'Shakira and Jennifer Lopez co-headlined the Super Bowl halftime show in 2020, held in which city?',
+    pickStyle:'lettered',picks:[{nm:'Tampa'},{nm:'Miami'},{nm:'Houston'},{nm:'Atlanta'}]},
+   {q:"Which rap duo's Verzuz battle against Dipset took place in 2021?",
+    pickStyle:'lettered',picks:[{nm:'M.O.P.'},{nm:'The Lox'}]}],
+  stakeMode:'afterAnswers',answered:false,stake:{label:'Play',opts:['25','50','100'],sel:'50',note:'more = higher stakes'},
+  cta:'Lock in',ctaOff:true},COIN);
+
+var SECTIONS=[
+{h:'A \u00b7 The approved card',
+ n:'Your card, rebuilt. Raised leg panels, gradient pick buttons with inset highlight, solid CTA with a coloured drop shadow. Category bezel added per canon. No keydrop on the card.',
+ cards:[Object.assign({label:'Approved \u00b7 coins'},APPROVED)]},
+
+{h:'B \u00b7 Keydrop lives in the screen chrome',
+ n:'The keydrop is a screen control beside the round timer \u2014 never pinned to a card. Shown here above the deal, exactly where your picker puts it.',
+ chrome:{timer:'19s',keydrop:true},
+ deal:[{id:'d1',cat:'music',catLabel:'Music',title:'halftime shows',foot:'1Q \u00b7 5\u201315',card:PIT_FULL},
+       {id:'d2',cat:'ent',catLabel:'Entertainment',title:'theme songs',foot:'1Q \u00b7 5\u201315',
+        card:Object.assign({},PIT_FULL,{cat:'ent',title:'Slate 2 \u00b7 theme songs',tags:['Entertainment']})}],
+ full:Object.assign({},PIT_FULL,{full:true,id:'fullopen'})},
+
+{h:'C \u00b7 Advanced cash + reveal',
+ n:'Same skeleton, same depth, different information.',
+ cards:[
+ Object.assign({id:'adv',label:'Advanced \u00b7 cash',cat:'sport',creator:CR_BF,tags:['NFL','Boss'],
+  title:'Super Bowl Sunday',sub:'The big one \u00b7 plus DEN\u2013PHX, GSW\u2013SAC, MIL\u2013MIA',
+  premise:'Bigger night = more fantasy points. Two names, two different games, every question.',
+  legs:[{q:'Who has the bigger night?',pickStyle:'contest',cols:2,picks:[
+    {nm:'Mahomes',cx:['Super Bowl','281 yds a game \u00b7 3 TD last out'],sel:true},
+    {nm:'Joki\u0107',cx:['Denver vs Phoenix','26 \u00b7 12 \u00b7 9 on the season']}]},
+   {q:'Who does more damage?',pickStyle:'contest',cols:2,picks:[
+    {nm:'Kelce',cx:['Super Bowl','7 catches a game in the playoffs']},
+    {nm:'Curry',cx:['Golden State vs Sacramento','28 a night \u00b7 19 last out']}]}],
+  pool:{pool:'$18,400',first:'$4,600',mult:'12x'},meter:{have:18400,want:25000},
+  stakeMode:'always',stake:{label:'Stake',opts:['$5','$10','$25'],sel:'$25',note:'more = bigger share of the pot'},
+  cta:'Lock in \u00b7 $25'},CASH),
+ Object.assign({id:'rev',label:'Reveal',cat:'music',mark:true,creator:CR_SO,tags:['Music'],
+  title:'halftime shows',state:'reveal',score:{you:true,boss:false,delta:'+10'},
+  legs:[{q:'Which city hosted the 2020 halftime show?',right:'Miami',yours:'Atlanta',correct:false},
+   {q:'Which rap duo faced Dipset in 2021?',right:'The Lox',yours:'The Lox',correct:true}],
+  stakeMode:'none',cta:'Hear the call \u203a'},COIN)]},
+
+{h:'D \u00b7 Beginner \u2014 guided until the first pick',
+ n:'Same card, same context lines as advanced. The guide teaches what the numbers mean, then steps back.',
+ cards:[
+ Object.assign({id:'b1',label:'Step 1',cat:'sport',creator:CR_LK,tags:['WNBA'],
+  title:'Tuesday Night Five',sub:'Five games \u00b7 closes in 5h',
+  guide:{step:1,total:3,h:'Every name comes with its numbers',
+   p:'Under each name you get the game it comes from and how that player has actually been doing. That is the whole basis for the call \u2014 no odds, no lines.',
+   eg:'<b>Las Vegas at Seattle</b> \u2014 which game she plays in.<br><b>24 a night \u00b7 31 last out</b> \u2014 her season average, then her most recent game.'},
+  legs:[{q:'Who has the bigger night?',pickStyle:'contest',cols:2,picks:[
+    {nm:'A\u2019ja Wilson',cx:['Las Vegas at Seattle','24 a night \u00b7 31 last out'],hl:2},
+    {nm:'Breanna Stewart',cx:['New York at Indiana','21 a night \u00b7 18 last out'],hl:2}]}],
+  stakeMode:'always',stake:{label:'Play',opts:['25','50','100'],sel:'50',note:'more = higher stakes'},
+  hint:'Read both, then take one',cta:'Make your first pick',ctaOff:true},COIN),
+ Object.assign({id:'b3',label:'Step 3 \u2014 guide steps back',cat:'sport',creator:CR_LK,tags:['WNBA'],
+  title:'Tuesday Night Five',sub:'Five games \u00b7 closes in 5h',
+  guide:{step:3,total:3,h:'You are on your own from here',
+   p:'That is the whole game. Pick the name, set what you are playing, lock it in before it closes.'},
+  legs:[{q:'Who has the bigger night?',pickStyle:'contest',cols:2,picks:[
+    {nm:'A\u2019ja Wilson',cx:['Las Vegas at Seattle','24 a night \u00b7 31 last out'],sel:true},
+    {nm:'Breanna Stewart',cx:['New York at Indiana','21 a night \u00b7 18 last out']}]}],
+  stakeMode:'always',stake:{label:'Play',opts:['25','50','100'],sel:'50',note:'more = higher stakes'},
+  econ:{play:'\uD83E\uDE99 play 50 \u00b7 win up to 120',closes:'closes in 5h'},
+  cta:'Lock in \u00b7 50 coins'},COIN)]},
+
+{h:'E \u00b7 After you lock in',
+ n:'Locked \u2192 live \u2192 settled, each with a guide.',
+ cards:[
+ Object.assign({id:'lk1',label:'1 \u2014 locked',cat:'sport',creator:CR_BF,tags:['NFL'],tagsMute:['Locked'],
+  title:'Super Bowl Sunday',sub:'Locked \u00b7 kickoff 6:30 pm',
+  guide:{step:1,total:3,h:'Your card is in',
+   p:'Entries are closed, so the pot cannot grow and the payouts below are now fixed. Come back at kickoff.'},
+  pool:{pool:'$24,180',first:'$6,045',mult:'14x'},
+  statusMsg:'Top five perfect cards split 25% of the pot. Next 45 pay 10x. Everyone in the top 20% clears their stake.',
+  stakeMode:'none',cta:'Watch it live \u203a',secondary:'Back to Explore'},CASH),
+ Object.assign({id:'lk3',label:'3 \u2014 settled',cat:'sport',creator:CR_BF,tags:['NFL'],tagsMute:['Settled'],
+  title:'Super Bowl Sunday',sub:'Final \u00b7 paid out',
+  guide:{step:3,total:3,h:'Paid',
+   p:'Two of three correct put you in the standard band, which clears your stake and change.'},
+  legs:[{q:'Who has the bigger night?',right:'Mahomes',yours:'Mahomes',correct:true},
+   {q:'Who does more damage?',right:'Curry',yours:'Kelce',correct:false}],
+  state:'reveal',pool:{k1:'You finished',pool:'9th',k2:'You collected',first:'$37.50'},
+  stakeMode:'none',cta:'Play the next one \u203a',secondary:'See the full board \u2192'},CASH)]}
+];
+
+var app=document.getElementById('app');
+SECTIONS.forEach(function(s){
+  app.appendChild(txt('h2','sec',s.h));app.appendChild(txt('p','secn',s.n));
+  var r=el('div','row');
+  if(s.deal){
+    var c1=el('div','col');
+    c1.appendChild(txt('div','lbl','Screen chrome + dealt cards'));
+    if(s.chrome)c1.appendChild(chromeEl(s.chrome));
+    var dg=el('div','deal');dg.id='dealgrid';
+    s.deal.forEach(function(m){dg.appendChild(renderMini(m));});
+    c1.appendChild(dg);
+    c1.appendChild(txt('div','tapnote','Tap a card \u2014 it opens full screen on the right.'));
+    r.appendChild(c1);
+    var c2=el('div','col');c2.appendChild(txt('div','lbl','Opened \u2014 full screen'));
+    var fs=el('div');fs.id='fullstage';fs.appendChild(renderCard(s.full));
+    c2.appendChild(fs);r.appendChild(c2);}
+  (s.cards||[]).forEach(function(d){
+    var col=el('div','col');col.appendChild(txt('div','lbl',d.label));
+    col.appendChild(renderCard(d));r.appendChild(col);});
+  app.appendChild(r);});
+window.__SECTIONS=SECTIONS;
+</script></body></html>

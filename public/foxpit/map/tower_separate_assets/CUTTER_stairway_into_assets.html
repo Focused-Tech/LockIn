@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Fox Pit — cut the stairway into separate assets</title>
+<style>
+  :root{--ink:#0d0a08;--panel:#171210;--edge:#3a2a1c;--brass:#c8963f;--brass-hi:#f0c463;
+        --rail:#7c5a2e;--text:#e8dcc8;--dim:#9b8a72;--cut:#ff4b2b}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--ink);color:var(--text);
+    font:13px/1.5 "IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace}
+  #wrap{display:flex;height:100%}
+  #stage{flex:1;overflow:auto;position:relative;
+    background:repeating-conic-gradient(#141110 0% 25%,#1b1614 0% 50%) 50%/22px 22px}
+  #host{position:relative;margin:20px auto;width:max-content}
+  #host canvas{display:block;cursor:crosshair}
+  .cut{position:absolute;left:0;right:0;height:0;border-top:2px solid var(--cut);cursor:ns-resize}
+  .cut b{position:absolute;right:4px;top:-18px;background:var(--cut);color:#fff;
+    font:600 10px/1.6 inherit;padding:0 6px;border-radius:2px}
+  aside{width:340px;flex:none;background:var(--panel);border-left:1px solid var(--edge);
+    padding:18px 16px;overflow:auto}
+  h1{font:600 15px/1.2 Georgia,serif;letter-spacing:.06em;text-transform:uppercase;
+     color:var(--brass-hi);margin:0 0 4px}
+  .sub{color:var(--dim);font-size:11px;margin:0 0 16px}
+  fieldset{border:1px solid var(--edge);border-radius:3px;padding:10px 12px 12px;margin:0 0 14px}
+  legend{color:var(--brass);font-size:10px;letter-spacing:.14em;text-transform:uppercase;padding:0 6px}
+  label{display:block;color:var(--dim);font-size:11px;margin:8px 0 3px}
+  input[type=file]{width:100%;font:inherit;color:var(--text);font-size:11px}
+  input[type=range]{width:100%;accent-color:var(--brass)}
+  button{width:100%;background:linear-gradient(#8a6524,#5d4318);border:1px solid var(--rail);
+    color:#fdf0d6;font:600 12px/1 inherit;letter-spacing:.08em;text-transform:uppercase;
+    padding:10px;border-radius:3px;cursor:pointer;margin-top:8px}
+  button:hover{background:linear-gradient(#a97c2c,#6f5020)}
+  button.ghost{background:transparent;color:var(--dim);border-color:var(--edge)}
+  table{width:100%;border-collapse:collapse;font-size:11px;margin-top:6px}
+  td,th{border-bottom:1px solid var(--edge);padding:3px 4px;text-align:left}
+  th{color:var(--brass);font-weight:600;font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+  td{color:var(--text)}
+  .note{color:var(--dim);font-size:10.5px;border-left:2px solid var(--cut);padding-left:8px;margin:10px 0}
+  kbd{background:#0b0908;border:1px solid var(--edge);border-radius:2px;padding:1px 5px;font-size:10px;color:var(--brass-hi)}
+</style>
+
+<div id="wrap">
+  <div id="stage"><div id="host"><canvas id="cv"></canvas></div></div>
+  <aside>
+    <h1>Cut into assets</h1>
+    <p class="sub">Click the art to drop a cut line. Each band between lines exports as its own separate PNG, tight-cropped, with its origin on the 1620 × 4500 canvas.</p>
+
+    <fieldset><legend>Load piece</legend>
+      <label>pieces/stairway_piece.png</label>
+      <input type="file" id="f" accept="image/png">
+      <div class="row"><label>origin x / y on map canvas</label></div>
+      <div style="display:flex;gap:8px">
+        <input id="ox" type="number" value="610" style="width:50%;background:#0b0908;border:1px solid var(--edge);color:var(--brass-hi);font:inherit;padding:4px 6px;border-radius:2px">
+        <input id="oy" type="number" value="2067" style="width:50%;background:#0b0908;border:1px solid var(--edge);color:var(--brass-hi);font:inherit;padding:4px 6px;border-radius:2px">
+      </div>
+      <p class="note">These two numbers are the SLICING origin from page 4 — where the art sat on the sheet. They are not a placement.</p>
+    </fieldset>
+
+    <fieldset><legend>View</legend>
+      <label>zoom</label><input type="range" id="z" min="15" max="100" value="40">
+      <p class="note">Click = add cut. Drag a line to move it. <kbd>Double-click</kbd> a line to delete.
+      <kbd>Z</kbd> undoes the last cut.</p>
+    </fieldset>
+
+    <fieldset><legend>Segments</legend>
+      <table id="tbl"><thead><tr><th>#</th><th>name</th><th>size</th><th>origin x,y</th></tr></thead><tbody></tbody></table>
+      <button id="go">Export separate PNGs</button>
+      <button id="clr" class="ghost">Clear all cuts</button>
+    </fieldset>
+  </aside>
+</div>
+
+<script>
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d',{willReadFrequently:true});
+const host=document.getElementById('host');
+let img=null, S=0.40, cuts=[];
+
+document.getElementById('f').addEventListener('change',e=>{
+  const file=e.target.files[0]; if(!file) return;
+  const i=new Image();
+  i.onload=()=>{img=i;cuts=[];redraw();};
+  i.src=URL.createObjectURL(file);
+});
+document.getElementById('z').oninput=e=>{S=+e.target.value/100;redraw();};
+
+function redraw(){
+  if(!img) return;
+  cv.width=Math.round(img.width*S); cv.height=Math.round(img.height*S);
+  ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.fillStyle='#f7f7f7'; ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.drawImage(img,0,0,cv.width,cv.height);
+  host.querySelectorAll('.cut').forEach(n=>n.remove());
+  cuts.sort((a,b)=>a-b).forEach((c,i)=>{
+    const d=document.createElement('div'); d.className='cut';
+    d.style.top=(c*S)+'px'; d.innerHTML='<b>y '+(c+ +document.getElementById('oy').value)+'</b>';
+    d.onpointerdown=ev=>{ev.stopPropagation();
+      const move=m=>{const r=cv.getBoundingClientRect();
+        cuts[cuts.indexOf(c)]=Math.max(1,Math.min(img.height-1,Math.round((m.clientY-r.top)/S)));redraw();};
+      const up=()=>{removeEventListener('pointermove',move);removeEventListener('pointerup',up);};
+      addEventListener('pointermove',move);addEventListener('pointerup',up);};
+    d.ondblclick=ev=>{ev.stopPropagation();cuts.splice(cuts.indexOf(c),1);redraw();};
+    host.appendChild(d);
+  });
+  table();
+}
+cv.addEventListener('click',e=>{
+  if(!img) return;
+  const r=cv.getBoundingClientRect();
+  cuts.push(Math.round((e.clientY-r.top)/S)); redraw();
+});
+addEventListener('keydown',e=>{ if(e.key.toLowerCase()==='z'){cuts.pop();redraw();} });
+document.getElementById('clr').onclick=()=>{cuts=[];redraw();};
+document.getElementById('oy').oninput=redraw;
+
+function segs(){
+  if(!img) return [];
+  const b=[0,...cuts.slice().sort((a,b)=>a-b),img.height];
+  const out=[];
+  for(let i=0;i<b.length-1;i++) if(b[i+1]-b[i]>2) out.push([b[i],b[i+1]]);
+  return out;
+}
+// tight-crop a band to its own opaque content
+function tight(y0,y1){
+  const h=y1-y0, c=document.createElement('canvas');
+  c.width=img.width;c.height=h;
+  const x=c.getContext('2d',{willReadFrequently:true});
+  x.drawImage(img,0,y0,img.width,h,0,0,img.width,h);
+  const d=x.getImageData(0,0,img.width,h).data;
+  let minx=img.width,maxx=-1,miny=h,maxy=-1;
+  for(let yy=0;yy<h;yy++)for(let xx=0;xx<img.width;xx++){
+    if(d[(yy*img.width+xx)*4+3]>16){if(xx<minx)minx=xx;if(xx>maxx)maxx=xx;if(yy<miny)miny=yy;if(yy>maxy)maxy=yy;}
+  }
+  if(maxx<0) return null;
+  const o=document.createElement('canvas'); o.width=maxx-minx+1;o.height=maxy-miny+1;
+  o.getContext('2d').drawImage(c,minx,miny,o.width,o.height,0,0,o.width,o.height);
+  return {canvas:o,dx:minx,dy:y0+miny,w:o.width,h:o.height};
+}
+function table(){
+  const tb=document.querySelector('#tbl tbody'); tb.innerHTML='';
+  const OX=+document.getElementById('ox').value, OY=+document.getElementById('oy').value;
+  segs().forEach((s,i)=>{
+    const t=tight(s[0],s[1]); if(!t) return;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${i+1}</td><td>stair_flight_${String(i+1).padStart(2,'0')}</td>
+      <td>${t.w}×${t.h}</td><td>${OX+t.dx}, ${OY+t.dy}</td>`;
+    tb.appendChild(tr);
+  });
+}
+document.getElementById('go').onclick=async()=>{
+  if(!img) return;
+  const OX=+document.getElementById('ox').value, OY=+document.getElementById('oy').value;
+  const index={canvas:{w:1620,h:4500},
+    note:"Each file is a SEPARATE asset. x,y is its slicing origin from the sheet — NOT a placement. Placement comes only from the architect's cal-tool drag.",
+    pieces:[]};
+  const list=segs();
+  for(let i=0;i<list.length;i++){
+    const t=tight(list[i][0],list[i][1]); if(!t) continue;
+    const name=`stair_flight_${String(i+1).padStart(2,'0')}.png`;
+    index.pieces.push({file:name,w:t.w,h:t.h,slice_x:OX+t.dx,slice_y:OY+t.dy});
+    const blob=await new Promise(r=>t.canvas.toBlob(r,'image/png'));
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();
+    await new Promise(r=>setTimeout(r,180));
+  }
+  const jb=new Blob([JSON.stringify(index,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(jb);a.download='_cuts_index.json';a.click();
+};
+</script>

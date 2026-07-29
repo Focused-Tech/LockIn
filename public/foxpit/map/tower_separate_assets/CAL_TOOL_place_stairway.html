@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Fox Pit — stairway / band placement</title>
+<style>
+  :root{
+    --ink:#0d0a08; --panel:#171210; --edge:#3a2a1c;
+    --brass:#c8963f; --brass-hi:#f0c463; --rail:#7c5a2e;
+    --text:#e8dcc8; --dim:#9b8a72; --hot:#d94f2a;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--ink);color:var(--text);
+    font:13px/1.5 "IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace}
+  #wrap{display:flex;height:100%}
+  #stage{flex:1;overflow:auto;background:
+     repeating-conic-gradient(#141110 0% 25%,#1b1614 0% 50%) 50%/22px 22px;position:relative}
+  #canvasHost{position:relative;transform-origin:0 0}
+  #canvasHost img{position:absolute;left:0;top:0;image-rendering:auto;user-select:none;-webkit-user-drag:none}
+  .draggable{cursor:grab}
+  .draggable.sel{outline:1px dashed var(--brass-hi);outline-offset:0}
+  .draggable.drag{cursor:grabbing}
+  aside{width:330px;flex:none;background:var(--panel);border-left:1px solid var(--edge);
+    padding:18px 16px;overflow:auto}
+  h1{font:600 15px/1.2 Georgia,serif;letter-spacing:.06em;text-transform:uppercase;
+     color:var(--brass-hi);margin:0 0 4px}
+  .sub{color:var(--dim);font-size:11px;margin:0 0 18px}
+  fieldset{border:1px solid var(--edge);border-radius:3px;padding:10px 12px 12px;margin:0 0 14px}
+  legend{color:var(--brass);font-size:10px;letter-spacing:.14em;text-transform:uppercase;padding:0 6px}
+  label{display:block;color:var(--dim);font-size:11px;margin:8px 0 3px}
+  input[type=file]{width:100%;font:inherit;color:var(--text);font-size:11px}
+  .row{display:flex;gap:8px;align-items:center;margin:6px 0}
+  .row span{color:var(--dim);width:78px;flex:none;font-size:11px}
+  input[type=number]{width:76px;background:#0b0908;border:1px solid var(--edge);
+    color:var(--brass-hi);font:inherit;padding:4px 6px;border-radius:2px}
+  input[type=range]{flex:1;accent-color:var(--brass)}
+  button{width:100%;background:linear-gradient(#8a6524,#5d4318);border:1px solid var(--rail);
+    color:#fdf0d6;font:600 12px/1 inherit;letter-spacing:.08em;text-transform:uppercase;
+    padding:10px;border-radius:3px;cursor:pointer;margin-top:8px}
+  button:hover{background:linear-gradient(#a97c2c,#6f5020)}
+  button.ghost{background:transparent;color:var(--dim);border-color:var(--edge)}
+  .pill{display:inline-block;padding:3px 8px;border:1px solid var(--edge);border-radius:99px;
+    font-size:10px;color:var(--dim);margin:0 4px 4px 0;cursor:pointer;letter-spacing:.06em}
+  .pill.on{border-color:var(--brass);color:var(--brass-hi)}
+  pre{background:#0b0908;border:1px solid var(--edge);border-radius:3px;padding:10px;
+    font-size:10.5px;color:#cbb98f;white-space:pre-wrap;word-break:break-all;max-height:230px;overflow:auto}
+  .note{color:var(--dim);font-size:10.5px;border-left:2px solid var(--hot);padding-left:8px;margin:10px 0}
+  kbd{background:#0b0908;border:1px solid var(--edge);border-radius:2px;padding:1px 5px;font-size:10px;color:var(--brass-hi)}
+</style>
+
+<div id="wrap">
+  <div id="stage"><div id="canvasHost">
+    <img id="lmap"><img id="lband" class="draggable"><img id="lstair" class="draggable">
+  </div></div>
+
+  <aside>
+    <h1>Stairway placement</h1>
+    <p class="sub">Canvas 1620 × 4500. Output is a top-left origin, same convention as slot_placement.json.</p>
+
+    <fieldset><legend>Load art</legend>
+      <label>tower_layer_00_map_REDO.png</label><input type="file" id="fmap" accept="image/png">
+      <label>pieces/stairway_piece.png</label><input type="file" id="fstair" accept="image/png">
+      <label>pieces/elevator_band_piece.png</label><input type="file" id="fband" accept="image/png">
+    </fieldset>
+
+    <fieldset><legend>Selected piece</legend>
+      <div>
+        <span class="pill on" data-sel="stair">stairway</span>
+        <span class="pill" data-sel="band">elevator band</span>
+      </div>
+      <div class="row"><span>x</span><input type="number" id="nx" step="1"></div>
+      <div class="row"><span>y</span><input type="number" id="ny" step="1"></div>
+      <div class="row"><span>opacity</span><input type="range" id="op" min="20" max="100" value="100"></div>
+      <p class="note">Drag on the canvas. <kbd>←↑↓→</kbd> nudge 1px, <kbd>Shift</kbd> 10px.
+      Drop opacity to line the piece up against the painted architecture underneath.</p>
+    </fieldset>
+
+    <fieldset><legend>View</legend>
+      <div class="row"><span>zoom</span><input type="range" id="zoom" min="8" max="60" value="18"></div>
+      <div>
+        <span class="pill on" data-tog="lmap">map</span>
+        <span class="pill on" data-tog="lstair">stairway</span>
+        <span class="pill on" data-tog="lband">band</span>
+      </div>
+    </fieldset>
+
+    <fieldset><legend>Output</legend>
+      <pre id="out">load the three files</pre>
+      <button id="copy">Copy JSON</button>
+      <button id="reset" class="ghost">Reset to authored position</button>
+    </fieldset>
+  </aside>
+</div>
+
+<script>
+const CANVAS={w:1620,h:4500};
+// authored_* is where each piece sat on page 4 — a slicing origin, NOT a placement.
+const P={
+  stair:{el:document.getElementById('lstair'),id:'stairway',      x:610,y:2067,ax:610,ay:2067,w:0,h:0},
+  band :{el:document.getElementById('lband'), id:'elevator_band', x:1,  y:406, ax:1,  ay:406, w:0,h:0}
+};
+const host=document.getElementById('canvasHost'), stage=document.getElementById('stage');
+const lmap=document.getElementById('lmap');
+let sel='stair', z=0.18;
+
+host.style.width=CANVAS.w+'px'; host.style.height=CANVAS.h+'px';
+
+function applyZoom(){ host.style.transform='scale('+z+')';
+  stage.scrollTop=stage.scrollTop; host.parentElement.style.minHeight=(CANVAS.h*z)+'px'; }
+function draw(){
+  for(const k in P){ const p=P[k]; p.el.style.left=p.x+'px'; p.el.style.top=p.y+'px'; }
+  const p=P[sel];
+  document.getElementById('nx').value=p.x;
+  document.getElementById('ny').value=p.y;
+  emit();
+}
+function emit(){
+  const o={ canvas:CANVAS,
+    note:"x,y = TOP-LEFT origin on the 1620x4500 map canvas. Set by the architect in the cal tool. Do NOT derive placement any other way.",
+    pieces:{} };
+  for(const k in P){ const p=P[k];
+    o.pieces[p.id]={file:p.id==='stairway'?'stairway_piece.png':'elevator_band_piece.png',
+      w:p.w,h:p.h,x:p.x,y:p.y};
+  }
+  document.getElementById('out').textContent=JSON.stringify(o,null,2);
+}
+
+function load(input,img,key){
+  input.addEventListener('change',e=>{
+    const f=e.target.files[0]; if(!f) return;
+    const u=URL.createObjectURL(f);
+    img.onload=()=>{ if(key){P[key].w=img.naturalWidth;P[key].h=img.naturalHeight;} draw(); };
+    img.src=u;
+  });
+}
+load(document.getElementById('fmap'),lmap,null);
+load(document.getElementById('fstair'),P.stair.el,'stair');
+load(document.getElementById('fband'),P.band.el,'band');
+
+// drag
+let dragging=null,sx=0,sy=0,ox=0,oy=0;
+for(const k in P){
+  P[k].el.addEventListener('pointerdown',e=>{
+    sel=k; syncPills(); dragging=k; sx=e.clientX; sy=e.clientY; ox=P[k].x; oy=P[k].y;
+    P[k].el.classList.add('drag'); P[k].el.setPointerCapture(e.pointerId); markSel(); e.preventDefault();
+  });
+  P[k].el.addEventListener('pointermove',e=>{
+    if(dragging!==k) return;
+    P[k].x=Math.round(ox+(e.clientX-sx)/z);
+    P[k].y=Math.round(oy+(e.clientY-sy)/z);
+    draw();
+  });
+  P[k].el.addEventListener('pointerup',e=>{ dragging=null; P[k].el.classList.remove('drag'); });
+}
+function markSel(){ for(const k in P) P[k].el.classList.toggle('sel',k===sel); }
+function syncPills(){ document.querySelectorAll('[data-sel]').forEach(p=>p.classList.toggle('on',p.dataset.sel===sel)); }
+document.querySelectorAll('[data-sel]').forEach(p=>p.onclick=()=>{sel=p.dataset.sel;syncPills();markSel();draw();});
+document.querySelectorAll('[data-tog]').forEach(p=>p.onclick=()=>{
+  const el=document.getElementById(p.dataset.tog); const on=p.classList.toggle('on');
+  el.style.display=on?'block':'none';
+});
+
+addEventListener('keydown',e=>{
+  const step=e.shiftKey?10:1, p=P[sel]; let hit=true;
+  if(e.key==='ArrowLeft')p.x-=step; else if(e.key==='ArrowRight')p.x+=step;
+  else if(e.key==='ArrowUp')p.y-=step; else if(e.key==='ArrowDown')p.y+=step; else hit=false;
+  if(hit){e.preventDefault();draw();}
+});
+document.getElementById('nx').oninput=e=>{P[sel].x=parseInt(e.target.value||0);draw();};
+document.getElementById('ny').oninput=e=>{P[sel].y=parseInt(e.target.value||0);draw();};
+document.getElementById('op').oninput=e=>{P[sel].el.style.opacity=e.target.value/100;};
+document.getElementById('zoom').oninput=e=>{z=parseInt(e.target.value)/100;applyZoom();};
+document.getElementById('copy').onclick=()=>{
+  navigator.clipboard.writeText(document.getElementById('out').textContent);
+  const b=document.getElementById('copy'); b.textContent='Copied'; setTimeout(()=>b.textContent='Copy JSON',900);
+};
+document.getElementById('reset').onclick=()=>{ for(const k in P){P[k].x=P[k].ax;P[k].y=P[k].ay;} draw(); };
+
+applyZoom(); markSel(); draw();
+</script>

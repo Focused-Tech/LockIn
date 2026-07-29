@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>LockIn — Pit Camera / Table-Entry Flow (placeholder preview)</title>
+<!--
+  ISOLATED LOOK/FLOW PREVIEW. Placeholder boxes only — NO painted art, NO app code.
+  Not wired into the Next.js build; shares zero code paths. Openable by double-click.
+  Target device: Samsung Z Flip 6 unfolded main screen — logical portrait 1080 x 2640.
+-->
+<style>
+  :root{
+    --orange:#FC3E01; --grey:#E7E7EB; --dark:#0A0D12;
+    --box:#141a22; --boxln:#2C3A49; --hot:#FC3E01;
+    /* logical device viewport (Z Flip 6 unfolded, treated as 1080-wide logical) */
+    --VW:1080; --VH:2640;
+    /* room scene native LOGICAL size (landscape) */
+    --SW:2160; --SH:1440;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%; background:#05070A; color:var(--grey);
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",monospace,sans-serif;
+    -webkit-font-smoothing:antialiased; overflow:hidden;}
+  .device{position:fixed; inset:0; display:flex; align-items:center; justify-content:center;}
+  /* The PHONE = the viewport. Fixed at 1080x2640 logical, scaled to fit the window.
+     flex:none + min-width so the flex container can't shrink its logical width. */
+  #phone{position:relative; flex:0 0 auto; width:1080px; min-width:1080px; height:2640px;
+    background:#07090d; overflow:hidden; transform-origin:center center;
+    border:6px solid #202832; border-radius:56px; box-shadow:0 0 0 3px #000;}
+
+  /* ---------- generic labeled placeholder box ---------- */
+  .box{position:absolute; border:3px dashed var(--boxln); background:var(--box);
+    display:flex; align-items:center; justify-content:center; text-align:center;
+    color:#9fb0c2; font-weight:700; letter-spacing:.06em; border-radius:10px;
+    font-size:34px; line-height:1.3; padding:10px; overflow:hidden;}
+  .box .dim{display:block; font-size:26px; font-weight:600;
+    color:#63788c; margin-top:8px; letter-spacing:.04em;}
+  .box.solid{border-style:solid;}
+  .box.accent{border-color:var(--orange); color:#ffb89b; background:rgba(252,62,1,.10);}
+  .box.crowd{background:#161018;}
+  .box.trail{background:#12100b; border-color:#5a4a2a; color:#c8a46a;}
+  .box.node{background:#101820; border-color:#2f6a44; color:#7fd6a0;}
+
+  /* ---------- ROOM (the camera-panned scene) ---------- */
+  #room{position:absolute; top:0; left:0; width:2160px; height:1440px;
+    transform-origin:0 0; transition:transform 1.15s cubic-bezier(.4,0,.2,1);
+    background:
+      repeating-linear-gradient(0deg,#0c1016 0 3px,transparent 3px 80px),
+      repeating-linear-gradient(90deg,#0c1016 0 3px,transparent 3px 80px),
+      #0a0e13;}
+  #room .frame-label{position:absolute; top:14px; left:14px; font-size:30px;
+    color:#4b5a6b; font-weight:700; letter-spacing:.1em;}
+
+  /* table node highlight when landed */
+  .node.hot{border-color:var(--hot); color:#ffd0bd; background:rgba(252,62,1,.16);
+    box-shadow:0 0 0 6px rgba(252,62,1,.16), 0 0 60px rgba(252,62,1,.4);
+    animation:pulse 1.1s ease-in-out infinite;}
+  .node.hot::after{content:"TAP TO SIT"; position:absolute; bottom:8px; left:0; right:0;
+    font-size:26px; color:#fff; letter-spacing:.1em;}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 6px rgba(252,62,1,.16),0 0 40px rgba(252,62,1,.35);}
+    50%{box-shadow:0 0 0 12px rgba(252,62,1,.22),0 0 80px rgba(252,62,1,.6);}}
+
+  /* ---------- SEATED layer (portrait, fills the phone) ---------- */
+  #seated{position:absolute; inset:0; display:none;
+    background:repeating-linear-gradient(0deg,#0c1016 0 3px,transparent 3px 90px),#0a0e13;}
+  #seated.show{display:block;}
+  #seated .frame-label{position:absolute; top:60px; left:20px; font-size:30px;
+    color:#4b5a6b; font-weight:700; letter-spacing:.1em;}
+
+  /* slate cards flip on the table-anim beat (two faces → persistent, reads in a still) */
+  .slatecard{position:relative; height:200px; width:150px; border-radius:8px;
+    transition:transform .5s; transform:rotateY(0deg); transform-style:preserve-3d;}
+  .slatecard .face{position:absolute; inset:0; border-radius:8px; backface-visibility:hidden;
+    background:#1B222C; border:2px solid #0A0D12; overflow:hidden;}
+  .slatecard .hdr{height:44px; font-size:20px; color:#fff; display:flex; align-items:center;
+    justify-content:center; font-weight:700;}
+  .slatecard .back{transform:rotateY(180deg); background:#0e2417; border-color:#2E8A4F;
+    display:flex; align-items:center; justify-content:center; color:#8fe0ac;
+    font-size:22px; font-weight:800; letter-spacing:.05em;}
+  #tanim.flip .slatecard{transform:rotateY(180deg);}
+  #tanim.flip .slatecard.c2{transition-delay:.15s;}
+  #tanim.flip .slatecard.c3{transition-delay:.30s;}
+  /* chip zones are VISIBLE slots at rest; on the beat they slide in from the felt edge */
+  .chipslide{transform:translateX(0);}
+  #tanim.flip .chipslide.L{animation:chipInL .5s cubic-bezier(.3,1.3,.5,1);}
+  #tanim.flip .chipslide.R{animation:chipInR .5s cubic-bezier(.3,1.3,.5,1);}
+  @keyframes chipInL{from{transform:translateX(-140px);opacity:.15} to{transform:translateX(0);opacity:1}}
+  @keyframes chipInR{from{transform:translateX(140px);opacity:.15} to{transform:translateX(0);opacity:1}}
+
+  /* ---------- overlays ---------- */
+  .overlay{position:absolute; inset:0; display:none; align-items:center; justify-content:center;
+    flex-direction:column; gap:24px; z-index:60; text-align:center;}
+  .overlay.show{display:flex;}
+  #transOverlay{background:rgba(252,62,1,.14); backdrop-filter:blur(2px);}
+  #transOverlay .lbl{font-size:52px; font-weight:800; color:#ffb89b; letter-spacing:.14em;}
+  #gameOverlay{background:rgba(5,7,10,.72);}
+  #gameOverlay .big{font-size:74px; font-weight:800; color:var(--orange); letter-spacing:.1em;}
+  #gameOverlay .sub{font-size:34px; color:var(--grey);}
+
+  /* ---------- HUD ---------- */
+  .hud{position:absolute; left:0; right:0; z-index:80; pointer-events:none;}
+  .topbar{top:0; height:120px; display:flex; align-items:center; gap:20px; padding:0 30px;
+    background:linear-gradient(180deg,rgba(10,13,18,.92),transparent);}
+  .btn{pointer-events:auto; border:2px solid rgba(231,231,235,.3); background:rgba(10,13,18,.6);
+    color:var(--grey); border-radius:16px; padding:18px 26px; font-size:34px; font-weight:700;
+    cursor:pointer; font-family:inherit;}
+  .btn:active{transform:translateY(1px);}
+  .btn.accent{border-color:var(--orange); background:rgba(252,62,1,.18); color:#ffb89b;}
+  .statechip{font-size:34px; font-weight:800; letter-spacing:.14em; color:var(--orange);}
+  .statenum{font-size:26px; color:#7c8ba0; font-weight:700;}
+  .spacer{flex:1;}
+  .bottombar{bottom:0; min-height:230px; padding:24px 30px 34px;
+    display:flex; flex-direction:column; gap:16px;
+    background:linear-gradient(0deg,rgba(10,13,18,.95),transparent);}
+  .caption{font-size:30px; line-height:1.4; color:#c3cedb;}
+  .caption b{color:var(--orange);}
+  .spec{font-size:24px; line-height:1.45; color:#8ea0b2; font-weight:600;
+    background:rgba(255,255,255,.04); border:1px solid #22303c; border-radius:10px; padding:12px 14px;}
+  .row{display:flex; gap:14px; flex-wrap:wrap; pointer-events:auto;}
+
+  /* debug state bar so the reviewer can jump to any state */
+  .dbg{position:absolute; top:130px; left:0; right:0; z-index:80; display:flex; gap:8px;
+    justify-content:center; flex-wrap:wrap; padding:0 20px; pointer-events:auto;}
+  .dbg button{font-size:22px; padding:8px 12px; border-radius:10px; border:1px solid #2c3a49;
+    background:rgba(10,13,18,.7); color:#8ea0b2; font-weight:700; cursor:pointer; font-family:inherit;}
+  .dbg button.on{border-color:var(--orange); color:#ffb89b; background:rgba(252,62,1,.14);}
+</style>
+</head>
+<body>
+<div class="device"><div id="phone">
+
+  <!-- ============ ROOM SCENE (camera-panned) ============ -->
+  <div id="room">
+    <div class="frame-label" id="roomLbl">ROOM SCENE</div>
+
+    <div class="box crowd" style="left:20px;  top:20px; width:360px; height:700px;">CROWD ZONE · L<span class="dim"></span></div>
+    <div class="box crowd" style="left:1780px;top:20px; width:360px; height:700px;">CROWD ZONE · R<span class="dim"></span></div>
+
+    <div class="box solid" style="left:780px; top:10px;  width:600px; height:180px; border-color:#8a6236; color:#e0b478; background:#171009;">GATE (LOCKED)<span class="dim"></span></div>
+    <div class="box solid" style="left:840px; top:150px; width:480px; height:240px; border-color:#4a7fd0; color:#bcd4ff; background:#0d141f;">BOSS DAIS<span class="dim"></span></div>
+
+    <div class="box trail" style="left:300px; top:400px; width:1560px; height:980px;">WINDING TRAIL<span class="dim"></span></div>
+
+    <div class="box node" id="node3" style="left:780px; top:470px; width:360px; height:240px;">TABLE NODE 3<span class="dim"></span></div>
+    <div class="box node" id="node2" style="left:1080px;top:760px; width:360px; height:260px;">TABLE NODE 2<span class="dim"></span></div>
+    <div class="box node" id="node1" style="left:420px; top:960px; width:360px; height:260px;">TABLE NODE 1<span class="dim"></span></div>
+  </div>
+
+  <!-- ============ SEATED SCENE (portrait POV) ============ -->
+  <div id="seated">
+    <div class="frame-label" id="seatedLbl">TABLE SCENE</div>
+    <div id="tanim" style="position:absolute; inset:0;">
+      <div class="box solid" style="left:90px; top:900px; width:900px; height:760px; border-color:#2E8A4F; color:#8fe0ac; background:#0e2417;">FELT ZONE<span class="dim"></span></div>
+
+      <div class="box accent" style="left:240px; top:1030px; width:600px; height:300px; background:rgba(252,62,1,.06);">SLATE-CARD ZONE<span class="dim"></span></div>
+      <!-- three placeholder slate cards that flip on the beat (front → "LOCKED" back) -->
+      <div style="position:absolute; left:270px; top:1050px;">
+        <div class="slatecard c1"><div class="face front"><div class="hdr" style="background:#C0392B;">POLITICS</div></div><div class="face back">✓ LOCKED</div></div>
+      </div>
+      <div style="position:absolute; left:445px; top:1050px;">
+        <div class="slatecard c2"><div class="face front"><div class="hdr" style="background:#E08A1E;">CRYPTO</div></div><div class="face back">✓ LOCKED</div></div>
+      </div>
+      <div style="position:absolute; left:620px; top:1050px;">
+        <div class="slatecard c3"><div class="face front"><div class="hdr" style="background:#2C86C7;">WEATHER</div></div><div class="face back">✓ LOCKED</div></div>
+      </div>
+
+      <div class="chipslide L box solid" style="left:150px; top:1460px; width:240px; height:190px; border-color:#C0392B; color:#f2b0a8; background:#1a0d0c;">CHIP ZONE · L<span class="dim"></span></div>
+      <div class="chipslide R box solid" style="left:690px; top:1460px; width:240px; height:190px; border-color:#2C63B0; color:#a9c6f2; background:#0c1220;">CHIP ZONE · R<span class="dim"></span></div>
+
+      <div class="box accent solid" style="left:380px; top:2010px; width:320px; height:280px;">YOU SEAT<span class="dim"></span></div>
+    </div>
+  </div>
+
+  <!-- ============ OVERLAYS ============ -->
+  <div class="overlay" id="transOverlay"><div class="lbl">ENTERING TABLE…</div></div>
+  <div class="overlay" id="gameOverlay"><div class="big">GAME INITIATES</div><div class="sub">hand-off placeholder — real game takes over here</div></div>
+
+  <!-- ============ HUD ============ -->
+  <div class="hud topbar">
+    <button class="btn" id="backBtn">‹ Back</button>
+    <div class="statechip" id="stateName">ESTABLISHING</div>
+    <div class="statenum" id="stateNum">1 / 7</div>
+    <div class="spacer"></div>
+  </div>
+
+  <div class="dbg" id="dbg"></div>
+
+  <div class="hud bottombar">
+    <div class="caption" id="caption"></div>
+    <div class="spec" id="specBox"></div>
+    <div class="row">
+      <button class="btn accent" id="primaryBtn">Zoom to tables ›</button>
+    </div>
+  </div>
+
+</div></div>
+
+<script>
+/* ---------- fit the fixed 1080x2640 phone into the window ---------- */
+function fitPhone(){
+  const ph=document.getElementById("phone");
+  const s=Math.min(window.innerWidth/1080, window.innerHeight/2640);
+  ph.style.transform=`scale(${s})`;
+}
+window.addEventListener("resize",fitPhone); fitPhone();
+
+/* ---------- print each placeholder box's LIVE logical px dims ----------
+   Uses the inline style px (authoritative even while a layer is display:none, so
+   the seated-scene boxes report their real slot size, not 0×0). */
+document.querySelectorAll(".box").forEach(b=>{
+  const d=b.querySelector(".dim"); if(!d) return;
+  const w=parseInt(b.style.width)||b.offsetWidth;
+  const h=parseInt(b.style.height)||b.offsetHeight;
+  d.textContent=`${w}×${h}`;
+});
+document.getElementById("roomLbl").textContent   = `ROOM SCENE — ${2160}×${1440} (logical)`;
+document.getElementById("seatedLbl").textContent = `TABLE SCENE — ${1080}×${2640} (logical)`;
+
+/* =========================================================================
+   CAMERA MATH — derived from the constants, not eyeballed.
+   Viewport (phone) = 1080 x 2640.  Room scene = 2160 x 1440 (landscape).
+   ========================================================================= */
+const VW=1080, VH=2640, SW=2160, SH=1440;
+// state 1: fully panned out — CONTAIN the whole room in the viewport
+const S0=Math.min(VW/SW, VH/SH);                 // establishing scale
+const est={s:S0, tx:(VW-SW*S0)/2, ty:(VH-SH*S0)/2};
+// state 3: land on TABLE NODE 1, centred, pushed in
+const n1={cx:420+360/2, cy:960+260/2};           // node1 centre in scene px
+const S1=1.5;                                     // deepest zoom scale
+const land={s:S1, tx:VW/2 - n1.cx*S1, ty:VH/2 - n1.cy*S1};
+// state 2: midway push (representative frame)
+const zoom={s:(S0+S1)/2, tx:(est.tx+land.tx)/2, ty:(est.ty+land.ty)/2};
+
+const ZOOM_FACTOR=S1/S0;                          // 1 -> 3 zoom multiplier
+const NATIVE_W=Math.round(SW*S1), NATIVE_H=Math.round(SH*S1); // sharp-at-deepest art size
+
+function cam(p){ return `translate(${p.tx.toFixed(1)}px,${p.ty.toFixed(1)}px) scale(${p.s})`; }
+
+/* SPEC block, computed live and also logged for the report */
+const SPEC = {
+  viewport:`${VW}×${VH} portrait (Z Flip 6 unfolded, logical)`,
+  roomScene:`${SW}×${SH} logical (3:2 landscape)`,
+  establishingScale:+S0.toFixed(4),
+  deepestScale:S1,
+  zoomFactor:+ZOOM_FACTOR.toFixed(3),
+  requiredNativeRoomArt:`${NATIVE_W}×${NATIVE_H}`,
+  roomAspect:(SW/SH).toFixed(3)+":1",
+  tableScene:`${VW}×${VH} logical (9:22 portrait)`,
+  tableAspect:(VW/VH).toFixed(4)+":1"
+};
+console.log("PIT_CAMERA_SPEC "+JSON.stringify(SPEC));
+
+/* =========================================================================
+   STATE MACHINE
+   ========================================================================= */
+const room=document.getElementById("room"), seated=document.getElementById("seated");
+const tanim=document.getElementById("tanim");
+const trans=document.getElementById("transOverlay"), game=document.getElementById("gameOverlay");
+const node1=document.getElementById("node1");
+const nameEl=document.getElementById("stateName"), numEl=document.getElementById("stateNum");
+const capEl=document.getElementById("caption"), specEl=document.getElementById("specBox");
+const primary=document.getElementById("primaryBtn"), backBtn=document.getElementById("backBtn");
+
+const ORDER=["establishing","zoomin","land","transition","seated","tableanim","gamestart"];
+const META={
+  establishing:{name:"ESTABLISHING",   cap:"Fully panned-out view — the whole room is visible. Camera contains the 3:2 room inside the tall portrait viewport (letterboxed).", primary:"Zoom to tables ›", primaryGo:"zoomin"},
+  zoomin:      {name:"ZOOM-IN",         cap:"Camera pushes from the establishing view toward the trail / a table node — an animated transform, not a hard cut.", primary:"Continue ›", primaryGo:"land"},
+  land:        {name:"LAND",            cap:"Camera settles on <b>TABLE NODE 1</b>. It highlights and becomes tappable. (Tap the node, or use the button.)", primary:"Tap the table ›", primaryGo:"transition"},
+  transition:  {name:"TAP → TRANSITION",cap:"Tapping the table transitions into the seated scene (continued push + wipe).", primary:"", primaryGo:"seated"},
+  seated:      {name:"SEATED",          cap:"POV seated-at-table scene — felt, slate-card zone, chip-stack zones, and your open <b>YOU SEAT</b>, each a labeled slot.", primary:"Play table beat ›", primaryGo:"tableanim"},
+  tableanim:   {name:"TABLE ANIM",      cap:"Scripted beat: slate cards flip + chips slide onto the felt (staggered ~0.15s). Proves the beat + its timing.", primary:"Start game ›", primaryGo:"gamestart"},
+  gamestart:   {name:"GAME START",      cap:"Hand-off placeholder — the real game takes over from here.", primary:"Restart", primaryGo:"establishing"}
+};
+
+let cur="establishing";
+function specFor(st){
+  if(st==="seated"||st==="tableanim"||st==="gamestart")
+    return `TABLE SCENE slot ${VW}×${VH} · aspect ${SPEC.tableAspect} · place object-fit:cover`;
+  return `ROOM cam scale ${ (st==="establishing"?S0: st==="land"?S1: zoom.s).toFixed(3) } · zoom 1→3 = ${SPEC.zoomFactor}× · native art needed ${NATIVE_W}×${NATIVE_H}`;
+}
+
+function apply(st, animate){
+  cur=st;
+  room.style.transition = animate ? "" : "none";
+  // room camera
+  const showSeated = (st==="seated"||st==="tableanim"||st==="gamestart");
+  seated.classList.toggle("show", showSeated);
+  trans.classList.toggle("show", st==="transition");
+  game.classList.toggle("show", st==="gamestart");
+  tanim.classList.toggle("flip", st==="tableanim"||st==="gamestart");
+  node1.classList.toggle("hot", st==="land");
+
+  if(st==="establishing") room.style.transform=cam(est);
+  else if(st==="zoomin")  room.style.transform=cam(zoom);
+  else if(st==="land")    room.style.transform=cam(land);
+  else if(st==="transition") room.style.transform=cam({s:S1*1.35, tx:VW/2-n1.cx*S1*1.35, ty:VH/2-n1.cy*S1*1.35}); // continued push under the wipe
+  // (seated states leave the room where it was, hidden behind #seated)
+
+  nameEl.textContent=META[st].name;
+  numEl.textContent=(ORDER.indexOf(st)+1)+" / 7";
+  capEl.innerHTML=META[st].cap;
+  specEl.textContent=specFor(st);
+  primary.style.display=META[st].primary?"":"none";
+  primary.textContent=META[st].primary||"";
+  // back button target label
+  backBtn.textContent = showSeated ? "‹ Back to room" : (st==="establishing" ? "‹ Exit to tower" : "‹ Back");
+  document.querySelectorAll("#dbg button").forEach((b,i)=>b.classList.toggle("on",ORDER[i]===st));
+  if(!animate){ void room.offsetWidth; room.style.transition=""; }
+}
+
+/* interactive flow */
+primary.addEventListener("click",()=>{ const go=META[cur].primaryGo; if(go) apply(go,true); });
+node1.addEventListener("click",()=>{ if(cur==="land") apply("transition",true); });
+backBtn.addEventListener("click",()=>{
+  if(cur==="seated"||cur==="tableanim"||cur==="gamestart") apply("land",true);
+  else if(cur==="establishing"){ toast("EXIT → TOWER (placeholder)"); }
+  else apply(ORDER[Math.max(0,ORDER.indexOf(cur)-1)],true);
+});
+// transition auto-advances into seated
+let transTimer=null;
+const _apply=apply;
+apply=function(st,animate){ _apply(st,animate);
+  clearTimeout(transTimer);
+  if(st==="transition") transTimer=setTimeout(()=>_apply("seated",true),1100);
+};
+
+/* toast */
+function toast(msg){
+  let t=document.getElementById("_toast");
+  if(!t){ t=document.createElement("div"); t.id="_toast"; document.getElementById("phone").appendChild(t);
+    t.style.cssText="position:absolute;left:50%;top:200px;transform:translateX(-50%);z-index:90;"+
+      "background:rgba(252,62,1,.18);border:2px solid rgba(252,62,1,.6);color:#ffcdb8;"+
+      "padding:18px 28px;border-radius:14px;font-size:32px;font-weight:700;"; }
+  t.textContent=msg; t.style.opacity="1";
+  setTimeout(()=>t.style.opacity="0",1400);
+}
+
+/* debug jump bar */
+const dbg=document.getElementById("dbg");
+ORDER.forEach((st,i)=>{ const b=document.createElement("button");
+  b.textContent=(i+1); b.title=META[st].name; b.onclick=()=>apply(st,true); dbg.appendChild(b); });
+
+/* expose for headless screenshots (deterministic jumps) */
+window.setState=(st)=>apply(st,false);
+window.PIT_SPEC=SPEC;
+
+apply("establishing",false);
+</script>
+</body>
+</html>

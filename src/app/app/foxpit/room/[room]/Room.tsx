@@ -79,10 +79,10 @@ export function FoxPitRoom({
 }) {
   const router = useRouter();
   const room = roomByKey(roomKey);
-  // The Dojo opens on its LOCKER ROOM (Part A) — keys, category + avatar picks — before the game.
-  // Canon step 2-3: EVERY room opens on the Locksmith door + the boss reveal (the Dojo reveals the
-  // Owl). The Dojo's locker (category picks) comes AFTER the door, not instead of it.
-  const [phase, setPhase] = useState<Phase>("door");
+  // The Dojo runs: LOCKER (keys, category + avatar picks) → "Enter the Dojo" → the Locksmith door
+  // opens with the Owl reveal (canon steps 2-3) → the room. Every other room skips the locker and
+  // opens straight on the door + boss reveal.
+  const [phase, setPhase] = useState<Phase>(roomKey === "dojo" ? "locker" : "door");
   const [lockerChoice, setLockerChoice] = useState<LockerChoice | null>(null);
   const [activeTable, setActiveTable] = useState<number | null>(null);
   const [beaten, setBeaten] = useState<Set<number>>(new Set());
@@ -328,7 +328,7 @@ export function FoxPitRoom({
           roomKey={room.key}
           playerCategories={categories}
           onBack={() => router.push("/app/foxpit/map")}
-          onEnter={(choice) => { setLockerChoice(choice); setPhase("room"); }}
+          onEnter={(choice) => { setLockerChoice(choice); setPhase("door"); }}
         />
       )}
 
@@ -368,7 +368,7 @@ export function FoxPitRoom({
       )}
 
       {/* ---------- DOOR-UNLOCK intro (standing avatar) ---------- */}
-      {phase === "door" && <DoorIntro room={room} onEnter={() => setPhase(roomKey === "dojo" ? "locker" : "room")} />}
+      {phase === "door" && <DoorIntro room={room} onEnter={() => setPhase("room")} />}
 
       {/* HUD (room/table phases) */}
       {phase !== "door" && phase !== "faceoff" && phase !== "locker" && (
