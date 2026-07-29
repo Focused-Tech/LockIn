@@ -1032,7 +1032,7 @@ function PlayPhase({
 }
 
 /* ---------------- reveal: outcomes overlaid on the card fronts ---------------- */
-function RevealPhase({
+export function RevealPhase({
   slates, picks, ledger, net, accent, onDone,
 }: {
   slates: FoxSlate[];
@@ -1056,6 +1056,12 @@ function RevealPhase({
       {/* PER-CARD: the head-to-head ledger (you vs boss + the coin moved) AND every question's CORRECT
           answer with your pick — so practice actually teaches, not just scores. */}
       <div className="mx-auto flex w-full max-w-md flex-col gap-2">
+        {ledger.length === 0 && (
+          <div data-reveal-empty className="rounded-xl border border-border p-4 text-center text-sm text-muted">
+            No cards were staked this round — there was nothing to settle, and your coins are untouched.
+            Deal again on the next round.
+          </div>
+        )}
         {ledger.map((c) => {
           const color = RESULT_COLOR[c.result];
           const tag = c.result === "win" ? `+${c.net} ⛃` : c.result === "loss" ? `−${Math.abs(c.net)} ⛃` : "PUSH";
