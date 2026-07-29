@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { ArenaIntro } from "@/app/app/practice/arena/chooser/ArenaIntro";
 
 /** Heavy tower assets (WebP) — preloaded during the lobby intro so the map paints instantly. */
@@ -29,13 +29,9 @@ const ROUTES: Record<Journey, string> = {
 
 export function FoxPitLobby() {
   const router = useRouter();
-  const search = useSearchParams();
-  // entry sequence: Boss Fox glass-door intro -> welcome/step-inside -> lobby. Fresh entry plays the
-  // door intro; QUITTING A GAME arrives with ?enter=1 and lands STRAIGHT on the lobby landing (no
-  // splash replay) — you left the game to get here, you don't sit through the door again.
-  const [phase, setPhase] = useState<"door" | "welcome" | "lobby">(
-    search.get("enter") === "1" ? "lobby" : "door",
-  );
+  // entry sequence: Boss Fox glass-door intro -> welcome/step-inside -> lobby. The door animation
+  // ALWAYS plays on entry (never skipped) — the door has a "tap to skip", and Quit-game routes here.
+  const [phase, setPhase] = useState<"door" | "welcome" | "lobby">("door");
   const [popup, setPopup] = useState<Journey | null>(null);
   const [entering, setEntering] = useState<Journey | null>(null);
 
