@@ -535,6 +535,12 @@ function TablePanel({
   onClose: () => void;
   onConfirm: () => void;
 }) {
+  // §2.1 — the ballroom plate matches THIS table's opponent: the seated underling's own cutout, or
+  // (boss table) the room boss's standing art. Name + role/win-rate ride the plate; "Take your seat"
+  // is the CTA below.
+  const plateArt = bossTable ? (REVEAL_IMG[room.key] ?? room.avatarImg) : (opponent?.art ?? room.avatarImg);
+  const plateName = bossTable ? room.boss : (opponent?.name ?? room.boss);
+  const plateSub = bossTable ? `Host · ${room.floorLabel}` : (opponent ? `${opponent.winPct}% win rate` : "Dealt by the Locksmith");
   return (
     <div style={{ position: "absolute", inset: 0, zIndex: 66, background: "#05070b", overflow: "hidden", animation: "foxpitFadeUp .35s ease both" }}>
       {/* the room's FLOOR tile — the base of the top-down deal */}
@@ -544,12 +550,27 @@ function TablePanel({
 
       <button onClick={onClose} style={hudBack}>‹ Back</button>
 
-      <div style={{ position: "absolute", top: 62, left: 0, right: 0, textAlign: "center" }}>
-        <div style={{ fontSize: 12, letterSpacing: ".24em", color: room.accent, fontWeight: 800 }}>
-          {bossTable ? "BOSS TABLE" : `TABLE ${index + 1}${opponent ? ` · ${opponent.winPct}% WIN RATE` : ""}`}
-        </div>
-        <div style={{ fontFamily: "Georgia, serif", fontSize: 22, color: "#E7E7EB", marginTop: 2, textShadow: "0 2px 12px #000" }}>
-          {bossTable ? "Dealt by the Locksmith" : opponent ? `${opponent.name} sits across` : "Dealt by the Locksmith"}
+      {/* §2.1 — THE BALLROOM PLATE (step 6): the opponent for this table, seated across, on a
+          plaque carrying their portrait + name + win rate. "Take your seat" is the CTA below. */}
+      <div style={{ position: "absolute", top: 54, left: 0, right: 0, display: "flex", justifyContent: "center", padding: "0 16px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", maxWidth: 360, borderRadius: 16, padding: "10px 14px", background: "linear-gradient(180deg, rgba(14,10,6,.9), rgba(6,7,11,.92))", border: `1.5px solid ${room.accent}`, boxShadow: `0 0 26px ${room.accent}44, 0 10px 26px rgba(0,0,0,.6)`, backdropFilter: "blur(2px)" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={plateArt}
+            alt={plateName}
+            style={{ height: 58, width: 58, flex: "none", borderRadius: "50%", objectFit: "cover", objectPosition: "center top", border: `2px solid ${room.accent}`, background: "rgba(3,4,7,.6)" }}
+          />
+          <div style={{ minWidth: 0, textAlign: "left" }}>
+            <div style={{ fontSize: 10, letterSpacing: ".2em", color: room.accent, fontWeight: 800 }}>
+              {bossTable ? "BOSS TABLE" : `TABLE ${index + 1}`}
+            </div>
+            <div style={{ fontFamily: "Georgia, serif", fontSize: 20, color: "#f5ead0", lineHeight: 1.1, textShadow: "0 2px 12px #000" }}>
+              {plateName}
+            </div>
+            <div style={{ fontSize: 11, color: "#cdd6e2", fontWeight: 600, marginTop: 1 }}>
+              {plateSub}
+            </div>
+          </div>
         </div>
       </div>
 
