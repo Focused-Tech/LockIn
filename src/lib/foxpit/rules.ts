@@ -83,6 +83,18 @@ export interface RoomRules {
   note?: string;
 }
 
+/**
+ * MATCH STRUCTURE (Stage 2 — Frank's ruling): a table match is BEST-OF, decided per table, not a
+ * fixed round count. Underling & 2nd-tier tables = best 2-of-3 (first to 2 hand-wins). The floor
+ * boss table = best 3-of-5 (first to 3). A "hand" = one deal → play → reveal.
+ */
+export const MATCH_WINS_TABLE = 2; // best 2-of-3
+export const MATCH_WINS_BOSS = 3; // best 3-of-5
+/** Hand-wins needed to take the table (boss vs underling/2nd-tier). */
+export const winsNeeded = (isBoss: boolean): number => (isBoss ? MATCH_WINS_BOSS : MATCH_WINS_TABLE);
+/** Most hands a match can run (2×wins − 1): underling 3, boss 5. */
+export const maxHands = (isBoss: boolean): number => winsNeeded(isBoss) * 2 - 1;
+
 /** Floor 2 (Lobby) has no play, so it is intentionally absent from the ruleset. */
 export const ROOM_RULES: Record<FoxPitRoomKey, RoomRules> = {
   // REDEAL SCHEDULE (redeal max = 5 − keepN): the round-1 keep-N steps 1/2/3/4 up the tower, so the
@@ -194,7 +206,7 @@ export const ECONOMY = {
 } as const;
 
 /** Shown in-app + in build output (bump per build). */
-export const FOXPIT_BUILD_VERSION = "fp-bosstable";
+export const FOXPIT_BUILD_VERSION = "fp-stage23";
 
 /** Keep-N for a given room + round index (0-based), clamped to the round table. */
 export function keepNFor(room: FoxPitRoomKey, roundIndex: number): number {

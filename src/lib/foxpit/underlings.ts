@@ -67,11 +67,37 @@ export const UNDERLINGS: Partial<Record<FoxPitRoomKey, Underling[]>> = {
   ],
 };
 
-/** LOCKED underling-table counts (ledger §2). NOT the pack size — the surplus is second-tier. */
+/**
+ * Underling TABLE counts (Stage 2 — Frank's ruling): the room is (underling tables) → (a 2nd-tier
+ * encounter) → (the boss table). Coliseum = 4 tables + Ghost + Boss Wolf (6 tiles). High Table = 3
+ * tables + Grim + Boss Raven (5 tiles). The lowest-N by win rate take the tables; the designated
+ * 2nd-tier holds its own encounter (SECOND_TIER below). Surplus roster (Coliseum Vixen; High Table
+ * Quill, Nyx) is benched on the first playthrough — Nyx is the REPLAY 2nd-tier (Stage 2 replay
+ * mechanic, flagged, not built here).
+ */
 const UNDERLING_TABLES: Partial<Record<FoxPitRoomKey, number>> = {
-  coliseum: 5,
-  hightable: 4,
+  coliseum: 4,
+  hightable: 3,
 };
+
+/** The 2nd-tier boss for each room's FIRST playthrough — its own encounter after the tables, before
+ *  the floor boss. (Replay swaps High Table's to Nyx; that mechanic is flagged, not built yet.) */
+const SECOND_TIER_NAME: Partial<Record<FoxPitRoomKey, string>> = {
+  coliseum: "Ghost",
+  hightable: "Grim",
+};
+
+/** The 2nd-tier opponent for a room (Ghost / Grim), or null for rooms without one (Dojo/Suite). */
+export function secondTierOf(room: FoxPitRoomKey): Underling | null {
+  const name = SECOND_TIER_NAME[room];
+  if (!name) return null;
+  return packFor(room).find((u) => u.name === name) ?? null;
+}
+
+/** Does this room have a 2nd-tier encounter between its tables and its boss? */
+export function hasSecondTier(room: FoxPitRoomKey): boolean {
+  return !!SECOND_TIER_NAME[room];
+}
 
 /** The full pack for a room (all 6 members; empty for solo-boss rooms Owl/Fox). */
 export function packFor(room: FoxPitRoomKey): Underling[] {

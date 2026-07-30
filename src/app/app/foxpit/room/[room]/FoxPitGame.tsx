@@ -11,7 +11,7 @@ import { useEffect, useRef, useState } from "react";
 import { LockGlyph } from "@/components/practice/LockGlyph";
 import { categoryTint } from "@/lib/practice/tints";
 import { roomByKey, KEY_ASSET, type FoxPitRoomKey } from "@/lib/foxpit";
-import { ROOM_RULES, keepNFor, SLATES_PER_ROUND, REDEALS_PER_ROUND, CATEGORY_TINT_KEY, TIMERS, FOXPIT_CATEGORIES, cardMinFor, unlockedTierCount, type FoxPitCategory } from "@/lib/foxpit/rules";
+import { ROOM_RULES, keepNFor, SLATES_PER_ROUND, REDEALS_PER_ROUND, CATEGORY_TINT_KEY, TIMERS, FOXPIT_CATEGORIES, cardMinFor, unlockedTierCount, winsNeeded, maxHands, type FoxPitCategory } from "@/lib/foxpit/rules";
 import { settleRound, type FoxSlate, type BossStakeMode, type RoundSettlement, type CardLedgerLine } from "@/lib/foxpit/slates";
 import { SlateCard, type SlateLeg } from "@/components/slate/SlateCard";
 import { RoundChrome } from "./RoundChrome";
@@ -165,6 +165,8 @@ export function FoxPitGame({
   const [dealPending, setDealPending] = useState(false);
   const [dealError, setDealError] = useState<string | null>(null);
   const [roundsWon, setRoundsWon] = useState(0);
+  // Stage 2 — best-of match: hands the BOSS has won this match. Player wins are `roundsWon`.
+  const [bossWins, setBossWins] = useState(0);
   // §3.3 — live coin balance shown in the chrome. Bumps optimistically the moment a round settles,
   // then reconciles to the server's authoritative newBalance.
   const [coins, setCoins] = useState(coinBalance);
@@ -276,7 +278,9 @@ export function FoxPitGame({
     const settlement = settleRound(played, picks, bossMode, topStake, () => Math.random() * 100 < oppWinPct);
     const won = settlement.playerCards >= settlement.bossCards; // took at least as many H2H cards
     setLast({ ...settlement, won, bossMode });
+    // Stage 2 best-of: tally this hand to the winner. First to `winsNeeded` takes the table.
     if (won) setRoundsWon((w) => w + 1);
+    else setBossWins((b) => b + 1);
     // Persist the round's NET COIN result to the wallet (coins only, zero rake). Round net = Σ per-card
     // outcomes. Until this, the tower never touched users/{uid}.coinBalance.
     if (settlement.net !== 0) {
@@ -307,8 +311,15 @@ export function FoxPitGame({
     setPhase("dealing");
   };
 
+  // Stage 2 best-of: first to `winsTarget` hand-wins takes the table (2 underling/2nd-tier, 3 boss);
+  // the match caps at `handsCap` (3 or 5). A match is DECIDED once either side hits the target.
+  const winsTarget = winsNeeded(isBoss);
+  const handsCap = maxHands(isBoss);
+  const matchDecided = roundsWon >= winsTarget || bossWins >= winsTarget || roundIndex + 1 >= handsCap;
+  const cleared = roundsWon >= winsTarget || (roundsWon > bossWins && roundIndex + 1 >= handsCap);
+
   const nextRound = () => {
-    if (roundIndex + 1 >= rules.rounds) {
+    if (matchDecided) {
       setPhase("roomResult");
       return;
     }
@@ -322,8 +333,6 @@ export function FoxPitGame({
     setBossMode("match");
     setPhase("tip"); // straight to the deal (no in-game category beat)
   };
-
-  const cleared = roundsWon > rules.rounds / 2;
 
   // ROUND CLOCK (defect 3, full) — lifted here so it pins in the sticky HEADER on every round screen
   // (deal / keep-redeal / play), never scrolled away or ghosted. Budget = seconds/question × the
@@ -368,8 +377,8 @@ export function FoxPitGame({
             roomKey={roomKey}
             accent={accent}
             bossName={oppName}
-            roundsWon={Math.ceil(rules.rounds / 2 + 0.5)}
-            totalRounds={rules.rounds}
+            roundsWon={winsTarget}
+            totalRounds={handsCap}
             onDone={() => setKeyPreview(false)}
           />
         </div>
@@ -378,7 +387,7 @@ export function FoxPitGame({
       <RoundChrome
         oppName={oppName}
         roundIndex={roundIndex}
-        rounds={rules.rounds}
+        rounds={handsCap}
         keepN={keepN}
         slatesPerRound={SLATES_PER_ROUND}
         accent={accent}
@@ -488,7 +497,7 @@ export function FoxPitGame({
           bossCards={last.bossCards}
           net={last.net}
           note={`${oppName} reads at ${oppWinPct}% · ${last.bossMode === "top" ? "TOP stakes" : "MATCH stakes"}`}
-          cta={roundIndex + 1 >= rules.rounds ? "See the tally ›" : "Next round ›"}
+          cta={matchDecided ? "See the result ›" : "Next round ›"}
           onCta={nextRound}
           onQuit={onQuitGame}
           bossName={oppName}
@@ -503,7 +512,7 @@ export function FoxPitGame({
           accent={accent}
           bossName={oppName}
           roundsWon={roundsWon}
-          totalRounds={rules.rounds}
+          totalRounds={handsCap}
           onDone={onCleared}
         />
       )}
@@ -516,7 +525,7 @@ export function FoxPitGame({
           winPct={oppWinPct}
           art={opponent?.art}
           roundsWon={roundsWon}
-          totalRounds={rules.rounds}
+          totalRounds={handsCap}
           bossName={rules.boss}
           onDone={onCleared}
         />
@@ -531,7 +540,7 @@ export function FoxPitGame({
             Boss holds the room
           </div>
           <div className="text-sm text-muted">
-            You took {roundsWon} of {rules.rounds} rounds.
+            You took {roundsWon} of {handsCap} hands ({bossWins} to the boss).
           </div>
           <button
             onClick={onExit}

@@ -15,7 +15,7 @@ import {
   type FoxPitRoomKey,
   type BossArt,
 } from "@/lib/foxpit";
-import { underlingAt, underlingTableCount, type Underling } from "@/lib/foxpit/underlings";
+import { underlingAt, underlingTableCount, secondTierOf, hasSecondTier, type Underling } from "@/lib/foxpit/underlings";
 import { writeFoxCheckpoint, clearFoxCheckpoint } from "@/lib/foxpit/checkpoint";
 
 type Phase = "locker" | "door" | "room" | "table" | "faceoff" | "play";
@@ -187,22 +187,35 @@ export function FoxPitRoom({
   // The FLOOR tables are the UNDERLING tables (Coliseum 5 wolves, High Table 4 ravens).
   // The room BOSS sits at his OWN separate table — the throne/faceoff — reached only after
   // the pack is cleared. Owl (Dojo) and Boss Fox (Suite) have no pack: one boss table.
+  // Stage 2 ladder: underling tables → the 2nd-tier encounter (Ghost/Grim) → the boss table.
+  // The SPOKES of the formation hold the underlings THEN the 2nd-tier (Coliseum ✳ = 4 + Ghost = 5
+  // spokes; High Table X = 3 + Grim = 4 arms); the BOSS sits at the centre.
   const nUnderling = underlingTableCount(room.key);
-  const tables: [number, number][] = nUnderling > 0
-    ? (TABLE_POS[nUnderling] ?? TABLE_POS[room.tables] ?? [[50, 66]])
+  const roomHasSecondTier = hasSecondTier(room.key);
+  const spokeCount = nUnderling + (roomHasSecondTier ? 1 : 0);
+  const tables: [number, number][] = spokeCount > 0
+    ? (TABLE_POS[spokeCount] ?? TABLE_POS[room.tables] ?? [[50, 66]])
     : [[50, 66]];
   // Single-table rooms (Owl/Dojo, Boss Fox/Suite) seat you straight at the boss.
-  // Multi-table rooms require beating every underling table first.
   const singleTable = nUnderling === 0;
-  const allBeaten = tables.every((_, i) => beaten.has(i));
-  const bossReady = singleTable || allBeaten || roomCleared;
-  // the table you're currently on = the first not-yet-beaten one (highlighted orange).
+  const secondTierIdx = roomHasSecondTier ? nUnderling : -1; // the last spoke
+  const allUnderlingsBeaten = Array.from({ length: nUnderling }).every((_, i) => beaten.has(i));
+  const secondTierBeaten = !roomHasSecondTier || beaten.has(secondTierIdx);
+  // The boss unlocks only after every underling AND the 2nd-tier are beaten.
+  const bossReady = singleTable || (allUnderlingsBeaten && secondTierBeaten) || roomCleared;
+  // the table you're currently on = the first not-yet-beaten spoke (highlighted orange).
   const currentTableIdx = roomCleared ? -1 : tables.findIndex((_, i) => !beaten.has(i));
-  // The BOSS TABLE is the LAST selectable tile in a multi-table room (Coliseum's 6th, High Table's
-  // 5th) — centred in the formation. Single-table rooms (Owl/Fox) already seat you at the boss.
+  // The BOSS TABLE is the centre tile; the spokes precede it.
   const bossTilePos = BOSS_TILE_POS[room.key] ?? [50, 60];
   const renderTiles: [number, number][] = singleTable ? tables : [...tables, bossTilePos];
   const bossTileIdx = singleTable ? -1 : tables.length;
+  // Who a given tile seats: the boss (centre), the 2nd-tier (last spoke), or an underling.
+  const opponentForTile = (i: number): Underling | null => {
+    if (singleTable || i === bossTileIdx) return null;
+    if (i === secondTierIdx) return secondTierOf(room.key);
+    return underlingAt(room.key, i);
+  };
+  const activeOpponent = (bossFight || singleTable) ? null : (activeTable !== null ? opponentForTile(activeTable) : null);
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 60, background: "#0A0D12", overflow: "hidden" }}>
@@ -262,9 +275,13 @@ export function FoxPitRoom({
               every underling table is beaten, then it's the centred boss table. */}
           {renderTiles.map(([x, y], i) => {
             const isBossTile = i === bossTileIdx;
+            const isSecondTierTile = i === secondTierIdx;
             const done = isBossTile ? roomCleared : (roomCleared || beaten.has(i));
             const bossLocked = isBossTile && !bossReady;
-            const u = (singleTable || isBossTile) ? null : underlingAt(room.key, i);
+            // the 2nd-tier is locked until every underling table is beaten.
+            const secondTierLocked = isSecondTierTile && !allUnderlingsBeaten && !roomCleared;
+            const locked = bossLocked || secondTierLocked;
+            const u = opponentForTile(i);
             const isCurrent = i === currentTableIdx;
             // when a table is picked, the others disperse OUTWARD (radially, in the
             // direction they sit) and fade; the picked one nudges up in scale.
@@ -278,15 +295,15 @@ export function FoxPitRoom({
               <button
                 key={i}
                 onClick={() => {
+                  if (locked) return; // boss / 2nd-tier locked until the prior tier falls
                   if (isBossTile) {
-                    if (!bossReady) return; // locked until every underling table is beaten
                     setNextInitialRound(0); setBossFight(true); setActiveTable(null); setPhase("table");
                   } else {
                     setNextInitialRound(0); setBossFight(false); setActiveTable(i); setPhase("table");
                   }
                 }}
-                disabled={bossLocked}
-                aria-label={isBossTile ? `Boss table · ${room.boss}` : singleTable ? `Sit vs ${room.boss}` : `Table ${i + 1}`}
+                disabled={locked}
+                aria-label={isBossTile ? `Boss table · ${room.boss}` : isSecondTierTile ? `2nd-tier · ${u?.name ?? ""}` : singleTable ? `Sit vs ${room.boss}` : `Table ${i + 1}`}
                 style={{
                   position: "absolute",
                   left: `${x}%`,
@@ -294,12 +311,12 @@ export function FoxPitRoom({
                   transform: `translate(-50%,-50%) translate(${flyX}%, ${flyY}%)${isSel ? " scale(1.12)" : ""} perspective(420px) rotateX(50deg)`,
                   opacity: fly ? 0 : 1,
                   transition: "transform .55s cubic-bezier(.35,0,.2,1), opacity .5s ease",
-                  width: singleTable ? 150 : isBossTile ? 92 : 80,
+                  width: singleTable ? 150 : isBossTile ? 92 : isSecondTierTile ? 88 : 80,
                   border: "none",
                   background: "transparent",
                   padding: 0,
-                  cursor: bossLocked ? "not-allowed" : "pointer",
-                  filter: bossLocked ? "grayscale(.5) brightness(.62)" : done ? "grayscale(.45) brightness(.72)" : "none",
+                  cursor: locked ? "not-allowed" : "pointer",
+                  filter: locked ? "grayscale(.5) brightness(.62)" : done ? "grayscale(.45) brightness(.72)" : "none",
                   animation: (isBossTile ? bossReady && !roomCleared : isCurrent) && !selecting ? "foxpitBob 2.6s ease-in-out infinite" : "none",
                 }}
               >
@@ -315,6 +332,8 @@ export function FoxPitRoom({
                       display: "block",
                       filter: isBossTile && !bossLocked
                         ? "drop-shadow(0 0 18px #FF3B00) drop-shadow(0 0 8px #FF3B00)" // orange boss bezel
+                        : isSecondTierTile && !secondTierLocked && !done
+                        ? "drop-shadow(0 0 15px #EF9F27) drop-shadow(0 0 6px #EF9F27)" // amber 2nd-tier bezel
                         : isCurrent
                         ? "drop-shadow(0 0 14px #FF3B00) drop-shadow(0 0 6px #FF3B00)"
                         : done
@@ -333,7 +352,9 @@ export function FoxPitRoom({
                       fontSize: singleTable ? 13 : 11,
                       fontWeight: 800,
                       letterSpacing: ".06em",
-                      color: isBossTile ? (bossLocked ? "#c8a24b" : "#FF3B00") : done ? "#22C55E" : isCurrent ? "#FF3B00" : "#E7E7EB",
+                      color: isBossTile ? (bossLocked ? "#c8a24b" : "#FF3B00")
+                        : isSecondTierTile ? (done ? "#22C55E" : secondTierLocked ? "#c8a24b" : "#EF9F27")
+                        : done ? "#22C55E" : isCurrent ? "#FF3B00" : "#E7E7EB",
                       textShadow: "0 2px 6px #000, 0 0 8px #000",
                       textAlign: "center",
                       lineHeight: 1.1,
@@ -341,7 +362,9 @@ export function FoxPitRoom({
                     }}
                   >
                     {isBossTile
-                      ? (roomCleared ? "✓ BOSS" : bossLocked ? `🔒 BEAT ALL ${tables.length}` : `BOSS · ${room.boss.toUpperCase()}`)
+                      ? (roomCleared ? "✓ BOSS" : bossLocked ? "🔒 BOSS" : `BOSS · ${room.boss.toUpperCase()}`)
+                      : isSecondTierTile
+                      ? (done ? `✓ ${u?.name.toUpperCase() ?? "2ND"}` : secondTierLocked ? `🔒 ${u?.name.toUpperCase() ?? "2ND"}` : `2ND · ${u?.name.toUpperCase() ?? ""}`)
                       : singleTable
                       ? `SIT · ${room.boss.toUpperCase()}`
                       : done
@@ -362,7 +385,7 @@ export function FoxPitRoom({
         <TablePanel
           room={room}
           index={activeTable ?? 0}
-          opponent={singleTable || bossFight ? null : (activeTable !== null ? underlingAt(room.key, activeTable) : null)}
+          opponent={activeOpponent}
           freeKeycard={isFirstLoneRoom}
           username={username}
           avatarUrl={avatarUrl}
@@ -398,10 +421,10 @@ export function FoxPitRoom({
           username={username}
           coinBalance={coinBalance}
           initialRound={nextInitialRound}
-          opponent={bossFight || singleTable ? null : (activeTable !== null ? underlingAt(room.key, activeTable) : null)}
+          opponent={activeOpponent}
           oppArt={(bossFight || singleTable)
             ? BOSS_PLATE_WITH_CARDS[room.bossArt]
-            : ((activeTable !== null ? underlingAt(room.key, activeTable)?.art : undefined) ?? BOSS_PLATE_WITH_CARDS[room.bossArt])}
+            : (activeOpponent?.art ?? BOSS_PLATE_WITH_CARDS[room.bossArt])}
           onRound={(r) => {
             // §3.1 — keep the checkpoint's round current as the match advances (seat tables only).
             if (!bossFight && !singleTable && activeTable !== null) {
@@ -419,7 +442,14 @@ export function FoxPitRoom({
               markCleared(room.key);
               router.push("/app/foxpit/map");
             } else if (activeTable !== null) {
-              setBeaten((prev) => new Set(prev).add(activeTable));
+              const nextBeaten = new Set(beaten).add(activeTable);
+              setBeaten(nextBeaten);
+              // Stage 3 — advance the checkpoint to the NEXT uncleared spoke so Continue resumes the
+              // table you haven't beaten yet, not the one you just cleared. No spoke left (2nd-tier
+              // down, boss next) → drop the checkpoint (the boss isn't a resumable seat).
+              const nextSpoke = Array.from({ length: spokeCount }).findIndex((_, i) => !nextBeaten.has(i));
+              if (nextSpoke >= 0) writeFoxCheckpoint({ room: roomKey, table: nextSpoke, round: 0 });
+              else clearFoxCheckpoint();
               setPhase("room");
               setActiveTable(null);
             }
