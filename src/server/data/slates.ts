@@ -8,6 +8,7 @@ import {
   type SlateDoc,
 } from "@/lib/firebase/types";
 import { FEED_STATUSES, type FeedPrediction, type FeedSlate } from "@/lib/feed";
+import { getPlayerContext } from "@/server/feeds/creatorGames";
 
 /**
  * Fetch the Explore feed: all slates in {@link FEED_STATUSES} with their
@@ -97,20 +98,51 @@ export async function fetchSlate(
     .orderBy("sortOrder", "asc")
     .get();
 
-  const predictions: FeedPrediction[] = predsSnap.docs.map((p) => {
-    const pred = p.data() as PredictionDoc;
-    return {
-      id: p.id,
-      question: pred.question,
-      optionA: pred.optionA,
-      optionB: pred.optionB,
-      probA: pred.optionAProbability ?? 50,
-      probB: pred.optionBProbability ?? 50,
-      type: pred.predictionType,
-      line: pred.overUnderLine,
-      result: pred.result,
-    };
-  });
+  const predictions: FeedPrediction[] = await Promise.all(
+    predsSnap.docs.map(async (p): Promise<FeedPrediction> => {
+      const pred = p.data() as PredictionDoc & {
+        playerIds?: Record<string, string>;
+        context?: { seasonAverage: string; last3Form: string; matchupNote: string };
+      };
+      const base: FeedPrediction = {
+        id: p.id,
+        question: pred.question,
+        optionA: pred.optionA,
+        optionB: pred.optionB,
+        probA: pred.optionAProbability ?? 50,
+        probB: pred.optionBProbability ?? 50,
+        type: pred.predictionType,
+        line: pred.overUnderLine,
+        result: pred.result,
+      };
+      if (pred.predictionType !== "archetype" || !pred.proOptions) return base;
+
+      // §1.2 — pull each player's context (season avg + last-out) from statsProvider at play time.
+      const playerIds = pred.playerIds ?? {};
+      const ids = [...new Set(Object.values(playerIds).filter(Boolean))];
+      const ctx = await getPlayerContext(ids).catch(() => []);
+      const ctxById = new Map(ctx.map((c) => [c.playerId, c]));
+      let contextError: string | null = null;
+
+      const options = pred.proOptions.map((o) => {
+        const names = o.playerNames ?? [];
+        const label = names.length ? names.join(" + ") : o.key;
+        // player options carry context; bucket options (milestone) do not.
+        const cs = names.map((n) => ctxById.get(playerIds[n] ?? "")).filter(Boolean);
+        if (names.length && cs.length < names.length) {
+          contextError = `Stats unavailable for ${names.filter((n) => !ctxById.get(playerIds[n] ?? "")).join(", ")} — this leg can't be entered yet.`;
+        }
+        return {
+          key: o.key,
+          label,
+          seasonAverage: cs.length ? cs.map((c) => c!.seasonAverage).join(" · ") : undefined,
+          last3Form: cs.length ? cs.map((c) => c!.last3Form).join(" · ") : undefined,
+        };
+      });
+
+      return { ...base, archetype: pred.archetype, gameLine: pred.context?.matchupNote ?? null, options, contextError };
+    }),
+  );
 
   return {
     id: slateDoc.id,

@@ -52,6 +52,9 @@ export interface SlateLeg {
    *  PUBLISH-time requirement is enforced separately by validateLeg for creator sports slates. */
   context?: LegDisplayContext | null;
   flag?: { variant: "ok" | "bad"; message: string } | null;
+  /** per-leg pick style (overrides the card-level pickStyle) — lets one card mix archetypes,
+   *  e.g. "contest" for a head-to-head leg and "chips" for a milestone-count leg. */
+  pickStyle?: "button" | "plain" | "contest" | "chips";
 }
 export interface SlateCardProps {
   mode: string;
@@ -79,7 +82,9 @@ export interface SlateCardProps {
   /** How options render. "button" (default) = tappable pick buttons. "plain" = read-only list rows
    *  (no button chrome, not tappable-looking) — used where the card is for READING only, e.g. the
    *  Fox Pit DEAL opened card, where answering happens later. Opt-in; every other caller is unchanged. */
-  pickStyle?: "button" | "plain";
+  /** "button" (default binary), "plain" (read-only list), "contest" (N options; 3–4 wrap to a 2×2,
+   *  each with its context lines), "chips" (compact bucket chips, no context). */
+  pickStyle?: "button" | "plain" | "contest" | "chips";
   onPick?: (legIndex: number, pickIndex: number) => void;
   onStake?: (stake: number) => void;
   onCta?: () => void;
@@ -131,7 +136,9 @@ export function SlateCard({
         </div>
       )}
 
-      {legs.map((leg, li) => (
+      {legs.map((leg, li) => {
+        const legPickStyle = leg.pickStyle ?? pickStyle; // per-leg override (mixed archetypes)
+        return (
         <div
           key={li}
           data-leg-state={leg.state}
@@ -145,9 +152,35 @@ export function SlateCard({
           <div className="text-[19px] font-semibold leading-[1.3] text-white">{leg.question}</div>
           {leg.qs && <div className="mt-1.5 text-sm text-muted">{leg.qs}</div>}
 
-          <div className="mt-3.5 grid gap-2.5">
+          <div className={cn(
+            "mt-3.5 gap-2.5",
+            legPickStyle === "chips" ? "flex flex-wrap"
+              : legPickStyle === "contest" && leg.picks.length > 2 ? "grid grid-cols-2" // 3–4 options wrap to a 2×2
+              : "grid",
+          )}>
             {leg.picks.map((pick, pi) =>
-              pickStyle === "plain" ? (
+              legPickStyle === "chips" ? (
+                // compact bucket chip (milestone COUNT) — a count/label, no context lines.
+                <button
+                  key={pi}
+                  type="button"
+                  data-pick
+                  data-selected={pick.selected ? "true" : "false"}
+                  disabled={readOnly || locked}
+                  onClick={() => onPick?.(li, pi)}
+                  className="rounded-full border px-4 py-2 text-[15px] font-semibold"
+                  style={{
+                    borderColor: pick.selected ? catColor : "#262E3A",
+                    borderWidth: pick.selected ? 1.5 : 1,
+                    background: pick.selected ? catColor : "#181E27",
+                    color: pick.selected ? "#fff" : "#E7E7EB",
+                    boxShadow: pick.selected ? SH.chipOn : SH.pick,
+                  }}
+                >
+                  {pick.label}
+                  {pick.result && <span className={cn("ml-1.5 text-xs", pick.result === "correct" ? "text-cash" : "text-loss")}>{pick.result === "correct" ? "✓" : "✗"}</span>}
+                </button>
+              ) : legPickStyle === "plain" ? (
                 // READ-ONLY list row — no button chrome (no gradient/border-box/shadow), not tappable.
                 // A dashed dot marks it as one of the choices you'll answer LATER, not a live control.
                 <div key={pi} data-pick data-readonly="true" className="flex cursor-default items-start gap-2.5 px-1 py-1.5">
@@ -214,7 +247,8 @@ export function SlateCard({
             />
           )}
         </div>
-      ))}
+        );
+      })}
 
       {/* STAKE — per card, at the bottom. stakeMode drives visibility; afterAnswers gates on `answered`. */}
       {stakeVisible && stakeGated && (

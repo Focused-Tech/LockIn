@@ -90,6 +90,7 @@ export async function publishProSlate(raw: ProSlateInput): Promise<ProSlateResul
   const startMs = earliestStartMs(games, input.gameIds);
   if (startMs == null) return { ok: false, error: "Those games aren't on the live board anymore — reload and pick from tonight's games." };
   const byName = new Map(enginePlayersFor(games, input.gameIds).map((p) => [p.name, p]));
+  const idByName = new Map(games.flatMap((g) => g.players).map((p) => [p.name, p.playerId ?? ""]));
   const engineLegs: Leg[] = input.legs.map((l) => ({
     archetype: l.archetype,
     players: l.playerNames.map((n) => byName.get(n)).filter((p): p is NonNullable<typeof p> => !!p),
@@ -163,6 +164,8 @@ export async function publishProSlate(raw: ProSlateInput): Promise<ProSlateResul
       proOptions: options,
       // name → gameId for this leg, so one-player-per-game can be RE-checked at entry (§2.3).
       playerGames: Object.fromEntries(l.playerNames.map((n) => [n, byName.get(n)?.gameId ?? ""])),
+      // name → ESPN athlete id, so the picker can pull each player's context at play time (§1.2).
+      playerIds: Object.fromEntries(l.playerNames.map((n) => [n, idByName.get(n) ?? ""])),
       // first-to-N / milestone need a bar; the builder does not author one yet → null (settlement
       // voids those legs until a bar is supplied). context is display-only.
       bar: null,

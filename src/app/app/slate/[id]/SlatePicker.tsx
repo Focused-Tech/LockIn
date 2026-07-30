@@ -9,17 +9,36 @@ import { COLLECTIONS, type EntryPick } from "@/lib/firebase/types";
 import { Button, Card, Pill } from "@/components/ui";
 import { computeSlateMetrics } from "@/lib/contest";
 import { CardRushMeta } from "@/components/CardRushMeta";
-import { categoryTint, type Tint } from "@/lib/practice/tints";
+import { categoryTint } from "@/lib/practice/tints";
 import {
   EXCLUDED_STATES,
   FREE_ENTRY_COIN_COST,
   type EntryTier,
 } from "@/lib/constants";
-import type { FeedSlate } from "@/lib/feed";
+import type { FeedSlate, FeedPrediction } from "@/lib/feed";
+import { SlateCard, type SlateLeg } from "@/components/slate/SlateCard";
 import type { ShadowEarnings } from "@/server/data/shadowEarnings";
 import { AddToParlay } from "@/components/cross-parlay/AddToParlay";
 import { formatCents, formatCentsShort, formatMultiple } from "@/lib/utils";
 import { submitEntry } from "./actions";
+
+// §1.1 — a prediction's pickable options + its pick style. Archetype legs render their N options;
+// binary legs render A/B. Milestone COUNT is bucket chips; every other archetype is the contest style.
+export function optionsFor(p: FeedPrediction): { key: string; label: string; secondary?: string[] }[] {
+  if (p.type === "archetype" && p.options) {
+    return p.options.map((o) => ({
+      key: o.key,
+      label: o.label,
+      // §1.2 context lines (season avg + last-out), read-only. NEVER the threshold being predicted.
+      secondary: o.seasonAverage ? [o.seasonAverage, o.last3Form].filter(Boolean) as string[] : undefined,
+    }));
+  }
+  return [{ key: "a", label: p.optionA }, { key: "b", label: p.optionB }];
+}
+export function pickStyleFor(p: FeedPrediction): "button" | "contest" | "chips" {
+  if (p.type !== "archetype") return "button";
+  return p.archetype === "milestone_count" ? "chips" : "contest";
+}
 
 interface LockedEntry {
   picks: EntryPick[];
@@ -67,7 +86,7 @@ export function SlatePicker({
 
   const [tier, setTier] = useState<EntryTier>(availableTiers[0] ?? 5);
   const [mode, setMode] = useState<"paid" | "free">(canPaid ? "paid" : "free");
-  const [picks, setPicks] = useState<Record<string, "a" | "b">>({});
+  const [picks, setPicks] = useState<Record<string, string>>({});
   const [entryCount, setEntryCount] = useState(slate.entryCount);
   const [lockedEntry, setLockedEntry] = useState<LockedEntry | null>(
     existingEntry,
@@ -107,6 +126,21 @@ export function SlatePicker({
     />
   ) : null;
   const allPicked = predictions.every((p) => picks[p.id]);
+  const isPro = predictions.some((p) => p.type === "archetype");
+  // §1.2 — a leg whose player stats couldn't load can't be entered; block submit + flag it.
+  const contextBlocked = predictions.some((p) => p.contextError);
+  // §1.1 — every prediction as a SlateCard leg (N-way for pro, A/B for binary), with §1.2 context.
+  const slateLegs: SlateLeg[] = predictions.map((p) => {
+    const opts = optionsFor(p);
+    return {
+      question: p.question,
+      qs: p.type === "archetype" ? (p.gameLine ?? undefined) : undefined,
+      picks: opts.map((o) => ({ label: o.label, secondary: o.secondary, selected: picks[p.id] === o.key })),
+      state: (picks[p.id] ? "ok" : "neutral") as SlateLeg["state"],
+      pickStyle: pickStyleFor(p),
+      flag: p.contextError ? { variant: "bad" as const, message: p.contextError } : null,
+    };
+  });
 
   async function onSubmit() {
     setError(null);
@@ -286,39 +320,38 @@ export function SlatePicker({
         className="flex flex-col gap-3 lg:col-start-1 lg:row-start-1 lg:row-span-6"
         data-tour="prediction-options"
       >
-        {predictions.map((p) => (
-          <Card key={p.id} style={{ borderColor: tint.border }}>
-            <div className="mb-2 flex items-center justify-between">
-              <p className="text-sm font-medium">{p.question}</p>
-              <Pill tone="ai">AI odds</Pill>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <OptionButton
-                label={p.optionA}
-                prob={p.probA}
-                selected={picks[p.id] === "a"}
-                tint={tint}
-                onClick={() => setPicks((x) => ({ ...x, [p.id]: "a" }))}
+        {/* §1.1 — the picks render through the ONE SlateCard (N-way for pro, A/B for binary), with
+            §1.2 read-only context and §1.3 category bezel + lock-in animation. */}
+        <SlateCard
+          mode="contest"
+          currency={mode === "free" ? "coins" : "cash"}
+          catColor={tint.border}
+          legs={slateLegs}
+          stakeMode="none"
+          locked={locked}
+          locking={submitting}
+          onPick={(li, pi) => {
+            const p = predictions[li];
+            const key = p && optionsFor(p)[pi]?.key;
+            if (p && key) setPicks((x) => ({ ...x, [p.id]: key }));
+          }}
+        />
+        {/* cross-parlay add-in stays available for binary slates (archetype legs aren't parlayable). */}
+        {!isPro &&
+          predictions.map((p) =>
+            picks[p.id] ? (
+              <AddToParlay
+                key={p.id}
+                slateId={slate.id}
+                slateTitle={slate.title}
+                lockTimeMs={slate.lockTimeMs}
+                predictionId={p.id}
+                question={p.question}
+                optionLabel={picks[p.id] === "a" ? p.optionA : p.optionB}
+                choice={picks[p.id] as "a" | "b"}
               />
-              <OptionButton
-                label={p.optionB}
-                prob={p.probB}
-                selected={picks[p.id] === "b"}
-                tint={tint}
-                onClick={() => setPicks((x) => ({ ...x, [p.id]: "b" }))}
-              />
-            </div>
-            <AddToParlay
-              slateId={slate.id}
-              slateTitle={slate.title}
-              lockTimeMs={slate.lockTimeMs}
-              predictionId={p.id}
-              question={p.question}
-              optionLabel={picks[p.id] === "a" ? p.optionA : p.optionB}
-              choice={picks[p.id]}
-            />
-          </Card>
-        ))}
+            ) : null,
+          )}
       </div>
 
       {/* Entry mode */}
@@ -404,7 +437,7 @@ export function SlatePicker({
           variant="accent"
           size="lg"
           className="w-full"
-          disabled={!allPicked || submitting}
+          disabled={!allPicked || submitting || contextBlocked}
           onClick={onSubmit}
         >
           {submitting
@@ -417,48 +450,6 @@ export function SlatePicker({
         </Button>
       </div>
     </div>
-  );
-}
-
-function OptionButton({
-  label,
-  prob,
-  selected,
-  tint,
-  onClick,
-}: {
-  label: string;
-  prob: number;
-  selected: boolean;
-  tint: Tint;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={selected}
-      className={
-        "flex flex-col gap-1 rounded border px-3 py-2.5 text-left transition-colors " +
-        (selected ? "cat-pick-selected" : "border-border bg-surface hover:bg-[#161b25]")
-      }
-      style={
-        selected
-          ? ({
-              backgroundColor: tint.soft,
-              "--cat": tint.color,
-            } as React.CSSProperties)
-          : undefined
-      }
-    >
-      <span className="text-sm font-medium text-foreground">{label}</span>
-      <span
-        className={"text-xs " + (selected ? "" : "text-muted")}
-        style={selected ? { color: tint.color } : undefined}
-      >
-        {prob}%
-      </span>
-    </button>
   );
 }
 
