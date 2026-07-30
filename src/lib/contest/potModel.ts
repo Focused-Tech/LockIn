@@ -18,17 +18,14 @@ import {
   CREATOR_CUT_CAP_CENTS,
   type Division,
 } from "./architectSet";
+import { poolSizeRate } from "./poolRake";
 
 export const CREATOR_CUT_CAP_DOLLARS = CREATOR_CUT_CAP_CENTS / 100; // $500,000/slate
 
-/** Pool-size rake (house formula, NOT the live tier rake). 40% at $10K, +~6.75% per 10×, cap 65%.
- *  Sub-$10K bands are architect-set placeholders. */
+/** Pool-size rake (dollars in). Delegates to the ONE canonical curve (poolRake.ts) so the builder
+ *  preview and live settlement are the exact same function and can never diverge. */
 export function rakeForPool(poolDollars: number): number {
-  if (poolDollars < 1000) return 0.15;
-  if (poolDollars < 5000) return 0.2;
-  if (poolDollars < 10000) return 0.3;
-  const r = 0.4 + 0.0675 * Math.log10(poolDollars / 10000);
-  return Math.min(0.65, r);
+  return poolSizeRate(poolDollars * 100);
 }
 
 /** Creator cut slides HIGH (small pools) → LOW (large), on a log10 curve, capped in dollars later. */

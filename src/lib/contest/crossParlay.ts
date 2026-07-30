@@ -6,7 +6,7 @@ import {
   TOP_PERCENT_PAID,
   type EntryTier,
 } from "@/lib/constants";
-import { computeRake } from "./rake";
+import { poolSizeRake } from "./poolRake";
 import { computeRankPayout, payoutShareForRank } from "./payout";
 import { scoreCard } from "./scoring";
 
@@ -148,7 +148,7 @@ export function settleParlays(
           });
         });
       } else {
-        const rake = computeRake(tier, grossPoolCents);
+        const rake = poolSizeRake(grossPoolCents); // §one-economy: pool-size curve, not the tier table
         rakeCents = rake.rakeCents;
         prizePoolCents = Math.round(rake.prizePoolCents * prizeMultiplier);
         scored.forEach((s, i) => {

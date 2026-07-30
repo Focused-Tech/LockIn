@@ -41,20 +41,22 @@ describe("scoreCard", () => {
   });
 });
 
-describe("settleEntries — 1st-place cash matches the spec's honest multiples", () => {
-  // $5 tier, $1 hosting → $6 total entry. Figures from HANDOFF.md.
+describe("settleEntries — 1st-place cash matches the pool-size curve (one economy)", () => {
+  // $5 tier, $1 hosting → $6 total entry. 1st = 12% of the post-rake prize pool,
+  // rake by the pool-SIZE curve (poolRake.ts) — the tier table is dead.
   it.each([
-    [20, 1020], // $10.20
-    [100, 5100], // $51
-    [500, 25500], // $255
-    [1000, 51000], // $510
-    [10000, 510000], // $5,100
+    [20, 1020], //   $100 pool → 15% band → prize $85     → 12% = $10.20
+    [100, 5100], //  $500 pool → 15% band → prize $425    → 12% = $51
+    [500, 24000], //  $2,500 pool → 20% band → prize $2,000 → 12% = $240
+    [1000, 42000], // $5,000 pool → 30% band → prize $3,500 → 12% = $420
+    [10000, 331691], // $50,000 pool → 44.718% → prize $27,640.98 → 12% = $3,316.91
   ])("%i entries → 1st wins %i cents", (n, expected) => {
     expect(rank1(makeEntries(n)).payoutCents).toBe(expected);
   });
 
-  it("applies the 1,000× cap (12,000 entries → capped at $6,000)", () => {
-    const winner = rank1(makeEntries(12000));
+  it("applies the 1,000× cap (20,000 entries → capped at $6,000)", () => {
+    // $100,000 pool → 46.75% → prize $53,250 → 12% = $6,390, capped to $6,000.
+    const winner = rank1(makeEntries(20000));
     expect(winner.payoutCents).toBe(600000); // $6 × 1000
   });
 });

@@ -1,6 +1,6 @@
 import type { EntryTier } from "@/lib/constants";
 import type { Cents } from "@/lib/types";
-import { computeRake } from "./rake";
+import { poolSizeRake } from "./poolRake";
 import { computeRankPayout } from "./payout";
 
 export interface SlateMetrics {
@@ -35,7 +35,7 @@ export function computeSlateMetrics(
   const grossPoolCents = entryFeeCents * Math.max(0, entryCount);
   const entryCostCents = entryFeeCents + hostingFeeCents;
 
-  const base = computeRake(tier, grossPoolCents);
+  const base = poolSizeRake(grossPoolCents); // §one-economy: pool-size curve, not the tier table
   const prizePoolCents = Math.round(
     base.prizePoolCents * Math.max(1, rushMultiplier),
   );
