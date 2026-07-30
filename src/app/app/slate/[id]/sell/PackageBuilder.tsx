@@ -3,7 +3,6 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Card, Input } from "@/components/ui";
-import type { EntryPick } from "@/lib/firebase/types";
 import type { FeedSlate } from "@/lib/feed";
 import { createPackage } from "@/app/app/packages/actions";
 
@@ -29,7 +28,8 @@ export function PackageBuilder({ slate }: { slate: FeedSlate }) {
       setError("Pick a side on every question");
       return;
     }
-    const picksArr: EntryPick[] = slate.predictions.map((p) => ({
+    // binary package picks (choice "a"/"b") — inferred, not the now-widened EntryPick (§2.1 ripple).
+    const picksArr = slate.predictions.map((p) => ({
       predictionId: p.id,
       choice: picks[p.id]!,
     }));

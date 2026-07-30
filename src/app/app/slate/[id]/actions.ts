@@ -6,9 +6,11 @@ import { getCurrentUserId } from "@/lib/firebase/session";
 import {
   COLLECTIONS,
   type EntryPick,
+  type PredictionDoc,
   type SlateDoc,
   type UserDoc,
 } from "@/lib/firebase/types";
+import { validateLeg, type Archetype, type Leg } from "@/lib/contest/questionEngine";
 import {
   FREE_ENTRY_COIN_COST,
   type EntryTier,
@@ -50,19 +52,41 @@ export async function submitEntry(
   if (slate.lockTime.toMillis() <= Date.now())
     return { ok: false, error: "This contest has locked" };
 
-  // Picks must cover every prediction exactly once with a valid choice.
+  // Picks must cover every prediction exactly once with a valid choice. §2.1 — a choice is one of the
+  // prediction's option KEYS: binary → "a"/"b"; archetype → one of its proOptions keys.
   const predsSnap = await slateRef.collection(COLLECTIONS.predictions).get();
-  const predIds = new Set(predsSnap.docs.map((d) => d.id));
-  if (input.picks.length !== predIds.size)
+  const predById = new Map(predsSnap.docs.map((d) => [d.id, d.data() as PredictionDoc]));
+  if (input.picks.length !== predById.size)
     return { ok: false, error: "Make a pick on every question" };
   const pickedIds = new Set<string>();
   for (const p of input.picks) {
-    if (!predIds.has(p.predictionId) || (p.choice !== "a" && p.choice !== "b"))
-      return { ok: false, error: "Invalid pick" };
+    const pred = predById.get(p.predictionId);
+    if (!pred) return { ok: false, error: "Invalid pick" };
+    const validKeys = pred.predictionType === "archetype"
+      ? (pred.proOptions ?? []).map((o) => o.key)
+      : ["a", "b"];
+    if (!validKeys.includes(p.choice)) return { ok: false, error: "Invalid pick" };
     pickedIds.add(p.predictionId);
   }
-  if (pickedIds.size !== predIds.size)
+  if (pickedIds.size !== predById.size)
     return { ok: false, error: "Make a pick on every question" };
+
+  // §2.3 — re-enforce ONE-PLAYER-PER-GAME at ENTRY (not only at publish). Any archetype leg that
+  // violates validateLeg (questionEngine.ts:88) rejects the whole entry.
+  for (const pred of predById.values()) {
+    if (pred.predictionType !== "archetype") continue;
+    const playerGames = (pred as PredictionDoc & { playerGames?: Record<string, string> }).playerGames ?? {};
+    const players = Object.entries(playerGames).map(([name, gameId]) => ({ name, gameId, team: "" }));
+    const gameIds = [...new Set(players.map((pl) => pl.gameId))];
+    const leg: Leg = {
+      archetype: (pred.archetype ?? "cross_game_h2h") as Archetype,
+      players,
+      context: { seasonAverage: "-", last3Form: "-", matchupNote: "-" },
+    };
+    const verdict = validateLeg(leg, gameIds);
+    if (!verdict.ok && verdict.reason === "two_from_one_game")
+      return { ok: false, error: "This slate has an invalid question (one player per game) and can't be entered." };
+  }
 
   const tierConfig = slate.entryTiers.find((t) => t.tier === input.tier);
   if (!input.free && !tierConfig)

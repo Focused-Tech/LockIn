@@ -19,7 +19,7 @@ export interface FeedPrediction {
   type: PredictionType;
   line: number | null;
   /** Resolved outcome once settled, else null. */
-  result: "a" | "b" | null;
+  result: string | null; // §2.1 widened — archetype legs resolve to an option key, not just "a"/"b"
 }
 
 export interface FeedSlate {

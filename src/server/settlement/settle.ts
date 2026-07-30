@@ -76,13 +76,18 @@ export async function settleSlate(slateId: string): Promise<SettleResult> {
     .get();
 
   const order = predsSnap.docs.map((d) => d.id);
-  const results: Record<string, "a" | "b"> = {};
+  const results: Record<string, string> = {}; // §2.1 widened; binary still "a"/"b"
   const predBatch = db.batch();
   let needsReview = false;
 
   const verified = await Promise.all(
     predsSnap.docs.map(async (d) => {
       const pred = d.data() as PredictionDoc;
+      // §2.6 — cross-game (archetype) legs never settle on the binary/mock verifier here. Their
+      // settlement machinery (proSettle) is separate + gated; on the live path they route to review.
+      if (pred.predictionType === "archetype") {
+        return { ref: d.ref, id: d.id, resolved: null, verdict: null, feedResolved: false, review: true };
+      }
       if (pred.result === "a" || pred.result === "b") {
         return { ref: d.ref, id: d.id, resolved: pred.result, verdict: null, feedResolved: false };
       }
@@ -110,6 +115,8 @@ export async function settleSlate(slateId: string): Promise<SettleResult> {
   );
 
   for (const v of verified) {
+    // archetype legs (§2.6) → manual review; never auto-graded on the binary path.
+    if ((v as { review?: boolean }).review) { needsReview = true; continue; }
     if (v.resolved) {
       results[v.id] = v.resolved;
       if (v.feedResolved) {

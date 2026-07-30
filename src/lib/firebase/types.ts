@@ -78,7 +78,15 @@ export type SlateStatus =
   | "pending_review"
   | "settled"
   | "cancelled";
-export type PredictionType = "binary" | "over_under";
+export type PredictionType = "binary" | "over_under" | "archetype";
+
+/** §2.1 — a pickable option on a cross-game (archetype) prediction. One per player for the
+ *  "top composite" archetypes; a duo ("A"/"B") for split-squad; a count bucket for milestone. */
+export interface ProLegOption {
+  key: string;
+  playerNames?: string[];
+  bucket?: [number, number];
+}
 export type EntryTierValue = 5 | 10 | 25;
 
 // ── users/{userId} ─────────────────────────────────────────────────────────────
@@ -272,16 +280,25 @@ export interface PredictionDoc {
   optionBMultiplier: number | null;
   predictionType: PredictionType;
   overUnderLine: number | null;
-  result: "a" | "b" | null;
+  /** binary result stays "a"|"b"; an archetype prediction resolves to a winning option KEY (§2.3). */
+  result: string | null;
   verificationSources: string[] | null;
   verificationConfidence: number | null; // 0–100
   sortOrder: number;
+  /** §2.1 cross-game fields (present only when predictionType === "archetype"). */
+  archetype?: string;
+  proOptions?: ProLegOption[];
+  /** first-to-N target / milestone bar on the fantasy composite; players tallied for milestone. */
+  bar?: number | null;
+  countedPlayers?: string[] | null;
 }
 
 // ── slates/{slateId}/entries/{entryId} ─────────────────────────────────────────
 export interface EntryPick {
   predictionId: string;
-  choice: "a" | "b";
+  /** §2.1 — the chosen option KEY. Binary predictions use "a"|"b"; archetype predictions use one of
+   *  the prediction's proOptions keys (a player name, a duo "A"/"B", or a count bucket). */
+  choice: string;
 }
 
 export interface EntryDoc {

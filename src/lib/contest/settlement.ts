@@ -29,7 +29,7 @@ export interface SettlementEntryInput {
   hostingFeeCents: number;
   isPaid: boolean;
   submittedAtMs: number;
-  picks: { predictionId: string; choice: "a" | "b" }[];
+  picks: { predictionId: string; choice: string }[]; // §2.1 widened; binary still "a"/"b"
 }
 
 export interface SettlementEntryResult {
@@ -64,7 +64,7 @@ export interface SettlementSummary {
 
 function scoreEntry(
   entry: SettlementEntryInput,
-  results: Record<string, "a" | "b">,
+  results: Record<string, string>,
   order: string[],
 ): number {
   const byPred = new Map(entry.picks.map((p) => [p.predictionId, p.choice]));
@@ -88,7 +88,7 @@ function scoreEntry(
  */
 export function settleEntries(
   entries: SettlementEntryInput[],
-  results: Record<string, "a" | "b">,
+  results: Record<string, string>,
   predictionOrder: string[],
   options: { prizeMultiplier?: number } = {},
 ): SettlementSummary {

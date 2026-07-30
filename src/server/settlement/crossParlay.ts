@@ -18,7 +18,7 @@ const BATCH_LIMIT = 400;
 export async function applySlateToParlays(
   db: Firestore,
   slateId: string,
-  results: Record<string, "a" | "b"> | null,
+  results: Record<string, string> | null, // §2.1 widened; cross-parlays are binary feed slates ("a"/"b")
 ): Promise<void> {
   // array-contains alone (single-field index); status filtered in memory.
   const snap = await db

@@ -10,7 +10,7 @@ export interface EmbedPrediction {
   optionB: string;
   probA: number;
   probB: number;
-  result: "a" | "b" | null;
+  result: string | null; // §2.1 widened — binary stays "a"/"b"; archetype resolves to an option key
 }
 
 /** Serializable, state-aware view of a slate for the public widget + share page. */
