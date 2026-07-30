@@ -37,6 +37,12 @@ const config: Config = {
         // Money (creator engine + pot): gold = pot money, cash = the cash-currency accent.
         gold: "#F0C463",
         cash: "#2FB98A",
+        // §3 — ARCHITECT CURRENCY/ROLE RULING (use these by NAME; never hex at call sites):
+        //   GOLD = coins · GREEN = cash · ORANGE = action · PURPLE = creator chrome.
+        coins: "#F0C463", // gold
+        // (cash above IS the green currency token)
+        action: "#FF3B00", // orange — CTAs/actions (the cayenne accent value)
+        creator: "#7C5CF5", // purple — creator-mode chrome
         // Semantic states
         win: "#22C55E",
         loss: "#E85454",
