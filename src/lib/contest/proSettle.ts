@@ -46,7 +46,11 @@ export function settleProSlate(
     return {
       id: e.id,
       entryCostCents: e.entryCostCents,
-      perfect: live.length > 0 && correct === live.length,
+      // §2 void semantics: ONE consistent rule used for both scoring (here) and hero ranking (bands
+      // reads THIS perfect + score). A void voids the LEG — the card scores on its live legs (the
+      // stake stays in). §2.2: a void must NOT make a card perfect, so ANY voided leg disqualifies
+      // "perfect" for the whole slate (no hero seats gamed by a void).
+      perfect: voided.length === 0 && live.length > 0 && correct === live.length,
       score: correct,
       submittedAtMs: e.submittedAtMs,
     };

@@ -105,6 +105,32 @@ describe("§2.3 entry-time one-player-per-game", () => {
   });
 });
 
+describe("§2 void semantics — leg-void, consistent, no perfect via a void", () => {
+  it("voids the LEG (scores on remaining), and a void disqualifies 'perfect' for the whole slate", () => {
+    const by: Record<string, PlayerResult> = { luka: P(55, "gA"), curry: P(40, "gB"), a: P(40, "gC"), b: P(40, "gD") };
+    const legs = [
+      { predictionId: "L1", leg: { archetype: "cross_game_h2h" as const, options: [{ key: "luka", playerNames: ["luka"] }, { key: "curry", playerNames: ["curry"] }] } },
+      // L2 is a TIE (a=b=40) → voids.
+      { predictionId: "L2", leg: { archetype: "cross_game_h2h" as const, options: [{ key: "a", playerNames: ["a"] }, { key: "b", playerNames: ["b"] }] } },
+    ];
+    const entries = [
+      { id: "x", entryCostCents: 1000, submittedAtMs: 100, picks: { L1: "luka", L2: "a" } }, // right on L1
+      { id: "y", entryCostCents: 1000, submittedAtMs: 200, picks: { L1: "curry", L2: "a" } }, // wrong on L1
+    ];
+    const s = settleProSlate(legs, entries, by, 100_00);
+    expect(s.voided).toContain("L2");
+    const x = s.banded.find((b) => b.id === "x")!;
+    const y = s.banded.find((b) => b.id === "y")!;
+    // scores on the LIVE leg only (L1) → x ranks above y.
+    expect(x.rank).toBe(1);
+    expect(y.rank).toBe(2);
+    // §2.2 — x got its live legs right but the slate has a void → x is NOT perfect → NOT a hero.
+    expect(x.band).not.toBe("hero");
+    // consistency: with a void present, NO entry can be a hero (bands reads proSettle's perfect).
+    expect(s.banded.filter((b) => b.band === "hero").length).toBe(0);
+  });
+});
+
 describe("§2 end-to-end settleProSlate", () => {
   it("resolves legs, scores entries, and bands a small field", () => {
     const by: Record<string, PlayerResult> = { luka: P(55, "gA"), curry: P(40, "gB") };
