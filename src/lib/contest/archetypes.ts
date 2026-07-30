@@ -1,26 +1,14 @@
 /**
- * CROSS-GAME ARCHETYPE RESOLUTION (§2.2 + §2.3) — pure logic, no I/O.
+ * CROSS-GAME ARCHETYPE RESOLUTION (§2.3) — pure logic, no I/O.
  *
- * §2.2 ONE composite, ONE place: every archetype resolves against FANTASY POINTS. A player's
- * composite = Σ (stat × weight) with the per-sport weights imported from architectSet.ts (never
- * inlined). §2.3 resolves each approved archetype against that composite. §2.4 edge cases route
- * through crossGameEdge.ts. Real stats are supplied by the caller (fixtures in the gate; the live
- * feed carries no player stats yet — §1.2 blocker).
+ * The comparison is the `composite` each player carries (PlayerResult.composite): every archetype
+ * resolves by picking the option with the HIGHEST composite (edge cases route through
+ * crossGameEdge.ts). The composite is supplied by the caller from the box score — there is NO
+ * weighting formula here (the invented SCORING_WEIGHTS/fantasyPoints was removed). §2.4 edge cases
+ * route through crossGameEdge.ts.
  */
-import { SCORING_WEIGHTS, type ScoringSport } from "./architectSet";
 import type { Archetype } from "./questionEngine";
 import { applyEdgeEligibility, highestOrTie, type OptionResult, type OptionStatus, type EdgeReason } from "./crossGameEdge";
-
-/** §2.2 — the composite. Σ stat × per-sport weight. Unknown stats contribute 0. */
-export function fantasyPoints(sport: ScoringSport, stats: Record<string, number>): number {
-  const weights = SCORING_WEIGHTS[sport];
-  let pts = 0;
-  for (const [stat, value] of Object.entries(stats)) {
-    const w = weights[stat];
-    if (typeof w === "number") pts += value * w;
-  }
-  return Math.round(pts * 100) / 100;
-}
 
 /** A named player's settled line: their composite, which game they were in, and whether they played. */
 export interface PlayerResult {

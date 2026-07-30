@@ -59,32 +59,11 @@ export const BIG_STAKE_UNLOCK: { mode: "pot_size" | "division" | null; threshold
 // model is adopted. The live rake (contest/rake.ts) is tier-based and untouched.
 export const SUB_10K_RAKE_BANDS: { belowCents: number; rate: number }[] = [];
 
-/* ── Cross-game scoring weights (Stage: cross-game play §2.2) ─────────────────── */
-/**
- * THE COMPOSITE IS FANTASY POINTS. Every approved archetype resolves against ONE composite line:
- * "Bigger night = more fantasy points." A player's composite = Σ (stat × weight) for their sport.
- *
- * ARCHITECT-SET: awaiting value — the per-sport WEIGHTS below are PROVISIONAL DFS-style anchors so
- * the settlement engine computes; the architect supplies the final weights. One table per sport.
- * NEVER inline a weight at a call site — import SCORING_WEIGHTS from here.
- */
+/* ── Sport key (used by the stats provider + creator games) ──────────────────── */
+// The composite scoring WEIGHTS that used to live here were Claude's invention, not the architect's,
+// and have been removed. Cross-game settlement compares players on the `composite` already carried by
+// resolveArchetype (contest/archetypes.ts) — no weighting formula, no placeholder to fill.
 export type ScoringSport = "basketball" | "football" | "baseball" | "hockey" | "soccer";
-export const SCORING_WEIGHTS: Record<ScoringSport, Record<string, number>> = {
-  // ARCHITECT-SET: awaiting value — provisional NBA-style fantasy weights.
-  basketball: { points: 1, rebounds: 1.2, assists: 1.5, steals: 3, blocks: 3, turnovers: -1, threes: 0.5 },
-  // ARCHITECT-SET: awaiting value — provisional NFL-style fantasy weights.
-  football: { passYards: 0.04, passTD: 4, interceptions: -2, rushYards: 0.1, rushTD: 6, recYards: 0.1, receptions: 0.5, recTD: 6, fumblesLost: -2 },
-  // ARCHITECT-SET: awaiting value — provisional MLB-style fantasy weights.
-  baseball: { singles: 3, doubles: 5, triples: 8, homeRuns: 10, runs: 2, rbis: 2, walks: 2, stolenBases: 5, strikeoutsPitching: 2, inningsPitched: 2.25, earnedRuns: -2, winPitching: 4 },
-  // ARCHITECT-SET: awaiting value — provisional NHL-style fantasy weights.
-  hockey: { goals: 3, assists: 2, shots: 0.5, blocks: 0.5, saves: 0.2, goalieWins: 3, shutouts: 2 },
-  // ARCHITECT-SET: awaiting value — provisional soccer fantasy weights.
-  soccer: { goals: 6, assists: 4, shots: 0.5, shotsOnTarget: 1, passesCompleted: 0.02, tackles: 1, saves: 1, cleanSheet: 4 },
-};
-/** Milestone-count buckets (§2.3): how many named players cleared the bar → which bucket wins.
- *  ARCHITECT-SET: awaiting value — the number of buckets/labels is the architect's; the resolver
- *  derives buckets from the option list, so this holds only the DEFAULT bar unit label. */
-export const MILESTONE_DEFAULT_LABEL = "cleared the bar" as const;
 
 /* ── Per-state placeholders (moved here from eligibility/states.ts per slice 6.4) ── */
 // ARCHITECT-SET: awaiting value — per-state minimum-age overrides (default 18).

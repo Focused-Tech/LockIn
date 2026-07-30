@@ -4,20 +4,14 @@
  * a field, and one-player-per-game is enforced at entry (validateLeg — the exact check submitEntry runs).
  */
 import { describe, it, expect } from "vitest";
-import { fantasyPoints, resolveArchetype, type PlayerResult, type CrossGameLeg } from "./archetypes";
+import { resolveArchetype, type PlayerResult, type CrossGameLeg } from "./archetypes";
 import { settleProSlate } from "./proSettle";
 import { bandField, type BandInput } from "./bands";
 import { validateLeg } from "./questionEngine";
 
+// The composite is supplied directly (the box-score number). No weighting formula (SCORING_WEIGHTS
+// was removed) — settlement compares composites and the highest wins.
 const P = (composite: number, gameId: string, status: PlayerResult["status"] = "played"): PlayerResult => ({ composite, gameId, status });
-
-describe("§2.2 composite (fantasy points)", () => {
-  it("weights basketball stats into a single composite", () => {
-    // 30 pts + 10 reb(×1.2) + 8 ast(×1.5) + 2 stl(×3) + 1 blk(×3) − 3 to(×1) + 4 threes(×0.5)
-    const fp = fantasyPoints("basketball", { points: 30, rebounds: 10, assists: 8, steals: 2, blocks: 1, turnovers: 3, threes: 4 });
-    expect(fp).toBe(30 + 12 + 12 + 6 + 3 - 3 + 2); // 62
-  });
-});
 
 describe("§2.3 archetype resolution", () => {
   const by: Record<string, PlayerResult> = {
