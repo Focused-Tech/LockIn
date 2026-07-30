@@ -3,7 +3,8 @@ import { SkillGameDisclaimer } from "@/components/SkillGameDisclaimer";
 import { getCurrentUserProfile } from "@/lib/firebase/session";
 import { resolveEligibility } from "@/lib/eligibility";
 import { ALL_STATES } from "@/lib/eligibility/states";
-import { TONIGHTS_GAMES } from "@/lib/contest/games";
+import type { CreatorGame } from "@/lib/contest/games";
+import { getTodaysCreatorGames } from "@/server/feeds/creatorGames";
 import { CreatorMode } from "./CreatorMode";
 
 /**
@@ -20,6 +21,18 @@ export default async function CreatorModePage() {
   // Reach = states where a player can enter this slate for CASH (coins reach everywhere).
   const cashReach = ALL_STATES.filter((s) => resolveEligibility(s).canPlayCash).length;
 
+  // §1.1/§1.C — LIVE games from the feed, no seed fallback. A feed failure or an empty board is a
+  // VISIBLE error on the builder, never stale games.
+  let games: CreatorGame[] = [];
+  let feedError: string | null = null;
+  try {
+    games = await getTodaysCreatorGames();
+    if (games.length === 0) feedError = "No games on the board today — the builder needs live games. Check back on a game day.";
+  } catch (err) {
+    console.error("[creator] live games feed failed", err);
+    feedError = "Couldn't load tonight's games from the feed. It's an upstream issue — try again shortly.";
+  }
+
   return (
     <div className="flex flex-col gap-4 p-4">
       <div>
@@ -28,7 +41,8 @@ export default async function CreatorModePage() {
       </div>
 
       <CreatorMode
-        games={TONIGHTS_GAMES}
+        games={games}
+        feedError={feedError}
         formatTier={elig.formatTier}
         cashReach={cashReach}
         totalStates={ALL_STATES.length}

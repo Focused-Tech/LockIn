@@ -1,59 +1,31 @@
 /**
- * CREATOR-MODE GAME FEED (slice 4 · "Tonight's games").
+ * CREATOR-MODE GAME TYPES (§1 · "Tonight's games").
  *
- * The pool of games a creator picks from; each selected game's roster fills the player pool the
- * question legs draw from. Shape mirrors design/lockin_creator_mode_mockup.html.
- *
- * SEED for now — a representative slate of tonight's games. Wire to the live feed (ESPN / Odds API,
- * see scripts/sync-feed) by having the page fetch real games and pass them into the builder; the
- * builder is already feed-agnostic (it takes a CreatorGame[]).
+ * The seed is GONE (§1.C). Live games + rosters come from the ESPN feed via
+ * src/server/feeds/creatorGames.ts (getTodaysCreatorGames) → the stats provider. The builder is
+ * feed-agnostic: it takes a CreatorGame[]. Fixtures exist ONLY as a test double for the gates.
  */
 import type { EnginePlayer } from "./questionEngine";
+import type { ScoringSport } from "./architectSet";
 
 export interface CreatorGamePlayer {
   name: string;
   team: string;
+  /** ESPN athlete id — carried so settlement can pull the player's box score. */
+  playerId?: string;
 }
 export interface CreatorGame {
   id: string;
   away: string;
   home: string;
   tipoff: string;
+  /** UTC epoch millis of the first tip — drives slate close (§1.E: close BEFORE the first event). */
+  startMs: number;
+  sport: ScoringSport;
   players: CreatorGamePlayer[];
 }
 
-export const TONIGHTS_GAMES: CreatorGame[] = [
-  {
-    id: "g1", away: "Lakers", home: "Celtics", tipoff: "7:10p",
-    players: [
-      { name: "Luka Dončić", team: "Lakers" }, { name: "LeBron James", team: "Lakers" },
-      { name: "Jayson Tatum", team: "Celtics" }, { name: "Jaylen Brown", team: "Celtics" },
-    ],
-  },
-  {
-    id: "g2", away: "76ers", home: "Warriors", tipoff: "10:00p",
-    players: [
-      { name: "Joel Embiid", team: "76ers" }, { name: "Tyrese Maxey", team: "76ers" },
-      { name: "Stephen Curry", team: "Warriors" }, { name: "Draymond Green", team: "Warriors" },
-    ],
-  },
-  {
-    id: "g3", away: "Bucks", home: "Heat", tipoff: "7:30p",
-    players: [
-      { name: "Giannis Antetokounmpo", team: "Bucks" }, { name: "Damian Lillard", team: "Bucks" },
-      { name: "Bam Adebayo", team: "Heat" }, { name: "Tyler Herro", team: "Heat" },
-    ],
-  },
-  {
-    id: "g4", away: "Nuggets", home: "Suns", tipoff: "9:00p",
-    players: [
-      { name: "Nikola Jokić", team: "Nuggets" }, { name: "Jamal Murray", team: "Nuggets" },
-      { name: "Kevin Durant", team: "Suns" }, { name: "Devin Booker", team: "Suns" },
-    ],
-  },
-];
-
-/** The question templates the "+ Add a question" button cycles through (mockup TEMPLATES). */
+/** The question templates the "+ Add a question" button cycles through. */
 export const QUESTION_TEMPLATES = [
   "Who has the bigger night?",
   "Who takes over in the fourth?",
@@ -69,4 +41,10 @@ export function enginePlayersFor(games: CreatorGame[], selectedIds: string[]): E
     for (const p of g.players) out.push({ name: p.name, gameId: g.id, team: p.team });
   }
   return out;
+}
+
+/** The earliest tip among the selected games → slate close must be before it (§1.E). */
+export function earliestStartMs(games: CreatorGame[], selectedIds: string[]): number | null {
+  const times = games.filter((g) => selectedIds.includes(g.id)).map((g) => g.startMs).filter((t) => t > 0);
+  return times.length ? Math.min(...times) : null;
 }

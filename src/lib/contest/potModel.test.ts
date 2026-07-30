@@ -2,7 +2,8 @@
  *  games→engine wiring that Lockpick validates. */
 import { describe, it, expect } from "vitest";
 import { rakeForPool, creatorCut, project, creatorKeep, CREATOR_CUT_CAP_DOLLARS, DIVISIONS } from "./potModel";
-import { TONIGHTS_GAMES, enginePlayersFor } from "./games";
+import { enginePlayersFor } from "./games";
+import { FIXTURE_GAMES } from "./gameFixtures";
 import { validateSlate } from "./questionEngine";
 
 describe("pot model", () => {
@@ -38,18 +39,18 @@ describe("pot model", () => {
 
 describe("games → engine wiring (Lockpick)", () => {
   it("two players from two selected games publishes; two from one game fails", () => {
-    const ids = ["g1", "g2"];
-    const byName = new Map(enginePlayersFor(TONIGHTS_GAMES, ids).map((p) => [p.name, p]));
+    const ids = ["gA", "gB"];
+    const byName = new Map(enginePlayersFor(FIXTURE_GAMES, ids).map((p) => [p.name, p]));
     const ctx = { seasonAverage: "27.1", last3Form: "W-W-L", matchupNote: "pace up" };
 
     const clean = validateSlate(
-      [{ archetype: "cross_game_h2h", players: [byName.get("Luka Dončić")!, byName.get("Stephen Curry")!], context: ctx }],
+      [{ archetype: "cross_game_h2h", players: [byName.get("Luka")!, byName.get("Curry")!], context: ctx }],
       ids,
     );
     expect(clean.canPublish).toBe(true);
 
     const sameGame = validateSlate(
-      [{ archetype: "cross_game_h2h", players: [byName.get("Luka Dončić")!, byName.get("LeBron James")!], context: ctx }],
+      [{ archetype: "cross_game_h2h", players: [byName.get("Luka")!, byName.get("LeBron")!], context: ctx }],
       ids,
     );
     expect(sameGame.canPublish).toBe(false);

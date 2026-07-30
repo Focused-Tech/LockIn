@@ -28,7 +28,8 @@ import {
   CREATOR_CUT_CAP_DOLLARS,
 } from "@/lib/contest/potModel";
 import { BASE_STAKES, BIG_POT_STAKES, HOST_FEE_TIERS, type Division } from "@/lib/contest/architectSet";
-import { publishProSlate, type ProSlateInput } from "./actions";
+import { publishProSlate, fetchLegContext, type ProSlateInput } from "./actions";
+import type { PlayerContext } from "@/server/feeds/creatorGames";
 
 const ALL_STAKES = [...BASE_STAKES, ...BIG_POT_STAKES]; // 5,10,15,25,50
 const EARN_MARKS = [5000, 15000, 30000, 75000, 150000];
@@ -56,9 +57,11 @@ const newLeg = (n: number): LegForm => ({
 });
 
 export function CreatorMode({
-  games, formatTier, cashReach, totalStates, canHostCash, cashBlockReason,
+  games, feedError, formatTier, cashReach, totalStates, canHostCash, cashBlockReason,
 }: {
   games: CreatorGame[];
+  /** §1.C — a live-feed failure / empty board. When set, the builder shows it and can't publish. */
+  feedError: string | null;
   formatTier: FormatTier;
   cashReach: number;
   totalStates: number;
@@ -99,14 +102,38 @@ export function CreatorMode({
       return next;
     });
   };
-  const togglePlayer = (legId: string, name: string) =>
-    setLegs((ls) => ls.map((l) => l.id !== legId ? l : {
-      ...l, playerNames: l.playerNames.includes(name) ? l.playerNames.filter((n) => n !== name) : [...l.playerNames, name],
-    }));
+  // §1.2 — name↔id + name→game maps (from the LIVE games), and per-leg feed context (season avg +
+  // last-out), fetched from the feed when players are chosen (a batch), NOT typed.
+  const idByName = useMemo(() => new Map(games.flatMap((g) => g.players).map((p) => [p.name, p.playerId ?? ""])), [games]);
+  const nameById = useMemo(() => new Map(games.flatMap((g) => g.players).map((p) => [p.playerId ?? "", p.name])), [games]);
+  const gameByName = useMemo(() => new Map(games.flatMap((g) => g.players.map((p) => [p.name, g] as const))), [games]);
+  const [legContext, setLegContext] = useState<Record<string, (PlayerContext & { name: string })[]>>({});
+
+  const refreshContext = async (legId: string, names: string[]) => {
+    const ids = names.map((n) => idByName.get(n)).filter((x): x is string => !!x);
+    const matchup = [...new Set(names.map((n) => gameByName.get(n)).filter(Boolean).map((g) => `${g!.away} @ ${g!.home}`))].join(" · ");
+    if (ids.length === 0) {
+      setLegContext((c) => ({ ...c, [legId]: [] }));
+      setLegs((ls) => ls.map((l) => (l.id === legId ? { ...l, context: { ...EMPTY_CONTEXT } } : l)));
+      return;
+    }
+    const rows = (await fetchLegContext(ids)).map((c) => ({ ...c, name: nameById.get(c.playerId) ?? "" }));
+    setLegContext((c) => ({ ...c, [legId]: rows }));
+    const first = rows[0];
+    // the single engine context (feed-derived, satisfies validateLeg's mandatory-context rule).
+    setLegs((ls) => ls.map((l) => (l.id === legId ? { ...l, context: { seasonAverage: first?.seasonAverage ?? "-", last3Form: first?.last3Form ?? "-", matchupNote: matchup || "-" } } : l)));
+  };
+
+  const togglePlayer = (legId: string, name: string) => {
+    const leg = legs.find((l) => l.id === legId);
+    const nextNames = leg
+      ? (leg.playerNames.includes(name) ? leg.playerNames.filter((n) => n !== name) : [...leg.playerNames, name])
+      : [name];
+    setLegs((ls) => ls.map((l) => (l.id === legId ? { ...l, playerNames: nextNames } : l)));
+    void refreshContext(legId, nextNames);
+  };
   const setLeg = (legId: string, patch: Partial<LegForm>) =>
     setLegs((ls) => ls.map((l) => (l.id === legId ? { ...l, ...patch } : l)));
-  const setCtx = (legId: string, patch: Partial<LegContext>) =>
-    setLegs((ls) => ls.map((l) => (l.id === legId ? { ...l, context: { ...l.context, ...patch } } : l)));
   const toggleStake = (v: number) =>
     setStakes((prev) => (prev.includes(v) ? prev.filter((s) => s !== v) : [...prev, v]).sort((a, b) => a - b));
 
@@ -158,6 +185,17 @@ export function CreatorMode({
     border: `1px solid ${on ? C.gold : C.edge}`, borderRadius: 7, padding: "5px 9px", fontSize: 12,
     cursor: "pointer", background: C.panel, color: on ? C.gold : C.grey,
   });
+
+  // §1.C — no live games (feed failure / empty board): show the error, no builder, no seed.
+  if (feedError) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 10, color: C.grey }}>
+        <div data-feed-error style={{ fontSize: 13, lineHeight: 1.5, color: "#ffb3a5", background: "rgba(224,67,44,.13)", borderLeft: `3px solid ${C.bad}`, borderRadius: 8, padding: "12px 14px" }}>
+          {feedError}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10, color: C.grey }}>
@@ -232,14 +270,20 @@ export function CreatorMode({
                   );
                 })}
               </div>
-              {/* mandatory display context (slice 2.5) */}
-              <div style={{ display: "flex", gap: 5, marginTop: 7 }}>
-                <input value={l.context.seasonAverage} onChange={(e) => setCtx(l.id, { seasonAverage: e.target.value })}
-                  placeholder="Season avg" style={{ flex: 1, minWidth: 0, background: C.ink, color: C.grey, border: `1px solid ${C.edge}`, borderRadius: 6, padding: "5px 7px", fontSize: 11 }} />
-                <input value={l.context.last3Form} onChange={(e) => setCtx(l.id, { last3Form: e.target.value })}
-                  placeholder="Last 3" style={{ flex: 1, minWidth: 0, background: C.ink, color: C.grey, border: `1px solid ${C.edge}`, borderRadius: 6, padding: "5px 7px", fontSize: 11 }} />
-                <input value={l.context.matchupNote} onChange={(e) => setCtx(l.id, { matchupNote: e.target.value })}
-                  placeholder="Matchup note" style={{ flex: 1, minWidth: 0, background: C.ink, color: C.grey, border: `1px solid ${C.edge}`, borderRadius: 6, padding: "5px 7px", fontSize: 11 }} />
+              {/* §1.2 — mandatory display CONTEXT, from the live feed (game line + season avg + last-out),
+                  not typed. Populates when players are picked. */}
+              <div data-leg-context style={{ marginTop: 7, display: "flex", flexDirection: "column", gap: 3 }}>
+                {(legContext[l.id] ?? []).length === 0 && (
+                  <span style={{ fontSize: 11, color: C.dim }}>Pick players to load the feed context (season avg · last-out).</span>
+                )}
+                {l.context.matchupNote && l.context.matchupNote !== "-" && (legContext[l.id] ?? []).length > 0 && (
+                  <span style={{ fontSize: 10.5, color: C.gold, fontWeight: 700 }}>{l.context.matchupNote}</span>
+                )}
+                {(legContext[l.id] ?? []).map((pc) => (
+                  <span key={pc.playerId} data-ctx-row style={{ fontSize: 11, color: C.dim }}>
+                    <b style={{ color: C.grey }}>{pc.name}</b> — {pc.seasonAverage} · {pc.last3Form}
+                  </span>
+                ))}
               </div>
               {/* Lockpick flag */}
               <div style={{ marginTop: 8, fontSize: 11.5, padding: "7px 9px", borderRadius: 7, lineHeight: 1.45,
