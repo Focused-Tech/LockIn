@@ -42,7 +42,10 @@ export interface StatsProvider {
 
 // ── ESPN label → our stat-key maps (per sport; §1.F: brittle if ESPN reorders — mapped by name) ──
 const LEAGUE: Record<ScoringSport, { sport: string; league: string }> = {
-  basketball: { sport: "basketball", league: "nba" },
+  // §3.1 — WNBA is the IN-SEASON basketball league (NBA is out of season). Same box-score labels +
+  // flat rosters as NBA (verified), so SCORING_WEIGHTS.basketball + BOX_LABEL_MAP.basketball apply
+  // unchanged. Flip to "nba" when the NBA season returns.
+  basketball: { sport: "basketball", league: "wnba" },
   football: { sport: "football", league: "nfl" },
   baseball: { sport: "baseball", league: "mlb" },
   hockey: { sport: "hockey", league: "nhl" },

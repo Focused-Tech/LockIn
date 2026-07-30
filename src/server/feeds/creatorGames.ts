@@ -12,7 +12,8 @@ import "server-only";
 import { EspnStatsProvider, type StatsProvider } from "./statsProvider";
 import type { CreatorGame } from "@/lib/contest/games";
 
-const SCOREBOARD = "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard";
+// §3.1 — WNBA scoreboard (in-season; NBA is out of season). Flip to nba when the NBA season returns.
+const SCOREBOARD = "https://site.api.espn.com/apis/site/v2/sports/basketball/wnba/scoreboard";
 
 function tipoffLabel(startMs: number): string {
   // display-only ET clock (games are US-scheduled); never renders odds (§1.E).
