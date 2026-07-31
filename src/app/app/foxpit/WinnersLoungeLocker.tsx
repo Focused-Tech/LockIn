@@ -148,7 +148,7 @@ export function WinnersLoungeLocker({ onBack }: { onBack: () => void }) {
 }
 
 /** The Snack Bar itself — the byte-frozen game, opened full-screen from the lounge. */
-function SnackOverlay({ onClose }: { onClose: () => void }) {
+export function SnackOverlay({ onClose }: { onClose: () => void }) {
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 90, background: "#0A0D12", boxSizing: "border-box", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
       {/* iframe fills the (safe-area-padded) box at a definite 100% size, so the game lays out and its

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LockGlyph } from "@/components/practice/LockGlyph";
-import { WinnersLoungeLocker } from "../WinnersLoungeLocker";
+import { WinnersLoungeLocker, SnackOverlay } from "../WinnersLoungeLocker";
 import {
   FOXPIT_ROOMS,
   LOBBY_MAP_Y,
@@ -21,7 +21,6 @@ import {
 } from "@/lib/foxpit";
 import { ELEVATOR_STOP_BY_ID } from "@/lib/foxpit/rules";
 import { StairClimber } from "./StairClimber";
-import { ArenaIntro } from "@/app/app/practice/arena/chooser/ArenaIntro";
 
 /**
  * Fox Pit TOWER MAP (a stack of full-canvas 1620x4500 plates from map/tower_layers, composited at
@@ -875,119 +874,78 @@ function ElevatorRide({
  * swap when the art lands) and hands off to the lounge. Plays IN FULL the first arrival; auto-skips
  * on every later visit. Tap anywhere to skip. Dealer-less — no Locksmith here (B3).
  */
+// The arrival cinematic — the four 627×627 angle plates, cover-fit (they fill the 9:22 screen and the
+// push-in uses the overflow). Order: wide establishing → throne left 3/4 → throne right 3/4 → throne
+// straight. The final beat cross-fades into the LOUNGE (the establishing plate is the destination).
 const LOUNGE_PLATES = [
-  "/foxpit/lounge/wl_plate_wide_establishing.png", // open on the room
-  "/foxpit/lounge/wl_plate_throne_left_3q.png",
-  "/foxpit/lounge/wl_plate_throne_right_3q.png",
-  "/foxpit/lounge/wl_plate_throne_straight.png", // close on the throne (the prize)
+  "/foxpit/lounge/lounge_01_wide_establishing.png",
+  "/foxpit/lounge/lounge_02_throne_left_3q.png",
+  "/foxpit/lounge/lounge_03_throne_right_3q.png",
+  "/foxpit/lounge/lounge_04_throne_straight.png",
 ];
-// The usher is the SAME boss-fox art shown when Boss Fox opens the Fox Pit door
-// (suite room.avatarImg) — the full standing suited fox, rendered whole (contain), never cropped.
-// Final-beat welcome cutout — Boss Fox welcomes the winner in. Composited over the throne-straight
-// plate (never baked into it). 751x1299 transparent.
-const LOUNGE_BOSS_FOX = "/foxpit/cutouts/bossfox_welcome_lounge.png";
-/** Per-beat hold (ms) — the FULL establishing room shot lingers longest, then each throne plate.
- *  Every screen is well over 2.5s; the final beat (throne straight + Boss Fox) holds until "Step in". */
-const LOUNGE_BEAT_MS = [3800, 3000, 3000];
+// The DESTINATION the player stands in — the throne/bar room, cover-fit full-bleed.
+const LOUNGE_DEST = "/foxpit/lounge/lounge_01_wide_establishing.png";
 
 function WinnersLoungeArrival({ onDone }: { onDone: () => void }) {
-  const [firstTime] = useState(() => {
-    if (typeof window === "undefined") return true;
-    try {
-      return !localStorage.getItem("foxpit.lounge.arrived.v5");
-    } catch (err) {
-      console.error("[foxpit] lounge arrival flag read failed:", err);
-      return true;
-    }
-  });
-  const [beat, setBeat] = useState(0);
-  // Interim: after the entrance (and the first-arrival throne cinematic), the lounge is a small
-  // persistent HOME with the Snack Bar door in — reachable every visit, at leisure, until the
-  // upstairs locker room is built. "Step in" from the throne beat lands here.
-  const [steppedIn, setSteppedIn] = useState(false);
-  // The Winner's Lounge ENTRANCE: the same tinted glass door + fox-neon badge as the Fox Pit
-  // entrance, titled "Welcome to the Winner's Lounge". It swings open onto the establishing room
-  // on EVERY arrival; the throne plates that follow play only on the FIRST arrival.
-  const [showDoor, setShowDoor] = useState(true);
   const done = useRef(onDone);
   done.current = onDone;
+  // §2 FIRST-VISIT-ONLY arrival cinematic across the four angle plates, then the lounge. The flag is
+  // persisted per user in localStorage ("foxpit.lounge.seen.v6"). Returning visitors skip straight in.
+  const [beat, setBeat] = useState<number>(() => {
+    if (typeof window === "undefined") return 0;
+    try { return localStorage.getItem("foxpit.lounge.seen.v6") ? LOUNGE_PLATES.length : 0; } catch { return 0; }
+  });
+  const [room, setRoom] = useState<"lounge" | "locker">("lounge");
+  const [snackOpen, setSnackOpen] = useState(false);
 
-  // Remember the first arrival so the plate cinematic is a one-time payoff (the door still opens
-  // every time). Written on mount regardless of the door so it can't be missed.
+  useEffect(() => { try { localStorage.setItem("foxpit.lounge.seen.v6", "1"); } catch { /* ignore */ } }, []);
   useEffect(() => {
-    if (!firstTime) return;
-    try {
-      localStorage.setItem("foxpit.lounge.arrived.v5", "1");
-    } catch (err) {
-      console.error("[foxpit] lounge arrival flag write failed:", err);
-    }
-  }, [firstTime]);
-
-  // Once the door has swung open: first-timers watch the plates (advanced below); returning
-  // players drop straight into the lounge HOME (the Snack Bar door + back-to-map).
-
-  // Advance the throne plates (first arrival only, after the door), holding on the final throne.
-  useEffect(() => {
-    if (!firstTime || showDoor || beat >= LOUNGE_PLATES.length - 1) return;
-    const t = window.setTimeout(() => setBeat((b) => b + 1), LOUNGE_BEAT_MS[beat] ?? 3000);
+    if (beat >= LOUNGE_PLATES.length) return;
+    const t = window.setTimeout(() => setBeat((b) => b + 1), 2500); // §2.3 ~2.5s a beat
     return () => window.clearTimeout(t);
-  }, [firstTime, showDoor, beat]);
+  }, [beat]);
 
-  // ENTRANCE door first (every arrival) — swings open onto the establishing room.
-  if (showDoor) {
+  // §2.2–2.4 the cinematic: cover-fit, push-in, cross-fade. Tap anywhere skips straight to the lounge.
+  if (beat < LOUNGE_PLATES.length) {
     return (
-      <ArenaIntro
-        onDone={() => setShowDoor(false)}
-        revealTitle=""
-        brandPrefix="to the"
-        brandName="Winner's Lounge"
-        revealImage={LOUNGE_PLATES[0]}
-        showWordmark={false}
-      />
+      <div onClick={() => setBeat(LOUNGE_PLATES.length)} style={{ position: "absolute", inset: 0, zIndex: 5, background: "#05070b", overflow: "hidden", cursor: "pointer" }}>
+        {LOUNGE_PLATES.map((src, i) => (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img key={src} src={src} alt="" draggable={false}
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 45%",
+              opacity: beat === i ? 1 : 0, transition: "opacity .7s ease",
+              animation: beat === i ? "foxpitPushIn 3.1s ease-in-out both" : "none" }} />
+        ))}
+        <div style={{ position: "absolute", top: "7%", left: 0, right: 0, textAlign: "center", fontSize: 12, letterSpacing: ".3em", color: "#f5e3ac", fontWeight: 800, textShadow: "0 2px 10px #000" }}>WINNER&apos;S LOUNGE</div>
+        <div style={{ position: "absolute", bottom: "calc(env(safe-area-inset-bottom,0px) + 16px)", right: 16, fontSize: 12, color: "rgba(245,227,172,.7)" }}>tap to skip</div>
+      </div>
     );
   }
 
-  // Lounge HOME — the persistent room after the door: reached straight away by returning winners,
-  // and via "Step in" on the first-arrival throne beat. Now the real LOCKER ROOM plate (§1.1) with the
-  // opening locker, props, the Snack Bar phone, and a way to the elevator corridor.
-  if (steppedIn || !firstTime) {
-    return (
-      <WinnersLoungeLocker onBack={() => done.current()} />
-    );
-  }
+  // §3.3/3.4 — the LOCKER ROOM is a DOOR off the lounge; leaving it returns to the lounge.
+  if (room === "locker") return <WinnersLoungeLocker onBack={() => setRoom("lounge")} />;
 
-  const onThrone = beat === LOUNGE_PLATES.length - 1;
-
+  // §2/§3 — THE LOUNGE is the destination: the throne/bar plate, full-bleed, controls over the bottom.
   return (
-    <div onClick={() => done.current()} style={{ position: "absolute", inset: 0, zIndex: 5, background: "#05070b", overflow: "hidden", cursor: "pointer" }}>
-      {LOUNGE_PLATES.map((src, i) => (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          key={src}
-          src={src}
-          alt=""
-          draggable={false}
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 42%", opacity: beat === i ? 1 : 0, transition: "opacity .6s ease", animation: beat === i ? `foxpitPushIn ${((LOUNGE_BEAT_MS[i] ?? 3000) + 600) / 1000}s ease-in-out both` : "none" }}
-        />
-      ))}
-      {beat === 0 && (
-        <div style={{ position: "absolute", top: "8%", left: 0, right: 0, textAlign: "center", fontSize: 12, letterSpacing: ".3em", color: "#f5e3ac", fontWeight: 800, textShadow: "0 2px 10px #000", animation: "foxpitFadeUp .9s ease both" }}>WINNER&apos;S LOUNGE</div>
-      )}
-      {onThrone && (
-        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", paddingBottom: "calc(env(safe-area-inset-bottom,0px) + 26px)", animation: "foxpitFadeUp 1s ease both" }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={LOUNGE_BOSS_FOX} alt="Boss Fox welcomes you in" draggable={false} style={{ height: "62%", width: "auto", maxWidth: "82%", objectFit: "contain", filter: "drop-shadow(0 10px 30px rgba(0,0,0,.8))" }} />
-          {/* The welcome lives on the entrance door now; the payoff beat throws down the gauntlet.
-              "Step in" hands off to the digital player table (B3) — currently returns to the map
-              until that room is built (Frank to spec). */}
-          <div style={{ fontFamily: "Georgia, serif", fontSize: 22, color: "#f5e3ac", textShadow: "0 2px 10px #000", marginTop: 6 }}>Ready to defend your throne?</div>
-          <button onClick={(e) => { e.stopPropagation(); setSteppedIn(true); }} style={{ marginTop: 16, border: `2px solid ${BRASS}`, background: "rgba(200,162,75,.18)", color: "#fff", borderRadius: 12, padding: "12px 30px", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>Step in ›</button>
+    <div style={{ position: "absolute", inset: 0, zIndex: 5, background: "#05070b", overflow: "hidden" }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={LOUNGE_DEST} alt="Winner's Lounge" draggable={false} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 45%" }} />
+      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(5,7,11,.25) 0%, transparent 30%, transparent 52%, rgba(5,7,11,.92) 100%)" }} />
+      <div style={{ position: "absolute", top: "calc(env(safe-area-inset-top,0px) + 12px)", left: 0, right: 0, textAlign: "center", fontSize: 12, letterSpacing: ".3em", color: "#f5e3ac", fontWeight: 800, textShadow: "0 2px 10px #000", pointerEvents: "none" }}>WINNER&apos;S LOUNGE</div>
+      <div style={{ position: "absolute", left: 0, right: 0, bottom: "calc(env(safe-area-inset-bottom,0px) + 22px)", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: "0 22px" }}>
+        <button onClick={() => setSnackOpen(true)} style={{ ...loungeBtn, width: "100%", maxWidth: 360, fontSize: 16 }}>🍩 Snack Bar ›</button>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button onClick={() => setRoom("locker")} style={loungeBtn}>Locker Room ›</button>
+          <button onClick={() => done.current()} style={loungeBtn}>‹ Elevator</button>
         </div>
-      )}
-      {!onThrone && (
-        <div style={{ position: "absolute", bottom: "calc(env(safe-area-inset-bottom,0px) + 16px)", right: 16, fontSize: 12, letterSpacing: ".1em", color: "rgba(245,227,172,.7)" }}>tap to skip</div>
-      )}
+      </div>
+      {snackOpen && <SnackOverlay onClose={() => setSnackOpen(false)} />}
     </div>
   );
 }
+
+const loungeBtn: React.CSSProperties = {
+  border: `1.5px solid ${BRASS}`, background: "rgba(200,162,75,.14)", color: "#f5e3ac",
+  borderRadius: 12, padding: "12px 20px", fontSize: 14, fontWeight: 800, cursor: "pointer",
+};
 
