@@ -13,6 +13,7 @@ import { useMemo, useState } from "react";
 import { CATEGORIES } from "@/lib/categories";
 import { KEY_ASSET, getCleared, FOXPIT_ROOMS, type FoxPitRoomKey } from "@/lib/foxpit";
 import { CARD_DISTRIBUTION, unlockedTierCount, ROOM_RULES } from "@/lib/foxpit/rules";
+import { SnackBarLaunch } from "../../SnackBarLaunch";
 
 // ── named colors (design tokens; no bare hex inline) ──
 const GOLD = "#C8A24B";
@@ -165,6 +166,15 @@ export function LockerRoom({
             >
               {lockerOpen ? "Close locker" : "Open locker"}
             </button>
+          </div>
+        </section>
+
+        {/* 3b — SNACK BAR (reward, at your leisure). Room service off the locker; the boss is at
+            the bar and the pricey snacks pay more when you match them. Coins-only, zero rake. */}
+        <section>
+          <SectionLabel>SNACK BAR · room service</SectionLabel>
+          <div className="mt-2">
+            <SnackBarLaunch label="Open the Snack Bar" sub="Feed Boss Fox — a match-3 coin farm, play whenever" />
           </div>
         </section>
 

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LockGlyph } from "@/components/practice/LockGlyph";
+import { SnackBarLaunch } from "../SnackBarLaunch";
 import {
   FOXPIT_ROOMS,
   LOBBY_MAP_Y,
@@ -900,6 +901,10 @@ function WinnersLoungeArrival({ onDone }: { onDone: () => void }) {
     }
   });
   const [beat, setBeat] = useState(0);
+  // Interim: after the entrance (and the first-arrival throne cinematic), the lounge is a small
+  // persistent HOME with the Snack Bar door in — reachable every visit, at leisure, until the
+  // upstairs locker room is built. "Step in" from the throne beat lands here.
+  const [steppedIn, setSteppedIn] = useState(false);
   // The Winner's Lounge ENTRANCE: the same tinted glass door + fox-neon badge as the Fox Pit
   // entrance, titled "Welcome to the Winner's Lounge". It swings open onto the establishing room
   // on EVERY arrival; the throne plates that follow play only on the FIRST arrival.
@@ -919,12 +924,7 @@ function WinnersLoungeArrival({ onDone }: { onDone: () => void }) {
   }, [firstTime]);
 
   // Once the door has swung open: first-timers watch the plates (advanced below); returning
-  // players are handed straight into the lounge.
-  useEffect(() => {
-    if (showDoor || firstTime) return;
-    const t = window.setTimeout(() => done.current(), 0);
-    return () => window.clearTimeout(t);
-  }, [showDoor, firstTime]);
+  // players drop straight into the lounge HOME (the Snack Bar door + back-to-map).
 
   // Advance the throne plates (first arrival only, after the door), holding on the final throne.
   useEffect(() => {
@@ -947,7 +947,30 @@ function WinnersLoungeArrival({ onDone }: { onDone: () => void }) {
     );
   }
 
-  if (!firstTime) return null; // returning: door already handed off to the lounge
+  // Lounge HOME — the persistent room after the door: reached straight away by returning winners,
+  // and via "Step in" on the first-arrival throne beat. Interim leisure hub for the Snack Bar until
+  // the upstairs locker is built.
+  if (steppedIn || !firstTime) {
+    return (
+      <div style={{ position: "absolute", inset: 0, zIndex: 5, background: "#05070b", overflow: "hidden" }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={LOUNGE_PLATES[0]} alt="" draggable={false} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 42%" }} />
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(5,7,11,.2) 0%, rgba(5,7,11,.55) 55%, rgba(5,7,11,.92) 100%)" }} />
+        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", padding: "0 22px", paddingBottom: "calc(env(safe-area-inset-bottom,0px) + 26px)", gap: 12 }}>
+          <div style={{ fontSize: 12, letterSpacing: ".3em", color: "#f5e3ac", fontWeight: 800, textShadow: "0 2px 10px #000" }}>WINNER&apos;S LOUNGE</div>
+          <div style={{ width: "100%", maxWidth: 360 }}>
+            <SnackBarLaunch label="Snack Bar" sub="Room service — feed Boss Fox, farm coins at your leisure" />
+          </div>
+          <button
+            onClick={() => done.current()}
+            style={{ marginTop: 2, border: `1.5px solid ${BRASS}`, background: "rgba(200,162,75,.12)", color: "#f5e3ac", borderRadius: 12, padding: "11px 26px", fontSize: 14, fontWeight: 800, cursor: "pointer" }}
+          >
+            ‹ Back to the map
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const onThrone = beat === LOUNGE_PLATES.length - 1;
 
@@ -974,7 +997,7 @@ function WinnersLoungeArrival({ onDone }: { onDone: () => void }) {
               "Step in" hands off to the digital player table (B3) — currently returns to the map
               until that room is built (Frank to spec). */}
           <div style={{ fontFamily: "Georgia, serif", fontSize: 22, color: "#f5e3ac", textShadow: "0 2px 10px #000", marginTop: 6 }}>Ready to defend your throne?</div>
-          <button onClick={(e) => { e.stopPropagation(); done.current(); }} style={{ marginTop: 16, border: `2px solid ${BRASS}`, background: "rgba(200,162,75,.18)", color: "#fff", borderRadius: 12, padding: "12px 30px", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>Step in ›</button>
+          <button onClick={(e) => { e.stopPropagation(); setSteppedIn(true); }} style={{ marginTop: 16, border: `2px solid ${BRASS}`, background: "rgba(200,162,75,.18)", color: "#fff", borderRadius: 12, padding: "12px 30px", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>Step in ›</button>
         </div>
       )}
       {!onThrone && (
