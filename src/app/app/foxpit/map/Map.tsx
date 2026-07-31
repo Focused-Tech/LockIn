@@ -952,12 +952,7 @@ function WinnersLoungeArrival({ onDone }: { onDone: () => void }) {
   // opening locker, props, the Snack Bar phone, and a way to the elevator corridor.
   if (steppedIn || !firstTime) {
     return (
-      <WinnersLoungeLocker
-        coins={0}
-        unlockedRooms={[]}
-        bossFoxBeaten={winnersUnlocked(getCleared())} // up here the phone is beaten-gated (freely playable)
-        onBack={() => done.current()}
-      />
+      <WinnersLoungeLocker onBack={() => done.current()} />
     );
   }
 

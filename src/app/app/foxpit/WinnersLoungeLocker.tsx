@@ -17,8 +17,6 @@
  * off the plates — fine-tune against the architect's device screenshot.
  */
 import { useState } from "react";
-import { SnackBarPhone } from "./SnackBarPhone";
-import type { FoxPitRoomKey } from "@/lib/foxpit";
 
 const LOCKER_PLATE = "/foxpit/lounge/locker_room_lounge.png";
 const CORRIDOR_PLATE = "/foxpit/lounge/elevator_corridor.png";
@@ -83,19 +81,10 @@ export function LockerDoor({ open, onToggle }: { open: boolean; onToggle: () => 
 
 /** §1.1 + §2 + §4 — the Winner's Lounge locker room: plate + props + the opening locker + the Snack
  *  Bar phone, plus a way to the elevator corridor and back to the map. */
-export function WinnersLoungeLocker({
-  coins,
-  unlockedRooms,
-  bossFoxBeaten,
-  onBack,
-}: {
-  coins: number;
-  unlockedRooms: FoxPitRoomKey[];
-  bossFoxBeaten: boolean;
-  onBack: () => void;
-}) {
+export function WinnersLoungeLocker({ onBack }: { onBack: () => void }) {
   const [lockerOpen, setLockerOpen] = useState(false);
   const [atElevator, setAtElevator] = useState(false);
+  const [snackOpen, setSnackOpen] = useState(false);
 
   if (atElevator) return <ElevatorCorridor onBack={() => setAtElevator(false)} />;
 
@@ -103,11 +92,13 @@ export function WinnersLoungeLocker({
     <div style={{ position: "absolute", inset: 0, zIndex: 5, background: "#05070b", overflow: "hidden" }}>
       <Plate src={LOCKER_PLATE} />
 
-      {/* §4 — props on the open marble floor (already flipped in-asset; not flipped again) */}
+      {/* §4 — props on the open marble floor (already flipped in-asset; not flipped again). Sized up
+          and lifted so the coin table sits on the near edge of the fox-head floor crest, the chair
+          behind it. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/foxpit/lounge/coin_table.png" alt="" draggable={false} style={{ position: "absolute", left: "36%", bottom: "20%", width: "22%", height: "auto", filter: "drop-shadow(0 10px 20px rgba(0,0,0,.6))" }} />
+      <img src="/foxpit/lounge/boss_chair.png" alt="" draggable={false} style={{ position: "absolute", left: "48%", bottom: "48%", width: "40%", height: "auto", filter: "drop-shadow(0 14px 26px rgba(0,0,0,.65))" }} />
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/foxpit/lounge/boss_chair.png" alt="" draggable={false} style={{ position: "absolute", left: "55%", bottom: "14%", width: "26%", height: "auto", filter: "drop-shadow(0 12px 22px rgba(0,0,0,.65))" }} />
+      <img src="/foxpit/lounge/coin_table.png" alt="" draggable={false} style={{ position: "absolute", left: "30%", bottom: "44%", width: "32%", height: "auto", filter: "drop-shadow(0 12px 22px rgba(0,0,0,.6))" }} />
 
       {/* §2 — the opening centre locker */}
       <LockerDoor open={lockerOpen} onToggle={() => setLockerOpen((v) => !v)} />
@@ -117,36 +108,93 @@ export function WinnersLoungeLocker({
         WINNER&apos;S LOUNGE · LOCKER ROOM
       </div>
 
-      {/* bottom UI: Snack Bar phone + elevator + back */}
+      {/* bottom UI: THIS WAY to the Snack Bar (it's a place in the lounge, not a phone) + elevator + back */}
       <div style={{ position: "absolute", left: 0, right: 0, bottom: "calc(env(safe-area-inset-bottom,0px) + 22px)", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: "0 22px" }}>
-        <div style={{ width: "100%", maxWidth: 360 }}>
-          <SnackBarPhone coins={coins} unlockedRooms={unlockedRooms} bossFoxBeaten={bossFoxBeaten} />
-        </div>
+        <button
+          onClick={() => setSnackOpen(true)}
+          style={{ ...btn, width: "100%", maxWidth: 360, fontSize: 16, padding: "15px 20px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+        >
+          <span style={{ fontSize: 18 }}>🍩</span> This way to the Snack Bar <span style={{ opacity: 0.8 }}>›</span>
+        </button>
         <div style={{ display: "flex", gap: 10 }}>
           <button onClick={() => setAtElevator(true)} style={btn}>Elevator ›</button>
           <button onClick={onBack} style={btn}>‹ Map</button>
         </div>
       </div>
+
+      {snackOpen && <SnackOverlay onClose={() => setSnackOpen(false)} />}
     </div>
   );
 }
 
-/** §1.2 + §3 — the elevator corridor: plate with the car composited into the arch recess. */
+/** The Snack Bar itself — the byte-frozen game, opened full-screen from the lounge. */
+function SnackOverlay({ onClose }: { onClose: () => void }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 90, background: "#0A0D12" }}>
+      <iframe src="/foxpit/snack-attack.html" title="Boss Snack Attack" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none" }} allow="autoplay" />
+      <button
+        onClick={onClose}
+        aria-label="Close Snack Bar"
+        style={{ position: "absolute", top: "calc(env(safe-area-inset-top,0px) + 10px)", right: 12, zIndex: 2, width: 40, height: 40, borderRadius: 999, border: `1.5px solid ${BRASS}`, background: "rgba(3,4,7,.72)", color: BRASS, fontSize: 20, fontWeight: 800, cursor: "pointer" }}
+      >
+        ✕
+      </button>
+    </div>
+  );
+}
+
+/** §1.2 + §3 — the elevator corridor: plate with the car composited into the arch recess. Tapping the
+ *  wall CALL BUTTONS (painted into the plate) calls the car — it descends into the arch and settles. */
 export function ElevatorCorridor({ onBack }: { onBack: () => void }) {
+  const [called, setCalled] = useState(false);
   return (
     <div style={{ position: "absolute", inset: 0, zIndex: 5, background: "#05070b", overflow: "hidden" }}>
       <Plate src={CORRIDOR_PLATE} />
-      {/* §3.1/3.2 — the car sits INSIDE the arch's black opening, so the plate's brass frame stays in
-          front (the car never extends over the surrounding panelling). */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      {/* §3.1/3.2 — the car FILLS the arch's black opening. It's clipped to the opening (overflow
+          hidden, arched top) so it can be scaled up large without ever spilling over the plate's
+          brass frame / panelling — the frame stays in front. It starts above the arch and DESCENDS
+          into view when the elevator is called. */}
+      <div
         data-elevator-car
-        src="/foxpit/lounge/elevator_car.png"
-        alt="Elevator car"
-        draggable={false}
-        style={{ position: "absolute", left: `${CAR_BOX.leftPct}%`, top: `${CAR_BOX.topPct}%`, width: `${CAR_BOX.widthPct}%`, height: "auto" }}
+        style={{
+          position: "absolute",
+          left: `${ARCH_OPENING.leftPct}%`,
+          top: `${ARCH_OPENING.topPct}%`,
+          width: `${ARCH_OPENING.rightPct - ARCH_OPENING.leftPct}%`,
+          height: `${ARCH_OPENING.bottomPct - ARCH_OPENING.topPct}%`,
+          overflow: "hidden",
+          borderTopLeftRadius: "48% 34%",
+          borderTopRightRadius: "48% 34%",
+        }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          data-elevator-car-img
+          src="/foxpit/lounge/elevator_car.png"
+          alt="Elevator car"
+          draggable={false}
+          style={{
+            position: "absolute",
+            left: "-16%",
+            top: "-1%",
+            width: "132%",
+            height: "auto",
+            transform: called ? "translateY(0)" : "translateY(-118%)",
+            transition: "transform 1.05s cubic-bezier(.35,0,.15,1)",
+          }}
+        />
+      </div>
+
+      {/* §3.3 — the CALL BUTTONS painted on the wall (right of the arch) are the tap target; tapping
+          calls the car. The cutout call_buttons.png is redundant (the plate already paints them). */}
+      <button
+        aria-label="Call the elevator"
+        onClick={() => setCalled(true)}
+        style={{ position: "absolute", left: "71%", top: "42%", width: "14%", height: "12%", background: "transparent", border: "none", padding: 0, cursor: "pointer", borderRadius: 8, boxShadow: called ? "none" : "0 0 0 2px rgba(200,162,75,.35)" }}
       />
-      <div style={{ position: "absolute", left: 0, right: 0, bottom: "calc(env(safe-area-inset-bottom,0px) + 22px)", display: "flex", justifyContent: "center" }}>
+
+      <div style={{ position: "absolute", left: 0, right: 0, bottom: "calc(env(safe-area-inset-bottom,0px) + 22px)", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+        {!called && <div style={{ fontSize: 12, letterSpacing: ".14em", color: "rgba(245,227,172,.85)", textShadow: "0 2px 8px #000" }}>Tap the brass call buttons →</div>}
         <button onClick={onBack} style={btn}>‹ Locker room</button>
       </div>
     </div>
