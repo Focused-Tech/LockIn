@@ -104,7 +104,9 @@
       "Bash(rm -f _trace.mjs)",
       "Bash(awk '{print $5}')",
       "Bash(:)",
-      "Bash(grep -n \"elevator CABLE\\\\|zIndex: 89\\\\|top: 0,\\\\s*$\\\\|ELEVATOR_TOP_STOP\\\\|ELEVATOR_BOTTOM_STOP\\\\|ELEVATOR_STOP_BY_ID\" src/app/app/foxpit/map/Map.tsx)"
+      "Bash(grep -n \"elevator CABLE\\\\|zIndex: 89\\\\|top: 0,\\\\s*$\\\\|ELEVATOR_TOP_STOP\\\\|ELEVATOR_BOTTOM_STOP\\\\|ELEVATOR_STOP_BY_ID\" src/app/app/foxpit/map/Map.tsx)",
+      "Bash(npx vitest *)",
+      "Bash(command -v adb)"
     ]
   }
 }

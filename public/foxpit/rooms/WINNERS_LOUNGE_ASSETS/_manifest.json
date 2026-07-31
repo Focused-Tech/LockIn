@@ -1,0 +1,50 @@
+[
+ {
+  "file": "cutouts/locker_closed.png",
+  "w": 110,
+  "h": 464,
+  "note": ""
+ },
+ {
+  "file": "cutouts/locker_open_interior.png",
+  "w": 115,
+  "h": 467,
+  "note": ""
+ },
+ {
+  "file": "cutouts/locker_door_inner.png",
+  "w": 111,
+  "h": 465,
+  "note": ""
+ },
+ {
+  "file": "cutouts/boss_chair.png",
+  "w": 259,
+  "h": 301,
+  "note": "flipped horizontally per architect"
+ },
+ {
+  "file": "cutouts/coin_table.png",
+  "w": 209,
+  "h": 276,
+  "note": "flipped horizontally per architect"
+ },
+ {
+  "file": "cutouts/call_buttons.png",
+  "w": 98,
+  "h": 217,
+  "note": ""
+ },
+ {
+  "file": "parked/window_night.png",
+  "w": 215,
+  "h": 380,
+  "note": "PARKED \u2014 wrong camera angle, do not use"
+ },
+ {
+  "file": "parked/window_day.png",
+  "w": 216,
+  "h": 379,
+  "note": "PARKED \u2014 wrong camera angle, do not use"
+ }
+]

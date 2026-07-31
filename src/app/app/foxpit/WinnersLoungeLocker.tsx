@@ -159,15 +159,16 @@ export function SnackOverlay({ onClose }: { onClose: () => void }) {
  *  DOWN (UP is dark + inert). §2 the car STANDS ON THE FLOOR (bottom-anchored at the arch base y1403);
  *  it never rises. On DOWN it descends out of the opening and hands off downward. */
 export function ElevatorCorridor({ onBack, onDown }: { onBack: () => void; onDown?: () => void }) {
-  const [going, setGoing] = useState(false);
-  const down = onDown ?? onBack;
-  const goDown = () => { if (going) return; setGoing(true); window.setTimeout(down, 900); }; // §1.5 travel DOWN then hand off
+  // DOWN CALL → hand off to the floor-select RIDE. The car stays put on the floor here; the doors
+  // OPEN inside the ride overlay (ElevatorRide's opening frames), you pick a floor, then it travels.
+  // No car-slide here — tapping DOWN "calls" the car, it does NOT immediately leave the tower.
+  const call = onDown ?? onBack;
   return (
     <div style={{ position: "absolute", inset: 0, zIndex: 5, background: "#05070b", overflow: "hidden" }}>
       <Plate src={CORRIDOR_PLATE} />
       {/* §2 — the car STANDS on the floor: bottom-anchored at the arch base y1403 (296×846, ×1.458),
-          left x251, ~26px dark under the crown (§2.4). Static — it does not float or rise (§2.3/1.1).
-          On DOWN travel it slides down out of the opening. The plate's brass frame stays in front (§2.5). */}
+          left x251, ~26px dark under the crown (§2.4). Static — it does not float, rise, or slide away
+          (§2.3/1.1). The plate's brass frame stays in front (§2.5). */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         data-elevator-car
@@ -180,34 +181,39 @@ export function ElevatorCorridor({ onBack, onDown }: { onBack: () => void; onDow
           top: p(CAR_PX.top, CORRIDOR_H),
           width: p(CAR_PX.width, CORRIDOR_W),
           height: p(CAR_PX.height, CORRIDOR_H),
-          transform: going ? "translateY(130%)" : "translateY(0)",
-          opacity: going ? 0 : 1,
-          transition: "transform .9s cubic-bezier(.4,0,.2,1), opacity .9s ease",
         }}
       />
 
-      {/* §1.2 — UP call: DARK + INERT (top floor, nothing above). Darkens the plate's painted up arrow. */}
+      {/* §1.2 — UP call: DARK + INERT (top floor, nothing above). Darkens the plate's painted up arrow.
+          Positioned over the brass call plate on the wall right of the arch (up = top arrow). */}
       <button
         data-elevator-up
         disabled
         aria-label="Up (top floor — disabled)"
-        style={{ position: "absolute", left: "75.5%", top: "44.5%", width: "7.5%", height: "4.6%", background: "rgba(3,4,7,.6)", border: "none", borderRadius: 3, cursor: "not-allowed", filter: "grayscale(1)", padding: 0 }}
+        style={{ position: "absolute", left: "74.8%", top: "46.2%", width: "6.6%", height: "3%", background: "rgba(3,4,7,.62)", border: "none", borderRadius: 3, cursor: "not-allowed", filter: "grayscale(1)", padding: 0 }}
       />
-      {/* §1.3 — DOWN call: the live control (over the plate's painted down arrow). */}
+      {/* §1.3 — DOWN call: the LIVE control, over the plate's painted down arrow (the bottom arrow on
+          the brass call plate). Tapping it opens the elevator (floor-select). Gold pulse marks it live. */}
       <button
         data-elevator-down
-        aria-label="Go down"
-        onClick={goDown}
-        style={{ position: "absolute", left: "75.5%", top: "51%", width: "7.5%", height: "4.6%", background: "transparent", border: "none", borderRadius: 3, cursor: "pointer", boxShadow: "0 0 0 2px rgba(200,162,75,.45)", padding: 0 }}
+        aria-label="Call the elevator (down)"
+        onClick={call}
+        style={{ position: "absolute", left: "74.8%", top: "49.2%", width: "6.6%", height: "3%", background: "rgba(200,162,75,.18)", border: "none", borderRadius: 3, cursor: "pointer", boxShadow: "0 0 0 2px rgba(200,162,75,.6), 0 0 12px rgba(200,162,75,.5)", padding: 0, animation: "foxpitCallPulse 1.5s ease-in-out infinite" }}
       />
 
       <div style={{ position: "absolute", left: 0, right: 0, bottom: "calc(env(safe-area-inset-bottom,0px) + 22px)", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-        <div style={{ fontSize: 12, letterSpacing: ".12em", color: "rgba(245,227,172,.85)", textShadow: "0 2px 8px #000" }}>Top floor — the car only goes ▼ down</div>
+        <div style={{ fontSize: 12, letterSpacing: ".12em", color: "rgba(245,227,172,.85)", textShadow: "0 2px 8px #000" }}>Top floor — call the car, then pick a floor ▼</div>
         <div style={{ display: "flex", gap: 10 }}>
-          <button onClick={goDown} style={btn}>▼ Down</button>
+          <button onClick={call} style={btn}>▼ Call elevator</button>
           <button onClick={onBack} style={btn}>‹ Lounge</button>
         </div>
       </div>
+      <style>{`
+        @keyframes foxpitCallPulse {
+          0%, 100% { box-shadow: 0 0 0 2px rgba(200,162,75,.6), 0 0 10px rgba(200,162,75,.45); }
+          50% { box-shadow: 0 0 0 2px rgba(200,162,75,.9), 0 0 18px rgba(200,162,75,.75); }
+        }
+      `}</style>
     </div>
   );
 }

@@ -533,7 +533,12 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           other room). Full-screen; the arrival component handles the glass door + plates. */}
       {loungeArrival && (
         <div style={{ position: "fixed", inset: 0, zIndex: 88, background: "#05070b" }}>
-          <WinnersLoungeArrival onDone={() => setLoungeArrival(false)} />
+          <WinnersLoungeArrival
+            onDone={() => setLoungeArrival(false)}
+            lone={lone}
+            cleared={cleared}
+            onArrive={(k) => { setLoungeArrival(false); enter(k); }}
+          />
         </div>
       )}
 
@@ -862,7 +867,9 @@ function ElevatorRide({
       })()}
 
       {/* WINNER'S LOUNGE arrival cinematic (Part B) — plays the four plates on first arrival. */}
-      {phase === "lounge" && <WinnersLoungeArrival onDone={onClose} />}
+      {phase === "lounge" && (
+        <WinnersLoungeArrival onDone={onClose} lone={lone} cleared={cleared} onArrive={onArrive} />
+      )}
     </div>
   );
 }
@@ -887,7 +894,17 @@ const LOUNGE_PLATES = [
 // quarter is left clear in the plate for the controls.
 const LOUNGE_DEST = "/foxpit/lounge/lounge_main_9x22.png";
 
-function WinnersLoungeArrival({ onDone }: { onDone: () => void }) {
+function WinnersLoungeArrival({
+  onDone,
+  lone,
+  cleared,
+  onArrive,
+}: {
+  onDone: () => void;
+  lone: boolean;
+  cleared: Set<FoxPitRoomKey>;
+  onArrive: (k: FoxPitRoomKey) => void;
+}) {
   const done = useRef(onDone);
   done.current = onDone;
   // §2 FIRST-VISIT-ONLY arrival cinematic across the four angle plates, then the lounge. The flag is
@@ -897,6 +914,7 @@ function WinnersLoungeArrival({ onDone }: { onDone: () => void }) {
     try { return localStorage.getItem("foxpit.lounge.seen.v7") ? LOUNGE_PLATES.length : 0; } catch { return 0; }
   });
   const [room, setRoom] = useState<"lounge" | "locker" | "elevator">("lounge");
+  const [riding, setRiding] = useState(false);
   const [snackOpen, setSnackOpen] = useState(false);
 
   useEffect(() => { try { localStorage.setItem("foxpit.lounge.seen.v7", "1"); } catch { /* ignore */ } }, []);
@@ -925,9 +943,21 @@ function WinnersLoungeArrival({ onDone }: { onDone: () => void }) {
 
   // §3.3/3.4 — the LOCKER ROOM is a DOOR off the lounge; leaving it returns to the lounge.
   if (room === "locker") return <WinnersLoungeLocker onBack={() => setRoom("lounge")} />;
-  // The elevator: top floor, so from here it only goes DOWN. Back returns to the lounge; DOWN exits
-  // down the tower (to the map).
-  if (room === "elevator") return <ElevatorCorridor onBack={() => setRoom("lounge")} onDown={() => done.current()} />;
+  // The elevator: top floor. You CALL the car in the corridor (▼), which OPENS the elevator interior
+  // (ElevatorRide) — its doors slide open, you pick a floor, then the car travels and opens on that
+  // floor. Closing the ride returns you to the corridor; the corridor's back returns to the lounge.
+  if (room === "elevator") {
+    if (riding)
+      return (
+        <ElevatorRide
+          lone={lone}
+          cleared={cleared}
+          onClose={() => setRiding(false)}
+          onArrive={onArrive}
+        />
+      );
+    return <ElevatorCorridor onBack={() => setRoom("lounge")} onDown={() => setRiding(true)} />;
+  }
 
   // §2/§3 — THE LOUNGE is the destination: the throne/bar plate, full-bleed, controls over the bottom.
   return (

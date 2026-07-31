@@ -1,0 +1,23 @@
+WINNER'S LOUNGE — LOCKER ROOM + ELEVATOR  ·  asset drop
+
+plates/            full-bleed room backdrops, 9:22 portrait, drop straight in
+  locker_room_lounge.png   801x1962   lounge locker room, lockers BAKED IN
+  elevator_corridor.png    802x1961   corridor, arch recess EMPTY on purpose
+
+cutouts/           transparent PNGs, composite in front of the plates
+  locker_closed.png          the closed door, matches the baked bank
+  locker_open_interior.png   inside: shelf, towels, hangers, mirror
+  locker_door_inner.png      the door's back face, seen swung open
+  locker_normalised/         the same three padded to ONE common box so the
+                             swap cannot jump - USE THESE, not the raw three
+  boss_chair.png             FLIPPED horizontally per the architect
+  coin_table.png             FLIPPED horizontally per the architect
+  call_buttons.png           brass up/down plate
+  elevator_car.png           the car, green knocked out
+
+parked/            DO NOT USE
+  window_night.png  window_day.png   wrong camera angle - architect parked them
+
+OPEN, architect's call:
+  - day/night window swap needs regenerating at the plate's angle
+  - top-down lounge tables still owed

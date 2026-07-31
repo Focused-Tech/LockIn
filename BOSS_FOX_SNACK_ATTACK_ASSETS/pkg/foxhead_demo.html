@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Boss Fox — chomping head</title>
+<style>
+*{box-sizing:border-box;margin:0;scrollbar-width:none;-ms-overflow-style:none}
+*::-webkit-scrollbar{display:none}
+:root{--orange:#FC3E01;--gold:#F0C463}
+html,body{height:100%;background:#0A0D12;color:#E7E7EB;overflow:hidden;
+ font:14px/1.35 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+#wrap{height:100%;display:flex;flex-direction:column;gap:10px;padding:10px;align-items:center}
+#fox{flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center}
+#hud{font-size:12px;color:#8B93A1;flex:0 0 auto}
+#hud b{color:var(--gold);font-size:18px}
+#row{display:flex;gap:8px;flex:0 0 auto}
+button{border:1px solid #2A3542;background:linear-gradient(180deg,#1B212B,#151A22);color:#E7E7EB;
+ border-radius:9px;padding:9px 15px;font:600 13px inherit;cursor:pointer;
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+button.on{background:var(--orange);border-color:var(--orange);color:#fff}
+#bar{flex:0 0 auto;width:min(760px,100%);border-radius:12px;overflow:hidden;
+ box-shadow:0 8px 24px rgba(0,0,0,.5)}
+#bar img{display:block;width:100%}
+</style></head><body>
+<div id="wrap">
+  <div id="fox"></div>
+  <div id="hud">Eaten <b id="cnt">0</b></div>
+  <div id="row">
+    <button id="auto" class="on">Auto feed</button>
+    <button id="one">Feed one</button>
+    <button id="chomp">Chomp</button>
+  </div>
+  <div id="bar"><img src="assets/scenes/snackbar.png" alt=""></div>
+</div>
+<script src="foxhead.js"></script>
+<script>
+var fox = FoxHead.mount(document.getElementById('fox'), {assets:'assets/'});
+var cnt = document.getElementById('cnt'), auto = true;
+fox.on('eaten', function(e){ cnt.textContent = e.count; });
+document.getElementById('auto').addEventListener('click', function(){
+  auto = !auto; this.classList.toggle('on', auto); });
+document.getElementById('one').addEventListener('click', function(){ fox.feed(); });
+document.getElementById('chomp').addEventListener('click', function(){ fox.chomp(); });
+setInterval(function(){ if (auto && Math.random() < 0.5) fox.feed(); }, 900);
+window.__demo = fox;
+</script></body></html>
