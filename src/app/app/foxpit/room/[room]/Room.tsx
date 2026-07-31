@@ -609,7 +609,11 @@ export function TablePanel({
   // §1.2 — the BALLROOM SEAT PLATE for this table: the opponent already seated AT the baked table in
   // the room (no floating cutout). Boss/lone table → plate 0; underling tables rotate the pool.
   const plate = seatPlate(room.key, index, bossTable);
-  const plateName = bossTable ? room.boss : (opponent?.name ?? room.boss);
+  // The room boss shows by her FULL name ("Boss Raven"), never a bare clan name — so the female room
+  // boss is never confused with a same-clan underling (e.g. Grim, the raven 2nd-tier). Underling seats
+  // always show the underling's own name (never fall back to the boss).
+  const bossFullName = room.boss.startsWith("Boss") ? room.boss : `Boss ${room.boss}`;
+  const plateName = bossTable ? bossFullName : (opponent?.name ?? `Table ${index + 1}`);
   const plateSub = bossTable ? `Host · ${room.floorLabel}` : (opponent ? `${opponent.winPct}% win rate` : "Dealt by the Locksmith");
   return (
     <div style={{ position: "absolute", inset: 0, zIndex: 66, background: "#05070b", overflow: "hidden", animation: "foxpitFadeUp .35s ease both" }}>
