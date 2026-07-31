@@ -150,13 +150,13 @@ export function WinnersLoungeLocker({ onBack }: { onBack: () => void }) {
 /** The Snack Bar itself — the byte-frozen game, opened full-screen from the lounge. */
 function SnackOverlay({ onClose }: { onClose: () => void }) {
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 90, background: "#0A0D12" }}>
-      {/* Inset by the device safe areas so the game's top title clears the status bar and its bottom
-          Rules/Leaders/Order row clears the nav bar (the game runs in an iframe, where env() is 0). */}
+    <div style={{ position: "fixed", inset: 0, zIndex: 90, background: "#0A0D12", boxSizing: "border-box", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+      {/* iframe fills the (safe-area-padded) box at a definite 100% size, so the game lays out and its
+          bottom Rules/Leaders/Order row clears the nav bar. */}
       <iframe
         src="/foxpit/snack-attack.html"
         title="Boss Snack Attack"
-        style={{ position: "absolute", top: "env(safe-area-inset-top, 0px)", bottom: "calc(env(safe-area-inset-bottom, 0px) + 8px)", left: 0, right: 0, width: "auto", height: "auto", border: "none" }}
+        style={{ display: "block", width: "100%", height: "100%", border: "none" }}
         allow="autoplay"
       />
       <button
