@@ -20,7 +20,7 @@
 html,body{margin:0;height:100%;height:100dvh;background:var(--fox-dark);color:var(--grey);
   font:15px/1.45 -apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden;
   user-select:none;-webkit-user-select:none}
-#app{height:100%;max-width:480px;margin:0 auto;display:flex;flex-direction:column;position:relative}
+#app{height:100%;max-width:480px;margin:0 auto;display:flex;flex-direction:column;position:relative;min-width:0;min-height:0}
 
 /* ============ BRASS TYPE ============ */
 .brass{font-family:Georgia,"Times New Roman",serif;letter-spacing:.12em;
@@ -28,7 +28,7 @@ html,body{margin:0;height:100%;height:100dvh;background:var(--fox-dark);color:va
 .mono{font-family:ui-monospace,Menlo,Consolas,monospace}
 
 /* ============ SCREENS ============ */
-.screen{position:absolute;inset:0;display:none;flex-direction:column;
+.screen{position:absolute;inset:0;display:none;flex-direction:column;min-width:0;min-height:0;
   padding:calc(10px + env(safe-area-inset-top)) 16px calc(10px + env(safe-area-inset-bottom));
   background:radial-gradient(120% 60% at 50% 0%,#1a1108 0%,var(--fox-dark) 55%)}
 .screen.on{display:flex}
@@ -78,15 +78,15 @@ html,body{margin:0;height:100%;height:100dvh;background:var(--fox-dark);color:va
 #blFace svg{width:100%;height:100%;display:block}
 
 /* ============ BOARD ============ */
-#boardWrap{flex:1;min-height:0;display:grid;place-items:center;position:relative;margin:0 2px}
+#boardWrap{flex:1;min-height:0;width:100%;min-width:0;display:flex;align-items:center;justify-content:center;position:relative;margin:0 2px}
 #boardWrap::before{content:"";position:absolute;inset:-14%;border-radius:50%;
   background:radial-gradient(circle,var(--tint) 0%,transparent 62%);opacity:.34;pointer-events:none}
 #board{display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:repeat(7,1fr);
-  height:100%;width:auto;aspect-ratio:1;max-height:100%;max-width:100%;gap:4px;
+  width:min(100%,96vw);max-width:100%;aspect-ratio:1 / 1;min-width:0;min-height:0;gap:4px;
   padding:9px;background:var(--felt-a);
   border:3px solid var(--gold);border-radius:16px;position:relative;
   box-shadow:0 0 0 3px var(--tint) inset,0 0 22px var(--tint),0 10px 34px rgba(0,0,0,.6)}
-.tile{min-width:0;min-height:0;display:grid;place-items:center;padding:2px;
+.tile{min-width:0;min-height:0;overflow:hidden;display:grid;place-items:center;padding:2px;
   background:var(--felt-a);border:1px solid rgba(168,111,45,.28);border-radius:9px;
   cursor:pointer;transition:transform .12s,opacity .18s,box-shadow .15s;position:relative}
 .tile.alt{background:var(--felt-b)}
@@ -208,8 +208,7 @@ button.btn:active{transform:scale(.97)}
 /* photo snack sprites — must be constrained everywhere an <svg> used to be */
 .snackpng{display:block;object-fit:contain;pointer-events:none;
   filter:drop-shadow(0 2px 2px rgba(0,0,0,.55))}
-.tile .snackpng{max-width:100%;max-height:100%;width:auto;height:auto;
-  min-width:0;min-height:0}
+.tile .snackpng{width:100%;height:100%;object-fit:contain;display:block;min-width:0;min-height:0}
 .mrow .snackpng{width:34px;height:34px;flex:none}
 #foxWrap{contain:layout size}
 </style>
