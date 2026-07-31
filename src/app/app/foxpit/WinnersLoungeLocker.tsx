@@ -22,12 +22,33 @@ const LOCKER_PLATE = "/foxpit/lounge/locker_room_lounge.png";
 const CORRIDOR_PLATE = "/foxpit/lounge/elevator_corridor.png";
 const BRASS = "#C8A24B";
 
-// §2.2 — the CENTRE locker of the baked bank, as a % box of the 801×1962 plate (measured).
-export const LOCKER_BOX = { leftPct: 48.0, topPct: 19.7, widthPct: 14.36, aspect: 115 / 467 };
-// §3 — the arch's empty black opening, measured as a % box of the 802×1961 corridor plate.
-export const ARCH_OPENING = { leftPct: 31, rightPct: 69, topPct: 26.5, bottomPct: 69 };
-// §3.1 — the car scaled to fit INSIDE the arch opening (centred, dome under the arch top).
-export const CAR_BOX = { leftPct: 33.5, topPct: 27.8, widthPct: 33, aspect: 618 / 592 };
+// ── MEASURED PLATE COORDINATES (px) — from the architect's measurements; NOT eyeballed. ──
+// Corridor plate = 802×1961 · Locker plate = 801×1962.
+const CORRIDOR_W = 802, CORRIDOR_H = 1961;
+const LOCKER_W = 801, LOCKER_H = 1962;
+const p = (v: number, dim: number) => `${((v / dim) * 100).toFixed(3)}%`;
+
+// §1 ELEVATOR — arch opening x251→547 (296w), y531→1403 (base 1403), centre x399. The car asset is
+// 201×572; ×1.47 = 296×841 (the exact arch width), bottom-aligned to the arch base (top = 1403−841).
+export const ARCH_PX = { left: 251, right: 547, top: 531, bottom: 1403 };
+export const CAR_PX = { left: 251, top: 562, width: 296, height: 841 };
+export const CAR_SCALE = 1.47;
+
+// §2 FURNITURE — outside the floor-medallion ring (x>613, y>1044) and above the UI safe line
+// (y+h<1442). Band ≈188×398. Scaled down to sit inside with breathing room. Already flipped in-asset.
+export const FURNITURE_PX = {
+  chair: { left: 662, top: 1088, width: 118, height: 137, scale: 0.456 }, // boss_chair 259×301
+  table: { left: 642, top: 1256, width: 128, height: 169, scale: 0.612 }, // coin_table 209×276
+};
+// The centre locker rect (bank base = y700) — furniture must clear it entirely (§2.4).
+export const LOCKER_RECT_PX = { left: 384, top: 400, width: 112, height: 300 };
+// The overlay box for the opening centre locker, as a % of the plate (bottom aligned to bank base y700).
+export const LOCKER_BOX = {
+  leftPct: (LOCKER_RECT_PX.left / LOCKER_W) * 100,
+  topPct: (LOCKER_RECT_PX.top / LOCKER_H) * 100,
+  widthPct: (LOCKER_RECT_PX.width / LOCKER_W) * 100,
+  heightPct: (LOCKER_RECT_PX.height / LOCKER_H) * 100,
+};
 
 /** Full-bleed 9:22 plate, cover-fit, anchored so the bottom quarter (UI) stays visible (§1.3). */
 function Plate({ src }: { src: string }) {
@@ -55,7 +76,7 @@ export function LockerDoor({ open, onToggle }: { open: boolean; onToggle: () => 
         left: `${LOCKER_BOX.leftPct}%`,
         top: `${LOCKER_BOX.topPct}%`,
         width: `${LOCKER_BOX.widthPct}%`,
-        aspectRatio: `${115} / ${467}`,
+        height: `${LOCKER_BOX.heightPct}%`,
         perspective: 700, // §2.3 perspective on the parent
         cursor: "pointer",
       }}
@@ -92,13 +113,12 @@ export function WinnersLoungeLocker({ onBack }: { onBack: () => void }) {
     <div style={{ position: "absolute", inset: 0, zIndex: 5, background: "#05070b", overflow: "hidden" }}>
       <Plate src={LOCKER_PLATE} />
 
-      {/* §4 — props on the open marble floor (already flipped in-asset; not flipped again). Sized up
-          and lifted so the coin table sits on the near edge of the fox-head floor crest, the chair
-          behind it. */}
+      {/* §2 — furniture OUTSIDE the crest ring, down and to the right (measured band x>613 / y1044→1442),
+          scaled to fit, clearing the locker bank entirely. Already flipped in-asset — not flipped again. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/foxpit/lounge/boss_chair.png" alt="" draggable={false} style={{ position: "absolute", left: "48%", bottom: "48%", width: "40%", height: "auto", filter: "drop-shadow(0 14px 26px rgba(0,0,0,.65))" }} />
+      <img src="/foxpit/lounge/boss_chair.png" alt="" draggable={false} style={{ position: "absolute", left: p(FURNITURE_PX.chair.left, LOCKER_W), top: p(FURNITURE_PX.chair.top, LOCKER_H), width: p(FURNITURE_PX.chair.width, LOCKER_W), height: p(FURNITURE_PX.chair.height, LOCKER_H), filter: "drop-shadow(0 10px 18px rgba(0,0,0,.65))" }} />
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/foxpit/lounge/coin_table.png" alt="" draggable={false} style={{ position: "absolute", left: "30%", bottom: "44%", width: "32%", height: "auto", filter: "drop-shadow(0 12px 22px rgba(0,0,0,.6))" }} />
+      <img src="/foxpit/lounge/coin_table.png" alt="" draggable={false} style={{ position: "absolute", left: p(FURNITURE_PX.table.left, LOCKER_W), top: p(FURNITURE_PX.table.top, LOCKER_H), width: p(FURNITURE_PX.table.width, LOCKER_W), height: p(FURNITURE_PX.table.height, LOCKER_H), filter: "drop-shadow(0 10px 16px rgba(0,0,0,.6))" }} />
 
       {/* §2 — the opening centre locker */}
       <LockerDoor open={lockerOpen} onToggle={() => setLockerOpen((v) => !v)} />
@@ -114,7 +134,7 @@ export function WinnersLoungeLocker({ onBack }: { onBack: () => void }) {
           onClick={() => setSnackOpen(true)}
           style={{ ...btn, width: "100%", maxWidth: 360, fontSize: 16, padding: "15px 20px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
         >
-          <span style={{ fontSize: 18 }}>🍩</span> This way to the Snack Bar <span style={{ opacity: 0.8 }}>›</span>
+          <span style={{ fontSize: 18 }}>🍩</span> This way to the <span style={{ whiteSpace: "nowrap" }}>Snack Bar</span> <span style={{ opacity: 0.8 }}>›</span>
         </button>
         <div style={{ display: "flex", gap: 10 }}>
           <button onClick={() => setAtElevator(true)} style={btn}>Elevator ›</button>
@@ -131,7 +151,14 @@ export function WinnersLoungeLocker({ onBack }: { onBack: () => void }) {
 function SnackOverlay({ onClose }: { onClose: () => void }) {
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 90, background: "#0A0D12" }}>
-      <iframe src="/foxpit/snack-attack.html" title="Boss Snack Attack" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none" }} allow="autoplay" />
+      {/* Inset by the device safe areas so the game's top title clears the status bar and its bottom
+          Rules/Leaders/Order row clears the nav bar (the game runs in an iframe, where env() is 0). */}
+      <iframe
+        src="/foxpit/snack-attack.html"
+        title="Boss Snack Attack"
+        style={{ position: "absolute", top: "env(safe-area-inset-top, 0px)", bottom: "calc(env(safe-area-inset-bottom, 0px) + 8px)", left: 0, right: 0, width: "auto", height: "auto", border: "none" }}
+        allow="autoplay"
+      />
       <button
         onClick={onClose}
         aria-label="Close Snack Bar"
@@ -150,47 +177,33 @@ export function ElevatorCorridor({ onBack }: { onBack: () => void }) {
   return (
     <div style={{ position: "absolute", inset: 0, zIndex: 5, background: "#05070b", overflow: "hidden" }}>
       <Plate src={CORRIDOR_PLATE} />
-      {/* §3.1/3.2 — the car FILLS the arch's black opening. It's clipped to the opening (overflow
-          hidden, arched top) so it can be scaled up large without ever spilling over the plate's
-          brass frame / panelling — the frame stays in front. It starts above the arch and DESCENDS
-          into view when the elevator is called. */}
-      <div
+      {/* §1 — the car at its MEASURED box: 296×841 (asset ×1.47), left x251, top y562, standing on the
+          arch base y1403. Its domed silhouette matches the arch (ratio 0.35), so it sits inside the
+          opening and the plate's brass frame stays in front (§1.4). It descends into place when called. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
         data-elevator-car
+        src="/foxpit/lounge/elevator_car.png"
+        alt="Elevator car"
+        draggable={false}
         style={{
           position: "absolute",
-          left: `${ARCH_OPENING.leftPct}%`,
-          top: `${ARCH_OPENING.topPct}%`,
-          width: `${ARCH_OPENING.rightPct - ARCH_OPENING.leftPct}%`,
-          height: `${ARCH_OPENING.bottomPct - ARCH_OPENING.topPct}%`,
-          overflow: "hidden",
-          borderTopLeftRadius: "48% 34%",
-          borderTopRightRadius: "48% 34%",
+          left: p(CAR_PX.left, CORRIDOR_W),
+          top: p(CAR_PX.top, CORRIDOR_H),
+          width: p(CAR_PX.width, CORRIDOR_W),
+          height: p(CAR_PX.height, CORRIDOR_H),
+          transform: called ? "translateY(0)" : "translateY(-118%)",
+          transition: "transform 1.1s cubic-bezier(.35,0,.15,1)",
+          filter: called ? "drop-shadow(0 0 22px rgba(200,162,75,.5))" : "none",
         }}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          data-elevator-car-img
-          src="/foxpit/lounge/elevator_car.png"
-          alt="Elevator car"
-          draggable={false}
-          style={{
-            position: "absolute",
-            left: "-16%",
-            top: "-1%",
-            width: "132%",
-            height: "auto",
-            transform: called ? "translateY(0)" : "translateY(-118%)",
-            transition: "transform 1.05s cubic-bezier(.35,0,.15,1)",
-          }}
-        />
-      </div>
+      />
 
-      {/* §3.3 — the CALL BUTTONS painted on the wall (right of the arch) are the tap target; tapping
-          calls the car. The cutout call_buttons.png is redundant (the plate already paints them). */}
+      {/* §3.3 (prior pass) — the CALL BUTTONS painted on the wall (right of the arch) are the tap target;
+          tapping calls the car. The cutout call_buttons.png is redundant (the plate already paints them). */}
       <button
         aria-label="Call the elevator"
         onClick={() => setCalled(true)}
-        style={{ position: "absolute", left: "71%", top: "42%", width: "14%", height: "12%", background: "transparent", border: "none", padding: 0, cursor: "pointer", borderRadius: 8, boxShadow: called ? "none" : "0 0 0 2px rgba(200,162,75,.35)" }}
+        style={{ position: "absolute", left: "71%", top: "42%", width: "14%", height: "12%", background: "transparent", border: "none", padding: 0, cursor: "pointer", borderRadius: 8, boxShadow: called ? "none" : "0 0 0 2px rgba(200,162,75,.3)" }}
       />
 
       <div style={{ position: "absolute", left: 0, right: 0, bottom: "calc(env(safe-area-inset-bottom,0px) + 22px)", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
