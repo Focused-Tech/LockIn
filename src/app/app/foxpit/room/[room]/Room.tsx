@@ -409,6 +409,7 @@ export function FoxPitRoom({
         <LockerRoom
           roomKey={room.key}
           playerCategories={categories}
+          coinBalance={coinBalance}
           onBack={() => router.push("/app/foxpit/map")}
           onEnter={(choice) => { setLockerChoice(choice); setPhase("door"); }}
         />

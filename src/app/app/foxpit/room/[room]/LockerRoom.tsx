@@ -11,9 +11,9 @@
  */
 import { useMemo, useState } from "react";
 import { CATEGORIES } from "@/lib/categories";
-import { KEY_ASSET, getCleared, FOXPIT_ROOMS, type FoxPitRoomKey } from "@/lib/foxpit";
+import { KEY_ASSET, getCleared, isUnlocked, winnersUnlocked, FOXPIT_ROOMS, type FoxPitRoomKey } from "@/lib/foxpit";
 import { CARD_DISTRIBUTION, unlockedTierCount, ROOM_RULES } from "@/lib/foxpit/rules";
-import { SnackBarLaunch } from "../../SnackBarLaunch";
+import { SnackBarPhone } from "../../SnackBarPhone";
 
 // ── named colors (design tokens; no bare hex inline) ──
 const GOLD = "#C8A24B";
@@ -62,17 +62,23 @@ export interface LockerChoice {
 export function LockerRoom({
   roomKey,
   playerCategories,
+  coinBalance,
   onEnter,
   onBack,
 }: {
   roomKey: FoxPitRoomKey;
   /** The player's own interests (users/{uid}.categories[]) — the pool they pick 1–5 from. */
   playerCategories: string[];
+  /** Current coin balance — the Snack Bar phone's gate reads this (coin-recovery faucet). */
+  coinBalance: number;
   onEnter: (choice: LockerChoice) => void;
   onBack: () => void;
 }) {
   const rules = ROOM_RULES[roomKey];
   const cleared = getCleared();
+  // Snack Bar gate inputs: the rooms this player can afford a seat in, and whether Boss Fox is down.
+  const unlockedRooms = FOXPIT_ROOMS.filter((r) => isUnlocked(r, cleared)).map((r) => r.key);
+  const bossFoxBeaten = winnersUnlocked(cleared);
 
   // Parents that actually have subcategories the player owns (fallback to the full set if empty).
   const pool = playerCategories.length ? CATEGORIES.filter((c) => playerCategories.map((p) => p.toLowerCase()).includes(c.name.toLowerCase())) : CATEGORIES;
@@ -166,15 +172,13 @@ export function LockerRoom({
             >
               {lockerOpen ? "Close locker" : "Open locker"}
             </button>
-          </div>
-        </section>
-
-        {/* 3b — SNACK BAR (reward, at your leisure). Room service off the locker; the boss is at
-            the bar and the pricey snacks pay more when you match them. Coins-only, zero rake. */}
-        <section>
-          <SectionLabel>SNACK BAR · room service</SectionLabel>
-          <div className="mt-2">
-            <SnackBarLaunch label="Open the Snack Bar" sub="Feed Boss Fox — a match-3 coin farm, play whenever" />
+            {/* SNACK BAR PHONE — a room-service phone prop on the locker shelf (bottom-left). Always
+                visible: dark when the coin gate is closed, lit when it opens. Percent-positioned so
+                it rides the art at any scale; nudge left/up here to sit deeper on the shelf once the
+                three-piece locker art lands. */}
+            <div className="absolute" style={{ left: "3%", bottom: "6%", width: "46%", maxWidth: 176 }}>
+              <SnackBarPhone coins={coinBalance} unlockedRooms={unlockedRooms} bossFoxBeaten={bossFoxBeaten} />
+            </div>
           </div>
         </section>
 
