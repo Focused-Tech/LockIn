@@ -8,7 +8,7 @@ import { describe, it, expect } from "vitest";
 import { createElement as h, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { flushSync } from "react-dom";
-import { LockerDoor, CAR_PX, ARCH_PX, FURNITURE_PX, LOCKER_RECT_PX } from "./WinnersLoungeLocker";
+import { LockerDoor, ElevatorCorridor, CAR_PX, ARCH_PX, FURNITURE_PX, LOCKER_RECT_PX } from "./WinnersLoungeLocker";
 
 interface Box { left: number; top: number; width: number; height: number }
 const intersects = (a: Box, b: Box) =>
@@ -39,11 +39,13 @@ describe("GATE §2.5 — locker opens", () => {
 describe("GATE §3 — measured car + furniture boxes", () => {
   const results: string[] = [];
 
-  it("§3.1 — car box is 296×841 and its bottom sits at y1403", () => {
+  it("§3.1/3.2 — car box is 296×846, left 251, bottom sits ON the floor y1403", () => {
     const bottom = CAR_PX.top + CAR_PX.height;
-    results.push(`§3.1 car ${CAR_PX.width}×${CAR_PX.height}, left ${CAR_PX.left}, top ${CAR_PX.top}, bottom ${bottom}`);
+    results.push(`§3.2 car ${CAR_PX.width}×${CAR_PX.height}, left ${CAR_PX.left}, top ${CAR_PX.top}, bottom ${bottom}`);
     expect(CAR_PX.width).toBe(296);
-    expect(CAR_PX.height).toBe(841);
+    expect(CAR_PX.height).toBe(846);
+    expect(CAR_PX.left).toBe(251);
+    expect(bottom).toBe(1403);
     expect(bottom).toBe(1403);
   });
 
@@ -70,6 +72,20 @@ describe("GATE §3 — measured car + furniture boxes", () => {
       results.push(`§3.4 ${name} ∩ locker(${LOCKER_RECT_PX.left},${LOCKER_RECT_PX.top},${LOCKER_RECT_PX.width},${LOCKER_RECT_PX.height}) = ${hit}`);
       expect(hit, `${name} overlaps the locker`).toBe(false);
     }
+  });
+
+  it("§3.4 — elevator from the top floor: UP disabled, DOWN enabled", () => {
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    const root = createRoot(el);
+    flushSync(() => root.render(h(ElevatorCorridor, { onBack: () => {}, onDown: () => {} })));
+    const up = el.querySelector("[data-elevator-up]") as HTMLButtonElement;
+    const down = el.querySelector("[data-elevator-down]") as HTMLButtonElement;
+    results.push(`§3.4 up.disabled=${up.disabled} down.disabled=${down.disabled}`);
+    expect(up.disabled).toBe(true); // top floor — nothing above
+    expect(down.disabled).toBe(false);
+    flushSync(() => root.unmount());
+    el.remove();
   });
 
   it("prints §3.5 results", () => {

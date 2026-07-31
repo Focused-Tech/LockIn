@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LockGlyph } from "@/components/practice/LockGlyph";
-import { WinnersLoungeLocker, SnackOverlay } from "../WinnersLoungeLocker";
+import { WinnersLoungeLocker, SnackOverlay, ElevatorCorridor } from "../WinnersLoungeLocker";
 import {
   FOXPIT_ROOMS,
   LOBBY_MAP_Y,
@@ -874,11 +874,11 @@ function ElevatorRide({
  * swap when the art lands) and hands off to the lounge. Plays IN FULL the first arrival; auto-skips
  * on every later visit. Tap anywhere to skip. Dealer-less — no Locksmith here (B3).
  */
-// The arrival cinematic — the four 627×627 angle plates, cover-fit (they fill the 9:22 screen and the
-// push-in uses the overflow). Order: wide establishing → throne left 3/4 → throne right 3/4 → throne
-// straight. The final beat cross-fades into the LOUNGE (the establishing plate is the destination).
+// The arrival cinematic — the THREE 627×627 throne angle plates, cover-fit (they fill the 9:22 screen
+// and the push-in uses the overflow): throne left 3/4 → throne right 3/4 → throne straight. The final
+// beat cross-fades into the LOUNGE destination (the wide 9:22 room). The wide establishing plate is
+// the same view as the destination, so it isn't repeated here.
 const LOUNGE_PLATES = [
-  "/foxpit/lounge/lounge_01_wide_establishing.png",
   "/foxpit/lounge/lounge_02_throne_left_3q.png",
   "/foxpit/lounge/lounge_03_throne_right_3q.png",
   "/foxpit/lounge/lounge_04_throne_straight.png",
@@ -891,15 +891,15 @@ function WinnersLoungeArrival({ onDone }: { onDone: () => void }) {
   const done = useRef(onDone);
   done.current = onDone;
   // §2 FIRST-VISIT-ONLY arrival cinematic across the four angle plates, then the lounge. The flag is
-  // persisted per user in localStorage ("foxpit.lounge.seen.v6"). Returning visitors skip straight in.
+  // persisted per user in localStorage ("foxpit.lounge.seen.v7"). Returning visitors skip straight in.
   const [beat, setBeat] = useState<number>(() => {
     if (typeof window === "undefined") return 0;
-    try { return localStorage.getItem("foxpit.lounge.seen.v6") ? LOUNGE_PLATES.length : 0; } catch { return 0; }
+    try { return localStorage.getItem("foxpit.lounge.seen.v7") ? LOUNGE_PLATES.length : 0; } catch { return 0; }
   });
-  const [room, setRoom] = useState<"lounge" | "locker">("lounge");
+  const [room, setRoom] = useState<"lounge" | "locker" | "elevator">("lounge");
   const [snackOpen, setSnackOpen] = useState(false);
 
-  useEffect(() => { try { localStorage.setItem("foxpit.lounge.seen.v6", "1"); } catch { /* ignore */ } }, []);
+  useEffect(() => { try { localStorage.setItem("foxpit.lounge.seen.v7", "1"); } catch { /* ignore */ } }, []);
   useEffect(() => {
     if (beat >= LOUNGE_PLATES.length) return;
     const t = window.setTimeout(() => setBeat((b) => b + 1), 2500); // §2.3 ~2.5s a beat
@@ -925,19 +925,25 @@ function WinnersLoungeArrival({ onDone }: { onDone: () => void }) {
 
   // §3.3/3.4 — the LOCKER ROOM is a DOOR off the lounge; leaving it returns to the lounge.
   if (room === "locker") return <WinnersLoungeLocker onBack={() => setRoom("lounge")} />;
+  // The elevator: top floor, so from here it only goes DOWN. Back returns to the lounge; DOWN exits
+  // down the tower (to the map).
+  if (room === "elevator") return <ElevatorCorridor onBack={() => setRoom("lounge")} onDown={() => done.current()} />;
 
   // §2/§3 — THE LOUNGE is the destination: the throne/bar plate, full-bleed, controls over the bottom.
   return (
     <div style={{ position: "absolute", inset: 0, zIndex: 5, background: "#05070b", overflow: "hidden" }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={LOUNGE_DEST} alt="Winner's Lounge" draggable={false} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 45%" }} />
+      {/* Flipped horizontally so the bar (wolf bartender) sits on the RIGHT, matching the tower/map
+          layout and the other rooms. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={LOUNGE_DEST} alt="Winner's Lounge" draggable={false} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 45%", transform: "scaleX(-1)" }} />
       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(5,7,11,.25) 0%, transparent 30%, transparent 52%, rgba(5,7,11,.92) 100%)" }} />
       <div style={{ position: "absolute", top: "calc(env(safe-area-inset-top,0px) + 12px)", left: 0, right: 0, textAlign: "center", fontSize: 12, letterSpacing: ".3em", color: "#f5e3ac", fontWeight: 800, textShadow: "0 2px 10px #000", pointerEvents: "none" }}>WINNER&apos;S LOUNGE</div>
       <div style={{ position: "absolute", left: 0, right: 0, bottom: "calc(env(safe-area-inset-bottom,0px) + 22px)", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: "0 22px" }}>
         <button onClick={() => setSnackOpen(true)} style={{ ...loungeBtn, width: "100%", maxWidth: 360, fontSize: 16 }}>🍩 Snack Bar ›</button>
         <div style={{ display: "flex", gap: 10 }}>
+          <button onClick={() => setRoom("elevator")} style={loungeBtn}>‹ Elevator</button>
           <button onClick={() => setRoom("locker")} style={loungeBtn}>Locker Room ›</button>
-          <button onClick={() => done.current()} style={loungeBtn}>‹ Elevator</button>
         </div>
       </div>
       {snackOpen && <SnackOverlay onClose={() => setSnackOpen(false)} />}

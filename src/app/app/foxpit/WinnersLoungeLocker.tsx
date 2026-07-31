@@ -31,7 +31,7 @@ const p = (v: number, dim: number) => `${((v / dim) * 100).toFixed(3)}%`;
 // §1 ELEVATOR — arch opening x251→547 (296w), y531→1403 (base 1403), centre x399. The car asset is
 // 201×572; ×1.47 = 296×841 (the exact arch width), bottom-aligned to the arch base (top = 1403−841).
 export const ARCH_PX = { left: 251, right: 547, top: 531, bottom: 1403 };
-export const CAR_PX = { left: 251, top: 562, width: 296, height: 841 };
+export const CAR_PX = { left: 251, top: 557, width: 296, height: 846 }; // ×1.458, bottom = 557+846 = 1403 (arch base / floor line)
 export const CAR_SCALE = 1.47;
 
 // §2 FURNITURE — outside the floor-medallion ring (x>613, y>1044) and above the UI safe line
@@ -104,10 +104,6 @@ export function LockerDoor({ open, onToggle }: { open: boolean; onToggle: () => 
  *  Bar phone, plus a way to the elevator corridor and back to the map. */
 export function WinnersLoungeLocker({ onBack }: { onBack: () => void }) {
   const [lockerOpen, setLockerOpen] = useState(false);
-  const [atElevator, setAtElevator] = useState(false);
-  const [snackOpen, setSnackOpen] = useState(false);
-
-  if (atElevator) return <ElevatorCorridor onBack={() => setAtElevator(false)} />;
 
   return (
     <div style={{ position: "absolute", inset: 0, zIndex: 5, background: "#05070b", overflow: "hidden" }}>
@@ -123,26 +119,15 @@ export function WinnersLoungeLocker({ onBack }: { onBack: () => void }) {
       {/* §2 — the opening centre locker */}
       <LockerDoor open={lockerOpen} onToggle={() => setLockerOpen((v) => !v)} />
 
-      {/* title */}
+      {/* title — a door off the lounge */}
       <div style={{ position: "absolute", top: "calc(env(safe-area-inset-top,0px) + 12px)", left: 0, right: 0, textAlign: "center", fontSize: 12, letterSpacing: ".3em", color: "#f5e3ac", fontWeight: 800, textShadow: "0 2px 10px #000", pointerEvents: "none" }}>
-        WINNER&apos;S LOUNGE · LOCKER ROOM
+        LOCKER ROOM
       </div>
 
-      {/* bottom UI: THIS WAY to the Snack Bar (it's a place in the lounge, not a phone) + elevator + back */}
-      <div style={{ position: "absolute", left: 0, right: 0, bottom: "calc(env(safe-area-inset-bottom,0px) + 22px)", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: "0 22px" }}>
-        <button
-          onClick={() => setSnackOpen(true)}
-          style={{ ...btn, width: "100%", maxWidth: 360, fontSize: 16, padding: "15px 20px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
-        >
-          <span style={{ fontSize: 18 }}>🍩</span> This way to the <span style={{ whiteSpace: "nowrap" }}>Snack Bar</span> <span style={{ opacity: 0.8 }}>›</span>
-        </button>
-        <div style={{ display: "flex", gap: 10 }}>
-          <button onClick={() => setAtElevator(true)} style={btn}>Elevator ›</button>
-          <button onClick={onBack} style={btn}>‹ Map</button>
-        </div>
+      {/* leaving returns to the LOUNGE (§3.4) — the Snack Bar + Elevator are lounge controls, not here */}
+      <div style={{ position: "absolute", left: 0, right: 0, bottom: "calc(env(safe-area-inset-bottom,0px) + 22px)", display: "flex", justifyContent: "center", padding: "0 22px" }}>
+        <button onClick={onBack} style={btn}>‹ Lounge</button>
       </div>
-
-      {snackOpen && <SnackOverlay onClose={() => setSnackOpen(false)} />}
     </div>
   );
 }
@@ -170,16 +155,19 @@ export function SnackOverlay({ onClose }: { onClose: () => void }) {
   );
 }
 
-/** §1.2 + §3 — the elevator corridor: plate with the car composited into the arch recess. Tapping the
- *  wall CALL BUTTONS (painted into the plate) calls the car — it descends into the arch and settles. */
-export function ElevatorCorridor({ onBack }: { onBack: () => void }) {
-  const [called, setCalled] = useState(false);
+/** The elevator corridor — the top-floor landing. §1 the lounge is the TOP floor: travel only goes
+ *  DOWN (UP is dark + inert). §2 the car STANDS ON THE FLOOR (bottom-anchored at the arch base y1403);
+ *  it never rises. On DOWN it descends out of the opening and hands off downward. */
+export function ElevatorCorridor({ onBack, onDown }: { onBack: () => void; onDown?: () => void }) {
+  const [going, setGoing] = useState(false);
+  const down = onDown ?? onBack;
+  const goDown = () => { if (going) return; setGoing(true); window.setTimeout(down, 900); }; // §1.5 travel DOWN then hand off
   return (
     <div style={{ position: "absolute", inset: 0, zIndex: 5, background: "#05070b", overflow: "hidden" }}>
       <Plate src={CORRIDOR_PLATE} />
-      {/* §1 — the car at its MEASURED box: 296×841 (asset ×1.47), left x251, top y562, standing on the
-          arch base y1403. Its domed silhouette matches the arch (ratio 0.35), so it sits inside the
-          opening and the plate's brass frame stays in front (§1.4). It descends into place when called. */}
+      {/* §2 — the car STANDS on the floor: bottom-anchored at the arch base y1403 (296×846, ×1.458),
+          left x251, ~26px dark under the crown (§2.4). Static — it does not float or rise (§2.3/1.1).
+          On DOWN travel it slides down out of the opening. The plate's brass frame stays in front (§2.5). */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         data-elevator-car
@@ -192,23 +180,33 @@ export function ElevatorCorridor({ onBack }: { onBack: () => void }) {
           top: p(CAR_PX.top, CORRIDOR_H),
           width: p(CAR_PX.width, CORRIDOR_W),
           height: p(CAR_PX.height, CORRIDOR_H),
-          transform: called ? "translateY(0)" : "translateY(-118%)",
-          transition: "transform 1.1s cubic-bezier(.35,0,.15,1)",
-          filter: called ? "drop-shadow(0 0 22px rgba(200,162,75,.5))" : "none",
+          transform: going ? "translateY(130%)" : "translateY(0)",
+          opacity: going ? 0 : 1,
+          transition: "transform .9s cubic-bezier(.4,0,.2,1), opacity .9s ease",
         }}
       />
 
-      {/* §3.3 (prior pass) — the CALL BUTTONS painted on the wall (right of the arch) are the tap target;
-          tapping calls the car. The cutout call_buttons.png is redundant (the plate already paints them). */}
+      {/* §1.2 — UP call: DARK + INERT (top floor, nothing above). Darkens the plate's painted up arrow. */}
       <button
-        aria-label="Call the elevator"
-        onClick={() => setCalled(true)}
-        style={{ position: "absolute", left: "71%", top: "42%", width: "14%", height: "12%", background: "transparent", border: "none", padding: 0, cursor: "pointer", borderRadius: 8, boxShadow: called ? "none" : "0 0 0 2px rgba(200,162,75,.3)" }}
+        data-elevator-up
+        disabled
+        aria-label="Up (top floor — disabled)"
+        style={{ position: "absolute", left: "75.5%", top: "44.5%", width: "7.5%", height: "4.6%", background: "rgba(3,4,7,.6)", border: "none", borderRadius: 3, cursor: "not-allowed", filter: "grayscale(1)", padding: 0 }}
+      />
+      {/* §1.3 — DOWN call: the live control (over the plate's painted down arrow). */}
+      <button
+        data-elevator-down
+        aria-label="Go down"
+        onClick={goDown}
+        style={{ position: "absolute", left: "75.5%", top: "51%", width: "7.5%", height: "4.6%", background: "transparent", border: "none", borderRadius: 3, cursor: "pointer", boxShadow: "0 0 0 2px rgba(200,162,75,.45)", padding: 0 }}
       />
 
       <div style={{ position: "absolute", left: 0, right: 0, bottom: "calc(env(safe-area-inset-bottom,0px) + 22px)", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-        {!called && <div style={{ fontSize: 12, letterSpacing: ".14em", color: "rgba(245,227,172,.85)", textShadow: "0 2px 8px #000" }}>Tap the brass call buttons →</div>}
-        <button onClick={onBack} style={btn}>‹ Locker room</button>
+        <div style={{ fontSize: 12, letterSpacing: ".12em", color: "rgba(245,227,172,.85)", textShadow: "0 2px 8px #000" }}>Top floor — the car only goes ▼ down</div>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button onClick={goDown} style={btn}>▼ Down</button>
+          <button onClick={onBack} style={btn}>‹ Lounge</button>
+        </div>
       </div>
     </div>
   );
