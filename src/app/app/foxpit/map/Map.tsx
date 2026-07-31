@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LockGlyph } from "@/components/practice/LockGlyph";
-import { SnackBarPhone } from "../SnackBarPhone";
+import { WinnersLoungeLocker } from "../WinnersLoungeLocker";
 import {
   FOXPIT_ROOMS,
   LOBBY_MAP_Y,
@@ -948,31 +948,16 @@ function WinnersLoungeArrival({ onDone }: { onDone: () => void }) {
   }
 
   // Lounge HOME — the persistent room after the door: reached straight away by returning winners,
-  // and via "Step in" on the first-arrival throne beat. Interim leisure hub for the Snack Bar until
-  // the upstairs locker is built.
+  // and via "Step in" on the first-arrival throne beat. Now the real LOCKER ROOM plate (§1.1) with the
+  // opening locker, props, the Snack Bar phone, and a way to the elevator corridor.
   if (steppedIn || !firstTime) {
     return (
-      <div style={{ position: "absolute", inset: 0, zIndex: 5, background: "#05070b", overflow: "hidden" }}>
-        {/* INTERIM lounge backdrop — the establishing plate, NOT a fabricated locker-room. When the
-            Winner's Lounge LOCKER ROOM art lands, swap LOUNGE_PLATES[0] on THIS line for it (§3.2). */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={LOUNGE_PLATES[0]} alt="" draggable={false} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 42%" }} />
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(5,7,11,.2) 0%, rgba(5,7,11,.55) 55%, rgba(5,7,11,.92) 100%)" }} />
-        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", padding: "0 22px", paddingBottom: "calc(env(safe-area-inset-bottom,0px) + 26px)", gap: 12 }}>
-          <div style={{ fontSize: 12, letterSpacing: ".3em", color: "#f5e3ac", fontWeight: 800, textShadow: "0 2px 10px #000" }}>WINNER&apos;S LOUNGE</div>
-          <div style={{ width: "100%", maxWidth: 360 }}>
-            {/* Same phone prop as the Dojo locker; up here it's beaten-gated (1.4) so it's freely
-                playable — always lit, no coin condition. */}
-            <SnackBarPhone coins={0} unlockedRooms={[]} bossFoxBeaten={winnersUnlocked(getCleared())} />
-          </div>
-          <button
-            onClick={() => done.current()}
-            style={{ marginTop: 2, border: `1.5px solid ${BRASS}`, background: "rgba(200,162,75,.12)", color: "#f5e3ac", borderRadius: 12, padding: "11px 26px", fontSize: 14, fontWeight: 800, cursor: "pointer" }}
-          >
-            ‹ Back to the map
-          </button>
-        </div>
-      </div>
+      <WinnersLoungeLocker
+        coins={0}
+        unlockedRooms={[]}
+        bossFoxBeaten={winnersUnlocked(getCleared())} // up here the phone is beaten-gated (freely playable)
+        onBack={() => done.current()}
+      />
     );
   }
 
