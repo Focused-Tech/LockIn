@@ -883,8 +883,9 @@ const LOUNGE_PLATES = [
   "/foxpit/lounge/lounge_03_throne_right_3q.png",
   "/foxpit/lounge/lounge_04_throne_straight.png",
 ];
-// The DESTINATION the player stands in — the throne/bar room, cover-fit full-bleed.
-const LOUNGE_DEST = "/foxpit/lounge/lounge_01_wide_establishing.png";
+// The DESTINATION the player stands in — the 9:22 throne/bar room (640x1568), full-bleed. The bottom
+// quarter is left clear in the plate for the controls.
+const LOUNGE_DEST = "/foxpit/lounge/lounge_main_9x22.png";
 
 function WinnersLoungeArrival({ onDone }: { onDone: () => void }) {
   const done = useRef(onDone);
