@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LockerRoom, type LockerChoice } from "./LockerRoom";
 import { FoxPitGame } from "./FoxPitGame";
@@ -64,65 +64,31 @@ const REVEAL_IMG: Partial<Record<FoxPitRoomKey, string>> = {
   coliseum: "/foxpit/greeters/ghost_standing.png",
 };
 
-/** Per-room floor tile — the base of the top-down deal scene. */
-const FLOOR_IMG: Record<FoxPitRoomKey, string> = {
-  dojo: "/foxpit/floors/floor_dojo.png",
-  coliseum: "/foxpit/floors/floor_coliseum.png",
-  hightable: "/foxpit/floors/floor_ravensnest.png",
-  suite: "/foxpit/floors/floor_foxden.png",
+/** BALLROOM SEAT PLATES — the opponent seated AT the room's table, the table baked into the plate at
+ *  the correct angle so they read as seated behind it (not floating on a floor tile). A per-room pool
+ *  (rotated by table) sliced from the tower plates: red/gold arena → Coliseum, purple → High Table,
+ *  wood dojo → Dojo, wood study → Boss Fox's Suite. index 0 is the boss/lone-table plate. */
+const SEAT_PLATES: Record<FoxPitRoomKey, string[]> = {
+  dojo: ["/foxpit/rooms/seat/seat_dojo_1.png", "/foxpit/rooms/seat/seat_dojo_2.png"],
+  coliseum: Array.from({ length: 8 }, (_, i) => `/foxpit/rooms/seat/seat_coliseum_${i + 1}.png`),
+  hightable: Array.from({ length: 8 }, (_, i) => `/foxpit/rooms/seat/seat_hightable_${i + 1}.png`),
+  suite: ["/foxpit/rooms/seat/seat_suite_1.png", "/foxpit/rooms/seat/seat_suite_2.png"],
 };
-/** Locksmith DEALER tables (top-down: she's seated at the edge, chip stacks, tray,
- *  and the LockIn deck all baked in) — the table that pulls up when you sit. */
-/** §2.1 — the BALLROOM PLATE art: each opponent seated at the table with their hand of LockIn cards.
- *  Underlings use their own per-character asset (opponent.art = cutouts/underling_<name>_<clan>.png);
- *  bosses use the with-cards boss sheet, mapped by bossArt (TL Owl · TR Wolf · BL Raven(female) · BR Fox).
- *  All are green-screen source — ChromaFigure keys the green out at paint. */
+/** The seat plate for a table: the boss/lone table takes plate 0; underling tables rotate the rest. */
+function seatPlate(roomKey: FoxPitRoomKey, index: number, bossTable: boolean): string {
+  const pool = SEAT_PLATES[roomKey];
+  if (bossTable || pool.length === 1) return pool[0]!;
+  return pool[1 + (index % (pool.length - 1))]!;
+}
+/** §2.1 — the deal-screen nameplate art: each opponent's seated-with-cards portrait, mapped by
+ *  bossArt (TL Owl · TR Wolf · BL Raven · BR Fox). Still used as the small nameplate above the
+ *  Locksmith during the deal (FoxPitGame). The seat screen now uses the baked SEAT_PLATES instead. */
 const BOSS_PLATE_WITH_CARDS: Record<BossArt, string> = {
   owl: "/foxpit/review/bosses_cards_TL.png",
   wolf: "/foxpit/review/bosses_cards_TR.png",
   raven: "/foxpit/review/bosses_cards_BL.png",
   fox: "/foxpit/review/bosses_cards_BR.png",
 };
-
-/** Draws a green-screen PNG to a canvas and keys the chroma green to transparent, so the seated
- *  opponent composites onto the plate cleanly (same-origin assets → canvas never taints). */
-function ChromaFigure({ src, alt, style }: { src: string; alt: string; style?: React.CSSProperties }) {
-  const ref = useRef<HTMLCanvasElement>(null);
-  useEffect(() => {
-    let cancelled = false;
-    const img = new Image();
-    img.onload = () => {
-      if (cancelled) return;
-      const c = ref.current;
-      if (!c) return;
-      c.width = img.naturalWidth;
-      c.height = img.naturalHeight;
-      const ctx = c.getContext("2d");
-      if (!ctx) return;
-      ctx.drawImage(img, 0, 0);
-      try {
-        const frame = ctx.getImageData(0, 0, c.width, c.height);
-        const p = frame.data;
-        for (let i = 0; i < p.length; i += 4) {
-          const r = p[i] ?? 0, g = p[i + 1] ?? 0, b = p[i + 2] ?? 0;
-          // chroma green: green clearly dominant over red+blue → cut to transparent; de-spill the
-          // near-edge greens a touch so there's no hard green halo on the figure.
-          if (g > 95 && g > r * 1.35 && g > b * 1.35) {
-            p[i + 3] = 0;
-          } else if (g > r + 24 && g > b + 24) {
-            p[i + 1] = Math.round((r + b) / 2 + 12);
-          }
-        }
-        ctx.putImageData(frame, 0, 0);
-      } catch (err) {
-        console.error("[foxpit] chroma key failed", err);
-      }
-    };
-    img.src = src;
-    return () => { cancelled = true; };
-  }, [src]);
-  return <canvas ref={ref} aria-label={alt} role="img" style={style} />;
-}
 
 export function FoxPitRoom({
   roomKey,
@@ -627,7 +593,7 @@ function DoorIntro({ room, onEnter }: { room: ReturnType<typeof roomByKey>; onEn
 }
 
 /* ---------------- table panel ---------------- */
-function TablePanel({
+export function TablePanel({
   room, index, opponent, freeKeycard, username, avatarUrl, bossTable, onClose, onConfirm,
 }: {
   room: ReturnType<typeof roomByKey>;
@@ -640,53 +606,33 @@ function TablePanel({
   onClose: () => void;
   onConfirm: () => void;
 }) {
-  // §2.1 — the ballroom plate matches THIS table's opponent: the boss (female Boss Raven on the High
-  // Table) or the seated underling, each shown at the table WITH their hand of cards (green keyed).
-  const plateArt = bossTable ? BOSS_PLATE_WITH_CARDS[room.bossArt] : (opponent?.art ?? BOSS_PLATE_WITH_CARDS[room.bossArt]);
+  // §1.2 — the BALLROOM SEAT PLATE for this table: the opponent already seated AT the baked table in
+  // the room (no floating cutout). Boss/lone table → plate 0; underling tables rotate the pool.
+  const plate = seatPlate(room.key, index, bossTable);
   const plateName = bossTable ? room.boss : (opponent?.name ?? room.boss);
   const plateSub = bossTable ? `Host · ${room.floorLabel}` : (opponent ? `${opponent.winPct}% win rate` : "Dealt by the Locksmith");
   return (
     <div style={{ position: "absolute", inset: 0, zIndex: 66, background: "#05070b", overflow: "hidden", animation: "foxpitFadeUp .35s ease both" }}>
-      {/* the room's FLOOR tile — the base of the top-down deal */}
+      {/* §1.2 — THE BALLROOM SEAT PLATE: the opponent seated behind the room's table, baked into the
+          plate at the correct angle (was the floor tile + a floating figure). Fills the screen; the
+          bottom gradient keeps the caption + CTA legible over it. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={FLOOR_IMG[room.key]} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0.92 }} />
-      <div style={{ position: "absolute", inset: 0, background: "radial-gradient(72% 60% at 50% 48%, transparent, rgba(3,4,7,.74))" }} />
+      <img src={plate} alt={`${plateName} seated at the table`} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 32%", animation: "foxpitFadeUp .5s ease both" }} />
+      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(3,4,7,.35) 0%, transparent 26%, transparent 52%, rgba(3,4,7,.9) 100%)" }} />
 
       <button onClick={onClose} style={hudBack}>‹ Back</button>
 
-      {/* §2.1 — THE BALLROOM PLATE (step 6): the opponent for THIS table, seated across with their
-          hand of cards (the asset you made — green keyed out here). Positioned BELOW the top HUD so
-          ‹ Back / ‹ Map / Quit game never overlap the header. The name/table/win-rate caption rides
-          beneath the figure; "Take your seat" is the CTA at the bottom. */}
-      <div
-        style={{
-          position: "absolute",
-          top: "calc(env(safe-area-inset-top, 0px) + 76px)",
-          left: 0,
-          right: 0,
-          bottom: freeKeycard ? 214 : 132,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "flex-end",
-          padding: "0 16px",
-        }}
-      >
-        <ChromaFigure
-          src={plateArt}
-          alt={`${plateName} seated at the table`}
-          style={{ height: "78%", maxHeight: 460, width: "auto", maxWidth: "94%", display: "block", objectFit: "contain", filter: `drop-shadow(0 18px 34px rgba(0,0,0,.7)) drop-shadow(0 0 26px ${room.accent}55)`, animation: "foxpitFadeUp .5s ease both" }}
-        />
-        <div style={{ marginTop: 8, textAlign: "center" }}>
-          <div style={{ fontSize: 11, letterSpacing: ".24em", color: room.accent, fontWeight: 800 }}>
-            {bossTable ? "BOSS TABLE" : `TABLE ${index + 1}`}
-          </div>
-          <div style={{ fontFamily: "Georgia, serif", fontSize: 26, color: "#f5ead0", lineHeight: 1.1, textShadow: "0 2px 14px #000" }}>
-            {plateName}
-          </div>
-          <div style={{ fontSize: 12, color: "#cdd6e2", fontWeight: 600, marginTop: 2 }}>
-            {plateSub}
-          </div>
+      {/* §1.4 — name/table/win-rate caption + "Take your seat" control unchanged; they ride the
+          bottom over the plate. */}
+      <div style={{ position: "absolute", left: 0, right: 0, bottom: freeKeycard ? 210 : 96, textAlign: "center", padding: "0 16px" }}>
+        <div style={{ fontSize: 11, letterSpacing: ".24em", color: room.accent, fontWeight: 800 }}>
+          {bossTable ? "BOSS TABLE" : `TABLE ${index + 1}`}
+        </div>
+        <div style={{ fontFamily: "Georgia, serif", fontSize: 26, color: "#f5ead0", lineHeight: 1.1, textShadow: "0 2px 14px #000" }}>
+          {plateName}
+        </div>
+        <div style={{ fontSize: 12, color: "#cdd6e2", fontWeight: 600, marginTop: 2 }}>
+          {plateSub}
         </div>
       </div>
 
