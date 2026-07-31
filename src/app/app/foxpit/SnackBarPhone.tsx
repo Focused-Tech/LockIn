@@ -7,14 +7,16 @@
  * A room-service phone prop that sits on the shelf, always visible: DARK when the coin gate is closed
  * (a player who can still afford a seat doesn't get to farm), LIT when it opens. Tapping a dark phone
  * explains why; tapping a lit phone picks it up and orders — opening the game (served as-is at
- * /foxpit/snack/) in a full-screen overlay. The game itself is byte-frozen; this is access only.
+ * /foxpit/snack-attack.html) in a full-screen overlay. The game is byte-frozen; this is access only.
  */
 import { useState } from "react";
 import type { FoxPitRoomKey } from "@/lib/foxpit";
 import { snackBarUnlocked, SNACK_CLOSED_REASON } from "@/lib/foxpit/snackGate";
 
 const BRASS = "#C8A24B";
-const SNACK_URL = "/foxpit/snack/";
+// Flat leaf .html — a nested /foxpit/snack/index.html 404s on Vercel (trailing-slash redirect
+// collapses the directory index); a leaf file serves cleanly.
+const SNACK_URL = "/foxpit/snack-attack.html";
 
 export function SnackBarPhone({
   coins,

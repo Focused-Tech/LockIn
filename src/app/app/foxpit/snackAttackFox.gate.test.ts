@@ -19,7 +19,7 @@ import { readFileSync } from "fs";
 
 describe("GATE 2.3 — snack-attack fox visible + scaled on every floor", () => {
   it("enters and leaves the game screen once per floor, all six", () => {
-    const html = readFileSync("public/foxpit/snack/index.html", "utf8");
+    const html = readFileSync("public/foxpit/snack-attack.html", "utf8");
     const vc = new VirtualConsole(); // swallow the game's init noise; we only test the rig
     const dom = new JSDOM(html, { runScripts: "dangerously", pretendToBeVisual: true, virtualConsole: vc });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
