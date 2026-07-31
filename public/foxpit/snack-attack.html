@@ -575,7 +575,7 @@ function startLevel(i){
                    turnCleared:0,turnChains:0,turnKind:null,counters:0,cleared:0,big:0,
                    rate:(2*BOSS_EARN[i])/avgVal});
   fillBoard();
-  S.hot=0; S.blockers=0; placeShimmer(); ensurePlayable();
+  S.hot=0; S.blockers=0; placeShimmer(); /* §3: dead-board rescue removed — free swap can't deadlock */
   for(let n=0;n<BOSS_BLOCK[i];n++) placeBlocker();
   paintBrain(); $("#hot").classList.remove("on");
   show("scrGame");
@@ -639,12 +639,13 @@ function tap(y,x,el){
   trySwap(sy,sx,y,x);
 }
 function trySwap(ay,ax,by,bx){
+  // §1 FREE SWAP: any orthogonally-adjacent swap COMMITS (match or not) — the caller (tap) already
+  // rejected diagonal/non-adjacent taps. No revert. Every committed swap costs one move (§2).
   swap(ay,ax,by,bx);
-  if(!findMatches().length){ swap(ay,ax,by,bx); S.sel=[by,bx]; paintBoard(); return; }
   S.sel=null; S.moves--; S.busy=true;
   S.turnCleared=0; S.turnChains=0; S.turnKind=null;
   resolve().then(()=>{
-    try{ scoreTurn(); applyMech(); ensurePlayable(); }
+    try{ scoreTurn(); applyMech(); }
     catch(e){ showErr("turn logic",e); }
     S.busy=false;
     try{ paintHUD(); paintBoard(); checkEnd(); }
