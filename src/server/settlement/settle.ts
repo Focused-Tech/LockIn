@@ -8,6 +8,7 @@ import {
   type SlateDoc,
 } from "@/lib/firebase/types";
 import { settleEntries, type SettlementEntryInput } from "@/lib/contest";
+import { firstBannedLeg } from "@/lib/contest/questionEngine";
 import { verifyPrediction } from "@/lib/ai/verification/verifier";
 import { fetchEspnGameResult, resolveFeedPrediction, isFeedSlateId, type GameResult } from "@/server/feeds/scores";
 import { applySlateToParlays } from "./crossParlay";
@@ -74,6 +75,21 @@ export async function settleSlate(slateId: string): Promise<SettleResult> {
     .collection(COLLECTIONS.predictions)
     .orderBy("sortOrder", "asc")
     .get();
+
+  // COMPLIANCE — never grade or pay out a slate carrying a banned archetype. Entry is already blocked
+  // for these (no legitimate entries to pay), so void it terminally (settled + voided, no cron retry)
+  // and stop before any outcome is graded. The display path withholds it regardless of status.
+  const bannedLeg = firstBannedLeg(
+    predsSnap.docs.map((d) => {
+      const p = d.data() as PredictionDoc;
+      return { question: p.question, optionA: p.optionA, optionB: p.optionB, type: p.predictionType };
+    }),
+  );
+  if (bannedLeg) {
+    console.warn(`[compliance] voiding settlement for ${slateId} — banned leg "${bannedLeg.question}" (${bannedLeg.archetype})`);
+    await slateRef.update({ status: "settled", voided: true });
+    return { ok: true, settled: 0 };
+  }
 
   const order = predsSnap.docs.map((d) => d.id);
   const results: Record<string, string> = {}; // §2.1 widened; binary still "a"/"b"

@@ -145,3 +145,59 @@ export function archetypePool(tier: FormatTier): Archetype[] {
 export function isDeadSlot(favoritePollPct: number): boolean {
   return favoritePollPct > 80;
 }
+
+/**
+ * COMPLIANCE — TEXT DETECTOR (bridges the free-text world to BANNED_ARCHETYPES).
+ *
+ * `validateLeg` only inspects the structured `archetype` enum, so it is blind to the feed/seed/binary
+ * legs that carry raw `question`+`optionA/optionB` text and no archetype. This detector reads that
+ * text and maps it to a banned archetype. It is the guard that runs on the DISPLAY / ENTRY /
+ * SETTLEMENT paths and inside the write generators — nothing free-text reaches a player unchecked.
+ *
+ * Deliberately broad: a false positive withholds one leg; a false negative serves a banned format.
+ */
+const BANNED_TEXT: { re: RegExp; archetype: BannedArchetype }[] = [
+  { re: /\bwho\s+wins?\b|\bmoneyline\b|\bmoney\s*line\b|\bgame\s+winner\b|\bto\s+win\b|\bwins?\s+(the\s+game|tonight|outright)\b|\bbeats?\s+the\b|\bwinner\b|\bwin\s+the\s+(game|match)\b/i, archetype: "team_or_game_outcome" },
+  { re: /\bspread\b|\brun\s*line\b|\bpuck\s*line\b|\bpoint\s*line\b|\bgoal\s+spread\b|\bcover(s|ing)?\s+the\b|\bhandicap\b/i, archetype: "team_or_game_outcome" },
+  { re: /\b(over|under)\b|\bover\s*\/\s*under\b|\bo\s*\/\s*u\b|\btotal\s+(goals|points|runs|score|trades|hits|touchdowns|yards)\b/i, archetype: "combined_team_totals" },
+  { re: /\bhalftime\b|\bhalf\s*-?\s*time\b|\b1st\s+half\b|\bfirst\s+half\b|\b2nd\s+half\b|\bquarter\b|\bperiod\b|\binning\b/i, archetype: "team_or_game_outcome" },
+  { re: /\bto\s+score\b|\bscores?\s+\d+\s+or\s+more\b|\b\d+\s*\+\s*(points|goals|assists|rebounds|yards|runs|hits|touchdowns|tds|strikeouts|saves)\b/i, archetype: "single_athlete_single_game" },
+  { re: /\b(wins?|winner)\s+the\s+(fight|bout|race|round)\b|\bknockout\b|\bpole\s+position\b/i, archetype: "fight_or_race_winner" },
+];
+/** A spread option label like "Team -0.5" / "Team +1.5" / "-2.5". */
+const SPREAD_OPTION = /(^|\s)[+-]\d+(\.\d+)?\s*$/;
+
+/** Map a stored leg's text (question + option labels) to a banned archetype, or null if it's clean. */
+export function detectBannedArchetype(question: string, options: string[] = []): BannedArchetype | null {
+  const q = question || "";
+  const opts = options.filter(Boolean);
+  for (const { re, archetype } of BANNED_TEXT) {
+    if (re.test(q) || opts.some((o) => re.test(o))) return archetype;
+  }
+  if (opts.some((o) => SPREAD_OPTION.test(o.trim()))) return "team_or_game_outcome";
+  return null;
+}
+
+/** Shape of a stored prediction as the display/entry/settlement paths see it. */
+export interface StoredLegLike {
+  question: string;
+  optionA?: string;
+  optionB?: string;
+  /** the persisted predictionType — "over_under" is ALWAYS a banned combined-total. */
+  type?: string | null;
+}
+
+/** The first banned leg in a slate's predictions (or null). `over_under` is banned unconditionally. */
+export function firstBannedLeg(preds: StoredLegLike[]): { question: string; archetype: BannedArchetype } | null {
+  for (const p of preds) {
+    if (p.type === "over_under") return { question: p.question, archetype: "combined_team_totals" };
+    const a = detectBannedArchetype(p.question, [p.optionA ?? "", p.optionB ?? ""]);
+    if (a) return { question: p.question, archetype: a };
+  }
+  return null;
+}
+
+/** True if any leg in the slate is a banned archetype. */
+export function slateHasBannedLeg(preds: StoredLegLike[]): boolean {
+  return firstBannedLeg(preds) !== null;
+}

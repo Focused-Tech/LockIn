@@ -107,33 +107,32 @@ export default async function SlatePage({
 
       {slate.creatorId === profile.id && <ShareCardPanel slateId={id} />}
 
-      {slate.status === "live" && (
-        <StrategyAdvisor slateId={id} isPro={profile.proSubscriber} />
-      )}
-
-      {slate.predictions.some((p) => p.type === "over_under") && (
-        <Card className="flex flex-col gap-1.5">
-          <p className="text-sm font-semibold">How over/under works</p>
+      {/* COMPLIANCE — a withheld slate (banned archetype) is never playable: no advisor, no picker,
+          no banned leg text. It shows a visible under-review state instead. */}
+      {slate.withheld ? (
+        <Card className="flex flex-col gap-1.5" data-withheld>
+          <p className="text-sm font-semibold">Under review</p>
           <p className="text-xs text-muted">
-            Some questions ask whether a number finishes{" "}
-            <span className="text-foreground">over</span> or{" "}
-            <span className="text-foreground">under</span> a set line — say
-            total points over/under 220.5. Pick <b>Over</b> if you think the real
-            result lands higher than the line, <b>Under</b> if lower. The
-            half-point means there&apos;s no tie — one side always wins.
+            This contest is under review and isn&apos;t available to play.
           </p>
         </Card>
-      )}
+      ) : (
+        <>
+          {slate.status === "live" && (
+            <StrategyAdvisor slateId={id} isPro={profile.proSubscriber} />
+          )}
 
-      <SlatePicker
-        slate={slate}
-        coinBalance={profile.coinBalance}
-        cashBalanceCents={profile.cashBalanceCents}
-        kycVerified={profile.kycStatus === "verified"}
-        registeredState={profile.registeredState}
-        existingEntry={existingEntry}
-        shadowEarnings={shadowEarnings}
-      />
+          <SlatePicker
+            slate={slate}
+            coinBalance={profile.coinBalance}
+            cashBalanceCents={profile.cashBalanceCents}
+            kycVerified={profile.kycStatus === "verified"}
+            registeredState={profile.registeredState}
+            existingEntry={existingEntry}
+            shadowEarnings={shadowEarnings}
+          />
+        </>
+      )}
 
       <SkillGameDisclaimer className="mt-auto pt-4" />
     </div>

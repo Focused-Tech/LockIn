@@ -49,6 +49,10 @@ export interface FeedSlate {
   maxEntries: number | null;
   lockTimeMs: number;
   predictions: FeedPrediction[];
+  /** COMPLIANCE — set when a leg matches a banned archetype. A withheld slate is shown in a visible
+   *  "under review" state and NEVER served as a normal contest; its banned predictions are stripped
+   *  from this DTO so no banned text ever reaches the client. */
+  withheld?: boolean;
 }
 
 /** Statuses shown in the Explore feed. */

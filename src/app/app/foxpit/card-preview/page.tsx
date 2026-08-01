@@ -8,12 +8,14 @@ import { SlateCardFront, type SlateMatchup } from "@/components/foxpit/SlateCard
  * front (STEP 3a). Sample data only; toggle the reveal to see the per-row
  * resolve (green check / red ✗). Not a production route — for device review.
  */
+// COMPLIANCE — compliant cross-game archetypes only (no team outcomes, spreads, over/unders, or
+// single-athlete thresholds). This is card-art preview mock data, not a real slate.
 const MATCHUPS: SlateMatchup[] = [
-  { id: "m1", question: "Lakers vs Celtics", optionA: "Lakers", optionB: "Celtics" },
-  { id: "m2", question: "Total points", optionA: "Over 214.5", optionB: "Under 214.5" },
-  { id: "m3", question: "First TD scorer", optionA: "Kelce", optionB: "Field" },
-  { id: "m4", question: "Chiefs vs Bills", optionA: "Chiefs", optionB: "Bills" },
-  { id: "m5", question: "MVP race", optionA: "Jokić", optionB: "SGA" },
+  { id: "m1", question: "Top scorer tonight", optionA: "LeBron James", optionB: "Nikola Jokić" },
+  { id: "m2", question: "Most assists across the slate", optionA: "Trae Young", optionB: "Chris Paul" },
+  { id: "m3", question: "Best QB night", optionA: "Mahomes", optionB: "Allen" },
+  { id: "m4", question: "Biggest night", optionA: "Curry", optionB: "Dončić" },
+  { id: "m5", question: "Player of the night", optionA: "Jokić", optionB: "SGA" },
 ];
 
 const PICKS = { m1: "a", m2: "a", m3: "b", m4: "a", m5: "b" } as const;

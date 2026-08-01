@@ -32,6 +32,23 @@ export function SlateCard({
   const prediction = slate.predictions[0];
   const tint = categoryTint(slate.category);
 
+  // COMPLIANCE — a withheld slate (banned archetype) never renders as a normal contest. Its
+  // predictions were stripped upstream; show a visible "under review" state, never the banned leg.
+  if (slate.withheld) {
+    return (
+      <Card data-tour="event-card" data-withheld className="flex flex-col gap-2" style={{ borderColor: tint.border }}>
+        <div className="flex items-center justify-between">
+          <span className="rounded-full border px-2.5 py-0.5 text-xs font-semibold" style={{ backgroundColor: tint.soft, borderColor: tint.border, color: tint.color }}>
+            {slate.category}
+          </span>
+          <Pill tone="neutral">Under review</Pill>
+        </div>
+        <h3 className="text-base font-semibold leading-snug">{slate.title}</h3>
+        <p className="text-sm text-muted">This contest is under review and isn&apos;t available to play.</p>
+      </Card>
+    );
+  }
+
   const metrics = config
     ? computeSlateMetrics(
         config.tier,

@@ -9,6 +9,19 @@ import {
 } from "@/lib/firebase/types";
 import { FEED_STATUSES, type FeedPrediction, type FeedSlate } from "@/lib/feed";
 import { getPlayerContext } from "@/server/feeds/creatorGames";
+import { firstBannedLeg } from "@/lib/contest/questionEngine";
+
+/**
+ * COMPLIANCE gate on the DISPLAY path: if any leg is a banned archetype, the slate is WITHHELD — its
+ * predictions are stripped (no banned text reaches the client) and it renders in a visible "under
+ * review" state instead of as a normal contest. Applied to every feed + single-slate fetch.
+ */
+function applyWithhold(slate: FeedSlate): FeedSlate {
+  const banned = firstBannedLeg(slate.predictions);
+  if (!banned) return slate;
+  console.warn(`[compliance] withholding slate ${slate.id} — banned leg "${banned.question}" (${banned.archetype})`);
+  return { ...slate, predictions: [], withheld: true };
+}
 
 /**
  * Fetch the Explore feed: all slates in {@link FEED_STATUSES} with their
@@ -60,7 +73,7 @@ export async function fetchFeedSlates(db: Firestore): Promise<FeedSlate[]> {
         lockTimeMs: slate.lockTime.toMillis(),
         predictions,
       };
-      return feedSlate;
+      return applyWithhold(feedSlate);
     }),
   );
 
@@ -144,7 +157,7 @@ export async function fetchSlate(
     }),
   );
 
-  return {
+  return applyWithhold({
     id: slateDoc.id,
     title: slate.title,
     category: slate.category,
@@ -157,5 +170,5 @@ export async function fetchSlate(
     maxEntries: slate.maxEntries ?? null,
     lockTimeMs: slate.lockTime.toMillis(),
     predictions,
-  };
+  });
 }

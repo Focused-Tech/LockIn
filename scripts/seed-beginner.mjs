@@ -75,6 +75,18 @@ const SLATES = [
   },
 ];
 
+// COMPLIANCE — mirror of detectBannedArchetype. A slate with only banned legs is NOT seeded.
+const BANNED_RE = [
+  /\bwho\s+wins?\b|\bgame\s+winner\b|\bto\s+win\b|\bwinner\b|\bbeats?\s+the\b/i,
+  /\bspread\b|\bgoal\s+spread\b|\bcover(s|ing)?\s+the\b/i,
+  /\b(over|under)\b|\btotal\s+(goals|points|runs|score|yards)\b/i,
+  /\bhalftime\b|\bfirst\s+half\b|\bquarter\b|\bperiod\b/i,
+  /\bto\s+score\b|\bscores?\s+\d+\s+or\s+more\b|\b\d+\s*\+\s*(points|goals|assists|rebounds|yards)\b/i,
+];
+function isBanned(p) {
+  return p.predictionType === "over_under" || BANNED_RE.some((re) => re.test(p.question || ""));
+}
+
 async function run() {
   // 1) stamp demo hit-rates on the anchor creators
   for (const [uid, rate] of Object.entries(CREATOR_HIT_RATES)) {
@@ -82,7 +94,20 @@ async function run() {
   }
 
   // 2) creator-owned live slates with several binary (Yes/No) picks
+  let skipped = 0;
   for (const s of SLATES) {
+    // COMPLIANCE — withhold a slate whose legs are all banned archetypes (can't be regenerated here).
+    const compliant = s.predictions.filter((p) => !isBanned(p));
+    if (compliant.length === 0) {
+      const ref = db.collection("slates").doc(s.id);
+      const preds = await ref.collection("predictions").get();
+      for (const p of preds.docs) await p.ref.delete();
+      await ref.delete().catch(() => {});
+      skipped++;
+      console.log(`WITHHELD ${s.id} — all legs banned, not seeded`);
+      continue;
+    }
+    s.predictions = compliant;
     const slateRef = db.collection("slates").doc(s.id);
     await slateRef.set({
       creatorId: s.creatorId,

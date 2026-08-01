@@ -9,6 +9,7 @@ import { CATEGORIES } from "@/lib/categories";
 import { canCreatorHostCash, blockedStateMessage } from "@/lib/eligibility";
 import { suggestOddsMock, type OddsSuggestion } from "@/lib/ai/probability";
 import { notifyFollowersNewSlate } from "@/lib/notifications/send";
+import { detectBannedArchetype } from "@/lib/contest/questionEngine";
 
 /** Mock AI odds — swapped for real data-driven estimation later. */
 export async function suggestOdds(input: {
@@ -91,9 +92,11 @@ export async function createSlate(
   if (tierKeys.size !== input.tiers.length) {
     return { ok: false, error: "Duplicate entry tier" };
   }
+  // COMPLIANCE — reject any banned archetype before publish: team/game outcome, spread, combined
+  // total, over/under, or a single-athlete numeric threshold. Over/under is banned outright.
   for (const p of input.predictions) {
-    if (p.type === "over_under" && p.line === null) {
-      return { ok: false, error: "Set a line for every over/under question" };
+    if (p.type === "over_under" || detectBannedArchetype(p.question, [p.optionA, p.optionB])) {
+      return { ok: false, error: "That question isn't allowed — no team outcomes, spreads, or over/unders. Use an approved cross-game question." };
     }
   }
 

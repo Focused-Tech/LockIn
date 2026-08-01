@@ -209,6 +209,23 @@ const STALE_SEED_IDS = [
   "seed-boxing-rush",
 ];
 
+// COMPLIANCE — mirror of detectBannedArchetype (src/lib/contest/questionEngine.ts). A slate with only
+// banned legs (team outcome / spread / total / over-under / single-athlete threshold) is NOT seeded.
+const BANNED_RE = [
+  /\bwho\s+wins?\b|\bmoneyline\b|\bgame\s+winner\b|\bto\s+win\b|\bwinner\b|\bbeats?\s+the\b/i,
+  /\bspread\b|\brun\s*line\b|\bpuck\s*line\b|\bgoal\s+spread\b|\bcover(s|ing)?\s+the\b/i,
+  /\b(over|under)\b|\btotal\s+(goals|points|runs|score|trades|hits|yards)\b/i,
+  /\bhalftime\b|\b1st\s+half\b|\bfirst\s+half\b|\bquarter\b|\bperiod\b/i,
+  /\bto\s+score\b|\bscores?\s+\d+\s+or\s+more\b|\b\d+\s*\+\s*(points|goals|assists|rebounds|yards)\b/i,
+];
+const SPREAD_OPT = /(^|\s)[+-]\d+(\.\d+)?\s*$/;
+function isBanned(p) {
+  if (p.predictionType === "over_under" || p.type === "over_under") return true;
+  const hay = [p.question, p.optionA, p.optionB].filter(Boolean);
+  if (BANNED_RE.some((re) => hay.some((s) => re.test(s)))) return true;
+  return [p.optionA, p.optionB].some((o) => o && SPREAD_OPT.test(String(o).trim()));
+}
+
 async function run() {
   // Clear expired slates from earlier seeds (past lockTime) so Beginner/Advanced only show fresh ones.
   for (const id of STALE_SEED_IDS) {
@@ -219,7 +236,21 @@ async function run() {
     console.log(`cleared stale ${id}`);
   }
 
+  let skipped = 0;
   for (const s of SLATES) {
+    // COMPLIANCE — drop banned legs; if a slate has no compliant legs left, do not seed it (remove any
+    // prior version). These betting-market samples can't be regenerated compliantly, so they are withheld.
+    const compliant = s.predictions.filter((p) => !isBanned(p));
+    if (compliant.length === 0) {
+      const ref = db.collection("slates").doc(s.id);
+      const preds = await ref.collection("predictions").get();
+      for (const p of preds.docs) await p.ref.delete();
+      await ref.delete().catch(() => {});
+      skipped++;
+      console.log(`WITHHELD ${s.id} — all legs banned, not seeded`);
+      continue;
+    }
+    s.predictions = compliant;
     const lockMs = now + s.lockInDays * DAY;
     const slateRef = db.collection("slates").doc(s.id);
 
@@ -263,7 +294,7 @@ async function run() {
 
     console.log(`seeded ${s.id} (${s.predictions.length} predictions)`);
   }
-  console.log(`Done — ${SLATES.length} slates.`);
+  console.log(`Done — ${SLATES.length - skipped} slates seeded, ${skipped} withheld (banned).`);
 }
 
 run().then(

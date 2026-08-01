@@ -10,7 +10,7 @@ import {
   type SlateDoc,
   type UserDoc,
 } from "@/lib/firebase/types";
-import { validateLeg, type Archetype, type Leg } from "@/lib/contest/questionEngine";
+import { validateLeg, firstBannedLeg, type Archetype, type Leg } from "@/lib/contest/questionEngine";
 import {
   FREE_ENTRY_COIN_COST,
   type EntryTier,
@@ -71,8 +71,17 @@ export async function submitEntry(
   if (pickedIds.size !== predById.size)
     return { ok: false, error: "Make a pick on every question" };
 
+  // COMPLIANCE — reject entry on ANY slate carrying a banned archetype (team outcome, spread, total,
+  // over/under, single-athlete threshold). Text-detected so free-text feed/seed/binary legs are caught
+  // even though they never built a structured Leg. This is the entry-path half of the display withhold.
+  const bannedLeg = firstBannedLeg(
+    [...predById.values()].map((p) => ({ question: p.question, optionA: p.optionA, optionB: p.optionB, type: p.predictionType })),
+  );
+  if (bannedLeg)
+    return { ok: false, error: "This contest is under review and can't be entered." };
+
   // §2.3 — re-enforce ONE-PLAYER-PER-GAME at ENTRY (not only at publish). Any archetype leg that
-  // violates validateLeg (questionEngine.ts:88) rejects the whole entry.
+  // violates validateLeg (questionEngine.ts:75) rejects the whole entry.
   for (const pred of predById.values()) {
     if (pred.predictionType !== "archetype") continue;
     const playerGames = (pred as PredictionDoc & { playerGames?: Record<string, string> }).playerGames ?? {};

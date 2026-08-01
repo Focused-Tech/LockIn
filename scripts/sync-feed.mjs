@@ -125,8 +125,33 @@ async function enrichWithOddsAPI(l, events) {
   }
 }
 
+// COMPLIANCE — mirror of detectBannedArchetype (src/lib/contest/questionEngine.ts). Keep in sync.
+const BANNED_RE = [
+  /\bwho\s+wins?\b|\bmoneyline\b|\bgame\s+winner\b|\bto\s+win\b|\bwinner\b|\bbeats?\s+the\b/i,
+  /\bspread\b|\brun\s*line\b|\bpuck\s*line\b|\bpoint\s*line\b|\bgoal\s+spread\b|\bcover(s|ing)?\s+the\b/i,
+  /\b(over|under)\b|\bover\s*\/\s*under\b|\btotal\s+(goals|points|runs|score|hits|yards)\b/i,
+  /\bhalftime\b|\b1st\s+half\b|\bfirst\s+half\b|\bquarter\b|\bperiod\b|\binning\b/i,
+];
+const SPREAD_OPT = /(^|\s)[+-]\d+(\.\d+)?\s*$/;
+function isBanned(p) {
+  if (p.type === "over_under") return true;
+  const hay = [p.question, p.optionA, p.optionB].filter(Boolean);
+  if (BANNED_RE.some((re) => hay.some((s) => re.test(s)))) return true;
+  return [p.optionA, p.optionB].some((o) => o && SPREAD_OPT.test(String(o).trim()));
+}
+
 async function writeSlate(ev) {
   const ref = db.collection("slates").doc(ev.id);
+  // COMPLIANCE — publish only compliant legs. ESPN's moneyline/spread/total are ALL banned, so a game
+  // yields zero compliant legs → it is NOT published, and any prior version is removed.
+  const compliant = ev.predictions.filter((p) => !isBanned(p));
+  if (compliant.length === 0) {
+    const prior = await ref.collection("predictions").get();
+    for (const d of prior.docs) await d.ref.delete();
+    await ref.delete().catch(() => {});
+    return;
+  }
+  ev.predictions = compliant;
   await ref.set({
     creatorId: null, title: ev.title, description: null, category: ev.category, status: "live",
     entryTiers: tiers, entryCount: 0, isCardRush: false, rushMultiplier: 1, maxEntries: null,

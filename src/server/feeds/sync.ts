@@ -2,6 +2,7 @@ import "server-only";
 import { Timestamp, FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
 import { COLLECTIONS } from "@/lib/firebase/types";
+import { detectBannedArchetype } from "@/lib/contest/questionEngine";
 
 /**
  * REAL data-feed sync (server/cron side). Mirrors scripts/sync-feed.mjs. ESPN's public scoreboard
@@ -159,6 +160,18 @@ async function enrichWithOddsAPI(l: (typeof LEAGUES)[number], events: FeedEvent[
 
 async function writeSlate(ev: FeedEvent, now: number): Promise<void> {
   const ref = adminDb().collection(COLLECTIONS.slates).doc(ev.id);
+  // COMPLIANCE — publish only legs that pass the banned-archetype detector. The current ESPN markets
+  // (moneyline / spread / total) are ALL banned and cannot be made compliant without cross-game player
+  // data, so a game yields zero compliant legs → it is NOT published, and any prior version is removed.
+  const compliant = ev.predictions.filter(
+    (p) => p.type !== "over_under" && detectBannedArchetype(p.question, [p.optionA, p.optionB]) == null,
+  );
+  if (compliant.length === 0) {
+    const prior = await ref.collection(COLLECTIONS.predictions).get();
+    for (const d of prior.docs) await d.ref.delete();
+    await ref.delete().catch(() => {});
+    return;
+  }
   await ref.set(
     {
       creatorId: null,
@@ -182,7 +195,7 @@ async function writeSlate(ev: FeedEvent, now: number): Promise<void> {
     { merge: true },
   );
   let sortOrder = 0;
-  for (const p of ev.predictions) {
+  for (const p of compliant) {
     await ref.collection(COLLECTIONS.predictions).doc(p.id).set(
       {
         question: p.question,
@@ -203,7 +216,7 @@ async function writeSlate(ev: FeedEvent, now: number): Promise<void> {
     );
   }
   const existing = await ref.collection(COLLECTIONS.predictions).get();
-  const keep = new Set(ev.predictions.map((p) => p.id));
+  const keep = new Set(compliant.map((p) => p.id));
   for (const d of existing.docs) if (!keep.has(d.id)) await d.ref.delete();
 }
 
