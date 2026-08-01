@@ -133,15 +133,17 @@ export function ArenaIntro({
         .reveal-reflect {
           position: absolute;
           left: 50%;
-          /* wordmark sits under Boss Fox's feet (original door position). */
-          top: 84%;
+          /* wordmark sits under Boss Fox's feet — raised so it clears the Continue plaque + nav. */
+          top: 80%;
           width: 118px;
-          transform: translateX(-50%) translateY(10px);
+          /* starts low + faded and RISES up into place on the .backed beat, moving WITH Boss Fox's
+             zoom-out (bigger travel + longer glide so the motion reads, not a static fade). */
+          transform: translateX(-50%) translateY(46px);
           opacity: 0;
           z-index: 5;
           transition:
-            opacity 0.6s ease 0.5s,
-            transform 0.6s ease 0.5s;
+            opacity 0.9s ease 0.4s,
+            transform 0.9s cubic-bezier(0.2, 0.8, 0.3, 1) 0.4s;
         }
         .door-scene.backed .reveal-reflect {
           opacity: 1;
@@ -185,14 +187,14 @@ export function ArenaIntro({
         .reveal-continue {
           position: absolute;
           left: 50%;
-          /* original door position — below the wordmark (top:84%) in the reveal scene. */
-          top: 91%;
-          transform: translateX(-50%) translateY(12px);
+          /* below the wordmark (top:80%) but LIFTED off the Android nav — was 91% (too low). */
+          top: 87%;
+          transform: translateX(-50%) translateY(38px);
           z-index: 6;
           opacity: 0;
           transition:
-            opacity 0.6s ease 0.65s,
-            transform 0.6s ease 0.65s;
+            opacity 0.9s ease 0.55s,
+            transform 0.9s cubic-bezier(0.2, 0.8, 0.3, 1) 0.55s;
           background: rgba(252, 62, 1, 0.2);
           border: 1.5px solid rgba(252, 62, 1, 0.72);
           color: #ffefe8;

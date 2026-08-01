@@ -358,9 +358,10 @@ export function FoxPitRoom({
           bossTable={singleTable || bossFight}
           onClose={() => { setPhase("room"); setActiveTable(null); setBossFight(false); }}
           onConfirm={() => {
-            // §3.1 — checkpoint the seat as the player sits (underling/normal tables only; the boss
-            // throne isn't a resumable seat). Round is written from the game via onRound below.
-            if (!bossFight && !singleTable && activeTable !== null) {
+            // §3.1 — checkpoint the seat as the player sits so "Continue" resumes THIS spot. Covers
+            // underling/normal tables AND single-table rooms (Dojo/Suite, table 0). Only the mid-room
+            // boss THRONE (bossFight) stays non-resumable. Round is kept current via onRound below.
+            if (!bossFight && activeTable !== null) {
               writeFoxCheckpoint({ room: roomKey, table: activeTable, round: nextInitialRound });
             }
             setPhase("play");
@@ -393,8 +394,10 @@ export function FoxPitRoom({
             ? BOSS_PLATE_WITH_CARDS[room.bossArt]
             : (activeOpponent?.art ?? BOSS_PLATE_WITH_CARDS[room.bossArt])}
           onRound={(r) => {
-            // §3.1 — keep the checkpoint's round current as the match advances (seat tables only).
-            if (!bossFight && !singleTable && activeTable !== null) {
+            // §3.1 — keep the checkpoint's round current as the match advances (seat tables AND
+            // single-table rooms; only the boss throne is excluded). So quitting mid-match resumes
+            // the exact round you were on.
+            if (!bossFight && activeTable !== null) {
               writeFoxCheckpoint({ room: roomKey, table: activeTable, round: r });
             }
           }}
