@@ -121,9 +121,8 @@ export default async function SlatePage({
               advertised a product that doesn't exist. */}
           <SlatePicker
             slate={slate}
-            coinBalance={profile.coinBalance}
             cashBalanceCents={profile.cashBalanceCents}
-            kycVerified={profile.kycStatus === "verified"}
+            cashAttested={!!profile.cashAttestation}
             registeredState={profile.registeredState}
             existingEntry={existingEntry}
             shadowEarnings={shadowEarnings}

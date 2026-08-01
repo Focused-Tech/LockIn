@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUserId } from "@/lib/firebase/session";
@@ -15,8 +16,32 @@ import {
   FREE_ENTRY_COIN_COST,
   type EntryTier,
 } from "@/lib/constants";
-import { canPlayerEnterCash } from "@/lib/eligibility";
+import { verifyForCash, PERJURY_ATTESTATION_TEXT, PERJURY_ATTESTATION_VERSION } from "@/lib/eligibility";
 import { isSelfExcluded } from "@/server/data/responsiblePlay";
+
+/**
+ * §2 — record the player's penalty-of-perjury RESIDENCE ATTESTATION (the cash-entry gate). This is
+ * NOT ID/KYC (that's deferred to the withdrawal threshold) — it's the digitally-accepted affirmation
+ * the settled verification model requires alongside geo. Idempotent; affirms the registered state.
+ */
+export async function acceptCashAttestation(): Promise<{ ok: boolean; error?: string }> {
+  const uid = await getCurrentUserId();
+  if (!uid) return { ok: false, error: "Not signed in" };
+  const ref = adminDb().collection(COLLECTIONS.users).doc(uid);
+  const snap = await ref.get();
+  const user = snap.data() as UserDoc | undefined;
+  if (!user) return { ok: false, error: "No profile" };
+  if (!user.registeredState) return { ok: false, error: "Add your state before entering for cash." };
+  await ref.update({
+    cashAttestation: {
+      affirmedState: user.registeredState,
+      acceptedAt: FieldValue.serverTimestamp(),
+      text: PERJURY_ATTESTATION_TEXT,
+      version: PERJURY_ATTESTATION_VERSION,
+    },
+  });
+  return { ok: true };
+}
 
 export type SubmitEntryInput = {
   slateId: string;
@@ -40,6 +65,9 @@ export async function submitEntry(
 ): Promise<SubmitEntryResult> {
   const uid = await getCurrentUserId();
   if (!uid) return { ok: false, error: "Not signed in" };
+
+  // §2 — IP-derived state from Vercel's edge geo header (vendor-free), for the cash cross-check.
+  const ipRegion = (await headers()).get("x-vercel-ip-country-region");
 
   const db = adminDb();
   const slateRef = db.collection(COLLECTIONS.slates).doc(input.slateId);
@@ -134,9 +162,16 @@ export async function submitEntry(
           coinBalance: user.coinBalance - FREE_ENTRY_COIN_COST,
         });
       } else {
-        if (user.kycStatus !== "verified") throw new Error("NEEDS_KYC");
-        // SLICE 1.4 — player-side cash gate through the ONE resolver (fail-closed on unknown state).
-        if (!canPlayerEnterCash(user.registeredState)) throw new Error("GEO_BLOCKED");
+        // §2 — CASH GATE: IP-geo + registered-address cross-check + residence attestation. NO ID/KYC
+        // precondition (that's a withdrawal-time check). Falls back to the registered state for IP when
+        // the edge geo header is absent (local/dev), so it's the address self-check there.
+        const att = user.cashAttestation;
+        const verdict = verifyForCash({
+          ipState: ipRegion || user.registeredState || null,
+          addressState: user.registeredState ?? null,
+          attestation: att ? { affirmedState: att.affirmedState, acceptedAt: 0, text: att.text, version: att.version } : null,
+        });
+        if (!verdict.ok) throw new Error(`CASH_${verdict.reason}`);
         if (user.cashBalanceCents < entryCostCents) throw new Error("LOW_CASH");
         tx.update(userRef, {
           cashBalanceCents: user.cashBalanceCents - entryCostCents,
@@ -166,16 +201,14 @@ export async function submitEntry(
         return { ok: false, error: "You've already entered this contest" };
       case "LOW_COINS":
         return { ok: false, error: "Not enough coins for a free entry" };
-      case "NEEDS_KYC":
-        return {
-          ok: false,
-          error: "Verify your identity to enter paid contests",
-        };
-      case "GEO_BLOCKED":
-        return {
-          ok: false,
-          error: "Paid contests aren't available in your state",
-        };
+      case "CASH_no_attestation":
+        return { ok: false, error: "Accept the residence attestation to enter for cash." };
+      case "CASH_address_mismatch":
+        return { ok: false, error: "Your location doesn't match your registered state — update your address to continue." };
+      case "CASH_no_location":
+        return { ok: false, error: "We couldn't confirm your location for cash play." };
+      case "CASH_cash_blocked":
+        return { ok: false, error: "Paid contests aren't available in your state" };
       case "LOW_CASH":
         return { ok: false, error: "Add funds to enter this paid contest" };
       case "CLOSED":

@@ -102,6 +102,9 @@ export interface UserDoc {
   kycVerifiedAt: FsTimestamp | null;
   geoState: string | null;
   registeredState: string | null;
+  /** §2 — the accepted penalty-of-perjury residence attestation (the cash-entry gate; NOT ID/KYC,
+   *  which is deferred to the withdrawal threshold). Present once the player has attested. */
+  cashAttestation?: { affirmedState: string; acceptedAt: FsTimestamp; text: string; version: string } | null;
   stripeCustomerId: string | null;
   /** Platform owner/admin. Gates the web admin dashboard (/admin). */
   isAdmin?: boolean;

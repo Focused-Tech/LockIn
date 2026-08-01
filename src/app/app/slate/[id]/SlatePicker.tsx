@@ -10,17 +10,14 @@ import { Button, Card, Pill } from "@/components/ui";
 import { computeSlateMetrics } from "@/lib/contest";
 import { CardRushMeta } from "@/components/CardRushMeta";
 import { categoryTint } from "@/lib/practice/tints";
-import {
-  EXCLUDED_STATES,
-  FREE_ENTRY_COIN_COST,
-  type EntryTier,
-} from "@/lib/constants";
+import { EXCLUDED_STATES, type EntryTier } from "@/lib/constants";
+import { PERJURY_ATTESTATION_TEXT } from "@/lib/eligibility";
 import type { FeedSlate, FeedPrediction } from "@/lib/feed";
 import { SlateCard, type SlateLeg } from "@/components/slate/SlateCard";
 import type { ShadowEarnings } from "@/server/data/shadowEarnings";
 import { AddToParlay } from "@/components/cross-parlay/AddToParlay";
 import { formatCents, formatCentsShort, formatMultiple } from "@/lib/utils";
-import { submitEntry } from "./actions";
+import { submitEntry, acceptCashAttestation } from "./actions";
 
 // §1.1 — a prediction's pickable options + its pick style. Archetype legs render their N options;
 // binary legs render A/B. Milestone COUNT is bucket chips; every other archetype is the contest style.
@@ -51,17 +48,16 @@ interface LockedEntry {
 
 export function SlatePicker({
   slate,
-  coinBalance,
   cashBalanceCents,
-  kycVerified,
+  cashAttested,
   registeredState,
   existingEntry,
   shadowEarnings,
 }: {
   slate: FeedSlate;
-  coinBalance: number;
   cashBalanceCents: number;
-  kycVerified: boolean;
+  /** §2 — whether the player has accepted the residence attestation (the cash-entry gate). */
+  cashAttested: boolean;
   registeredState: string | null;
   existingEntry: LockedEntry | null;
   shadowEarnings?: ShadowEarnings | null;
@@ -78,14 +74,18 @@ export function SlatePicker({
     [slate.entryTiers],
   );
 
+  // §1 — ADVANCED IS CASH ONLY. No paid/free toggle, no coin path (coins are the beginner lane).
+  // §2 — the cash-entry gate is geo (registered state) + the penalty-of-perjury attestation. It does
+  // NOT require ID/KYC (that's deferred to the withdrawal threshold). `kycVerified` is no longer read.
   const geoBlocked = registeredState
     ? (EXCLUDED_STATES as readonly string[]).includes(registeredState)
     : false;
-  const canPaid = kycVerified && !geoBlocked && availableTiers.length > 0;
+  const [attested, setAttested] = useState(cashAttested);
+  const [attesting, setAttesting] = useState(false);
+  const canEnterCash = !geoBlocked && availableTiers.length > 0 && attested;
   const locked = slate.status !== "live";
 
   const [tier, setTier] = useState<EntryTier>(availableTiers[0] ?? 5);
-  const [mode, setMode] = useState<"paid" | "free">(canPaid ? "paid" : "free");
   const [picks, setPicks] = useState<Record<string, string>>({});
   const [entryCount, setEntryCount] = useState(slate.entryCount);
   const [lockedEntry, setLockedEntry] = useState<LockedEntry | null>(
@@ -152,16 +152,27 @@ export function SlatePicker({
     const result = await submitEntry({
       slateId: slate.id,
       tier,
-      free: mode === "free",
+      free: false, // §1 — advanced is cash only
       picks: picksArr,
     });
     setSubmitting(false);
     if (result.ok) {
-      setLockedEntry({ picks: picksArr, isPaid: mode === "paid" });
+      setLockedEntry({ picks: picksArr, isPaid: true });
       router.refresh();
     } else {
       setError(result.error);
     }
+  }
+
+  // §2 — accept the residence attestation (the cash-entry route). No ID upload; records the perjury
+  // attestation, then cash entry unlocks.
+  async function onAttest() {
+    setError(null);
+    setAttesting(true);
+    const r = await acceptCashAttestation();
+    setAttesting(false);
+    if (r.ok) setAttested(true);
+    else setError(r.error ?? "Couldn't record your attestation.");
   }
 
   // ── Live prize pool header (always shown) ───────────────────────────────────
@@ -324,10 +335,23 @@ export function SlatePicker({
             §1.2 read-only context and §1.3 category bezel + lock-in animation. */}
         <SlateCard
           mode="contest"
-          currency={mode === "free" ? "coins" : "cash"}
+          currency="cash"
           catColor={tint.border}
+          eyebrow={slate.category}
           legs={slateLegs}
-          stakeMode="none"
+          // §4 — the stake chips + CTA + lock-in live INSIDE the one SlateCard (not a separate panel).
+          // §1 — cash only: the $ tiers are the stake chips; they reveal once every leg is answered.
+          stakeMode="afterAnswers"
+          stakeOptions={availableTiers}
+          selectedStake={tier}
+          stakeLabel="Entry"
+          answered={allPicked}
+          onStake={(s) => setTier(s as EntryTier)}
+          cta={{
+            label: submitting ? "Locking in…" : !allPicked ? `Pick all ${predictions.length} to enter` : `Lock in · ${formatCents(entryCostCents)}`,
+            disabled: !allPicked || submitting || contextBlocked || !canEnterCash,
+          }}
+          onCta={onSubmit}
           locked={locked}
           locking={submitting}
           onPick={(li, pi) => {
@@ -354,100 +378,29 @@ export function SlatePicker({
           )}
       </div>
 
-      {/* Entry mode */}
-      <Card className="flex flex-col gap-3 lg:col-start-2" data-tour="entry-mode">
-        <div className="flex rounded-full border border-border p-0.5">
-          <ModeTab
-            label="Paid"
-            active={mode === "paid"}
-            disabled={!canPaid}
-            onClick={() => setMode("paid")}
-          />
-          <ModeTab
-            label="Free"
-            active={mode === "free"}
-            onClick={() => setMode("free")}
-          />
-        </div>
-
-        {mode === "paid" ? (
-          <>
-            <div className="flex gap-1.5">
-              {availableTiers.map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setTier(t)}
-                  className={
-                    "rounded border px-2.5 py-1 text-sm transition-colors " +
-                    (tier === t
-                      ? "border-accent-border bg-accent-soft text-accent"
-                      : "border-border text-muted hover:text-foreground")
-                  }
-                >
-                  ${t}
-                </button>
-              ))}
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted">
-                Entry {formatCents(tier * 100)} + fee{" "}
-                {formatCents(hostingFeeCents)}
-              </span>
-              <span className="font-semibold">
-                {formatCents(entryCostCents)}
-              </span>
-            </div>
-            <p className="text-xs text-muted">
-              Cash balance {formatCents(cashBalanceCents)}
-            </p>
-          </>
-        ) : (
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted">Free entry</span>
-            <span className="font-semibold">
-              {FREE_ENTRY_COIN_COST} coins
-              <span className="ml-1 text-xs text-muted">
-                (you have {coinBalance})
-              </span>
-            </span>
+      {/* §1/§2 — CASH ONLY. The stake chips + CTA live in the SlateCard above; this slim panel carries
+          the cash balance and the §2 gate (geo + attestation) with a ROUTE, never a dead end. */}
+      <div className="flex flex-col gap-2 lg:col-start-2" data-tour="entry-mode">
+        <p className="text-xs text-muted">Cash balance {formatCents(cashBalanceCents)}</p>
+        {geoBlocked ? (
+          <div className="rounded border border-border bg-surface px-3 py-2 text-xs text-muted">
+            Paid contests aren&apos;t available in your state.{" "}
+            <Link href="/app/beginner" className="font-semibold text-accent">Play the beginner lane in coins →</Link>
           </div>
-        )}
-
-        {!canPaid && (
-          <p className="rounded border border-border bg-surface px-3 py-2 text-xs text-muted">
-            {geoBlocked
-              ? "Paid contests aren't available in your state — play free with coins."
-              : "Verify your identity to unlock paid contests. Free play is open."}
+        ) : !attested ? (
+          <div className="flex flex-col gap-2 rounded border border-border bg-surface px-3 py-2.5">
+            <p className="text-xs text-muted">{PERJURY_ATTESTATION_TEXT}</p>
+            <Button variant="accent" size="sm" disabled={attesting} onClick={onAttest}>
+              {attesting ? "Confirming…" : `I affirm — enter for cash${registeredState ? ` (${registeredState})` : ""}`}
+            </Button>
+            <p className="text-[11px] text-muted">No ID upload needed to play — identity checks apply only at withdrawal.</p>
+          </div>
+        ) : null}
+        {error && (
+          <p role="alert" className="rounded border border-[rgba(232,84,84,0.25)] bg-[rgba(232,84,84,0.10)] px-3 py-2 text-sm text-loss">
+            {error}
           </p>
         )}
-      </Card>
-
-      {error && (
-        <p
-          role="alert"
-          className="rounded border border-[rgba(232,84,84,0.25)] bg-[rgba(232,84,84,0.10)] px-3 py-2 text-sm text-loss lg:col-start-2"
-        >
-          {error}
-        </p>
-      )}
-
-      <div data-tour="submit-entry" className="lg:col-start-2">
-        <Button
-          variant="accent"
-          size="lg"
-          className="w-full"
-          disabled={!allPicked || submitting || contextBlocked}
-          onClick={onSubmit}
-        >
-          {submitting
-            ? "Locking in…"
-            : !allPicked
-              ? `Pick all ${predictions.length} to enter`
-              : mode === "paid"
-                ? `Lock in · ${formatCents(entryCostCents)}`
-                : `Lock in · ${FREE_ENTRY_COIN_COST} coins`}
-        </Button>
       </div>
     </div>
   );
@@ -488,34 +441,5 @@ function ReadOnlyOption({
       {label}
       {mark && <span className="ml-1 text-xs">{mark}</span>}
     </div>
-  );
-}
-
-function ModeTab({
-  label,
-  active,
-  disabled,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  disabled?: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={
-        "flex-1 rounded-full px-3 py-1 text-sm transition-colors " +
-        (active
-          ? "bg-accent-soft text-accent"
-          : "text-muted hover:text-foreground") +
-        (disabled ? " cursor-not-allowed opacity-40" : "")
-      }
-    >
-      {label}
-    </button>
   );
 }
