@@ -1,7 +1,6 @@
 import { ChatAssistant } from "@/components/ChatAssistant";
 import { AppFrame } from "@/components/app/AppFrame";
 import { CrossParlayProvider } from "@/components/cross-parlay/CrossParlayProvider";
-import { CrossParlayBuilder } from "@/components/cross-parlay/CrossParlayBuilder";
 import { NativeBridge } from "@/components/notifications/NativeBridge";
 import { getCurrentUserProfile } from "@/lib/firebase/session";
 
@@ -39,8 +38,10 @@ export default async function AppLayout({
         cashBalanceCents={profile.cashBalanceCents}
         overlays={
           <>
+            {/* COMPLIANCE — the Cross-Parlay Builder FAB is removed: "parlay" is a gambling term and
+                a compliance issue. The context provider stays (consumers reference it); the visible
+                bottom-left launcher is gone. */}
             <ChatAssistant />
-            <CrossParlayBuilder />
           </>
         }
       >
