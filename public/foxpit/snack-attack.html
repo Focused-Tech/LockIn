@@ -83,7 +83,7 @@ html,body{margin:0;height:100%;height:100dvh;background:var(--fox-dark);color:va
   background:radial-gradient(circle,var(--tint) 0%,transparent 62%);opacity:.34;pointer-events:none}
 #board{display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:repeat(7,1fr);
   width:min(100%,96vw);max-width:100%;aspect-ratio:1 / 1;min-width:0;min-height:0;gap:4px;
-  padding:9px;background:var(--felt-a);
+  padding:9px;background:var(--felt-a);touch-action:none;
   border:3px solid var(--gold);border-radius:16px;position:relative;
   box-shadow:0 0 0 3px var(--tint) inset,0 0 22px var(--tint),0 10px 34px rgba(0,0,0,.6)}
 .tile{min-width:0;min-height:0;overflow:hidden;display:grid;place-items:center;padding:2px;
@@ -113,6 +113,14 @@ html,body{margin:0;height:100%;height:100dvh;background:var(--fox-dark);color:va
 @keyframes pop{0%{transform:scale(.5) rotate(-6deg)}60%{transform:scale(1.12) rotate(2deg)}100%{transform:scale(1)}}
 .flyer{position:fixed;z-index:40;font-size:24px;pointer-events:none;
   transition:transform .5s cubic-bezier(.5,-.2,.7,1),opacity .5s}
+/* §3 JUICE — animations touch only transform + opacity (compositor-friendly, no layout thrash). */
+@keyframes fpShake{0%,100%{transform:translate(0,0)}18%{transform:translate(-5px,3px)}38%{transform:translate(5px,-3px)}58%{transform:translate(-4px,-2px)}78%{transform:translate(4px,2px)}}
+#app.shake{animation:fpShake .34s ease}
+#app.shake.big{animation:fpShake .52s ease}
+.beam{position:fixed;z-index:34;pointer-events:none;border-radius:8px;opacity:0;
+  background:linear-gradient(180deg,var(--gold-hi),rgba(255,220,120,.12));
+  box-shadow:0 0 24px 6px rgba(240,196,99,.7);animation:fpBeam .44s ease-out forwards}
+@keyframes fpBeam{0%{opacity:0;transform:scaleY(.35) scaleX(.7)}28%{opacity:1;transform:none}100%{opacity:0;transform:scale(1.04)}}
 
 #footer{display:flex;gap:8px;padding:8px 2px 4px;flex:none}
 button.btn{flex:1;background:linear-gradient(#8a6524,#5d4318);border:1px solid var(--gold);
@@ -614,7 +622,7 @@ function fillBoard(){
 const rand=()=>SNACKS[Math.floor(Math.random()*SNACKS.length)];
 
 function paintBoard(){
-  const bd=$("#board"); bd.innerHTML="";
+  const bd=$("#board"); if(!S._wired){ wireInput(bd); S._wired=true; } bd.innerHTML="";
   for(let y=0;y<H;y++)for(let x=0;x<W;x++){
     const c=S.board[y][x];
     const t=document.createElement("button");
@@ -624,9 +632,43 @@ function paintBoard(){
     if(_v) t.innerHTML+='<span class="pips">'+"<i></i>".repeat(_v)+'</span>';
     t.dataset.x=x;t.dataset.y=y;
     if(S.sel&&S.sel[0]==y&&S.sel[1]==x)t.classList.add("sel");
-    t.onclick=()=>tap(y,x,t);
     bd.appendChild(t);
   }
+}
+
+/* ============ §1 INPUT — SWIPE (primary) + tap-tap (fallback) ============
+   Delegated on the persistent #board element (survives repaints). A gesture over the swipe
+   threshold swaps the origin tile with its neighbour in the DOMINANT cardinal direction; a
+   near-45° gesture is a DIAGONAL and is illegal (ignored). A gesture under the threshold is a
+   TAP and falls through to the existing tap-select/tap-neighbour swap. Every committed swap
+   still routes through trySwap → one move, free-swap (match or not). */
+let _sw=null;
+function wireInput(bd){
+  bd.addEventListener("pointerdown",e=>{
+    if(S.busy)return;
+    const t=e.target.closest(".tile"); if(!t)return;
+    e.preventDefault();
+    _sw={x:+t.dataset.x,y:+t.dataset.y,px:e.clientX,py:e.clientY,t,cell:t.getBoundingClientRect().width||44};
+  });
+  const finish=e=>{
+    const d=_sw; _sw=null; if(!d)return;
+    const dx=e.clientX-d.px, dy=e.clientY-d.py, adx=Math.abs(dx), ady=Math.abs(dy);
+    const min=Math.max(12,d.cell*0.34);           // threshold scales with the tile size
+    if(Math.max(adx,ady)<min){ tap(d.y,d.x,d.t); return; }   // TAP fallback (select / second-tap swap)
+    // DIAGONAL is illegal: both axes cross the threshold and are comparable (~45°) → ignore.
+    if(Math.min(adx,ady)>=min && Math.abs(adx-ady)<Math.max(adx,ady)*0.4) return;
+    if(S.sel){ S.sel=null; paintBoard(); }         // a swipe cancels any pending tap-selection
+    if(S.busy)return;
+    const horiz=adx>ady;
+    const ty=horiz?d.y:d.y+(dy>0?1:-1);
+    const tx=horiz?d.x+(dx>0?1:-1):d.x;
+    if(ty<0||ty>=H||tx<0||tx>=W)return;            // swiped off the edge → nothing
+    if(S.board[d.y][d.x].f||S.board[ty][tx].f){    // a frozen tile can't be moved
+      d.t.classList.add("shake"); setTimeout(()=>d.t.classList.remove("shake"),320); return; }
+    trySwap(d.y,d.x,ty,tx);
+  };
+  window.addEventListener("pointerup",finish);
+  window.addEventListener("pointercancel",()=>{ _sw=null; });
 }
 function tap(y,x,el){
   if(S.busy)return;
@@ -644,6 +686,9 @@ function trySwap(ay,ax,by,bx){
   swap(ay,ax,by,bx);
   S.sel=null; S.moves--; S.busy=true;
   S.turnCleared=0; S.turnChains=0; S.turnKind=null;
+  // §2 — remember the swipe axis + pivot so a 4-in-line can drop a line-clearer PERPENDICULAR to it
+  // (a horizontal swap → clears the column; a vertical swap → clears the row). Pivot = the destination.
+  S.swipeAxis=(ay===by)?"h":"v"; S.swipePivot=[by,bx];
   resolve().then(()=>{
     try{ scoreTurn(); applyMech(); }
     catch(e){ showErr("turn logic",e); }
@@ -674,21 +719,41 @@ async function resolve(){
     // thaw / unlock / defeather neighbors
     m.forEach(([y,x])=>{neigh(y,x).forEach(([ny,nx])=>{
       const n=S.board[ny][nx]; if(n.f)n.f=0; if(n.fe)n.fe=0; if(n.bl){n.bl=0;n.s=rand();}});});
+
+    // §2 LINE-CLEARER — a 4+ in-line match made by the player's SWIPE (first cascade only) detonates
+    // the full line PERPENDICULAR to the swipe (horizontal swipe → the column; vertical → the row),
+    // through the pivot. It does NOT chain: the axis is consumed so a cascade never re-triggers it.
+    let extra=[], beam=null;
+    if(chain===1 && S.swipeAxis && hasFourLine(m)){
+      const [py,px]=S.swipePivot||m[0];
+      if(S.swipeAxis==="h"){ for(let yy=0;yy<H;yy++) extra.push([yy,px]); }
+      else                 { for(let xx=0;xx<W;xx++) extra.push([py,xx]); }
+      S.coins+=FOUR_MATCH_BONUS;
+      beam={axis:S.swipeAxis,py,px};
+    }
+    S.swipeAxis=null;
+
+    // merge the match with any line-clearer cells (dedup)
+    const seen=new Set(), cleared=[];
+    m.concat(extra).forEach(([y,x])=>{const k=y+","+x; if(!seen.has(k)){seen.add(k);cleared.push([y,x]);}});
+
     // score: 2 coins per snack, +1 per chain depth, 4+ match bonus
-    const worth=m.reduce((t,[y,x])=>t+(SNACK_VALUE[S.board[y][x].s]||2),0);
+    const worth=cleared.reduce((t,[y,x])=>t+(SNACK_VALUE[S.board[y][x].s]||2),0);
     let gain=worth*S.rate+(chain-1)*m.length+(m.length>=4?4:0);
-    if(m.some(([y,x])=>S.board[y][x].sh)){gain*=3; placeShimmer();}
+    if(cleared.some(([y,x])=>S.board[y][x].sh)){gain*=3; placeShimmer();}
     if(S.hot>0) gain*=2;
     gain=Math.round(gain);
     if(m.length>=4) S.big=(S.big||0)+1;   // a 4-snack match
     S.coins+=gain; S.matchStreak++; S.sinceQ++;
-    S.turnCleared+=m.length; S.turnChains=chain;
+    S.turnCleared+=cleared.length; S.turnChains=chain;
     S.turnKind=S.board[m[0][0]][m[0][1]].s;
-    flyToFox(m); chomp(); crumbs(m);
-    m.forEach(([y,x])=>S.board[y][x].dead=true);
-    paintDead(m);
+    if(beam) lineBeam(beam.axis,beam.py,beam.px);   // §3 juice
+    flyToFox(cleared); chomp(); crumbs(cleared);
+    cleared.forEach(([y,x])=>S.board[y][x].dead=true);
+    paintDead(cleared);
     await sleep(240);
     collapse(); paintBoard(); paintHUD();
+    boardPulse(chain);                         // §3 — cascade escalation (deeper chain = bigger pulse)
     await sleep(140);
   }
 }
@@ -744,6 +809,42 @@ window.FOXRIG=null;
 function chomp(){ if(window.FOXRIG) window.FOXRIG.chomp(); }
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
+/* ============ §3 JUICE — beam, screen shake, cascade escalation, fox reaction ============
+   Screen shake fires ONLY on a line-clearer or a Delicious (never a plain match). Everything
+   animates transform/opacity only. */
+function screenShake(big){
+  const a=$("#app"); if(!a)return;
+  a.classList.remove("shake","big"); void a.offsetWidth;   // restart the animation
+  a.classList.add("shake"); if(big)a.classList.add("big");
+  setTimeout(()=>a.classList.remove("shake","big"), big?540:360);
+}
+function foxReact(){ if(window.FOXRIG){ (FOXRIG.react||FOXRIG.chomp||(()=>{})).call(FOXRIG); } }
+// The line-clearer BEAM sweeps the detonated row/column (perpendicular to the swipe). Positioned off
+// the live tile rects so it always lands on the cleared line.
+function lineBeam(axis,py,px){
+  const bd=$("#board").children, board=$("#board"); if(!bd.length)return;
+  const br=board.getBoundingClientRect();
+  const b=document.createElement("div"); b.className="beam";
+  if(axis==="h"){                                   // horizontal swipe → detonates the COLUMN px
+    const c=bd[px].getBoundingClientRect();
+    b.style.left=c.left+"px"; b.style.top=br.top+"px"; b.style.width=c.width+"px"; b.style.height=br.height+"px";
+    b.style.transformOrigin="center top";
+  }else{                                            // vertical swipe → detonates the ROW py
+    const c=bd[py*W].getBoundingClientRect();
+    b.style.left=br.left+"px"; b.style.top=c.top+"px"; b.style.width=br.width+"px"; b.style.height=c.height+"px";
+    b.style.transformOrigin="left center";
+  }
+  document.body.appendChild(b); setTimeout(()=>b.remove(),480);
+  screenShake(false); foxReact();
+}
+// Cascade escalation: each deeper cascade gives the board a slightly bigger transform pulse, so a
+// long chain feels like it's building. Transform only — reset next frame.
+function boardPulse(chain){
+  const b=$("#board"); if(!b||chain<2)return;
+  b.style.transition="transform .12s ease"; b.style.transform="scale("+(1+Math.min(chain,5)*0.012)+")";
+  setTimeout(()=>{ b.style.transform=""; },130);
+}
+
 /* ============ DELICIOUS + BOSS COUNTER-MOVE ============
    Big turns are celebrated AND provoke the boss. Net still favours the player. */
 const DELICIOUS_AT = 6;   // snacks cleared in ONE turn
@@ -753,6 +854,15 @@ const COUNTER_GOAL = 12;  // coins added to the goal
 const COUNTER_MAX  = 3;   // per level
 const DELICIOUS_MOVES = 2;
 const SEED_TILES      = 3;
+const FOUR_MATCH_BONUS = 50;   // §2 — flat coin reward when a 4-in-line drops a line-clearer
+
+// §2 — is any horizontal/vertical run of ≥4 present in the matched set?
+function hasFourLine(m){
+  const set=new Set(m.map(([y,x])=>y+","+x)); const has=(y,x)=>set.has(y+","+x);
+  for(let y=0;y<H;y++)for(let x=0;x<=W-4;x++) if(has(y,x)&&has(y,x+1)&&has(y,x+2)&&has(y,x+3)) return true;
+  for(let x=0;x<W;x++)for(let y=0;y<=H-4;y++) if(has(y,x)&&has(y+1,x)&&has(y+2,x)&&has(y+3,x)) return true;
+  return false;
+}
 
 function shakeUp(){
   S.hot=3;
@@ -813,6 +923,7 @@ function scoreTurn(){
     S.moves+=DELICIOUS_MOVES;
     seedKind(S.turnKind,SEED_TILES);
     confetti();
+    screenShake(true); foxReact();          // §3 — big shake on a Delicious (line-clearer + Delicious ONLY)
     burst(pick(["Delicious!","Mmmmm!","More of that!","Chef's kiss!"]),
           `+${DELICIOUS_MOVES} moves · more ${SNACK_NAME[S.turnKind]||"snacks"} on the board`);
   }
