@@ -3,12 +3,14 @@ import { Timestamp, FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
 import { COLLECTIONS } from "@/lib/firebase/types";
 import { detectBannedArchetype } from "@/lib/contest/questionEngine";
+import { buildCrossGameSlate, type FeedGame, type CrossGameSlate } from "./crossGame";
 
 /**
- * REAL data-feed sync (server/cron side). Mirrors scripts/sync-feed.mjs. ESPN's public scoreboard
- * (no key) carries DraftKings odds — moneyline, spread (run/puck/point line) and totals — so each game
- * becomes a MULTI-MARKET slate. If THE_ODDS_API_KEY is set, refine the moneyline from The Odds API
- * consensus. Player props (player stats) need The Odds API per-event endpoint (paid) — not yet wired.
+ * REAL data-feed sync (server/cron side). Mirrors scripts/sync-feed.mjs. ESPN's public scoreboard is
+ * the DATA source only — we do NOT serve its betting markets (moneyline / spread / total are banned
+ * archetypes). Instead each league's games are transformed into ONE compliant CROSS-GAME HEAD-TO-HEAD
+ * slate: standout players (from ESPN stat `leaders`) paired across DIFFERENT games. Settlement grades
+ * each leg from the players' real box-score stats (see crossGame.ts + settle.ts).
  */
 const DAY = 24 * 60 * 60 * 1000;
 const PER_LEAGUE = 8;
@@ -20,91 +22,26 @@ const tiers = [
 ];
 
 const LEAGUES = [
-  { sport: "baseball", league: "mlb", category: "MLB", oddsKey: "baseball_mlb" },
-  { sport: "basketball", league: "wnba", category: "WNBA", oddsKey: "basketball_wnba" },
-  { sport: "soccer", league: "usa.1", category: "Soccer", oddsKey: "soccer_usa_mls" },
-  { sport: "soccer", league: "eng.1", category: "Soccer", oddsKey: "soccer_epl" },
-  { sport: "football", league: "nfl", category: "NFL", oddsKey: "americanfootball_nfl" },
-  { sport: "football", league: "college-football", category: "CFB", oddsKey: "americanfootball_ncaaf" },
-  { sport: "basketball", league: "nba", category: "NBA", oddsKey: "basketball_nba" },
-  { sport: "hockey", league: "nhl", category: "NHL", oddsKey: "icehockey_nhl" },
+  { sport: "baseball", league: "mlb", category: "MLB" },
+  { sport: "basketball", league: "wnba", category: "WNBA" },
+  { sport: "soccer", league: "usa.1", category: "Soccer" },
+  { sport: "soccer", league: "eng.1", category: "Soccer" },
+  { sport: "football", league: "nfl", category: "NFL" },
+  { sport: "football", league: "college-football", category: "CFB" },
+  { sport: "basketball", league: "nba", category: "NBA" },
+  { sport: "hockey", league: "nhl", category: "NHL" },
 ] as const;
 
-const MKT: Record<string, { spread: string; total: string }> = {
-  MLB: { spread: "Run line", total: "Total runs" },
-  NHL: { spread: "Puck line", total: "Total goals" },
-  NBA: { spread: "Point spread", total: "Total points" },
-  WNBA: { spread: "Point spread", total: "Total points" },
-  NFL: { spread: "Point spread", total: "Total points" },
-  CFB: { spread: "Point spread", total: "Total points" },
-  Soccer: { spread: "Goal spread", total: "Total goals" },
-};
-const labelsFor = (cat: string) => MKT[cat] ?? { spread: "Spread", total: "Total" };
-
-interface Market {
-  id: string;
-  question: string;
-  optionA: string;
-  optionB: string;
-  probA: number;
-  probB: number;
-  type: "binary" | "over_under";
-  line: number | null;
-}
-interface FeedEvent {
-  id: string;
-  title: string;
-  category: string;
-  lockMs: number;
-  homeName: string;
-  awayName: string;
-  source: "espn" | "oddsapi";
-  predictions: Market[];
-}
-
-function amOdds(v: unknown): number | null {
-  if (v == null) return null;
-  const n = Number(String(v).replace(/^\+/, ""));
-  return Number.isNaN(n) ? null : n;
-}
-function mlToImplied(ml: number | null): number | null {
-  if (ml == null) return null;
-  return ml < 0 ? -ml / (-ml + 100) : 100 / (ml + 100);
-}
-function pair(iA: number | null, iB: number | null): { a: number; b: number } | null {
-  if (iA == null || iB == null || iA + iB <= 0) return null;
-  const a = Math.min(99, Math.max(1, Math.round((100 * iA) / (iA + iB))));
-  return { a, b: 100 - a };
-}
-const norm = (s: string | undefined) => (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-
 /* eslint-disable @typescript-eslint/no-explicit-any */
-function buildPredictions(o: any, homeName: string, awayName: string, cat: string): Market[] {
-  const L = labelsFor(cat);
-  const preds: Market[] = [];
-  const ml = pair(mlToImplied(amOdds(o?.moneyline?.home?.close?.odds)), mlToImplied(amOdds(o?.moneyline?.away?.close?.odds)));
-  preds.push({ id: "ml", question: "Who wins?", optionA: homeName, optionB: awayName, probA: ml?.a ?? 50, probB: ml?.b ?? 50, type: "binary", line: null });
-  const spH = o?.pointSpread?.home?.close, spA = o?.pointSpread?.away?.close;
-  if (spH?.line && spA?.line) {
-    const sp = pair(mlToImplied(amOdds(spH.odds)), mlToImplied(amOdds(spA.odds)));
-    preds.push({ id: "spread", question: L.spread, optionA: `${homeName} ${spH.line}`, optionB: `${awayName} ${spA.line}`, probA: sp?.a ?? 50, probB: sp?.b ?? 50, type: "binary", line: typeof o?.spread === "number" ? o.spread : null });
-  }
-  const totLine = typeof o?.overUnder === "number" ? o.overUnder : null;
-  if (totLine != null) {
-    const tot = pair(mlToImplied(amOdds(o?.total?.over?.close?.odds)), mlToImplied(amOdds(o?.total?.under?.close?.odds)));
-    preds.push({ id: "total", question: L.total, optionA: `Over ${totLine}`, optionB: `Under ${totLine}`, probA: tot?.a ?? 50, probB: tot?.b ?? 50, type: "over_under", line: totLine });
-  }
-  return preds;
-}
-
-async function fetchESPN(l: (typeof LEAGUES)[number], now: number): Promise<FeedEvent[]> {
+/** Fetch a league's UPCOMING games as normalized FeedGame[] (carry raw competitors for `leaders`). */
+async function fetchGames(l: (typeof LEAGUES)[number], now: number): Promise<FeedGame[]> {
   const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${l.sport}/${l.league}/scoreboard`, { cache: "no-store" });
   if (!res.ok) {
     console.error(`[feed] ESPN ${l.league}: HTTP ${res.status}`);
     return [];
   }
   const data = await res.json();
-  const out: FeedEvent[] = [];
+  const out: FeedGame[] = [];
   for (const ev of data.events ?? []) {
     const comp = ev.competitions?.[0];
     if (!comp) continue;
@@ -113,127 +50,95 @@ async function fetchESPN(l: (typeof LEAGUES)[number], now: number): Promise<Feed
     const home = comp.competitors?.find((c: any) => c.homeAway === "home");
     const away = comp.competitors?.find((c: any) => c.homeAway === "away");
     if (!home?.team || !away?.team) continue;
-    const homeName = home.team.displayName, awayName = away.team.displayName;
     out.push({
-      id: `espn-${l.league}-${ev.id}`,
-      title: `${awayName} @ ${homeName}`,
-      category: l.category,
-      lockMs: start,
-      homeName,
-      awayName,
-      source: "espn",
-      predictions: buildPredictions(comp.odds?.[0] ?? {}, homeName, awayName, l.category),
+      eventId: String(ev.id),
+      startMs: start,
+      homeName: home.team.displayName,
+      awayName: away.team.displayName,
+      competitors: comp.competitors ?? [],
     });
   }
   return out;
 }
-
-async function enrichWithOddsAPI(l: (typeof LEAGUES)[number], events: FeedEvent[]): Promise<void> {
-  const key = process.env.THE_ODDS_API_KEY;
-  if (!key || events.length === 0) return;
-  const res = await fetch(`https://api.the-odds-api.com/v4/sports/${l.oddsKey}/odds/?apiKey=${key}&regions=us&markets=h2h&oddsFormat=american`, { cache: "no-store" });
-  if (!res.ok) {
-    console.error(`[feed] OddsAPI ${l.oddsKey}: HTTP ${res.status}`);
-    return;
-  }
-  const games = await res.json();
-  for (const ev of events) {
-    const g = games.find((x: any) => {
-      const h = norm(x.home_team), a = norm(x.away_team), eh = norm(ev.homeName), ea = norm(ev.awayName);
-      return (eh.includes(h) || h.includes(eh)) && (ea.includes(a) || a.includes(ea));
-    });
-    if (!g) continue;
-    const h2h = g.bookmakers?.[0]?.markets?.find((m: any) => m.key === "h2h");
-    const mlp = pair(
-      mlToImplied(amOdds(h2h?.outcomes?.find((o: any) => norm(o.name) === norm(g.home_team))?.price)),
-      mlToImplied(amOdds(h2h?.outcomes?.find((o: any) => norm(o.name) === norm(g.away_team))?.price)),
-    );
-    const mlPred = ev.predictions.find((p) => p.id === "ml");
-    if (mlp && mlPred) {
-      mlPred.probA = mlp.a;
-      mlPred.probB = mlp.b;
-      ev.source = "oddsapi";
-    }
-  }
-}
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
-async function writeSlate(ev: FeedEvent, now: number): Promise<void> {
-  const ref = adminDb().collection(COLLECTIONS.slates).doc(ev.id);
-  // COMPLIANCE — publish only legs that pass the banned-archetype detector. The current ESPN markets
-  // (moneyline / spread / total) are ALL banned and cannot be made compliant without cross-game player
-  // data, so a game yields zero compliant legs → it is NOT published, and any prior version is removed.
-  const compliant = ev.predictions.filter(
-    (p) => p.type !== "over_under" && detectBannedArchetype(p.question, [p.optionA, p.optionB]) == null,
-  );
-  if (compliant.length === 0) {
+/** Upsert a cross-game head-to-head slate + its legs. A leg is guarded by the banned-archetype
+ *  detector (defence in depth). If no compliant legs remain, the slate is removed. Returns legs written. */
+async function writeCrossGameSlate(s: CrossGameSlate, now: number): Promise<number> {
+  const legs = s.legs.filter((leg) => detectBannedArchetype(leg.question, [leg.optionA, leg.optionB]) == null);
+  const ref = adminDb().collection(COLLECTIONS.slates).doc(s.slateId);
+  if (legs.length === 0) {
     const prior = await ref.collection(COLLECTIONS.predictions).get();
     for (const d of prior.docs) await d.ref.delete();
     await ref.delete().catch(() => {});
-    return;
+    return 0;
   }
   await ref.set(
     {
       creatorId: null,
-      title: ev.title,
+      title: s.title,
       description: null,
-      category: ev.category,
+      category: s.category,
       status: "live",
       entryTiers: tiers,
       entryCount: 0,
       isCardRush: false,
       rushMultiplier: 1,
       maxEntries: null,
-      lockTime: Timestamp.fromMillis(ev.lockMs),
+      lockTime: Timestamp.fromMillis(s.lockMs),
       promotionOpensAt: Timestamp.fromMillis(now - DAY),
       settledAt: null,
       cancelledAt: null,
       creatorBonusCents: 0,
-      source: ev.source,
+      source: "espn",
       createdAt: FieldValue.serverTimestamp(),
     },
     { merge: true },
   );
-  let sortOrder = 0;
-  for (const p of compliant) {
-    await ref.collection(COLLECTIONS.predictions).doc(p.id).set(
+  let i = 0;
+  for (const leg of legs) {
+    await ref.collection(COLLECTIONS.predictions).doc(`h${i}`).set(
       {
-        question: p.question,
-        optionA: p.optionA,
-        optionB: p.optionB,
-        optionAProbability: p.probA,
-        optionBProbability: p.probB,
-        optionAMultiplier: Math.round((100 / Math.max(1, p.probA)) * 100) / 100,
-        optionBMultiplier: Math.round((100 / Math.max(1, p.probB)) * 100) / 100,
-        predictionType: p.type,
-        overUnderLine: p.line,
+        question: leg.question,
+        optionA: leg.optionA,
+        optionB: leg.optionB,
+        optionAProbability: leg.probA,
+        optionBProbability: leg.probB,
+        optionAMultiplier: Math.round((100 / Math.max(1, leg.probA)) * 100) / 100,
+        optionBMultiplier: Math.round((100 / Math.max(1, leg.probB)) * 100) / 100,
+        predictionType: "binary",
+        overUnderLine: null,
         result: null,
         verificationSources: null,
         verificationConfidence: null,
-        sortOrder: sortOrder++,
+        sortOrder: i,
+        h2h: leg.h2h, // settlement metadata: stat + box label + both players (id/name/team/eventId)
       },
       { merge: true },
     );
+    i++;
   }
   const existing = await ref.collection(COLLECTIONS.predictions).get();
-  const keep = new Set(compliant.map((p) => p.id));
+  const keep = new Set(legs.map((_, k) => `h${k}`));
   for (const d of existing.docs) if (!keep.has(d.id)) await d.ref.delete();
+  return legs.length;
 }
 
-/** Pull upcoming games across the configured leagues and upsert them as multi-market live slates. */
+/** Pull upcoming games across the leagues and upsert one compliant cross-game head-to-head slate each. */
 export async function syncFeed(now: number = Date.now()): Promise<{ synced: number; markets: number; byLeague: Record<string, number>; oddsApi: boolean }> {
   const byLeague: Record<string, number> = {};
   let synced = 0, markets = 0;
   for (const l of LEAGUES) {
     try {
-      const events = (await fetchESPN(l, now)).slice(0, PER_LEAGUE);
-      await enrichWithOddsAPI(l, events);
-      for (const ev of events) {
-        await writeSlate(ev, now);
-        markets += ev.predictions.length;
+      const games = (await fetchGames(l, now)).slice(0, PER_LEAGUE);
+      const slate = buildCrossGameSlate({ league: l.league, category: l.category, games });
+      if (!slate) continue;
+      const n = await writeCrossGameSlate(slate, now);
+      if (n > 0) {
+        byLeague[l.category] = (byLeague[l.category] ?? 0) + 1;
+        synced += 1;
+        markets += n;
       }
-      byLeague[l.category] = (byLeague[l.category] ?? 0) + events.length;
-      synced += events.length;
     } catch (err) {
       console.error(`[feed] ${l.league} failed`, err);
     }

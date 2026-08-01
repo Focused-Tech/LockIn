@@ -11,6 +11,7 @@ import { settleEntries, type SettlementEntryInput } from "@/lib/contest";
 import { firstBannedLeg } from "@/lib/contest/questionEngine";
 import { verifyPrediction } from "@/lib/ai/verification/verifier";
 import { fetchEspnGameResult, resolveFeedPrediction, isFeedSlateId, type GameResult } from "@/server/feeds/scores";
+import { isH2HSlateId, fetchAthleteStat, resolveH2H, H2H_CONFIG, type H2HLegMeta } from "@/server/feeds/crossGame";
 import { applySlateToParlays } from "./crossParlay";
 import { notifyResultsReady } from "@/lib/notifications/send";
 import { HOSTING_FEE_SPLIT } from "@/lib/constants";
@@ -96,6 +97,47 @@ export async function settleSlate(slateId: string): Promise<SettleResult> {
   const predBatch = db.batch();
   let needsReview = false;
 
+  // CROSS-GAME HEAD-TO-HEAD slate (`h2h-{league}`): grade each leg from the two players' real
+  // box-score stats. A leg settles only once BOTH its games are final; otherwise revert to `locked`
+  // and the next cron retries (games finish hours after lock). Ties / missing stats → manual review.
+  const h2hLeague = isH2HSlateId(slateId) ? slateId.replace(/^h2h-/, "") : null;
+  const h2hCfg = h2hLeague ? H2H_CONFIG[h2hLeague] : null;
+  if (h2hCfg && h2hLeague) {
+    const graded = await Promise.all(
+      predsSnap.docs.map(async (d) => {
+        const pred = d.data() as PredictionDoc & { h2h?: H2HLegMeta };
+        const h = pred.h2h;
+        if (!h) return { id: d.id, ref: d.ref, resolved: null as "a" | "b" | null, notFinal: false, evidence: "" };
+        const [sa, sb] = await Promise.all([
+          fetchAthleteStat(h2hCfg.sport, h2hLeague, h.a.eventId, h.a.playerId, h.boxLabel),
+          fetchAthleteStat(h2hCfg.sport, h2hLeague, h.b.eventId, h.b.playerId, h.boxLabel),
+        ]);
+        if (!sa || !sb || !sa.completed || !sb.completed) return { id: d.id, ref: d.ref, resolved: null, notFinal: true, evidence: "" };
+        return {
+          id: d.id,
+          ref: d.ref,
+          resolved: resolveH2H(sa.val, sb.val),
+          notFinal: false,
+          evidence: `ESPN box: ${h.a.name} ${sa.val ?? "?"} vs ${h.b.name} ${sb.val ?? "?"} ${h.stat}`,
+        };
+      }),
+    );
+    if (graded.some((g) => g.notFinal)) {
+      await slateRef.update({ status: "locked" });
+      return { ok: true, settled: 0, notFinal: true };
+    }
+    for (const g of graded) {
+      if (g.resolved) {
+        results[g.id] = g.resolved;
+        predBatch.set(g.ref, { result: g.resolved, verificationSources: [g.evidence], verificationConfidence: 100 }, { merge: true });
+      } else {
+        needsReview = true; // tie or a player without a box-score line → review, never a guess
+      }
+    }
+    // fall through to the shared commit + settleEntries block below.
+  }
+
+  if (!h2hCfg) {
   const verified = await Promise.all(
     predsSnap.docs.map(async (d) => {
       const pred = d.data() as PredictionDoc;
@@ -171,6 +213,7 @@ export async function settleSlate(slateId: string): Promise<SettleResult> {
     if (settleable) results[v.id] = verdict.choice!;
     else needsReview = true;
   }
+  } // end if (!h2hCfg)
   await predBatch.commit();
 
   // Route to manual review when any outcome isn't confidently verified.
