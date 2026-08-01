@@ -14,7 +14,6 @@ import { EmbedSnippet } from "@/components/EmbedSnippet";
 import { ShareCardPanel } from "@/components/ShareCardPanel";
 import { FollowButton } from "@/components/feed/FollowButton";
 import { SlatePicker } from "./SlatePicker";
-import { StrategyAdvisor } from "./StrategyAdvisor";
 
 export default async function SlatePage({
   params,
@@ -118,10 +117,8 @@ export default async function SlatePage({
         </Card>
       ) : (
         <>
-          {slate.status === "live" && (
-            <StrategyAdvisor slateId={id} isPro={profile.proSubscriber} />
-          )}
-
+          {/* §1.1 — the pro-upsell advisor block is removed here: there is no Pro subscription, so it
+              advertised a product that doesn't exist. */}
           <SlatePicker
             slate={slate}
             coinBalance={profile.coinBalance}

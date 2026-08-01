@@ -31,7 +31,7 @@ export default async function ExplorePage() {
         <div>
           <h1 className="text-xl font-semibold">Explore</h1>
           <p className="text-sm text-muted">
-            Live contests from creators. Pick outcomes, climb the board.
+            Live contests from creators. Call the night, climb the board.
           </p>
         </div>
         {/* Action pills on their own row below. (Switch journey + Host removed —
