@@ -12,7 +12,7 @@ import { FOXPIT_BUILD_VERSION } from "@/lib/foxpit/rules";
  */
 export function RoundChrome({
   oppName, roundIndex, rounds, keepN, slatesPerRound, accent,
-  clockVisible, clockLabel, clockAlert, roundsWon, coins, onQuit, onKeydrop,
+  clockVisible, clockLabel, clockAlert, roundsWon, bossWins, winsTarget, coins, onQuit, onKeydrop,
 }: {
   oppName: string;
   roundIndex: number;
@@ -24,6 +24,10 @@ export function RoundChrome({
   clockLabel: string;
   clockAlert: boolean;
   roundsWon: number;
+  /** §7 — hands the opponent has taken this match. */
+  bossWins: number;
+  /** §7 — hand-wins needed to take this table (2 for an underling/2nd-tier, 3 for a floor boss). */
+  winsTarget: number;
   /** §3.3 — the player's live coin balance; pulses green when it goes UP (a won round). */
   coins?: number;
   onQuit: () => void;
@@ -70,9 +74,16 @@ export function RoundChrome({
         )}
       </div>
       <div className="min-w-0 flex-1 text-center">
-        {/* line 1 = opponent only; line 2 = round + keep — short lines, no truncation. */}
+        {/* line 1 = opponent; line 2 = the running MATCH TALLY (§7, player vs this opponent, first-to
+            target); line 3 = round + keep — short lines, no truncation. */}
         <div data-chrome-title className="truncate text-base font-extrabold tracking-wide" style={{ color: accent }}>
           {oppName.toUpperCase()}
+        </div>
+        <div data-match-tally className="truncate text-xs font-extrabold tabular-nums">
+          <span style={{ color: "#22C55E" }}>You {roundsWon}</span>
+          <span className="text-muted"> — </span>
+          <span style={{ color: accent }}>{bossWins} {oppName}</span>
+          <span className="text-muted"> · first to {winsTarget}</span>
         </div>
         <div className="truncate text-[11px] font-semibold text-muted">
           ROUND {roundIndex + 1}/{rounds} · KEEP {keepN}/{slatesPerRound}
@@ -101,7 +112,7 @@ export function RoundChrome({
             </div>
           )}
         </div>
-        <div className="text-[8px] leading-none text-muted">w{roundsWon} · {FOXPIT_BUILD_VERSION}</div>
+        <div className="text-[8px] leading-none text-muted">{FOXPIT_BUILD_VERSION}</div>
       </div>
     </div>
   );

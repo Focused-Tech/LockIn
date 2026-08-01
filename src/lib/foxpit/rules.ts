@@ -193,7 +193,7 @@ export const TIMERS = {
   questionDefault: 15,   // Owl
   questionRavenMax: 45,  // grows toward this as questions grow
   questionBossFox: 12,
-  discardDecision: 40,   // keep/redeal window (was 20 — doubled per 3.3; PAUSES while a card is open). Architect will tune.
+  discardDecision: 60,   // keep/redeal decision window (§2.4: 40 → 60 for reading + deciding; PAUSES while a card is open full screen). Separate from the answering clock. Architect will tune.
 } as const;
 
 /** Economy — COINS only, zero rake across the whole journey. */

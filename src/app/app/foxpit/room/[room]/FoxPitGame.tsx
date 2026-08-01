@@ -29,6 +29,32 @@ function resolvePlayerCats(userCategories: string[]): FoxPitCategory[] {
 const COLOR_WIN = "#22C55E";
 const COLOR_LOSS = "#E85454";
 
+/* ===== ARCHITECT-SET — exact values, not a formula (addendum §3.2). Keyed by CARDS KEPT (the size
+   of the final hand taken to the table). Do NOT derive, smooth, or interpolate these. ===== */
+export const ANSWER_SECONDS: Record<number, number> = { 1: 40, 2: 120, 3: 160, 4: 180, 5: 210 };
+/* ========================================================================================= */
+/** §3 — the answering budget for a hand of `cardsKept` cards, straight from the ARCHITECT-SET table.
+ *  0 (no clock) for anything outside 1–5 — the caller reports it rather than inventing a value (§3.5). */
+export function answerSecondsFor(cardsKept: number): number {
+  return ANSWER_SECONDS[cardsKept] ?? 0;
+}
+
+/** §2 — the answering clock shows AND runs ONLY while answering (phase "play"); never during
+ *  dealing, reading, keeping or redealing. It starts the moment the final kept hand locks in. */
+export function answerClockVisible(phase: string, roundTotal: number): boolean {
+  return roundTotal > 0 && phase === "play";
+}
+
+/** §5 — decide a round from what was actually played. ZERO staked-and-answered cards = NO-CONTEST:
+ *  neither side's tally moves. Otherwise the player takes the hand on ≥ as many head-to-head cards. */
+export function decideRound(playedCount: number, playerCards: number, bossCards: number): {
+  noContest: boolean; won: boolean; playerDelta: 0 | 1; bossDelta: 0 | 1;
+} {
+  const noContest = playedCount === 0;
+  const won = !noContest && playerCards >= bossCards;
+  return { noContest, won, playerDelta: !noContest && won ? 1 : 0, bossDelta: !noContest && !won ? 1 : 0 };
+}
+
 /** A slate is LOCKED once it's staked and every question the player CHOSE TO PLAY is answered. */
 function isLocked(s: FoxSlate, picks: Record<string, number>): boolean {
   return s.stake != null && s.questions.slice(0, s.playCount).every((q) => picks[q.id] != null);
@@ -180,7 +206,7 @@ export function FoxPitGame({
   // Boss stake mode chosen per round (item 4). Persisted WITH the round result (in `last`), not
   // held only as a transient toggle — it affects scoring + the tally.
   const [bossMode, setBossMode] = useState<BossStakeMode>("match");
-  const [last, setLast] = useState<(RoundSettlement & { won: boolean; bossMode: BossStakeMode }) | null>(null);
+  const [last, setLast] = useState<(RoundSettlement & { won: boolean; noContest: boolean; bossMode: BossStakeMode }) | null>(null);
   // DEV PREVIEW (temporary): jump straight to the dethroned-boss key-drop without playing a full
   // room. Remove before launch along with the 🔑 button below.
   const [keyPreview, setKeyPreview] = useState(false);
@@ -276,11 +302,15 @@ export function FoxPitGame({
     // takes the boss's stake, boss-right/player-wrong loses the player's stake, both/neither PUSH.
     // Boss stake per card = MATCH (player's tier) or TOP (flat top tier). No multipliers.
     const settlement = settleRound(played, picks, bossMode, topStake, () => Math.random() * 100 < oppWinPct);
-    const won = settlement.playerCards >= settlement.bossCards; // took at least as many H2H cards
-    setLast({ ...settlement, won, bossMode });
-    // Stage 2 best-of: tally this hand to the winner. First to `winsNeeded` takes the table.
-    if (won) setRoundsWon((w) => w + 1);
-    else setBossWins((b) => b + 1);
+    // §5 — NO-CONTEST: a round with ZERO staked-and-answered cards is not a win and not a loss. Nothing
+    // was contested, so neither tally moves and the match score is untouched (§5.2/§7.5). The round is
+    // still consumed (nextRound advances roundIndex) so there are no infinite free rounds (§5.4).
+    const decision = decideRound(played.length, settlement.playerCards, settlement.bossCards);
+    setLast({ ...settlement, won: decision.won, noContest: decision.noContest, bossMode });
+    // Stage 2 best-of: tally this hand to the winner. First to `winsNeeded` takes the table. A no-contest
+    // tallies for NEITHER side.
+    if (decision.playerDelta) setRoundsWon((w) => w + decision.playerDelta);
+    if (decision.bossDelta) setBossWins((b) => b + decision.bossDelta);
     // Persist the round's NET COIN result to the wallet (coins only, zero rake). Round net = Σ per-card
     // outcomes. Until this, the tower never touched users/{uid}.coinBalance.
     if (settlement.net !== 0) {
@@ -334,11 +364,17 @@ export function FoxPitGame({
     setPhase("tip"); // straight to the deal (no in-game category beat)
   };
 
-  // ROUND CLOCK (defect 3, full) — lifted here so it pins in the sticky HEADER on every round screen
-  // (deal / keep-redeal / play), never scrolled away or ghosted. Budget = seconds/question × the
-  // round's total questions; it counts down during play and force-settles the round once on expiry.
-  // On the pre-play screens it shows the budget (static) so the player sees the clock they'll race.
-  const roundTotal = rules.secondsPerQuestion * slates.reduce((n, s) => n + s.questions.length, 0);
+  // ANSWERING CLOCK (§2 + §3) — pins in the sticky HEADER during ANSWERING ONLY, never scrolled away
+  // or ghosted. It does NOT start until the final kept hand is locked in (deal → play). The budget is
+  // the ARCHITECT-SET seconds for how many CARDS the player KEPT (the final hand = slates.length),
+  // NOT a per-question formula. It counts down during play and force-settles the round once on expiry.
+  const cardsKept = slates.length;
+  // §3.5 — cards kept outside 1–5 is never expected (deal clamps to 1..SLATES_PER_ROUND). If it ever
+  // happens, do NOT invent a value: run no clock (roundTotal 0) and report it.
+  if (cardsKept > 0 && ANSWER_SECONDS[cardsKept] == null) {
+    console.error(`[foxpit] cardsKept=${cardsKept} is outside ANSWER_SECONDS (1–5) — no answer clock set`);
+  }
+  const roundTotal = answerSecondsFor(cardsKept);
   const [timeLeft, setTimeLeft] = useState(0);
   const clockFired = useRef(false);
   useEffect(() => {
@@ -360,7 +396,9 @@ export function FoxPitGame({
   const clockPlaying = phase === "play";
   const clockShow = clockPlaying ? timeLeft : roundTotal;
   const clockAlert = clockPlaying && timeLeft <= 15;
-  const clockVisible = roundTotal > 0 && (phase === "play" || phase === "deal" || phase === "dealing");
+  // §2.2 — the answering clock is for ANSWERING ONLY: it does not appear (or run) during dealing,
+  // reading, keeping or redealing. It shows the moment the hand locks in and play begins.
+  const clockVisible = answerClockVisible(phase, roundTotal);
   const clockExpired = phase === "play" && roundTotal > 0 && timeLeft <= 0;
 
   return (
@@ -395,6 +433,8 @@ export function FoxPitGame({
         clockLabel={clockShow < 0 ? "0:00" : `${Math.floor(clockShow / 60)}:${String(clockShow % 60).padStart(2, "0")}`}
         clockAlert={clockAlert}
         roundsWon={roundsWon}
+        bossWins={bossWins}
+        winsTarget={winsTarget}
         coins={coins}
         onQuit={onQuitGame}
         onKeydrop={() => setKeyPreview(true)}
@@ -493,6 +533,7 @@ export function FoxPitGame({
           roomKey={roomKey}
           accent={accent}
           won={last.won}
+          noContest={last.noContest}
           playerCards={last.playerCards}
           bossCards={last.bossCards}
           net={last.net}
@@ -1384,11 +1425,13 @@ function UnderlingBeatenPhase({
 
 /* ---------------- announce: the Locksmith calls it at the table + coin drop ---------------- */
 function AnnouncePhase({
-  roomKey, accent, won, playerCards, bossCards, net, note, cta, onCta, onQuit, bossName, username,
+  roomKey, accent, won, noContest, playerCards, bossCards, net, note, cta, onCta, onQuit, bossName, username,
 }: {
   roomKey: FoxPitRoomKey;
   accent: string;
   won: boolean;
+  /** §5 — zero staked-and-answered cards: not a win, not a loss. Neither arm raised, no coin drop. */
+  noContest: boolean;
   playerCards: number;
   bossCards: number;
   net: number;
@@ -1399,7 +1442,7 @@ function AnnouncePhase({
   bossName: string;
   username: string;
 }) {
-  useEffect(() => { playCoinDrop(won); }, [won]);
+  useEffect(() => { if (!noContest) playCoinDrop(won); }, [won, noContest]);
   // Every Fox Pit opponent is a boss → the BOSS winner-table (her + table baked into ONE sprite).
   // The raised arm points at the winner's seat: player win = RIGHT arm, boss win = LEFT arm.
   const table = won ? WINNER_TABLE_BOSS_RIGHT : WINNER_TABLE_BOSS_LEFT;
@@ -1414,8 +1457,18 @@ function AnnouncePhase({
       <img src={FLOOR_IMG[roomKey]} alt="" className="absolute inset-0 h-full w-full object-cover opacity-90" />
       <div className="absolute inset-0" style={{ background: "radial-gradient(70% 55% at 50% 50%, transparent, rgba(3,4,7,.8))" }} />
 
+      {/* §5 — NO-CONTEST: nothing was staked, so no arm is raised and no winner is named. A neutral
+          crest stands in for the winner table. */}
+      {noContest && (
+        <div className="relative z-[1] flex flex-col items-center justify-center gap-3" style={{ height: "62%" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/foxpit/emblem-fox-neon.png" alt="" style={{ width: 120, opacity: 0.5, filter: "grayscale(.5)" }} />
+        </div>
+      )}
+
       {/* Winner table — Locksmith + table in ONE sprite (the old her-alone + bare-table composite
           is gone). The winner's NAME renders over her raised hand, ABOVE the sprite in z-order. */}
+      {!noContest && (
       <div className="relative z-[1]" style={{ height: "62%" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={table} alt="The Locksmith announces the winner" className="block h-full w-auto object-contain" />
@@ -1449,16 +1502,21 @@ function AnnouncePhase({
           </div>
         </div>
       </div>
+      )}
 
       <div
         className="absolute bottom-0 left-0 right-0 z-[4] flex flex-col items-center gap-1 p-5"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 18px)" }}
       >
-        <div className="font-serif text-3xl" style={{ color: won ? COLOR_WIN : accent }}>
-          {won ? "You take the round" : "The boss takes it"}
+        <div className="font-serif text-3xl" style={{ color: noContest ? "#6B7A8E" : won ? COLOR_WIN : accent }}>
+          {noContest ? "No contest" : won ? "You take the round" : "The boss takes it"}
         </div>
         <div className="text-sm font-bold text-foreground">
-          YOU {playerCards} · BOSS {bossCards} <span style={{ color: net >= 0 ? COLOR_WIN : COLOR_LOSS }}>· {net >= 0 ? "+" : "−"}{Math.abs(net)} ⛃</span>
+          {noContest ? (
+            <span className="text-muted">No cards staked — the round scores for neither side</span>
+          ) : (
+            <>YOU {playerCards} · BOSS {bossCards} <span style={{ color: net >= 0 ? COLOR_WIN : COLOR_LOSS }}>· {net >= 0 ? "+" : "−"}{Math.abs(net)} ⛃</span></>
+          )}
         </div>
         <div className="text-xs text-muted">{note}</div>
         {/* Quit + advance sit at the bottom, clear of her raised arm/name up top (item 6). */}
