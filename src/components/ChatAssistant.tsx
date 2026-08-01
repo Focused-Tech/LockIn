@@ -98,9 +98,10 @@ export function ChatAssistant() {
         {open ? (
           "✕"
         ) : (
-          // §2.2 — the LOCKSMITH head (cropped from her dealer table, public/foxpit/tables/locksmith_player_table.png).
+          // The architect-approved Locksmith FAB image (LOCKIN_GREENSCREEN_ASSETS/_INDEX.txt:
+          // "locksmith_badge.png is the ONE the Locksmith FAB uses"). No more crops.
           // eslint-disable-next-line @next/next/no-img-element
-          <img src="/foxpit/locksmith/locksmith_head.png" alt="" className="h-9 w-9 rounded-full object-cover" />
+          <img src="/foxpit/locksmith/locksmith_badge.png" alt="" className="h-9 w-9 rounded-full object-cover" />
         )}
       </button>
 
@@ -110,7 +111,7 @@ export function ChatAssistant() {
           <div className="flex items-center gap-2 border-b border-border px-4 py-3">
             <span className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full bg-[rgba(59,139,255,0.15)] text-sm">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/foxpit/locksmith/locksmith_head.png" alt="" className="h-full w-full rounded-full object-cover" />
+              <img src="/foxpit/locksmith/locksmith_badge.png" alt="" className="h-full w-full rounded-full object-cover" />
             </span>
             <div className="leading-tight">
               <p className="text-sm font-semibold">Locksmith</p>
