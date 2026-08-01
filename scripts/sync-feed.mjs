@@ -30,18 +30,18 @@ const LEAGUES = [
   { sport: "hockey", league: "nhl", category: "NHL" },
 ];
 
-// Mirror of H2H_CONFIG (crossGame.ts).
+// Mirror of H2H_CONFIG + H2H_STEMS (crossGame.ts). Multiple stats per league + multiple stems.
 const H2H = {
-  mlb: { leaderCat: "RBIs", statLabel: "hits" },
-  wnba: { leaderCat: "points", statLabel: "points" },
-  nba: { leaderCat: "points", statLabel: "points" },
-  nfl: { leaderCat: "passingYards", statLabel: "passing yards" },
-  "college-football": { leaderCat: "passingYards", statLabel: "passing yards" },
-  nhl: { leaderCat: "points", statLabel: "points" },
-  "usa.1": { leaderCat: "goals", statLabel: "goals" },
-  "eng.1": { leaderCat: "goals", statLabel: "goals" },
+  mlb: [ { leaderCat: "RBIs", boxLabel: "H", statLabel: "hits" }, { leaderCat: "homeRuns", boxLabel: "HR", statLabel: "home runs" } ],
+  wnba: [ { leaderCat: "points", boxLabel: "PTS", statLabel: "points" }, { leaderCat: "rebounds", boxLabel: "REB", statLabel: "rebounds" }, { leaderCat: "assists", boxLabel: "AST", statLabel: "assists" } ],
+  nba: [ { leaderCat: "points", boxLabel: "PTS", statLabel: "points" }, { leaderCat: "rebounds", boxLabel: "REB", statLabel: "rebounds" }, { leaderCat: "assists", boxLabel: "AST", statLabel: "assists" } ],
+  nfl: [ { leaderCat: "passingYards", boxLabel: "YDS", statLabel: "passing yards" }, { leaderCat: "rushingYards", boxLabel: "YDS", statLabel: "rushing yards" } ],
+  "college-football": [ { leaderCat: "passingYards", boxLabel: "YDS", statLabel: "passing yards" }, { leaderCat: "rushingYards", boxLabel: "YDS", statLabel: "rushing yards" } ],
+  nhl: [ { leaderCat: "points", boxLabel: "P", statLabel: "points" }, { leaderCat: "goals", boxLabel: "G", statLabel: "goals" } ],
+  "usa.1": [ { leaderCat: "goals", boxLabel: "G", statLabel: "goals" } ],
+  "eng.1": [ { leaderCat: "goals", boxLabel: "G", statLabel: "goals" } ],
 };
-const BOX = { hits: "H", points: "PTS", "passing yards": "YDS", goals: "G" };
+const STEMS = ["More {stat} tonight?", "Who racks up more {stat}?", "Bigger {stat} night?", "Who shows out — most {stat}?", "Who takes the {stat} edge?", "Who piles up more {stat}?"];
 
 async function fetchGames(l) {
   const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${l.sport}/${l.league}/scoreboard`);
@@ -75,24 +75,37 @@ function pickTop(game, leaderCat) {
 const lean = (a, b) => (a + b <= 0 ? 50 : Math.min(60, Math.max(40, Math.round((100 * a) / (a + b)))));
 
 function buildSlate(l, games) {
-  const cfg = H2H[l.league]; if (!cfg) return null;
-  const tops = games.map((g) => ({ g, p: pickTop(g, cfg.leaderCat) })).filter((x) => x.p).sort((x, y) => x.g.startMs - y.g.startMs);
-  if (tops.length < 2) return null;
-  const legs = [];
-  for (let i = 0; i + 1 < tops.length; i += 2) {
-    const A = tops[i].p, B = tops[i + 1].p;
-    if (A.eventId === B.eventId) continue;
+  const stats = H2H[l.league]; if (!stats || !stats.length) return null;
+  const gs = [...games].sort((a, b) => a.startMs - b.startMs);
+  if (gs.length < 2) return null;
+  const legs = []; const usedStems = new Set(); let statIdx = 0, stemIdx = 0;
+  for (let i = 0; i + 1 < gs.length && legs.length < STEMS.length; i += 2) {
+    let A = null, B = null, stat = null;
+    for (let s = 0; s < stats.length; s++) {
+      const cand = stats[(statIdx + s) % stats.length];
+      const a = pickTop(gs[i], cand.leaderCat), b = pickTop(gs[i + 1], cand.leaderCat);
+      if (a && b && a.eventId !== b.eventId) { A = a; B = b; stat = cand; statIdx = (statIdx + s + 1) % stats.length; break; }
+    }
+    if (!A || !B || !stat) continue;
+    let stem = null;
+    for (let s = 0; s < STEMS.length; s++) {
+      const cand = STEMS[(stemIdx + s) % STEMS.length];
+      const q = cand.replace("{stat}", stat.statLabel);
+      if (!usedStems.has(cand) && !legs.some((x) => x.question === q)) { stem = cand; stemIdx = (stemIdx + s + 1) % STEMS.length; break; }
+    }
+    if (!stem) continue;
+    usedStems.add(stem);
     const probA = lean(A.seasonVal, B.seasonVal);
     legs.push({
-      question: `More ${cfg.statLabel} tonight?`,
-      optionA: `${A.name} · ${A.team} · ${A.seasonVal} ${cfg.statLabel} (season)`,
-      optionB: `${B.name} · ${B.team} · ${B.seasonVal} ${cfg.statLabel} (season)`,
+      question: stem.replace("{stat}", stat.statLabel),
+      optionA: `${A.name} · ${A.team} · ${A.seasonVal} ${stat.statLabel} (season)`,
+      optionB: `${B.name} · ${B.team} · ${B.seasonVal} ${stat.statLabel} (season)`,
       probA, probB: 100 - probA,
-      h2h: { stat: cfg.statLabel, boxLabel: BOX[cfg.statLabel], a: A, b: B },
+      h2h: { stat: stat.statLabel, boxLabel: stat.boxLabel, a: A, b: B },
     });
   }
   if (!legs.length) return null;
-  return { slateId: `h2h-${l.league}`, title: `${l.category} tonight — head to head`, category: l.category, lockMs: Math.min(...tops.map((t) => t.g.startMs)), legs };
+  return { slateId: `h2h-${l.league}`, title: `${l.category} tonight — head to head`, category: l.category, lockMs: Math.min(...gs.map((g) => g.startMs)), legs };
 }
 
 async function writeSlate(s) {
@@ -127,7 +140,7 @@ for (const l of LEAGUES) {
   try {
     const games = (await fetchGames(l)).slice(0, PER_LEAGUE);
     const s = buildSlate(l, games);
-    if (!s) { console.log(`  ${l.category}: no usable slate (need ≥2 games with a ${H2H[l.league]?.leaderCat} leader)`); continue; }
+    if (!s) { console.log(`  ${l.category}: no usable slate (need ≥2 games with a ${H2H[l.league]?.[0]?.leaderCat} leader)`); continue; }
     const n = await writeSlate(s);
     slates++; legs += n;
     console.log(`  ${l.category}: ${s.slateId} (${n} head-to-head legs)`);

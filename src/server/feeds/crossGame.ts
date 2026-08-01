@@ -8,18 +8,56 @@ import "server-only";
  * player per game, per leg. Settlement grades each leg from the players' real box-score stats.
  */
 
-/** Per-league config: `leaderCat` picks the standout player; `boxLabel` is the box-score column that
- *  grades tonight's performance; `statLabel` is the human word used in the question + context. */
-export const H2H_CONFIG: Record<string, { sport: string; leaderCat: string; boxLabel: string; statLabel: string }> = {
-  mlb: { sport: "baseball", leaderCat: "RBIs", boxLabel: "H", statLabel: "hits" },
-  wnba: { sport: "basketball", leaderCat: "points", boxLabel: "PTS", statLabel: "points" },
-  nba: { sport: "basketball", leaderCat: "points", boxLabel: "PTS", statLabel: "points" },
-  nfl: { sport: "football", leaderCat: "passingYards", boxLabel: "YDS", statLabel: "passing yards" },
-  "college-football": { sport: "football", leaderCat: "passingYards", boxLabel: "YDS", statLabel: "passing yards" },
-  nhl: { sport: "hockey", leaderCat: "points", boxLabel: "P", statLabel: "points" },
-  "usa.1": { sport: "soccer", leaderCat: "goals", boxLabel: "G", statLabel: "goals" },
-  "eng.1": { sport: "soccer", leaderCat: "goals", boxLabel: "G", statLabel: "goals" },
+/** One graded stat: `leaderCat` picks the standout player from ESPN `leaders`; `boxLabel` is the
+ *  box-score column that grades tonight; `statLabel` is the human word in the question + context. */
+export interface H2HStat { leaderCat: string; boxLabel: string; statLabel: string }
+
+/** Per-league config: the sport (for the summary URL) + the STATS a slate can draw across, so one
+ *  card mixes points/rebounds/assists etc. rather than repeating a single stat. */
+export const H2H_CONFIG: Record<string, { sport: string; stats: H2HStat[] }> = {
+  mlb: { sport: "baseball", stats: [
+    { leaderCat: "RBIs", boxLabel: "H", statLabel: "hits" },
+    { leaderCat: "homeRuns", boxLabel: "HR", statLabel: "home runs" },
+  ] },
+  wnba: { sport: "basketball", stats: [
+    { leaderCat: "points", boxLabel: "PTS", statLabel: "points" },
+    { leaderCat: "rebounds", boxLabel: "REB", statLabel: "rebounds" },
+    { leaderCat: "assists", boxLabel: "AST", statLabel: "assists" },
+  ] },
+  nba: { sport: "basketball", stats: [
+    { leaderCat: "points", boxLabel: "PTS", statLabel: "points" },
+    { leaderCat: "rebounds", boxLabel: "REB", statLabel: "rebounds" },
+    { leaderCat: "assists", boxLabel: "AST", statLabel: "assists" },
+  ] },
+  nfl: { sport: "football", stats: [
+    { leaderCat: "passingYards", boxLabel: "YDS", statLabel: "passing yards" },
+    { leaderCat: "rushingYards", boxLabel: "YDS", statLabel: "rushing yards" },
+  ] },
+  "college-football": { sport: "football", stats: [
+    { leaderCat: "passingYards", boxLabel: "YDS", statLabel: "passing yards" },
+    { leaderCat: "rushingYards", boxLabel: "YDS", statLabel: "rushing yards" },
+  ] },
+  nhl: { sport: "hockey", stats: [
+    { leaderCat: "points", boxLabel: "P", statLabel: "points" },
+    { leaderCat: "goals", boxLabel: "G", statLabel: "goals" },
+  ] },
+  "usa.1": { sport: "soccer", stats: [{ leaderCat: "goals", boxLabel: "G", statLabel: "goals" }] },
+  "eng.1": { sport: "soccer", stats: [{ leaderCat: "goals", boxLabel: "G", statLabel: "goals" }] },
 };
+
+/**
+ * §3.3 — QUESTION STEMS (the argument real fans have — "who shows out," never "who wins"). Multiple
+ * per archetype so the same archetype never reads identically twice on one card; `{stat}` is filled
+ * with the leg's stat. Deliberately clear of banned framing (no wins/over/under/spread/total).
+ */
+export const H2H_STEMS = [
+  "More {stat} tonight?",
+  "Who racks up more {stat}?",
+  "Bigger {stat} night?",
+  "Who shows out — most {stat}?",
+  "Who takes the {stat} edge?",
+  "Who piles up more {stat}?",
+];
 
 export interface H2HPlayer { playerId: string; name: string; team: string; eventId: string; seasonVal: number }
 export interface H2HLegMeta { stat: string; boxLabel: string; a: H2HPlayer; b: H2HPlayer }
@@ -81,25 +119,44 @@ function lean(aVal: number, bVal: number): number {
  */
 export function buildCrossGameSlate(input: { league: string; category: string; games: FeedGame[] }): CrossGameSlate | null {
   const cfg = H2H_CONFIG[input.league];
-  if (!cfg) return null;
-  const tops = input.games
-    .map((g) => ({ g, p: pickTopPlayer(g, cfg.leaderCat) }))
-    .filter((x): x is { g: FeedGame; p: H2HPlayer } => x.p !== null)
-    .sort((x, y) => x.g.startMs - y.g.startMs);
-  if (tops.length < 2) return null;
+  if (!cfg || cfg.stats.length === 0) return null;
+  const games = [...input.games].sort((a, b) => a.startMs - b.startMs);
+  if (games.length < 2) return null;
 
   const legs: CrossGameLeg[] = [];
-  for (let i = 0; i + 1 < tops.length; i += 2) {
-    const A = tops[i]!.p, B = tops[i + 1]!.p;
-    if (A.eventId === B.eventId) continue; // never two players from the same game
+  const usedStems = new Set<string>(); // §3.4 — never repeat a stem on the same slate
+  const usedStats = new Set<string>();
+  let statIdx = 0;
+  let stemIdx = 0;
+  // pair consecutive games; each leg draws a DIFFERENT stat (rotating) + a DIFFERENT stem.
+  for (let i = 0; i + 1 < games.length && legs.length < H2H_STEMS.length; i += 2) {
+    // rotate to the next stat that yields a usable pair for these two games.
+    let A: H2HPlayer | null = null, B: H2HPlayer | null = null, stat: H2HStat | null = null;
+    for (let s = 0; s < cfg.stats.length; s++) {
+      const cand = cfg.stats[(statIdx + s) % cfg.stats.length]!;
+      const a = pickTopPlayer(games[i]!, cand.leaderCat);
+      const b = pickTopPlayer(games[i + 1]!, cand.leaderCat);
+      if (a && b && a.eventId !== b.eventId) { A = a; B = b; stat = cand; statIdx = (statIdx + s + 1) % cfg.stats.length; break; }
+    }
+    if (!A || !B || !stat) continue;
+    // pick the next unused stem (guarantees no repeated stem on this slate — §3.4).
+    let stem: string | null = null;
+    for (let s = 0; s < H2H_STEMS.length; s++) {
+      const cand = H2H_STEMS[(stemIdx + s) % H2H_STEMS.length]!;
+      const q = cand.replace("{stat}", stat.statLabel);
+      if (!usedStems.has(cand) && !legs.some((l) => l.question === q)) { stem = cand; stemIdx = (stemIdx + s + 1) % H2H_STEMS.length; break; }
+    }
+    if (!stem) continue;
+    usedStems.add(stem);
+    usedStats.add(stat.statLabel);
     const probA = lean(A.seasonVal, B.seasonVal);
     legs.push({
-      question: `More ${cfg.statLabel} tonight?`,
-      optionA: `${A.name} · ${A.team} · ${A.seasonVal} ${cfg.statLabel} (season)`,
-      optionB: `${B.name} · ${B.team} · ${B.seasonVal} ${cfg.statLabel} (season)`,
+      question: stem.replace("{stat}", stat.statLabel),
+      optionA: `${A.name} · ${A.team} · ${A.seasonVal} ${stat.statLabel} (season)`,
+      optionB: `${B.name} · ${B.team} · ${B.seasonVal} ${stat.statLabel} (season)`,
       probA,
       probB: 100 - probA,
-      h2h: { stat: cfg.statLabel, boxLabel: cfg.boxLabel, a: A, b: B },
+      h2h: { stat: stat.statLabel, boxLabel: stat.boxLabel, a: A, b: B },
     });
   }
   if (!legs.length) return null;
@@ -107,7 +164,7 @@ export function buildCrossGameSlate(input: { league: string; category: string; g
     slateId: `h2h-${input.league}`,
     title: `${input.category} tonight — head to head`,
     category: input.category,
-    lockMs: Math.min(...tops.map((t) => t.g.startMs)),
+    lockMs: Math.min(...games.map((g) => g.startMs)),
     legs,
   };
 }

@@ -21,8 +21,25 @@ const game = (id: string, startMs: number, aName: string, aVal: number, aId: str
   ],
 });
 
-describe("cross-game builder — compliant, one player per game", () => {
-  it("pairs standout players across different games; questions pass the detector", () => {
+// a game whose competitors expose MULTIPLE leader categories (points/rebounds/assists).
+const nbaGame = (id: string, startMs: number, name: string): FeedGame => ({
+  eventId: id, startMs, homeName: `${name} A`, awayName: `${name} B`,
+  competitors: [
+    { team: { displayName: `${name} Home` }, leaders: [
+      { name: "points", leaders: [{ athlete: { id: `${id}p`, displayName: `${name} Scorer` }, value: 28 }] },
+      { name: "rebounds", leaders: [{ athlete: { id: `${id}r`, displayName: `${name} Board` }, value: 11 }] },
+      { name: "assists", leaders: [{ athlete: { id: `${id}a`, displayName: `${name} Dime` }, value: 8 }] },
+    ] },
+    { team: { displayName: `${name} Away` }, leaders: [
+      { name: "points", leaders: [{ athlete: { id: `${id}p2`, displayName: `${name} Two` }, value: 20 }] },
+      { name: "rebounds", leaders: [{ athlete: { id: `${id}r2`, displayName: `${name} Two` }, value: 7 }] },
+      { name: "assists", leaders: [{ athlete: { id: `${id}a2`, displayName: `${name} Two` }, value: 5 }] },
+    ] },
+  ],
+});
+
+describe("cross-game builder — compliant, one player per game, NO repeated question", () => {
+  it("pairs standout players across different games; questions vary + pass the detector", () => {
     const games = [
       game("g1", 3000, "Owusu", 9, "1", "Mihailovic", 4, "2"),
       game("g2", 1000, "Messi", 12, "3", "Suárez", 7, "4"),
@@ -30,21 +47,35 @@ describe("cross-game builder — compliant, one player per game", () => {
       game("g4", 4000, "Salah", 11, "7", "Núñez", 5, "8"),
     ];
     const slate = buildCrossGameSlate({ league: "usa.1", category: "Soccer", games })!;
-    log(`slate: ${slate.slateId} · "${slate.title}" · ${slate.legs.length} legs · locks at earliest start ${slate.lockMs}`);
+    log(`slate: ${slate.slateId} · "${slate.title}" · ${slate.legs.length} legs`);
     expect(slate.slateId).toBe("h2h-usa.1");
-    expect(slate.lockMs).toBe(1000); // earliest game
+    expect(slate.lockMs).toBe(1000);
     expect(slate.legs.length).toBeGreaterThanOrEqual(2);
 
     for (const leg of slate.legs) {
       const banned = detectBannedArchetype(leg.question, [leg.optionA, leg.optionB]);
       log(`  leg: "${leg.question}" | ${leg.optionA}  vs  ${leg.optionB} | banned=${banned}`);
-      expect(banned).toBeNull(); // COMPLIANT — not a banned archetype
-      // one player per game: the two players come from different events
+      expect(banned).toBeNull();
       expect(leg.h2h.a.eventId).not.toBe(leg.h2h.b.eventId);
-      // the standout (higher season value) was picked from each game
       expect(leg.optionA).toMatch(/season/);
-      expect(leg.optionB).toMatch(/season/);
     }
+    // §3.4 / §6.3 — NEVER the same question stem twice on a slate.
+    const stems = slate.legs.map((l) => l.question);
+    log(`§6.3 stems on the slate: ${JSON.stringify(stems)} · all unique: ${new Set(stems).size === stems.length}`);
+    expect(new Set(stems).size).toBe(stems.length);
+  });
+
+  it("draws across MULTIPLE stats when the league exposes them (NBA points/rebounds/assists)", () => {
+    const slate = buildCrossGameSlate({ league: "nba", category: "NBA", games: [
+      nbaGame("n1", 1000, "Lakers"), nbaGame("n2", 2000, "Celtics"), nbaGame("n3", 3000, "Heat"), nbaGame("n4", 4000, "Bucks"),
+    ] })!;
+    const statsUsed = new Set(slate.legs.map((l) => l.h2h.stat));
+    const stems = slate.legs.map((l) => l.question);
+    log(`§6.3 NBA slate: ${slate.legs.length} legs · stats=${JSON.stringify([...statsUsed])} · stems=${JSON.stringify(stems)}`);
+    expect(slate.legs.length).toBeGreaterThanOrEqual(2);
+    expect(statsUsed.size).toBeGreaterThanOrEqual(2); // rotated across stats, not one repeated
+    expect(new Set(stems).size).toBe(stems.length); // no repeated question
+    for (const leg of slate.legs) expect(detectBannedArchetype(leg.question, [leg.optionA, leg.optionB])).toBeNull();
   });
 
   it("pickTopPlayer takes the higher-value leader in the category", () => {
