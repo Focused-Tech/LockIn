@@ -88,6 +88,19 @@ export interface SlateCardProps {
   onPick?: (legIndex: number, pickIndex: number) => void;
   onStake?: (stake: number) => void;
   onCta?: () => void;
+  /** COMPACT FEED STATE (Explore §3) — renders a summary (category bezel, creator eyebrow with track
+   *  record, status tag, pot figures, currency + reach badge) instead of the legs/picker. Tapping the
+   *  card opens the full card. RAKE never renders here. */
+  compact?: boolean;
+  status?: "live" | "locked" | "settled";
+  creator?: { name: string; note?: string } | null;
+  reach?: string;
+  /** Pre-formatted pot figures (pool + 1st place). No rake field — rake never reaches this surface. */
+  pool?: { poolLabel: string; firstLabel: string; multipleLabel?: string } | null;
+  rush?: { multiplier: number } | null;
+  /** COMPLIANCE — a withheld (banned-archetype) slate renders a compact "under review" summary; still
+   *  a SlateCard instance, never the banned legs. */
+  withheld?: boolean;
 }
 
 function currencyLabel(currency: CardCurrency, amount: number): string {
@@ -100,9 +113,85 @@ export function SlateCard({
   stakeMode = "always", stakeOptions = [], selectedStake = null, stakeLabel = "Play", stakeNote, answered = false,
   cta, locked = false, locking = false, readOnly = false, faceImage, pickStyle = "button",
   onPick, onStake, onCta,
+  compact = false, status, creator, reach, pool, rush, withheld = false,
 }: SlateCardProps) {
   const stakeVisible = stakeMode !== "none" && stakeOptions.length > 0;
   const stakeGated = stakeMode === "afterAnswers" && !answered;
+
+  // §3.2 — COMPACT FEED STATE: a summary card. Category bezel + eyebrow, creator eyebrow w/ track
+  // record (purple creator chrome), status tag, title, pot figures (pool + 1st — NO rake), currency +
+  // reach badge. Colours by token name (coins=gold, cash=green, live=amber, creator=purple, rush).
+  if (compact) {
+    return (
+      <div
+        data-mode={mode}
+        data-currency={currency}
+        data-compact
+        data-withheld={withheld ? "true" : undefined}
+        className="relative flex flex-col gap-2.5 overflow-hidden rounded-[22px] bg-surface-card p-4"
+        style={{ border: `2px solid ${catColor}`, boxShadow: SH.card }}
+      >
+        <div className="flex items-center justify-between gap-2">
+          {eyebrow && (
+            <div data-eyebrow className="truncate text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: catColor }}>{eyebrow}</div>
+          )}
+          <div className="flex shrink-0 items-center gap-1.5">
+            {rush && !withheld && <span data-rush className="rounded-full bg-rush-soft px-2 py-0.5 text-[10px] font-bold uppercase text-rush">⚡ {rush.multiplier}×</span>}
+            {withheld ? (
+              <span data-status="withheld" className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase text-muted" style={{ background: "rgba(107,122,142,.14)" }}>Under review</span>
+            ) : status ? (
+              <span
+                data-status={status}
+                className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold uppercase", status === "live" ? "text-live" : "text-muted")}
+                style={{ background: status === "live" ? "rgba(245,166,35,.12)" : "rgba(107,122,142,.14)" }}
+              >
+                {status}
+              </span>
+            ) : null}
+          </div>
+        </div>
+
+        {title && <div data-title className="text-[18px] font-semibold leading-snug text-white">{title}</div>}
+
+        {withheld ? (
+          <p className="text-sm text-muted">This contest is under review and isn&apos;t available to play.</p>
+        ) : (
+          <>
+            {creator && (
+              <div data-creator className="flex flex-wrap items-center gap-1.5 text-[12px]">
+                <span className="font-semibold text-creator">{creator.name}</span>
+                {creator.note && <span className="text-muted">· {creator.note}</span>}
+              </div>
+            )}
+
+            {pool && (
+              <div data-pool className="flex items-center justify-between rounded-[13px] bg-surface p-3" style={{ boxShadow: SH.rise }}>
+                <div className="min-w-0">
+                  <div className="text-[10px] uppercase tracking-wide text-muted">Prize pool</div>
+                  {/* the prize pool is the cash metric → cash token (green). Rake NEVER renders. */}
+                  <div className="text-lg font-semibold text-cash">{pool.poolLabel}</div>
+                </div>
+                <div className="min-w-0 text-right">
+                  <div className="text-[10px] uppercase tracking-wide text-muted">1st place</div>
+                  <div className="text-lg font-semibold text-white">
+                    {pool.firstLabel}
+                    {pool.multipleLabel && <span className="ml-1 text-sm text-muted">{pool.multipleLabel}</span>}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between text-[12px]">
+              <span className={cn("font-semibold", currency === "coins" ? "text-coins" : "text-cash")}>
+                {currency === "coins" ? "Free · coins" : "Cash entry"}
+              </span>
+              {reach && <span data-reach className="text-muted">{reach}</span>}
+            </div>
+          </>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div

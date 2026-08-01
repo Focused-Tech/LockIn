@@ -6,6 +6,7 @@ import {
   COLLECTIONS,
   type PredictionDoc,
   type SlateDoc,
+  type UserDoc,
 } from "@/lib/firebase/types";
 import { FEED_STATUSES, type FeedPrediction, type FeedSlate } from "@/lib/feed";
 import { getPlayerContext } from "@/server/feeds/creatorGames";
@@ -29,11 +30,31 @@ function applyWithhold(slate: FeedSlate): FeedSlate {
  * time (soonest first). Used by both the feed server component and the slates
  * tRPC router.
  */
+/** §3.2 — batch-load creator display name + track record for the feed eyebrow (one getAll, not N+1). */
+async function loadCreators(db: Firestore, ids: string[]): Promise<Map<string, { name: string | null; track: string | null }>> {
+  const map = new Map<string, { name: string | null; track: string | null }>();
+  const unique = [...new Set(ids)];
+  if (unique.length === 0) return map;
+  const snaps = await db.getAll(...unique.map((id) => db.collection(COLLECTIONS.users).doc(id)));
+  for (const s of snaps) {
+    if (!s.exists) continue;
+    const u = s.data() as UserDoc;
+    const rate = typeof u.creatorHitRate === "number" ? `${Math.round(u.creatorHitRate)}% hit rate` : null;
+    map.set(s.id, { name: u.username ?? null, track: rate });
+  }
+  return map;
+}
+
 export async function fetchFeedSlates(db: Firestore): Promise<FeedSlate[]> {
   const slatesSnap = await db
     .collection(COLLECTIONS.slates)
     .where("status", "in", FEED_STATUSES)
     .get();
+
+  const creators = await loadCreators(
+    db,
+    slatesSnap.docs.map((d) => (d.data() as SlateDoc).creatorId).filter((c): c is string => !!c),
+  );
 
   const slates = await Promise.all(
     slatesSnap.docs.map(async (slateDoc) => {
@@ -72,6 +93,8 @@ export async function fetchFeedSlates(db: Firestore): Promise<FeedSlate[]> {
         maxEntries: slate.maxEntries ?? null,
         lockTimeMs: slate.lockTime.toMillis(),
         predictions,
+        creatorName: slate.creatorId ? creators.get(slate.creatorId)?.name ?? null : null,
+        creatorTrackRecord: slate.creatorId ? creators.get(slate.creatorId)?.track ?? null : null,
       };
       return applyWithhold(feedSlate);
     }),

@@ -53,6 +53,10 @@ export interface FeedSlate {
    *  "under review" state and NEVER served as a normal contest; its banned predictions are stripped
    *  from this DTO so no banned text ever reaches the client. */
   withheld?: boolean;
+  /** §3.2 — creator eyebrow (display name) + track record (e.g. "68% hit rate") for the feed card.
+   *  Null for house/feed slates (creatorId === null). */
+  creatorName?: string | null;
+  creatorTrackRecord?: string | null;
 }
 
 /** Statuses shown in the Explore feed. */
