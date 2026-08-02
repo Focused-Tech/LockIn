@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AvatarRig } from "./AvatarRig";
+import { ELEVATOR_STOP_BY_ID } from "@/lib/foxpit/rules";
 
 /**
  * FOX PIT — AVATAR STAIR CLIMB.
@@ -57,17 +58,37 @@ const OLD_PATH_PCT: readonly { x: number; y: number }[] = [
 ];
 
 interface Node { x: number; y: number; stop?: boolean; label?: string }
-/** Bottom → top. Elevator ledges (fixed at ELEV_X) bracket the extracted tread centerline: the avatar
- *  runs horizontally off the Dojo elevator, climbs the treads, then runs to the High Table elevator. */
+/** The staircase's LEFT-landing indices in TRACE_CENTERLINE (its x-minima), mapped bottom→top to the
+ *  FIVE elevator stops the stairs serve. The switchback's left turns only reach x≈22%; the elevator
+ *  stops sit at x≈7% — so at each landing the avatar must walk OUT to the stop. Dojo + High Table are
+ *  the path ENDS; the middle three (Lobby, Coliseum lower/upper) are out-and-back spurs, so the climb
+ *  visibly touches EVERY stop instead of walking past it (Frank: "still walking past the stops"). */
+const LE_STOPS: { idx: number; id: keyof typeof ELEVATOR_STOP_BY_ID; label: string }[] = [
+  { idx: 0, id: "dojo", label: "Dojo" },
+  { idx: 26, id: "lobby", label: "Lobby" },
+  { idx: 53, id: "coliseumLower", label: "Coliseum" },
+  { idx: 77, id: "coliseumUpper", label: "Coliseum" },
+  { idx: 109, id: "hightable", label: "High Table" },
+];
 const PATH_NODES: Node[] = (() => {
   const cl = TRACE_CENTERLINE.map((p) => ({ x: (p.x / 100) * MAP_W, y: (p.y / 100) * MAP_H }));
-  const first = cl[0]!, last = cl[cl.length - 1]!;
-  return [
-    { x: ELEV_X, y: first.y, stop: true, label: "Dojo · elevator" },
-    ...cl.map((p, i): Node => ({ x: p.x, y: p.y, stop: i === 0 || i === cl.length - 1,
-      label: i === 0 ? "Dojo · stair base" : i === cl.length - 1 ? "High Table · landing" : undefined })),
-    { x: ELEV_X, y: last.y, stop: true, label: "High Table · elevator" },
-  ];
+  const leByIdx = new Map(LE_STOPS.map((l) => [l.idx, l]));
+  const last = cl.length - 1;
+  const out: Node[] = [];
+  for (let i = 0; i < cl.length; i++) {
+    const le = leByIdx.get(i);
+    if (le) {
+      const stopY = (ELEVATOR_STOP_BY_ID[le.id] / 100) * MAP_H; // landing walk level = the measured stop
+      const edge: Node = { x: cl[i]!.x, y: stopY };              // flight foot, snapped level to the landing
+      const stopNode: Node = { x: ELEV_X, y: stopY, stop: true, label: `${le.label} · elevator` };
+      if (i === 0) out.push(stopNode, edge);                     // START on the Dojo stop, step onto the flight
+      else if (i === last) out.push(edge, stopNode);             // END on the High Table stop
+      else out.push(edge, stopNode, edge);                       // spur: walk the landing to the stop and back
+    } else {
+      out.push({ x: cl[i]!.x, y: cl[i]!.y });                    // a flight / right-turn tread point
+    }
+  }
+  return out;
 })();
 
 /** Walk path: interpolate ~one waypoint per STEP_RUN of travel along each node→node segment. % of map. */
@@ -183,9 +204,9 @@ export function StairClimber() {
       {trace && (
         <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: 62, pointerEvents: "none" }}>
           <polyline points={toPolyline(OLD_PATH_PCT)} fill="none" stroke="#FF2D2D" strokeWidth={0.5} strokeOpacity={0.9} vectorEffect="non-scaling-stroke" />
-          <polyline points={toPolyline(TRACE_CENTERLINE)} fill="none" stroke="#00E5FF" strokeWidth={0.5} strokeOpacity={0.95} vectorEffect="non-scaling-stroke" />
-          {TRACE_CENTERLINE.filter((_, i) => i % 6 === 0).map((p, i) => (
-            <circle key={i} cx={p.x} cy={p.y} r={0.4} fill="#00E5FF" />
+          <polyline points={toPolyline(CLIMB_WAYPOINTS)} fill="none" stroke="#00E5FF" strokeWidth={0.5} strokeOpacity={0.95} vectorEffect="non-scaling-stroke" />
+          {CLIMB_WAYPOINTS.filter((p) => p.landing).map((p, i) => (
+            <circle key={i} cx={p.x} cy={p.y} r={0.7} fill="#00E5FF" />
           ))}
         </svg>
       )}

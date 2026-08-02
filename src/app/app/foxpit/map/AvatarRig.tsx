@@ -78,18 +78,17 @@ function chain(upper: Piece, lower: Piece, anchor: Cap, upAngle: number, loAngle
 export function AvatarRig({ gender = "male", phase = 0, facing = 1 }: { gender?: Gender; phase?: number; facing?: 1 | -1 }) {
   const P = rigPieces(gender);
   const s = Math.sin(phase * Math.PI * 2);
-  const up = Math.max(0, s); // up-beat of the step
-  // Climbing a stair: the NEAR leg (its slice is pre-bent — the lifted leg) rises and the knee flexes
-  // to clear the tread, then lowers to plant; the FAR leg is the planted push-off. Arms swing. Rotation
-  // only. Kept moderate so the FK joints stay connected — tune against the device screenshot.
-  const thighN = -10 * up;   // lift the front knee on the step
-  const shinN = -24 * up;    // flex the front knee as it lifts
-  const thighF = 6 * s;      // planted leg pushes through
-  const shinF = -10 * Math.max(0, -s);
-  // Bigger arm swing (was ±15 upper / 6 forearm) — a more pronounced contra-lateral pump so the
-  // walk reads as walking, not gliding. Rotation only; joints stay connected.
-  const uarmN = -30 * s, uarmF = 30 * s;
-  const farmN = -18 - 14 * Math.max(0, -s), farmF = -18 - 14 * Math.max(0, s);
+  // CLIMBING STRIDE — the two legs run 180° OUT OF PHASE and BOTH move every frame (the old
+  // Math.max(0,s) froze the near leg for half the cycle → the "zombie" gait). Each thigh swings
+  // forward(−)/back(+); each knee flexes to clear the tread only while THAT leg swings forward, and
+  // straightens to plant/push. Contra-lateral arms pump against the legs. Rotation only — FK stays
+  // connected.
+  const thighN = -22 * s;                       // near thigh: forward at s>0, back at s<0
+  const thighF = 22 * s;                        // far thigh: exact opposite (out of phase)
+  const shinN = -46 * Math.max(0, s);           // near knee flexes on its forward swing, straight when planted
+  const shinF = -46 * Math.max(0, -s);          // far knee flexes on ITS forward swing
+  const uarmN = 26 * s, uarmF = -26 * s;        // arms contra-lateral to the same-side leg
+  const farmN = -18 - 16 * Math.max(0, s), farmF = -18 - 16 * Math.max(0, -s);
 
   // Paint order back → front (item 4).
   const placed: Placed[] = [
@@ -98,6 +97,25 @@ export function AvatarRig({ gender = "male", phase = 0, facing = 1 }: { gender?:
     { p: P.torso!, at: { x: SK.torso.x + P.torso!.prox.x, y: SK.torso.y + P.torso!.prox.y }, angle: 0, z: 5 },
     ...chain(P.thighN!, P.shinN!, SK.hipN, thighN, shinN, 7, 8),
     ...chain(P.uarmN!, P.farmN!, SK.shoulderN, uarmN, farmN, 9, 10),
+  ];
+
+  // JOINT PINHOLE FILL — each slice carries a brass CAP circle at its prox/dist joint (rgba≈180,130,60);
+  // assembled, they read as gold "pinholes" at every pivot. Cover them with a dark suit-fabric disc
+  // (fabric samples ≈ rgb 45,35,25) at z just above that joint's two limbs, so the joint looks like
+  // continuous cloth. The HEAD COIN (below) is a deliberate avatar-badge placeholder — NOT filled.
+  const jointOf = (upper: Piece, anchor: Cap, upAngle: number): Cap => {
+    const d = rot(upper.dist.x - upper.prox.x, upper.dist.y - upper.prox.y, upAngle);
+    return { x: anchor.x + d.x, y: anchor.y + d.y };
+  };
+  const joints: { c: Cap; d: number; z: number }[] = [
+    { c: SK.hipF, d: 26, z: 1.5 },
+    { c: jointOf(P.thighF!, SK.hipF, thighF), d: 22, z: 2.5 },
+    { c: SK.shoulderF, d: 22, z: 3.5 },
+    { c: jointOf(P.uarmF!, SK.shoulderF, uarmF), d: 20, z: 4.5 },
+    { c: SK.hipN, d: 26, z: 7.5 },
+    { c: jointOf(P.thighN!, SK.hipN, thighN), d: 22, z: 8.5 },
+    { c: SK.shoulderN, d: 22, z: 9.5 },
+    { c: jointOf(P.uarmN!, SK.shoulderN, uarmN), d: 20, z: 10.5 },
   ];
 
   const coinD = 60;
@@ -119,6 +137,23 @@ export function AvatarRig({ gender = "male", phase = 0, facing = 1 }: { gender?:
             zIndex: pl.z,
             transformOrigin: `${(pl.p.prox.x / pl.p.w) * 100}% ${(pl.p.prox.y / pl.p.h) * 100}%`,
             transform: `rotate(${pl.angle}deg)`,
+          }}
+        />
+      ))}
+
+      {joints.map((j, i) => (
+        <div
+          key={`joint${i}`}
+          aria-hidden
+          style={{
+            position: "absolute",
+            left: `${((j.c.x - j.d / 2) / FIG.w) * 100}%`,
+            top: `${((j.c.y - j.d / 2) / FIG.h) * 100}%`,
+            width: `${(j.d / FIG.w) * 100}%`,
+            aspectRatio: "1 / 1",
+            borderRadius: "50%",
+            zIndex: j.z,
+            background: "radial-gradient(circle at 45% 40%, #322619, #1a120a)",
           }}
         />
       ))}
