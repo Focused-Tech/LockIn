@@ -10,7 +10,7 @@ import {
   ARCHETYPE_LIBRARY, ARCHETYPE_STEMS, ARCHETYPE_CHOICES, buildSlateLegs, generatedLegOk, toEngineLeg, lockpickLeg,
   type Pool, type PoolGame, type GeneratedLeg,
 } from "./archetypeLibrary";
-import { APPROVED_ARCHETYPES, validateLeg, type Archetype } from "./questionEngine";
+import { APPROVED_ARCHETYPES, validateLeg, validateSlate, archetypePool, type Archetype } from "./questionEngine";
 import { resolveArchetype, type PlayerResult } from "./archetypes";
 
 const log = (m: string) => console.log(m); // eslint-disable-line no-console
@@ -173,6 +173,24 @@ describe("§5.5 — creator builder offers all six + Lockpick names the fix per 
       expect(v.reason).toBe("two_from_one_game");
       expect(v.message).toMatch(/one player per game/);
       expect(v.message).toMatch(/drop one/);
+    }
+  });
+
+  it("pro builder path: archetypePool offers all six (standard); validateSlate fires the fix per archetype", () => {
+    const standard = [...archetypePool("standard")].sort();
+    const restricted = archetypePool("restricted");
+    log(`§5.5 pro pool standard=${standard.length} restricted=${restricted.length}`);
+    expect(standard).toEqual([...APPROVED_ARCHETYPES].sort()); // all six selectable in the creator builder
+    expect(restricted.length).toBeLessThan(6); // restricted states get the tighter set
+    const pool = poolOf(5, ["points"], 4);
+    for (const id of APPROVED_ARCHETYPES) {
+      const def = ARCHETYPE_LIBRARY[id];
+      const leg = def.build(pool.games.slice(0, def.maxGames), "points", def.stems[0]!, "NBA")!;
+      const eng = toEngineLeg(leg);
+      const bad = { ...eng, players: eng.players.map((p, i) => (i === eng.players.length - 1 ? { ...p, gameId: eng.players[0]!.gameId } : p)) };
+      const { canPublish, legVerdicts } = validateSlate([bad], ALL_GAME_IDS(pool));
+      expect(canPublish).toBe(false);
+      expect(legVerdicts[0]!.message).toMatch(/one player per game/);
     }
   });
 });

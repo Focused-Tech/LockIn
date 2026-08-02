@@ -7,6 +7,7 @@ import { getCurrentUserProfile } from "@/lib/firebase/session";
 import { COLLECTIONS } from "@/lib/firebase/types";
 import { CATEGORIES } from "@/lib/categories";
 import { validateSlate, APPROVED_ARCHETYPES, type Leg, type Archetype } from "@/lib/contest/questionEngine";
+import { buildCreatorLeg, ARCHETYPE_CHOICES, type CreatorPlayer, type GeneratedLeg } from "@/lib/contest/archetypeLibrary";
 import { enginePlayersFor, earliestStartMs } from "@/lib/contest/games";
 import { getTodaysCreatorGames, getPlayerContext, type PlayerContext } from "@/server/feeds/creatorGames";
 import { notifyFollowersNewSlate } from "@/lib/notifications/send";
@@ -26,6 +27,8 @@ const legSchema = z.object({
   question: z.string().trim().min(3).max(200),
   archetype: z.enum(APPROVED_ARCHETYPES as unknown as [Archetype, ...Archetype[]]),
   playerNames: z.array(z.string().trim().min(1)).min(2).max(6),
+  /** the stat this leg grades on (points/rebounds/assists) — drives the milestone/first-to-N bar. */
+  stat: z.string().trim().optional().default("points"),
   context: z.object({
     seasonAverage: z.string().trim().min(1),
     last3Form: z.string().trim().min(1),
@@ -43,26 +46,8 @@ const proSlateSchema = z.object({
   hostFeeCents: z.number().int().min(0).max(1000),
 });
 
-export type ProSlateInput = z.infer<typeof proSlateSchema>;
+export type ProSlateInput = z.input<typeof proSlateSchema>; // pre-default (leg.stat optional for callers)
 export type ProSlateResult = { ok: true; slateId: string } | { ok: false; error: string };
-
-/** §2.1 — the pickable options for a leg, per archetype:
- *  - top-composite (h2h/field/biggest) + first-to-N: one option per player
- *  - split-squad duos: two duos ("A"/"B"), the roster split in half
- *  - milestone count: exact-count buckets 0..K (how many players clear the bar) */
-function deriveProOptions(archetype: string, players: string[]): { key: string; playerNames?: string[]; bucket?: [number, number] }[] {
-  if (archetype === "split_squad_duos") {
-    const mid = Math.ceil(players.length / 2);
-    return [
-      { key: "A", playerNames: players.slice(0, mid) },
-      { key: "B", playerNames: players.slice(mid) },
-    ];
-  }
-  if (archetype === "milestone_count") {
-    return Array.from({ length: players.length + 1 }, (_, c) => ({ key: String(c), bucket: [c, c] as [number, number] }));
-  }
-  return players.map((n) => ({ key: n, playerNames: [n] }));
-}
 
 /** Entry tiers the live engine supports (contest/constants ENTRY_TIERS). Pro "stakes you allow" is a
  *  pot-model concept; the real entry tiers bridge to these. */
@@ -100,6 +85,24 @@ export async function publishProSlate(raw: ProSlateInput): Promise<ProSlateResul
   if (!canPublish) {
     const firstBad = legVerdicts.find((v) => !v.ok);
     return { ok: false, error: firstBad?.message ?? "A question failed Lockpick — fix it and retry." };
+  }
+
+  // §1.1/§4 — build each leg through the SHARED archetype library (the SAME builder the feed uses, one
+  // source of truth). This yields the correct per-archetype option shape + bar: milestone = THREE count
+  // buckets (not N+1), and first-to-N / milestone get a real bar — the old ad-hoc deriveProOptions did
+  // neither. Rejects with the archetype's player-count requirement when the picks don't fit.
+  const built: GeneratedLeg[] = [];
+  for (const l of input.legs) {
+    const players: CreatorPlayer[] = l.playerNames
+      .map((n) => { const ep = byName.get(n); return ep ? { name: ep.name, team: ep.team, gameId: ep.gameId, playerId: idByName.get(n) ?? "" } : null; })
+      .filter((p): p is CreatorPlayer => !!p);
+    const leg = buildCreatorLeg(l.archetype, players, l.stat, l.question, sportsCategory);
+    if (!leg) {
+      const c = ARCHETYPE_CHOICES.find((x) => x.id === l.archetype);
+      const need = c && c.minGames === c.maxGames ? `${c.minGames}` : `${c?.minGames}–${c?.maxGames}`;
+      return { ok: false, error: `${c?.label ?? l.archetype} needs ${need} players, each from a different game.` };
+    }
+    built.push(leg);
   }
 
   // Entry tiers: the subset of allowed stakes the live engine supports; fall back to $5.
@@ -144,8 +147,7 @@ export async function publishProSlate(raw: ProSlateInput): Promise<ProSlateResul
   // options the entry picks from depend on the archetype (players / duos / count buckets).
   input.legs.forEach((l, i) => {
     const predRef = slateRef.collection(COLLECTIONS.predictions).doc();
-    const options = deriveProOptions(l.archetype, l.playerNames);
-    const isMilestone = l.archetype === "milestone_count";
+    const leg = built[i]!; // from the shared library
     batch.set(predRef, {
       question: l.question,
       optionA: null,
@@ -161,15 +163,15 @@ export async function publishProSlate(raw: ProSlateInput): Promise<ProSlateResul
       verificationConfidence: null,
       sortOrder: i,
       archetype: l.archetype,
-      proOptions: options,
+      // §2.1 — the correct option shape from the library (players / two duos / THREE count buckets).
+      proOptions: leg.options.map((o) => ({ key: o.key, playerNames: o.playerNames ?? null, bucket: o.bucket ?? null })),
       // name → gameId for this leg, so one-player-per-game can be RE-checked at entry (§2.3).
       playerGames: Object.fromEntries(l.playerNames.map((n) => [n, byName.get(n)?.gameId ?? ""])),
       // name → ESPN athlete id, so the picker can pull each player's context at play time (§1.2).
       playerIds: Object.fromEntries(l.playerNames.map((n) => [n, idByName.get(n) ?? ""])),
-      // first-to-N / milestone need a bar; the builder does not author one yet → null (settlement
-      // voids those legs until a bar is supplied). context is display-only.
-      bar: null,
-      countedPlayers: isMilestone ? l.playerNames : null,
+      // first-to-N + milestone now carry a REAL bar from the library (settlement no longer voids them).
+      bar: leg.bar ?? null,
+      countedPlayers: leg.countedPlayers ?? null,
       context: l.context,
     });
   });

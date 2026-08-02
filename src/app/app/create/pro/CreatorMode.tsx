@@ -17,8 +17,12 @@ import {
   type Leg,
   type LegContext,
 } from "@/lib/contest/questionEngine";
+import { ARCHETYPE_CHOICES } from "@/lib/contest/archetypeLibrary";
 import type { FormatTier } from "@/lib/eligibility";
 import { enginePlayersFor, QUESTION_TEMPLATES, type CreatorGame } from "@/lib/contest/games";
+
+/** nice label + blurb for an archetype id, from the shared library (one source). */
+const ARCH_LABEL = (id: Archetype) => ARCHETYPE_CHOICES.find((c) => c.id === id);
 import {
   rakeForPool,
   creatorCut,
@@ -256,8 +260,9 @@ export function CreatorMode({
               {/* archetype — the pool is narrowed by the creator's state (restricted sees fewer) */}
               <select value={l.archetype} onChange={(e) => setLeg(l.id, { archetype: e.target.value as Archetype })}
                 style={{ width: "100%", background: C.ink, color: C.grey, border: `1px solid ${C.edge}`, borderRadius: 7, padding: "6px 8px", fontSize: 12, marginBottom: 7 }}>
-                {pool.map((a) => <option key={a} value={a}>{a.replace(/_/g, " ")}</option>)}
+                {pool.map((a) => <option key={a} value={a}>{ARCH_LABEL(a)?.label ?? a.replace(/_/g, " ")}</option>)}
               </select>
+              <p style={{ fontSize: 11, color: C.dim, margin: "0 0 7px" }}>{ARCH_LABEL(l.archetype)?.blurb}</p>
               {/* player picks from the selected games */}
               <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
                 {players.length === 0 && <span style={{ fontSize: 11, color: C.dim }}>Pick a game above to load players.</span>}

@@ -310,3 +310,26 @@ export const ARCHETYPE_CHOICES: ArchetypeChoice[] = APPROVED_ARCHETYPES.map((id)
 export function lockpickLeg(leg: Leg, allowedGameIds: string[]) {
   return validateLeg(leg, allowedGameIds);
 }
+
+/** The stats a creator can build a leg on (basketball feed). boxLabel carries to settlement. */
+export const CREATOR_STATS: { stat: string; boxLabel: string }[] = [
+  { stat: "points", boxLabel: "PTS" },
+  { stat: "rebounds", boxLabel: "REB" },
+  { stat: "assists", boxLabel: "AST" },
+];
+export interface CreatorPlayer { name: string; team: string; gameId: string; playerId: string }
+/**
+ * §4 — build a leg from the creator's CHOSEN players (one per game) for an archetype, by wrapping each
+ * player as a one-stat PoolGame and running the SAME library builder the feed uses (one source of
+ * truth). seasonVal is 0 here — the creator leg's per-option context is pulled LIVE from the player's
+ * id at read time (getPlayerContext), so nothing is fabricated. Returns null (or a validateLeg-failing
+ * leg the caller rejects) when the players don't support the archetype.
+ */
+export function buildCreatorLeg(archetype: Archetype, players: CreatorPlayer[], stat: string, stem: string, category: string): GeneratedLeg | null {
+  const boxLabel = CREATOR_STATS.find((s) => s.stat === stat)?.boxLabel ?? "PTS";
+  const games: PoolGame[] = players.map((p, i) => ({
+    gameId: p.gameId, startMs: i, gameLine: p.team,
+    byStat: { [stat]: { name: p.name, team: p.team, gameId: p.gameId, seasonVal: 0, lastOut: "", stat, boxLabel, leaderCat: stat, playerId: p.playerId } },
+  }));
+  return ARCHETYPE_LIBRARY[archetype].build(games, stat, stem, category);
+}
