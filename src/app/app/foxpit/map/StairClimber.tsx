@@ -51,33 +51,37 @@ const MAP_W = 1620;
 const MAP_H = 4500;
 /** Travel per interpolated stride (map px) — one walk waypoint per this much path length. */
 const STEP_RUN_PX = 42;
-/** Right edge of the elevator ledge — where the two end ledges meet the elevator section. */
-const ELEV_X = 380;
+/** The elevator LEDGE x (map px) — the far-left gold-railed landing the avatar boards from. The
+ *  elevator shaft is x≈0-70; its ledge sits at ≈100. (Was 380 — that landed in the room, not the shaft.) */
+const ELEV_X = 120;
 
 interface Node { x: number; y: number; stop?: boolean; label?: string }
-/** Stair turns as OFFSETS from the stairway piece origin (both axes), bottom → top. Because they are
- *  relative to FOXPIT_STAIR_ORIGIN, nudging the staircase (its x AND y) slides the whole avatar path
- *  with it — they can't drift apart. Traced onto the piece's treads/landings. */
+/**
+ * SWITCHBACK NODES — traced off the real staircase art (tower_stairs_overlay.webp), NOT guessed. The
+ * stairs occupy map x≈80-640 (5-40%), y≈2160-4350 (bottom half: Dojo→High Table). Landings alternate
+ * a LEFT platform (x≈260) and a RIGHT platform (x≈600) every ~280px. Stored as OFFSETS from the stair
+ * origin so nudging the staircase slides the path with it. bottom → top.
+ */
 const STAIR_LOCAL: readonly [number, number][] = [
-  [400, 2223], // Dojo · stair base   (origin.y 2067 + 2223 = 4290)
-  [220, 1893],
-  [480, 1593],
-  [220, 1263],
-  [630, 983],
-  [220, 653],
-  [793, 333], // High Table · landing (top)
+  [188, 2283], // Dojo · stair base (left)   abs (260, 4350)
+  [528, 1933], //                    (right) abs (600, 4000)
+  [188, 1583], //                    (left)  abs (260, 3650)
+  [528, 1233], //                    (right) abs (600, 3300)
+  [188, 883], //                     (left)  abs (260, 2950)
+  [528, 533], //                     (right) abs (600, 2600)
+  [188, 183], // High Table · top landing (left) abs (260, 2250)
 ];
 /** Bottom → top. Elevator ends (fixed at ELEV_X, absolute y — the elevator doesn't move with the
  *  stair) bracket the origin-relative stair nodes. `stop` = a ledge to pause on. */
 const PATH_NODES: Node[] = [
-  { x: ELEV_X, y: 4290, stop: true, label: "Dojo · elevator" },
+  { x: ELEV_X, y: 4350, stop: true, label: "Dojo · elevator" },
   ...STAIR_LOCAL.map(([lx, ly], i): Node => ({
     x: FOXPIT_STAIR_ORIGIN.x + lx,
     y: FOXPIT_STAIR_ORIGIN.y + ly,
     stop: i === 0 || i === STAIR_LOCAL.length - 1,
     label: i === 0 ? "Dojo · stair base" : i === STAIR_LOCAL.length - 1 ? "High Table · landing" : undefined,
   })),
-  { x: ELEV_X, y: 2400, stop: true, label: "High Table · elevator" },
+  { x: ELEV_X, y: 2250, stop: true, label: "High Table · elevator" },
 ];
 
 /** Walk path: interpolate ~one waypoint per STEP_RUN of travel along each node→node segment, so the
@@ -187,10 +191,11 @@ export function StairClimber() {
   }, [wp, stepTo]);
 
   return (
-    // z50 = BETWEEN the two tower plates: ABOVE the base (z0), BELOW the stair overlay (z60). The
-    // avatar walks IN THE SLOT — the overlay's front rails cross in front of its legs while its torso
-    // + head read above. This is the sandwich the new baked map (_layer_index.json) is built for.
-    <div style={{ position: "absolute", inset: 0, zIndex: 50, pointerEvents: "none" }}>
+    // z61 = ABOVE the stair overlay (z60). The overlay is the FULL staircase (treads + rails, not a
+    // front-rail-only slice), so at z50 the avatar was redrawn OVER by the whole staircase and vanished.
+    // Rendering above the overlay puts the avatar visibly ON the treads (still below plaques z70 + the
+    // elevator car z90). A true slot (near-rail crossing the legs) needs a separate front-rail art layer.
+    <div style={{ position: "absolute", inset: 0, zIndex: 61, pointerEvents: "none" }}>
       {/* the walking avatar RIG — feet anchored on the waypoint; the rig flips + swings internally;
           bob adds a little life while moving. No dev tools on screen. */}
       <div
