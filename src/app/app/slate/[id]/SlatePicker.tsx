@@ -30,7 +30,13 @@ export function optionsFor(p: FeedPrediction): { key: string; label: string; sec
       secondary: o.seasonAverage ? [o.seasonAverage, o.last3Form].filter(Boolean) as string[] : undefined,
     }));
   }
-  return [{ key: "a", label: p.optionA }, { key: "b", label: p.optionB }];
+  // §2.2 — a cross-game h2h option is "Name · Team · 60 hits (season)". Split on " · " so the NAME is
+  // the .nm line and each remaining part is its own .cx context line (not one run-on string).
+  const split = (key: string, s: string) => {
+    const parts = s.split(" · ");
+    return { key, label: parts[0]!, secondary: parts.length > 1 ? parts.slice(1) : undefined };
+  };
+  return [split("a", p.optionA), split("b", p.optionB)];
 }
 export function pickStyleFor(p: FeedPrediction): "button" | "contest" | "chips" {
   if (p.type !== "archetype") return "button";
@@ -136,11 +142,40 @@ export function SlatePicker({
       question: p.question,
       qs: p.type === "archetype" ? (p.gameLine ?? undefined) : undefined,
       picks: opts.map((o) => ({ label: o.label, secondary: o.secondary, selected: picks[p.id] === o.key })),
-      state: (picks[p.id] ? "ok" : "neutral") as SlateLeg["state"],
+      state: "neutral" as SlateLeg["state"], // playable card — no per-leg grading outline
       pickStyle: pickStyleFor(p),
       flag: p.contextError ? { variant: "bad" as const, message: p.contextError } : null,
     };
   });
+
+  // §2.3 — header sub + badge. §2.5 — the cash balance + affirmation move INSIDE the card as its footer.
+  const lockLabel = new Date(slate.lockTimeMs).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  const subLine = `${predictions.length} question${predictions.length === 1 ? "" : "s"} · locks ${lockLabel}`;
+  const badgeLabel = `Cash · ${50 - EXCLUDED_STATES.length} states`;
+  const entryFooter = (
+    <div className="flex flex-col gap-2 pt-1">
+      <p className="text-xs text-muted">Cash balance {formatCents(cashBalanceCents)}</p>
+      {geoBlocked ? (
+        <div className="rounded border border-border bg-surface px-3 py-2 text-xs text-muted">
+          Paid contests aren&apos;t available in your state.{" "}
+          <Link href="/app/beginner" className="font-semibold text-accent">Play the beginner lane in coins →</Link>
+        </div>
+      ) : !attested ? (
+        <div className="flex flex-col gap-2 rounded border border-border bg-surface px-3 py-2.5">
+          <p className="text-xs text-muted">{PERJURY_ATTESTATION_TEXT}</p>
+          <Button variant="accent" size="sm" disabled={attesting} onClick={onAttest}>
+            {attesting ? "Confirming…" : `I affirm — enter for cash${registeredState ? ` (${registeredState})` : ""}`}
+          </Button>
+          <p className="text-[11px] text-muted">No ID upload needed to play — identity checks apply only at withdrawal.</p>
+        </div>
+      ) : null}
+      {error && (
+        <p role="alert" className="rounded border border-[rgba(232,84,84,0.25)] bg-[rgba(232,84,84,0.10)] px-3 py-2 text-sm text-loss">
+          {error}
+        </p>
+      )}
+    </div>
+  );
 
   async function onSubmit() {
     setError(null);
@@ -338,6 +373,9 @@ export function SlatePicker({
           currency="cash"
           catColor={tint.border}
           eyebrow={slate.category}
+          title={slate.title}
+          sub={subLine}
+          badge={badgeLabel}
           legs={slateLegs}
           // §4 — the stake chips + CTA + lock-in live INSIDE the one SlateCard (not a separate panel).
           // §1 — cash only: the $ tiers are the stake chips; they reveal once every leg is answered.
@@ -354,6 +392,7 @@ export function SlatePicker({
           onCta={onSubmit}
           locked={locked}
           locking={submitting}
+          footer={entryFooter}
           onPick={(li, pi) => {
             const p = predictions[li];
             const key = p && optionsFor(p)[pi]?.key;
@@ -378,30 +417,6 @@ export function SlatePicker({
           )}
       </div>
 
-      {/* §1/§2 — CASH ONLY. The stake chips + CTA live in the SlateCard above; this slim panel carries
-          the cash balance and the §2 gate (geo + attestation) with a ROUTE, never a dead end. */}
-      <div className="flex flex-col gap-2 lg:col-start-2" data-tour="entry-mode">
-        <p className="text-xs text-muted">Cash balance {formatCents(cashBalanceCents)}</p>
-        {geoBlocked ? (
-          <div className="rounded border border-border bg-surface px-3 py-2 text-xs text-muted">
-            Paid contests aren&apos;t available in your state.{" "}
-            <Link href="/app/beginner" className="font-semibold text-accent">Play the beginner lane in coins →</Link>
-          </div>
-        ) : !attested ? (
-          <div className="flex flex-col gap-2 rounded border border-border bg-surface px-3 py-2.5">
-            <p className="text-xs text-muted">{PERJURY_ATTESTATION_TEXT}</p>
-            <Button variant="accent" size="sm" disabled={attesting} onClick={onAttest}>
-              {attesting ? "Confirming…" : `I affirm — enter for cash${registeredState ? ` (${registeredState})` : ""}`}
-            </Button>
-            <p className="text-[11px] text-muted">No ID upload needed to play — identity checks apply only at withdrawal.</p>
-          </div>
-        ) : null}
-        {error && (
-          <p role="alert" className="rounded border border-[rgba(232,84,84,0.25)] bg-[rgba(232,84,84,0.10)] px-3 py-2 text-sm text-loss">
-            {error}
-          </p>
-        )}
-      </div>
     </div>
   );
 }

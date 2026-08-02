@@ -1,0 +1,149 @@
+/*
+ * SLATE CARD — ported VERBATIM from design/lockin_slate_card_mockup.html
+ * (sha256 a890d939e6cdc2635752d36e9458c640ef49dd57cc213cf632fda4c7009d8326).
+ * The mockup is the spec. Class names + structure match it exactly so the structural gate diffs empty.
+ * Every box-shadow is a LITERAL value — never var() or color-mix() inside a shadow (they silently no-op).
+ * Scoped under .lockin-slatecard so the generic names (.title/.sub/.box/.pick…) can't collide with the
+ * app's Tailwind surfaces; the ELEMENT class names stay bare (.slate/.top/.nm/.cx…) to match the mockup.
+ * Only deviation: .slate width is fluid (100%) instead of the mockup's fixed 340/360px, so it fills the
+ * app's content column; structure/depth/typography are unchanged.
+ */
+.lockin-slatecard{
+  --orange:#FC3E01;--gold-hi:#F0C463;--cash:#2FB98A;--cash-hi:#3ECFA0;--bad:#E0432C;
+  --ink:#0A0D12;--card:#0D1117;--panel:#161B22;--panel-hi:#1B212B;--edge:#262E3A;
+  --grey:#E7E7EB;--dim:#8B93A1;--dim2:#727A88;
+  font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:var(--grey);
+}
+
+/* ===== THE CARD. Bezel = category. ===== */
+.lockin-slatecard .slate{width:100%;background:var(--card);border:2px solid var(--cat);border-radius:22px;
+ padding:17px;position:relative;display:flex;flex-direction:column;gap:13px;overflow:hidden;
+ box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.lockin-slatecard .slate.full{min-height:720px}
+.lockin-slatecard .slate.full .title{font-size:29px}
+.lockin-slatecard .slate.full .leg .q{font-size:20px}
+
+/* floating pill wordmark — Fox Pit surfaces only */
+.lockin-slatecard .mark{align-self:flex-start;background:var(--orange);border-radius:8px;padding:4px 10px;
+ display:inline-flex;align-items:center;gap:6px;box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 1px 3px rgba(0,0,0,.5)}
+.lockin-slatecard .mark svg{width:19px;height:19px;flex:none}
+.lockin-slatecard .mark .wm{font:700 17px Georgia,serif;color:var(--ink);line-height:1}
+.lockin-slatecard .mark .wm b{color:#fff}
+
+.lockin-slatecard .top{display:flex;align-items:flex-start;gap:10px}
+.lockin-slatecard .top .l{flex:1;min-width:0}
+.lockin-slatecard .eyebrow{font:600 13px/1.2 inherit;letter-spacing:.11em;color:var(--accent)}
+.lockin-slatecard .who{display:flex;align-items:center;gap:10px;margin-top:9px}
+.lockin-slatecard .av{width:36px;height:36px;border-radius:50%;border:1px solid var(--edge);flex:none;display:grid;
+ place-items:center;font:700 12.5px inherit;color:var(--dim);background:var(--panel);box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 1px 3px rgba(0,0,0,.5)}
+.lockin-slatecard .who .n{flex:1;min-width:0}
+.lockin-slatecard .who .nm{font:700 15px/1.2 inherit;color:#fff}
+.lockin-slatecard .who .rec{font-size:12.5px;color:var(--dim2);font-style:italic;margin-top:2px}
+.lockin-slatecard .tags{display:flex;gap:6px;flex-wrap:wrap}
+.lockin-slatecard .tag{border:1px solid var(--cat);color:var(--cat);border-radius:99px;padding:4px 10px;
+ font:700 11.5px inherit;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.lockin-slatecard .tag.mute{border-color:var(--edge);color:var(--dim)}
+.lockin-slatecard .badge{flex:none;background:var(--badge-bg);color:var(--ink);border-radius:99px;padding:7px 13px;
+ font-size:12.5px;font-weight:600;white-space:nowrap;box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 1px 3px rgba(0,0,0,.5)}
+.lockin-slatecard .title{font:600 26px/1.15 inherit;color:#fff;letter-spacing:-.015em}
+.lockin-slatecard .sub{font-size:14px;color:var(--dim);margin-top:-7px}
+
+.lockin-slatecard .guide{background:var(--panel);border:1px solid var(--cat);border-radius:13px;padding:14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.045), 0 2px 6px rgba(0,0,0,.45)}
+.lockin-slatecard .guide .st{font:700 11px inherit;letter-spacing:.14em;text-transform:uppercase;color:var(--cat);margin-bottom:6px}
+.lockin-slatecard .guide h4{margin:0 0 5px;font:700 15px inherit;color:#fff}
+.lockin-slatecard .guide p{margin:0;font-size:13.5px;color:var(--grey);line-height:1.5;opacity:.85}
+.lockin-slatecard .guide .eg{margin-top:10px;background:var(--card);border-radius:9px;padding:10px;font-size:12.5px;color:var(--dim)}
+.lockin-slatecard .guide .eg b{color:var(--cat);font-weight:600}
+.lockin-slatecard .box{background:var(--panel);border-radius:13px;padding:14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.045), 0 2px 6px rgba(0,0,0,.45)}
+.lockin-slatecard .box h4{font:700 14.5px inherit;color:#fff;margin:0 0 6px}
+.lockin-slatecard .box p{margin:0;font-size:13.5px;color:var(--dim);line-height:1.5}
+
+.lockin-slatecard .score{display:flex;align-items:center;gap:10px;background:var(--panel);border-radius:13px;
+ padding:12px 14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.045), 0 2px 6px rgba(0,0,0,.45)}
+.lockin-slatecard .score .yb{flex:1;font-size:13px;line-height:1.3}
+.lockin-slatecard .score .y{color:var(--cash);font-weight:600}
+.lockin-slatecard .score .n2{color:var(--bad);font-weight:600}
+.lockin-slatecard .score .dl{font:700 21px inherit;color:var(--gold-hi)}
+
+/* raised leg panel */
+.lockin-slatecard .leg{background:var(--panel);border-radius:15px;padding:16px;box-shadow:inset 0 1px 0 rgba(255,255,255,.045), 0 2px 6px rgba(0,0,0,.45)}
+.lockin-slatecard .leg.spot{outline:2px solid var(--cat);outline-offset:2px}
+.lockin-slatecard .leg .q{font:600 19px/1.3 inherit;color:#fff}
+.lockin-slatecard .leg .qs{font-size:14px;color:var(--dim2);margin-top:6px}
+.lockin-slatecard .picks{display:grid;gap:10px;margin-top:14px}
+.lockin-slatecard .picks.lettered,.lockin-slatecard .picks.consensus{grid-template-columns:1fr}
+.lockin-slatecard .picks.contest.c2{grid-template-columns:1fr 1fr}
+/* raised pick — gradient + inset highlight + drop shadow */
+.lockin-slatecard .pick{border:1px solid var(--edge);border-radius:11px;padding:13px 14px;
+ background-color:#181E27;background-image:linear-gradient(180deg,#1B212B 0%,#151A22 100%);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 1px 3px rgba(0,0,0,.5);font:inherit;color:inherit;text-align:left;cursor:pointer;width:100%;
+ transition:border-color .12s,box-shadow .12s}
+.lockin-slatecard .pick:hover{border-color:#33404F}
+.lockin-slatecard .pick.sel{border-color:var(--accent);border-width:1.5px;padding:12.5px 13.5px;
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.09), 0 0 0 3px rgba(255,255,255,.07), 0 3px 9px rgba(0,0,0,.55)}
+.lockin-slatecard .picks.lettered .pick{display:flex;gap:11px;align-items:baseline}
+.lockin-slatecard .pick .ltr{font:700 13px inherit;color:var(--dim);flex:none}
+.lockin-slatecard .pick .nm{font:600 17px/1.2 inherit;color:#fff}
+.lockin-slatecard .pick .cx{font-size:14px;color:var(--dim2);line-height:1.4;margin-top:6px}
+.lockin-slatecard .pick .cx.hl{color:var(--cat)}
+.lockin-slatecard .pick.chip{text-align:center;padding:16px 8px}
+.lockin-slatecard .pick .cr{display:flex;align-items:baseline;gap:10px}
+.lockin-slatecard .pick .cr .nm{flex:1}
+.lockin-slatecard .pick .pc{font-size:13.5px;color:var(--dim)}
+.lockin-slatecard .cbar{height:6px;background:#0F141B;border-radius:99px;overflow:hidden;margin-top:10px;
+ box-shadow:inset 0 1px 2px rgba(0,0,0,.7)}
+.lockin-slatecard .cbar i{display:block;height:100%;background:var(--gold-hi);border-radius:99px}
+.lockin-slatecard .res{font-size:15px;font-weight:600;margin-top:10px}
+.lockin-slatecard .res.right{color:var(--cash)}
+.lockin-slatecard .res.wrong{color:var(--bad)}
+
+.lockin-slatecard .pool{background:var(--panel);border-radius:13px;padding:14px;display:flex;gap:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.045), 0 2px 6px rgba(0,0,0,.45)}
+.lockin-slatecard .pool .c{flex:1}
+.lockin-slatecard .pool .k{font-size:12.5px;color:var(--dim)}
+.lockin-slatecard .pool .v{font:700 25px inherit;color:var(--money);line-height:1.15;margin-top:3px}
+.lockin-slatecard .pool .r{text-align:right}
+.lockin-slatecard .pool .r .v{color:#fff}
+.lockin-slatecard .pool .mx{font-size:13px;color:var(--dim);font-weight:400}
+.lockin-slatecard .meter .mlbl{display:flex;justify-content:space-between;font-size:13.5px;color:var(--dim);margin-bottom:8px}
+.lockin-slatecard .bar{height:8px;background:#0F141B;border-radius:99px;overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.7)}
+.lockin-slatecard .fill{height:100%;background:var(--money);border-radius:99px;box-shadow:0 0 8px rgba(255,255,255,.18)}
+
+.lockin-slatecard .stake{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center}
+.lockin-slatecard .stake.reveal{border-top:1px dashed var(--cat);padding-top:13px}
+.lockin-slatecard .stake .lb2{font:700 12px inherit;letter-spacing:.09em;text-transform:uppercase;color:var(--dim)}
+.lockin-slatecard .chipb{border:1px solid var(--edge);border-radius:10px;padding:9px 14px;
+ background-color:#181E27;background-image:linear-gradient(180deg,#1B212B 0%,#151A22 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 1px 3px rgba(0,0,0,.5);
+ font:600 15px inherit;color:var(--grey);cursor:pointer;min-width:44px;text-align:center}
+.lockin-slatecard .chipb.on{background:var(--accent);border-color:var(--accent);color:#fff;
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.28), 0 4px 12px rgba(0,0,0,.5)}
+.lockin-slatecard .stake .nt{width:100%;text-align:center;font-size:12.5px;color:var(--dim)}
+.lockin-slatecard .econ{display:flex;align-items:baseline;gap:8px;font-size:13.5px}
+.lockin-slatecard .econ .e1{flex:1;color:var(--money);font-weight:700}
+.lockin-slatecard .econ .e2{color:var(--dim)}
+.lockin-slatecard .status{text-align:center;font-size:13px;color:var(--dim)}
+.lockin-slatecard .hint{text-align:center;font-size:13.5px;font-weight:600;color:var(--bad)}
+.lockin-slatecard .hint.calm{color:var(--cat)}
+/* CTA — solid fill, inset highlight, coloured drop shadow */
+.lockin-slatecard .cta{width:100%;border:none;border-radius:13px;padding:17px;background:var(--accent);color:#fff;
+ font:700 17px inherit;cursor:pointer;
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.3), 0 6px 18px rgba(0,0,0,.55)}
+.lockin-slatecard .cta.coin{color:#062018}
+.lockin-slatecard .cta:disabled{background-color:#1F262F;background-image:linear-gradient(180deg,#242C36,#1A212A);color:#6E7684;cursor:not-allowed;
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+.lockin-slatecard .sec2{width:100%;border:1px solid var(--edge);border-radius:13px;padding:15px;
+ background-color:#181E27;background-image:linear-gradient(180deg,#1B212B,#151A22);box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 1px 3px rgba(0,0,0,.5);
+ color:var(--grey);font:600 15px inherit;cursor:pointer}
+
+.lockin-slatecard .lockfx{position:absolute;inset:0;background:rgba(8,9,12,.9);display:none;z-index:5;
+ align-items:center;justify-content:center;flex-direction:column;gap:14px}
+.lockin-slatecard .slate.locking .lockfx{display:flex}
+.lockin-slatecard .lockfx svg{width:84px;height:84px;filter:drop-shadow(0 6px 18px rgba(252,62,1,.45))}
+.lockin-slatecard .slate.locking .shackle{animation:lisc .42s cubic-bezier(.5,-0.4,.3,1.5) .1s both}
+.lockin-slatecard .slate.locking .body{animation:lipop .3s ease-out both}
+.lockin-slatecard .slate.locking .ring{animation:liring .7s ease-out .42s both}
+.lockin-slatecard .lockfx .lw{font:700 14px inherit;letter-spacing:.16em;text-transform:uppercase;color:var(--orange);opacity:0}
+.lockin-slatecard .slate.locking .lw{animation:lifade .3s ease-out .45s both}
+@keyframes lisc{from{transform:translateY(-13px)}to{transform:translateY(0)}}
+@keyframes lipop{from{transform:scale(.55);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes liring{from{transform:scale(.7);opacity:.9}to{transform:scale(1.9);opacity:0}}
+@keyframes lifade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
