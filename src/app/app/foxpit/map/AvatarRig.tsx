@@ -90,13 +90,14 @@ export function AvatarRig({ gender = "male", phase = 0, facing = 1 }: { gender?:
   const uarmN = 26 * s, uarmF = -26 * s;        // arms contra-lateral to the same-side leg
   const farmN = -18 - 16 * Math.max(0, s), farmF = -18 - 16 * Math.max(0, -s);
 
-  // Paint order back → front (item 4).
+  // Paint order back → front. z-values are DOUBLED so the joint-fill discs get INTEGER slots between
+  // limbs (CSS drops fractional z-index like 1.5 → the discs fell behind everything, gold caps showed).
   const placed: Placed[] = [
-    ...chain(P.thighF!, P.shinF!, SK.hipF, thighF, shinF, 1, 2),
-    ...chain(P.uarmF!, P.farmF!, SK.shoulderF, uarmF, farmF, 3, 4),
-    { p: P.torso!, at: { x: SK.torso.x + P.torso!.prox.x, y: SK.torso.y + P.torso!.prox.y }, angle: 0, z: 5 },
-    ...chain(P.thighN!, P.shinN!, SK.hipN, thighN, shinN, 7, 8),
-    ...chain(P.uarmN!, P.farmN!, SK.shoulderN, uarmN, farmN, 9, 10),
+    ...chain(P.thighF!, P.shinF!, SK.hipF, thighF, shinF, 2, 4),
+    ...chain(P.uarmF!, P.farmF!, SK.shoulderF, uarmF, farmF, 6, 8),
+    { p: P.torso!, at: { x: SK.torso.x + P.torso!.prox.x, y: SK.torso.y + P.torso!.prox.y }, angle: 0, z: 10 },
+    ...chain(P.thighN!, P.shinN!, SK.hipN, thighN, shinN, 14, 16),
+    ...chain(P.uarmN!, P.farmN!, SK.shoulderN, uarmN, farmN, 18, 20),
   ];
 
   // JOINT PINHOLE FILL — each slice carries a brass CAP circle at its prox/dist joint (rgba≈180,130,60);
@@ -108,14 +109,14 @@ export function AvatarRig({ gender = "male", phase = 0, facing = 1 }: { gender?:
     return { x: anchor.x + d.x, y: anchor.y + d.y };
   };
   const joints: { c: Cap; d: number; z: number }[] = [
-    { c: SK.hipF, d: 26, z: 1.5 },
-    { c: jointOf(P.thighF!, SK.hipF, thighF), d: 22, z: 2.5 },
-    { c: SK.shoulderF, d: 22, z: 3.5 },
-    { c: jointOf(P.uarmF!, SK.shoulderF, uarmF), d: 20, z: 4.5 },
-    { c: SK.hipN, d: 26, z: 7.5 },
-    { c: jointOf(P.thighN!, SK.hipN, thighN), d: 22, z: 8.5 },
-    { c: SK.shoulderN, d: 22, z: 9.5 },
-    { c: jointOf(P.uarmN!, SK.shoulderN, uarmN), d: 20, z: 10.5 },
+    { c: SK.hipF, d: 26, z: 3 },
+    { c: jointOf(P.thighF!, SK.hipF, thighF), d: 22, z: 5 },
+    { c: SK.shoulderF, d: 22, z: 7 },
+    { c: jointOf(P.uarmF!, SK.shoulderF, uarmF), d: 20, z: 9 },
+    { c: SK.hipN, d: 26, z: 15 },
+    { c: jointOf(P.thighN!, SK.hipN, thighN), d: 22, z: 17 },
+    { c: SK.shoulderN, d: 22, z: 19 },
+    { c: jointOf(P.uarmN!, SK.shoulderN, uarmN), d: 20, z: 21 },
   ];
 
   const coinD = 60;
@@ -158,7 +159,7 @@ export function AvatarRig({ gender = "male", phase = 0, facing = 1 }: { gender?:
         />
       ))}
 
-      {/* HEAD SLOT — drawn gold coin (z6, over torso, under near limbs). Tokens only, no head art. */}
+      {/* HEAD SLOT — drawn gold coin (z12, over torso, under near limbs). Tokens only, no head art. */}
       <div
         aria-hidden
         style={{
@@ -168,7 +169,7 @@ export function AvatarRig({ gender = "male", phase = 0, facing = 1 }: { gender?:
           width: `${(coinD / FIG.w) * 100}%`,
           aspectRatio: "1 / 1",
           borderRadius: "50%",
-          zIndex: 6,
+          zIndex: 12,
           background: "radial-gradient(circle at 42% 38%, #f3d98a 0%, #d9a441 46%, #b9822f 78%, #8a5f1f 100%)",
           boxShadow: "inset 0 0 0 2px rgba(90,60,15,.85), 0 2px 6px rgba(0,0,0,.55)",
         }}
