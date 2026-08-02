@@ -6,6 +6,8 @@ import { Button, Card, Input } from "@/components/ui";
 import { ENTRY_TIERS, type EntryTier } from "@/lib/constants";
 import type { Category } from "@/lib/categories";
 import { createSlate, suggestOdds } from "./actions";
+import { ARCHETYPE_CHOICES } from "@/lib/contest/archetypeLibrary";
+import type { Archetype } from "@/lib/contest/questionEngine";
 
 type PredType = "binary" | "over_under";
 type Difficulty = "easy" | "medium" | "hard";
@@ -13,6 +15,8 @@ type Difficulty = "easy" | "medium" | "hard";
 interface PredForm {
   id: number;
   type: PredType;
+  /** §4.1 — the cross-game archetype this leg is built as, chosen from the shared ARCHETYPE_CHOICES. */
+  archetype: Archetype;
   question: string;
   optionA: string;
   optionB: string;
@@ -60,6 +64,7 @@ function blankPrediction(id: number): PredForm {
   return {
     id,
     type: "binary",
+    archetype: "cross_game_h2h",
     question: "",
     optionA: "",
     optionB: "",
@@ -120,6 +125,7 @@ export function SlateBuilder({ categories }: { categories: Category[] }) {
       const rows: PredForm[] = slate.legs.map((leg) => ({
         id: nextId.current++,
         type: leg.type,
+        archetype: "cross_game_h2h",
         question: leg.question,
         optionA: leg.type === "over_under" ? "" : leg.optionA,
         optionB: leg.type === "over_under" ? "" : leg.optionB,
@@ -349,13 +355,28 @@ export function SlateBuilder({ categories }: { categories: Category[] }) {
               )}
             </div>
 
-            <Select
-              value={p.type}
-              onChange={(v) => updatePred(p.id, { type: v as PredType })}
-            >
-              <option value="binary">Binary (A vs B)</option>
-              <option value="over_under">Over / Under</option>
-            </Select>
+            {/* §4.1 — choose any of the SIX approved cross-game archetypes, from the shared library. */}
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs text-muted">Question type (cross-game archetype)</span>
+              <Select
+                value={p.archetype}
+                onChange={(v) => updatePred(p.id, { archetype: v as Archetype })}
+              >
+                {ARCHETYPE_CHOICES.map((c) => (
+                  <option key={c.id} value={c.id}>{c.label}</option>
+                ))}
+              </Select>
+            </label>
+            {(() => {
+              const choice = ARCHETYPE_CHOICES.find((c) => c.id === p.archetype);
+              if (!choice) return null;
+              return (
+                <p className="text-xs text-muted">
+                  {choice.blurb}{" "}
+                  <span className="text-dim2">One player per game — drop or swap any that share a game.</span>
+                </p>
+              );
+            })()}
 
             <Input
               value={p.question}
