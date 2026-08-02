@@ -3,7 +3,7 @@ import { Timestamp, FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
 import { COLLECTIONS } from "@/lib/firebase/types";
 import { detectBannedArchetype } from "@/lib/contest/questionEngine";
-import { buildCrossGameSlate, type FeedGame, type CrossGameSlate } from "./crossGame";
+import { buildArchetypeSlate, type FeedGame, type ArchetypeSlate } from "./crossGame";
 
 /**
  * REAL data-feed sync (server/cron side). Mirrors scripts/sync-feed.mjs. ESPN's public scoreboard is
@@ -62,10 +62,12 @@ async function fetchGames(l: (typeof LEAGUES)[number], now: number): Promise<Fee
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
-/** Upsert a cross-game head-to-head slate + its legs. A leg is guarded by the banned-archetype
- *  detector (defence in depth). If no compliant legs remain, the slate is removed. Returns legs written. */
-async function writeCrossGameSlate(s: CrossGameSlate, now: number): Promise<number> {
-  const legs = s.legs.filter((leg) => detectBannedArchetype(leg.question, [leg.optionA, leg.optionB]) == null);
+/** Upsert a cross-game archetype slate + its legs (drawn ACROSS the six archetypes by the shared
+ *  library). Each leg writes an ARCHETYPE prediction doc: proOptions + name→id + settlement meta,
+ *  which the reader turns into N context-carrying options and proSettle grades. Banned-archetype
+ *  detector is defence-in-depth on the question. Returns legs written. */
+async function writeArchetypeSlate(s: ArchetypeSlate, now: number): Promise<number> {
+  const legs = s.legs.filter((leg) => detectBannedArchetype(leg.question, leg.proOptions.flatMap((o) => o.playerNames ?? [o.key])) == null);
   const ref = adminDb().collection(COLLECTIONS.slates).doc(s.slateId);
   if (legs.length === 0) {
     const prior = await ref.collection(COLLECTIONS.predictions).get();
@@ -75,23 +77,10 @@ async function writeCrossGameSlate(s: CrossGameSlate, now: number): Promise<numb
   }
   await ref.set(
     {
-      creatorId: null,
-      title: s.title,
-      description: null,
-      category: s.category,
-      status: "live",
-      entryTiers: tiers,
-      entryCount: 0,
-      isCardRush: false,
-      rushMultiplier: 1,
-      maxEntries: null,
-      lockTime: Timestamp.fromMillis(s.lockMs),
-      promotionOpensAt: Timestamp.fromMillis(now - DAY),
-      settledAt: null,
-      cancelledAt: null,
-      creatorBonusCents: 0,
-      source: "espn",
-      createdAt: FieldValue.serverTimestamp(),
+      creatorId: null, title: s.title, description: null, category: s.category, status: "live",
+      entryTiers: tiers, entryCount: 0, isCardRush: false, rushMultiplier: 1, maxEntries: null,
+      lockTime: Timestamp.fromMillis(s.lockMs), promotionOpensAt: Timestamp.fromMillis(now - DAY),
+      settledAt: null, cancelledAt: null, creatorBonusCents: 0, source: "espn", createdAt: FieldValue.serverTimestamp(),
     },
     { merge: true },
   );
@@ -99,20 +88,13 @@ async function writeCrossGameSlate(s: CrossGameSlate, now: number): Promise<numb
   for (const leg of legs) {
     await ref.collection(COLLECTIONS.predictions).doc(`h${i}`).set(
       {
-        question: leg.question,
-        optionA: leg.optionA,
-        optionB: leg.optionB,
-        optionAProbability: leg.probA,
-        optionBProbability: leg.probB,
-        optionAMultiplier: Math.round((100 / Math.max(1, leg.probA)) * 100) / 100,
-        optionBMultiplier: Math.round((100 / Math.max(1, leg.probB)) * 100) / 100,
-        predictionType: "binary",
-        overUnderLine: null,
-        result: null,
-        verificationSources: null,
-        verificationConfidence: null,
-        sortOrder: i,
-        h2h: leg.h2h, // settlement metadata: stat + box label + both players (id/name/team/eventId)
+        question: leg.question, optionA: "", optionB: "", optionAProbability: null, optionBProbability: null,
+        optionAMultiplier: null, optionBMultiplier: null, predictionType: "archetype", overUnderLine: null,
+        result: null, verificationSources: null, verificationConfidence: null, sortOrder: i,
+        archetype: leg.archetype, proOptions: leg.proOptions, playerIds: leg.playerIds,
+        bar: leg.bar, countedPlayers: leg.countedPlayers,
+        // context.matchupNote is the leg sub-line the picker shows (milestone: named players + context).
+        context: { seasonAverage: "", last3Form: "", matchupNote: leg.gameLine },
       },
       { merge: true },
     );
@@ -131,9 +113,9 @@ export async function syncFeed(now: number = Date.now()): Promise<{ synced: numb
   for (const l of LEAGUES) {
     try {
       const games = (await fetchGames(l, now)).slice(0, PER_LEAGUE);
-      const slate = buildCrossGameSlate({ league: l.league, category: l.category, games });
+      const slate = buildArchetypeSlate({ league: l.league, category: l.category, games });
       if (!slate) continue;
-      const n = await writeCrossGameSlate(slate, now);
+      const n = await writeArchetypeSlate(slate, now);
       if (n > 0) {
         byLeague[l.category] = (byLeague[l.category] ?? 0) + 1;
         synced += 1;

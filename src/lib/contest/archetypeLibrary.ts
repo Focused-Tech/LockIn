@@ -22,6 +22,9 @@ export interface PoolPlayer {
   stat: string; // statLabel, e.g. "points"
   boxLabel: string;
   leaderCat: string;
+  /** external stat-provider id (ESPN athlete id) — the feed writes name→id so the reader can pull
+   *  live context; optional for fixtures/creator rosters. */
+  playerId?: string;
 }
 export interface PoolGame {
   gameId: string;

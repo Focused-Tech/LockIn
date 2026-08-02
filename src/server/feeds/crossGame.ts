@@ -174,6 +174,78 @@ export function isH2HSlateId(id: string): boolean {
   return /^h2h-/.test(id);
 }
 
+// ── §3 — the FEED consumer of the shared archetype library. Build a normalized Pool from ESPN games
+//    (a standout player per stat per game, carrying its athlete id), then draw legs ACROSS archetypes.
+import { buildSlateLegs, type Pool, type PoolGame, type PoolPlayer, type GeneratedLeg } from "@/lib/contest/archetypeLibrary";
+
+/** Normalize the league's ESPN games into an archetype-library Pool: each game's standout player per
+ *  stat, keyed by statLabel. Games with no standout for a stat simply omit it. */
+export function poolFromGames(input: { league: string; category: string; games: FeedGame[] }): Pool {
+  const cfg = H2H_CONFIG[input.league];
+  const stats = cfg?.stats ?? [];
+  const games: PoolGame[] = [];
+  for (const g of [...input.games].sort((a, b) => a.startMs - b.startMs)) {
+    const byStat: Record<string, PoolPlayer> = {};
+    for (const st of stats) {
+      const top = pickTopPlayer(g, st.leaderCat);
+      if (!top) continue;
+      byStat[st.statLabel] = {
+        name: top.name, team: top.team, gameId: g.eventId, seasonVal: top.seasonVal, lastOut: "",
+        stat: st.statLabel, boxLabel: st.boxLabel, leaderCat: st.leaderCat, playerId: top.playerId,
+      };
+    }
+    if (Object.keys(byStat).length) games.push({ gameId: g.eventId, startMs: g.startMs, gameLine: `${g.awayName} at ${g.homeName}`, byStat });
+  }
+  return { league: input.league, category: input.category, stats: stats.map((s) => s.statLabel), games };
+}
+
+/** One archetype leg ready to write as a prediction doc (proOptions + name→id + settlement meta). */
+export interface ArchetypeFeedLeg {
+  archetype: string;
+  question: string;
+  gameLine: string; // leg sub-line (milestone: names+context; else stat/matchup) → prediction.context.matchupNote
+  pickStyle: "contest" | "chips";
+  proOptions: { key: string; playerNames?: string[]; bucket?: [number, number] }[];
+  playerIds: Record<string, string>; // player name → ESPN athlete id
+  bar: number | null;
+  countedPlayers: string[] | null;
+}
+export interface ArchetypeSlate {
+  slateId: string;
+  title: string;
+  category: string;
+  lockMs: number;
+  legs: ArchetypeFeedLeg[];
+}
+
+/** §3 — build ONE slate for a league whose legs DRAW ACROSS archetypes (never one repeated). null when
+ *  fewer than two usable games. Every leg passes validateLeg inside the library. */
+export function buildArchetypeSlate(input: { league: string; category: string; games: FeedGame[] }): ArchetypeSlate | null {
+  const pool = poolFromGames(input);
+  if (pool.games.length < 2) return null;
+  const plans = buildSlateLegs(pool);
+  if (!plans.length) return null;
+  const nameId = new Map<string, string>();
+  for (const g of pool.games) for (const st of Object.keys(g.byStat)) { const p = g.byStat[st]!; if (p.playerId) nameId.set(p.name, p.playerId); }
+
+  const legs: ArchetypeFeedLeg[] = plans.map(({ leg }: { leg: GeneratedLeg }) => {
+    const names = leg.players.map((p) => p.name);
+    const playerIds: Record<string, string> = {};
+    for (const n of names) { const id = nameId.get(n); if (id) playerIds[n] = id; }
+    return {
+      archetype: leg.archetype,
+      question: leg.question,
+      gameLine: leg.sub ?? `${input.category} · ${leg.stat}`,
+      pickStyle: leg.pickStyle,
+      proOptions: leg.options.map((o) => ({ key: o.key, playerNames: o.playerNames, bucket: o.bucket })),
+      playerIds,
+      bar: leg.bar ?? null,
+      countedPlayers: leg.countedPlayers ?? null,
+    };
+  });
+  return { slateId: `h2h-${input.league}`, title: `${input.category} tonight — the cross-game slate`, category: input.category, lockMs: Math.min(...pool.games.map((g) => g.startMs)), legs };
+}
+
 /**
  * Fetch an athlete's box-score stat for one game. Returns `{ completed, val }` — `completed` is whether
  * the game is FINAL; `val` is the numeric stat (null if the player has no line yet / didn't play). null
