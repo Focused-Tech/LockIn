@@ -94,6 +94,35 @@ let launchUrlConsumed = false;
  * scheme and https app links — by routing to the in-app path. Covers a warm app
  * (appUrlOpen) and a cold start (getLaunchUrl). No-ops on web.
  */
+/**
+ * HARDWARE BACK BUTTON (Android). With no listener, Capacitor's default pops the WebView history to
+ * the cold-start URL — which is the splash/landing, so every back "reset" the app. This registers a
+ * proper handler: on a deep screen, go BACK one step (SPA history); on the home/landing (nothing sane
+ * to go back to), MINIMIZE the app to the launcher instead of exiting or resetting to the splash.
+ */
+// The app-entry roots whose history BELOW them is the splash/landing — from here, backing would reset
+// to the splash, so we MINIMIZE instead. Every other screen backs one step in-app.
+const BACK_HOME_PATHS = new Set(["/", "/app", "/app/choose"]);
+let backButtonInit = false;
+export async function initBackButton(): Promise<void> {
+  if (!isNativeRuntime() || backButtonInit) return;
+  backButtonInit = true;
+  try {
+    const { App } = await import("@capacitor/app");
+    await App.addListener("backButton", ({ canGoBack }) => {
+      const path = typeof window !== "undefined" ? window.location.pathname : "";
+      const atHome = BACK_HOME_PATHS.has(path);
+      if (canGoBack && !atHome) {
+        window.history.back(); // previous screen, NOT a reload to splash
+      } else {
+        void App.minimizeApp(); // home/landing → background the app, never reset to splash
+      }
+    });
+  } catch (err) {
+    console.warn("[backButton] init failed (non-fatal):", err);
+  }
+}
+
 export async function initDeepLinks(
   navigate: (path: string) => void,
 ): Promise<void> {
