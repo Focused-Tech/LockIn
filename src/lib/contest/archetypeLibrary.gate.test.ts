@@ -7,7 +7,7 @@
  */
 import { describe, it, expect } from "vitest";
 import {
-  ARCHETYPE_LIBRARY, ARCHETYPE_STEMS, buildSlateLegs, generatedLegOk, toEngineLeg,
+  ARCHETYPE_LIBRARY, ARCHETYPE_STEMS, ARCHETYPE_CHOICES, buildSlateLegs, generatedLegOk, toEngineLeg, lockpickLeg,
   type Pool, type PoolGame, type GeneratedLeg,
 } from "./archetypeLibrary";
 import { APPROVED_ARCHETYPES, validateLeg, type Archetype } from "./questionEngine";
@@ -148,6 +148,32 @@ describe("§5.4 — render shapes", () => {
     expect(leg.pickStyle).toBe("contest");
     expect(leg.options.length).toBe(4);
     expect(cols).toBe(2);
+  });
+});
+
+describe("§5.5 — creator builder offers all six + Lockpick names the fix per archetype", () => {
+  it("all six archetypes are selectable from the shared library", () => {
+    const ids = ARCHETYPE_CHOICES.map((c) => c.id).sort();
+    log(`§5.5 selectable: ${ARCHETYPE_CHOICES.map((c) => `${c.id} (${c.label})`).join(", ")}`);
+    expect(ids).toEqual([...APPROVED_ARCHETYPES].sort());
+    expect(ARCHETYPE_CHOICES.length).toBe(6);
+  });
+
+  it("Lockpick fires the same-game fix-naming for EVERY archetype (not just h2h)", () => {
+    const pool = poolOf(5, ["points"], 2);
+    for (const id of APPROVED_ARCHETYPES) {
+      const def = ARCHETYPE_LIBRARY[id];
+      const leg = def.build(pool.games.slice(0, def.maxGames), "points", def.stems[0]!, "NBA")!;
+      // force a one-player-per-game VIOLATION: move the last player into the first player's game.
+      const engine = toEngineLeg(leg);
+      const bad = { ...engine, players: engine.players.map((p, i) => (i === engine.players.length - 1 ? { ...p, gameId: engine.players[0]!.gameId } : p)) };
+      const v = lockpickLeg(bad, ALL_GAME_IDS(pool));
+      log(`§5.5 ${id}: "${v.message}"`);
+      expect(v.ok).toBe(false);
+      expect(v.reason).toBe("two_from_one_game");
+      expect(v.message).toMatch(/one player per game/);
+      expect(v.message).toMatch(/drop one/);
+    }
   });
 });
 

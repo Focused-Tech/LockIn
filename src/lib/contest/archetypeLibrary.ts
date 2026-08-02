@@ -280,3 +280,33 @@ function allocateGames(pool: Pool, min: number, max: number, stat: string, avoid
 }
 
 export { APPROVED_ARCHETYPES };
+
+// ── §4 — the CREATOR consumer. The builder offers these six choices (from THIS library), and validates
+//    each authored leg with the SAME validateLeg (Lockpick) that names the per-archetype fix. ──────────
+const ARCHETYPE_LABELS: Record<Archetype, { label: string; blurb: string }> = {
+  cross_game_h2h: { label: "Head-to-head", blurb: "Two stars from two different games — who has the bigger night." },
+  field_leader: { label: "Field leader", blurb: "3–5 stars, each from a different game — who leads the floor." },
+  biggest_night: { label: "Biggest night", blurb: "Player of the night across 3–5 different games." },
+  split_squad_duos: { label: "Split-squad duos", blurb: "Two duos, each straddling two games — duo vs duo." },
+  milestone_count: { label: "Milestone count", blurb: "How many of the named players clear the bar — three buckets." },
+  first_to_n: { label: "First to N", blurb: "Which star reaches the number first across separate games." },
+};
+export interface ArchetypeChoice {
+  id: Archetype;
+  label: string;
+  blurb: string;
+  minGames: number;
+  maxGames: number;
+  pickStyle: "contest" | "chips";
+}
+/** All six approved archetypes as creator-selectable choices — the single source the builder renders. */
+export const ARCHETYPE_CHOICES: ArchetypeChoice[] = APPROVED_ARCHETYPES.map((id) => ({
+  id, label: ARCHETYPE_LABELS[id].label, blurb: ARCHETYPE_LABELS[id].blurb,
+  minGames: ARCHETYPE_LIBRARY[id].minGames, maxGames: ARCHETYPE_LIBRARY[id].maxGames, pickStyle: ARCHETYPE_LIBRARY[id].pickStyle,
+}));
+
+/** LOCKPICK (§4.2) — the creator-side leg validation. Same validateLeg the entry path runs, so the
+ *  "two from one game — drop one, or swap to X" fix-naming fires for EVERY archetype, not just h2h. */
+export function lockpickLeg(leg: Leg, allowedGameIds: string[]) {
+  return validateLeg(leg, allowedGameIds);
+}
