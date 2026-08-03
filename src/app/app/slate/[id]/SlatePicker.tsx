@@ -180,6 +180,7 @@ export function SlatePicker({
   async function onSubmit() {
     setError(null);
     setSubmitting(true);
+    const startedAt = Date.now(); // to hold the lock-in animation for its full duration
     const picksArr: EntryPick[] = predictions.map((p) => ({
       predictionId: p.id,
       choice: picks[p.id]!,
@@ -190,11 +191,17 @@ export function SlatePicker({
       free: false, // §1 — advanced is cash only
       picks: picksArr,
     });
-    setSubmitting(false);
     if (result.ok) {
-      setLockedEntry({ picks: picksArr, isPaid: true });
-      router.refresh();
+      // Hold `locking` so the SlateCard's lock-in padlock animation + lock-close audio play FULLY
+      // (~1.2s) before we transition to the locked-in card. A fast submit otherwise flashes it.
+      const wait = Math.max(0, 1200 - (Date.now() - startedAt));
+      window.setTimeout(() => {
+        setSubmitting(false);
+        setLockedEntry({ picks: picksArr, isPaid: true });
+        router.refresh();
+      }, wait);
     } else {
+      setSubmitting(false);
       setError(result.error);
     }
   }

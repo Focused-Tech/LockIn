@@ -11,6 +11,7 @@
  * ONE component, three render paths: `compact` (Explore feed summary — unchanged), `faceImage`
  * (Fox Pit baked face — unchanged header), and the default full card (this is the rebuilt one).
  */
+import { useEffect } from "react";
 import { cn } from "@/lib/utils";
 import "./slate-card.css";
 
@@ -118,6 +119,19 @@ export function SlateCard(props: SlateCardProps) {
     onPick, onStake, onCta, footer,
     compact = false, status, reach, pool, rush, withheld = false,
   } = props;
+
+  // LOCK-IN AUDIO — the padlock "seat" click (public/sounds/lock-close.mp3, the same lock sound the
+  // splash screen uses), fired ~0.3s into the .lockfx animation to land with the shackle seating. Only
+  // when locking begins; lock-in is user-initiated (the CTA tap), so autoplay is allowed.
+  useEffect(() => {
+    if (!locking) return;
+    let audio: HTMLAudioElement | null = null;
+    const t = window.setTimeout(() => {
+      audio = new Audio("/sounds/lock-close.mp3");
+      audio.play().catch(() => {});
+    }, 300);
+    return () => { window.clearTimeout(t); audio?.pause(); };
+  }, [locking]);
 
   // ── COMPACT FEED STATE (Explore) — unchanged summary card ──
   if (compact) {
