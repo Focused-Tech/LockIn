@@ -30,12 +30,19 @@ function sig(el: Element, d = 0): string {
   return [head, ...Array.from(el.children).map((c) => sig(c, d + 1))].join("\n");
 }
 
+// A representative re-parented dashboard node (the REAL markup is frozen in page.tsx; the gate proves
+// the re-parent mechanism preserves whatever node it is handed).
+const DASH = () => h("div", { className: "dashboard-body", "data-dash": "true" },
+  h("h1", null, "Creator"),
+  h("a", { href: "/app/creator", "data-newcontest": "true", className: "newc" }, "+ New contest"),
+  h("div", { className: "your-contests" }, h("h2", null, "Your contests")),
+);
 let root: ReturnType<typeof createRoot> | null = null;
-function mount(): HTMLElement {
+function mount(dashboard?: ReturnType<typeof DASH>): HTMLElement {
   const host = document.createElement("div");
   document.body.appendChild(host);
   root = createRoot(host);
-  act(() => root!.render(h(CreatorBuilder)));
+  act(() => root!.render(h(CreatorBuilder, dashboard ? { dashboard } : {})));
   return host;
 }
 // Unmount + clear between tests so ids (#pRules/#leg2/…) stay unique and scoped clicks don't cross mounts.
@@ -52,17 +59,24 @@ const onPanes = (host: Element) => Array.from(host.querySelectorAll(".pane.on"))
 const click = (el: Element | null) => act(() => { el?.dispatchEvent(new window.MouseEvent("click", { bubbles: true })); });
 
 describe("§8 Creator hub gate — structure + behavior vs the spec", () => {
-  it("RENDERED STRUCTURE matches the spec #body (same tags, classes, nesting, order)", () => {
-    const host = mount();
+  it("RENDERED STRUCTURE equals the spec #body (with the two authorized Addendum-D additions removed)", () => {
+    const host = mount(DASH());
     const specDoc = new DOMParser().parseFromString(readFileSync(SPEC, "utf8"), "text/html");
     const specBody = sig(specDoc.querySelector("#body")!);
-    const liveBody = sig(host.querySelector("#body")!);
+    // Addendum D authorizes exactly two deviations from the spec: a .cv chevron on #who + the #pDash
+    // pane. Remove both from a clone; the REST must equal the spec byte-for-byte (spec still wins).
+    const clone = host.querySelector("#body")!.cloneNode(true) as Element;
+    clone.querySelector("#pDash")?.remove();
+    clone.querySelector("#who .cv")?.remove();
+    const liveBody = sig(clone);
     if (specBody !== liveBody) {
       const a = specBody.split("\n"), b = liveBody.split("\n");
       for (let i = 0; i < Math.max(a.length, b.length); i++) if (a[i] !== b[i]) log(`  diff@${i}\n    spec: ${a[i] ?? "∅"}\n    live: ${b[i] ?? "∅"}`);
     }
-    log(`§8 structure: spec #body nodes=${specBody.split("\n").length}, live=${liveBody.split("\n").length}, EQUAL=${specBody === liveBody}`);
+    log(`§8 structure (minus D additions): spec nodes=${specBody.split("\n").length}, live=${liveBody.split("\n").length}, EQUAL=${specBody === liveBody}`);
     expect(liveBody).toBe(specBody);
+    expect(host.querySelector("#who .cv")).toBeTruthy(); // the authorized affordance IS present
+    expect(host.querySelector("#pDash")).toBeTruthy();
   });
 
   it("opens on the hub — one pane, chrome hidden, header 'Creator', mode 'Cash'", () => {
@@ -173,15 +187,71 @@ describe("§8 Creator hub gate — structure + behavior vs the spec", () => {
     expect(pushMock).toHaveBeenCalledWith("/app/practice/create"); // §1d link-out
   });
 
-  it("INVARIANT — exactly one pane + correct chrome in all six states", () => {
-    const host = mount();
+  // ── Addendum §F — the re-parented dashboard ──────────────────────────────────────────────────
+  it("§F — creator entry mounts the HUB (print the mounted component)", () => {
+    const host = mount(DASH());
+    log(`§F entry mounts: component=CreatorBuilder, view=${cb().view}, pane=${JSON.stringify(onPanes(host))}`);
+    expect(cb().view).toBe("hub");
+    expect(onPanes(host)).toEqual(["p0"]);
+  });
+
+  it("§F — the dashboard is reachable from the hub in exactly ONE tap (identity strip)", () => {
+    const host = mount(DASH());
+    click(q(host, "#who")); // the ONE tap — the identity strip
+    log(`§F one tap on #who → mounted=${JSON.stringify(onPanes(host))} view=${cb().view} chromeHidden=${!vis(q(host, "#bar")) && !vis(q(host, "#ft"))}`);
+    expect(onPanes(host)).toEqual(["pDash"]);
+    expect(cb().view).toBe("dashboard");
+    expect(!vis(q(host, "#bar")) && !vis(q(host, "#ft"))).toBe(true);
+    expect(host.querySelector("#pDash [data-dash]")).toBeTruthy(); // the re-parented body is inside
+  });
+
+  it("§F — '+ New contest' on the dashboard targets the HUB (route /app/creator)", () => {
+    const host = mount(DASH());
+    click(q(host, "#who"));
+    const newc = host.querySelector("#pDash [data-newcontest]") as HTMLAnchorElement;
+    log(`§F + New contest target = ${newc.getAttribute("href")} (the hub entry route)`);
+    expect(newc.getAttribute("href")).toBe("/app/creator");
+  });
+
+  it("§F — back from the dashboard returns to the hub", () => {
+    const host = mount(DASH());
+    click(q(host, "#who"));
+    expect(onPanes(host)).toEqual(["pDash"]);
+    click(host.querySelector("#pDash .crumb .home"));
+    log(`§F back from dashboard → ${JSON.stringify(onPanes(host))} view=${cb().view}`);
+    expect(onPanes(host)).toEqual(["p0"]);
+    expect(cb().view).toBe("hub");
+  });
+
+  it("§F — the re-parented dashboard DOM is UNCHANGED (standalone vs inside #pDash: empty diff)", () => {
+    // render the SAME node standalone and inside the hub; its subtree signature must be identical.
+    const solo = document.createElement("div");
+    document.body.appendChild(solo);
+    const r2 = createRoot(solo);
+    act(() => r2.render(DASH()));
+    const before = sig(solo.firstElementChild!);
+    const host = mount(DASH());
+    click(q(host, "#who"));
+    const after = sig(host.querySelector("#pDash [data-dash]")!);
+    const diff = before === after ? "(empty)" : "NON-EMPTY";
+    log(`§F dashboard DOM before/after re-parent diff: ${diff}`);
+    expect(after).toBe(before);
+    act(() => r2.unmount());
+  });
+
+  it("§F INVARIANT — exactly one pane + correct chrome in all SEVEN states", () => {
+    const host = mount(DASH());
+    // reliable reset to the hub from ANY state — a sub-view crumb's handler (go('hub')) fires even
+    // while its pane is hidden, so it works from the builder too.
+    const toHub = () => click(host.querySelector("#pRules .crumb .home"));
     const states: { name: string; enter: () => void; builder: boolean }[] = [
-      { name: "hub", enter: () => click(host.querySelector("#pRules .crumb .home") ?? q(host, "#goBuild")), builder: false },
-      { name: "rules", enter: () => click(q(host, "#goRules")), builder: false },
-      { name: "how", enter: () => { click(host.querySelector(".pane.on .crumb .home") ?? q(host, "#exit")); click(q(host, "#goHow")); }, builder: false },
-      { name: "lockpick", enter: () => { click(host.querySelector(".pane.on .crumb .home")); click(q(host, "#goPick")); }, builder: false },
-      { name: "practice", enter: () => { click(host.querySelector(".pane.on .crumb .home")); click(q(host, "#goPrac")); }, builder: false },
-      { name: "builder", enter: () => { click(host.querySelector(".pane.on .crumb .home")); click(q(host, "#goBuild")); }, builder: true },
+      { name: "hub", enter: toHub, builder: false },
+      { name: "rules", enter: () => { toHub(); click(q(host, "#goRules")); }, builder: false },
+      { name: "how", enter: () => { toHub(); click(q(host, "#goHow")); }, builder: false },
+      { name: "lockpick", enter: () => { toHub(); click(q(host, "#goPick")); }, builder: false },
+      { name: "practice", enter: () => { toHub(); click(q(host, "#goPrac")); }, builder: false },
+      { name: "dashboard", enter: () => { toHub(); click(q(host, "#who")); }, builder: false },
+      { name: "builder", enter: () => { toHub(); click(q(host, "#goBuild")); }, builder: true },
     ];
     let violations = 0;
     for (const s of states) {

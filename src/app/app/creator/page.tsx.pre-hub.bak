@@ -7,14 +7,6 @@ import { getCurrentUserProfile } from "@/lib/firebase/session";
 import { fetchCreatorDashboard } from "@/server/data/creator";
 import { formatCents } from "@/lib/utils";
 import { ConnectPayoutCard } from "./ConnectPayoutCard";
-import { CreatorBuilder } from "../create/CreatorBuilder";
-
-/**
- * CREATOR ENTRY — renders the HUB (landing). The existing dashboard is RE-PARENTED under the hub: its
- * markup is unchanged (frozen) and passed to CreatorBuilder as the `dashboard` prop, shown when the
- * hub's identity strip is tapped. Only the "start a contest" links now route to the hub (/app/creator),
- * so a new contest begins where the rules, Lockpick, practice and the builder all hang off (Addendum C).
- */
 
 const EARNING_LABELS: Record<string, string> = {
   hosting: "Hosting fees",
@@ -42,9 +34,7 @@ export default async function CreatorDashboardPage({
   const { connect } = await searchParams;
   const data = await fetchCreatorDashboard(adminDb(), profile.id);
 
-  // The dashboard body — FROZEN markup, verbatim. Only the "+ New contest" / "Host your first contest"
-  // targets change: they route to the hub (/app/creator), where a new contest starts (Addendum C.3).
-  const dashboard = (
+  return (
     <div className="flex flex-col gap-5 p-6">
       {/* Header spans the full width on its own row; actions sit below. */}
       <div className="flex flex-col gap-3">
@@ -60,7 +50,7 @@ export default async function CreatorDashboardPage({
             Invite
           </Link>
           <Link
-            href="/app/creator"
+            href="/app/create"
             className="rounded border border-accent-border px-3 py-1.5 text-sm font-medium text-accent"
           >
             + New contest
@@ -98,7 +88,7 @@ export default async function CreatorDashboardPage({
             You haven&apos;t hosted a contest yet.
           </p>
           <Link
-            href="/app/creator"
+            href="/app/create"
             className="rounded border border-accent-border bg-accent-soft px-4 py-2 text-sm font-medium text-accent"
           >
             Host your first contest
@@ -167,6 +157,4 @@ export default async function CreatorDashboardPage({
       <SkillGameDisclaimer className="mt-auto pt-4" />
     </div>
   );
-
-  return <CreatorBuilder dashboard={dashboard} />;
 }

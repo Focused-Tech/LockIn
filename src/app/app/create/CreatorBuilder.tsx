@@ -11,12 +11,14 @@
  * The hub is the entry; the builder is ONE of six views. Chrome (progress bar, step labels, footer,
  * Save & exit) shows ONLY inside the builder. The Locksmith FAB hides inside the Lockpick view.
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import "./creator-builder.css";
 
-type View = "hub" | "rules" | "how" | "lockpick" | "practice" | "builder";
-const SUB: Record<Exclude<View, "builder">, string> = { hub: "p0", rules: "pRules", how: "pHow", lockpick: "pPick", practice: "pPrac" };
+// Addendum C/D — the existing creator DASHBOARD is RE-PARENTED under the hub as a seventh view. Its
+// markup is passed in verbatim (frozen); the hub's identity strip (#who) is its tap target.
+type View = "hub" | "rules" | "how" | "lockpick" | "practice" | "dashboard" | "builder";
+const SUB: Record<Exclude<View, "builder">, string> = { hub: "p0", rules: "pRules", how: "pHow", lockpick: "pPick", practice: "pPrac", dashboard: "pDash" };
 const MAX = 5;
 const LABEL: Record<number, string> = { 1: "Next: pick the night", 2: "Next: write the questions", 3: "Next: set the prize", 4: "Review the slate", 5: "Publish slate" };
 const EVENTS = ["Lakers at Celtics", "Denver vs Phoenix", "Milwaukee at Miami", "Golden State vs Sacramento", "New York at Indiana"];
@@ -31,7 +33,7 @@ const ANSWERS: Record<string, { q: string; a: string }> = {
 
 interface Msg { role: "them" | "me"; html: string }
 
-export function CreatorBuilder() {
+export function CreatorBuilder({ dashboard }: { dashboard?: ReactNode } = {}) {
   const router = useRouter();
   const [view, setView] = useState<View>("hub");
   const [step, setStep] = useState(1);
@@ -109,11 +111,14 @@ export function CreatorBuilder() {
             <div className="eb">Creator</div>
             <h1>Run your own slate</h1>
             <p>Real followers, real pot, real payout. Write the questions your people argue about, set the prize, and put your name on the card.</p>
-            <div id="who">
+            {/* Addendum D — the identity strip is the tap target for the dashboard; a chevron (matching
+                the tiles) makes it read as tappable. Same panel styling — NOT restyled into a tile. */}
+            <div id="who" role="button" tabIndex={0} style={{ cursor: "pointer" }} onClick={() => go("dashboard")}>
               <div className="av">Q</div>
               <div className="n"><b>Quill</b><span>224,600 verified reach</span></div>
               <div className="dv">Wolf</div>
               <div id="cashtag">Cash</div>
+              <div className="cv">›</div>
             </div>
           </div>
           <button className="gobig" id="goBuild" onClick={enterBuilder}>Build a slate</button>
@@ -222,6 +227,12 @@ export function CreatorBuilder() {
             onClick={() => { setPracNote(true); setPracDisabled(true); router.push("/app/practice/create"); }}>Open practice mode ›</button>
           <p className="hint" id="pracNote" style={{ display: pracNote ? "" : "none" }}>Practice mode is a separate surface — its own screens.</p>
           <button className="gobig home2" onClick={enterBuilder}>Back to cash creator mode</button>
+        </div>
+
+        {/* ══ DASHBOARD (re-parented, FROZEN markup passed in as a prop) ══ */}
+        <div className={`pane${paneOn("pDash") ? " on" : ""}`} id="pDash">
+          <div className="crumb"><button className="home" onClick={() => go("hub")}>‹ Creator</button></div>
+          {dashboard}
         </div>
 
         {/* ══ STEP 1 ══ */}
