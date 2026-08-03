@@ -62,9 +62,12 @@ describe("§8 Creator hub gate — structure + behavior vs the spec", () => {
   it("RENDERED STRUCTURE equals the spec #body (with the two authorized Addendum-D additions removed)", () => {
     const host = mount(DASH());
     const specDoc = new DOMParser().parseFromString(readFileSync(SPEC, "utf8"), "text/html");
-    const specBody = sig(specDoc.querySelector("#body")!);
-    // Addendum D authorizes exactly two deviations from the spec: a .cv chevron on #who + the #pDash
-    // pane. Remove both from a clone; the REST must equal the spec byte-for-byte (spec still wins).
+    // Authorized deviations from the spec: (D) a .cv chevron on #who + the #pDash pane; and the
+    // architect ruling that the duplicate #hero .eb "Creator" eyebrow is removed. Normalize BOTH sides
+    // for those, then the rest must equal the spec byte-for-byte (the spec still wins on everything else).
+    const specClone = specDoc.querySelector("#body")!.cloneNode(true) as Element;
+    specClone.querySelector("#hero .eb")?.remove(); // the removed duplicate eyebrow
+    const specBody = sig(specClone);
     const clone = host.querySelector("#body")!.cloneNode(true) as Element;
     clone.querySelector("#pDash")?.remove();
     clone.querySelector("#who .cv")?.remove();
@@ -205,12 +208,30 @@ describe("§8 Creator hub gate — structure + behavior vs the spec", () => {
     expect(host.querySelector("#pDash [data-dash]")).toBeTruthy(); // the re-parented body is inside
   });
 
-  it("§F — '+ New contest' on the dashboard targets the HUB (route /app/creator)", () => {
+  it("LATE ADDENDUM — '+ New contest' mounts the BUILDER on step 1, NOT through the hub", () => {
     const host = mount(DASH());
-    click(q(host, "#who"));
-    const newc = host.querySelector("#pDash [data-newcontest]") as HTMLAnchorElement;
-    log(`§F + New contest target = ${newc.getAttribute("href")} (the hub entry route)`);
-    expect(newc.getAttribute("href")).toBe("/app/creator");
+    click(q(host, "#who")); // → dashboard
+    const afterDash = onPanes(host).join();
+    // the SINGLE tap on + New contest — capture EVERYTHING from this mount before touching a second one.
+    click(host.querySelector('#pDash a[href="/app/creator"]'));
+    const viaNew = { pane: onPanes(host).join(), view: cb().view, step: cb().step, footer: vis(q(host, "#ft")), pracBanner: !!host.querySelector("#p1 #pracBanner") };
+    // side-by-side vs the hub-reached builder (fresh mount — this overwrites window.__cb, so read host2 after).
+    const host2 = mount(DASH());
+    click(q(host2, "#goBuild"));
+    const viaHub = { pane: onPanes(host2).join(), step: cb().step, footer: vis(q(host2, "#ft")) };
+    log(`LATE sequence for the single +New contest tap: #who→${afterDash}  then +NewContest→pane=${viaNew.pane} view=${viaNew.view} step=${viaNew.step}  (hub p0 NOT in it: ${afterDash !== "p0" && viaNew.pane !== "p0"})`);
+    log(`  via +New contest: pane=${viaNew.pane} step=${viaNew.step} footer=${viaNew.footer} pracBanner=${viaNew.pracBanner}`);
+    log(`  via hub Build-a-slate: pane=${viaHub.pane} step=${viaHub.step} footer=${viaHub.footer}`);
+    // + New contest → builder step 1 directly; the hub pane (#p0) is NEVER shown in that single tap
+    expect(viaNew.pane).toBe("p1");
+    expect(viaNew.view).toBe("builder");
+    expect(viaNew.step).toBe(1);
+    expect(viaNew.footer).toBe(true);
+    expect(viaNew.pracBanner).toBe(false); // no practice flag on the builder
+    // identical builder from both entry points
+    expect(viaHub.pane).toBe("p1");
+    expect(viaHub.step).toBe(1);
+    expect(viaHub.footer).toBe(true);
   });
 
   it("§F — back from the dashboard returns to the hub", () => {

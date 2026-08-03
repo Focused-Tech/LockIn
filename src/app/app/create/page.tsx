@@ -22,7 +22,7 @@ export default async function CreatePage() {
 
       {/* Creator Engine slice 4 — the new cross-game builder with Lockpick + the pot. */}
       <Link
-        href="/app/create/pro"
+        href="/app/creator"
         className="flex items-center justify-between rounded-xl border p-4"
         style={{ borderColor: "#A86F2D", background: "linear-gradient(180deg, rgba(252,62,1,.10), rgba(168,111,45,.06))" }}
       >

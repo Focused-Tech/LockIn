@@ -36,6 +36,13 @@ export function FoxPitLobby() {
   const [popup, setPopup] = useState<Journey | null>(null);
   const [entering, setEntering] = useState<Journey | null>(null);
 
+  // A RETURNING player (a saved checkpoint) skips the Boss-Fox door "splash" — every re-entry, and
+  // every hardware-back into the lobby, lands straight on the lobby instead of replaying the intro.
+  // First-timers (no checkpoint) still get the door. Client-only (checkpoint lives in storage).
+  useEffect(() => {
+    if (foxResumeHref()) setPhase("lobby");
+  }, []);
+
   // Warm the browser cache with the ~1MB of tower WebP while the player is still in the
   // door/welcome/choose-path intro, so /app/foxpit/map renders instantly on arrival instead
   // of fetching them cold. Fire-and-forget; no state, no render impact.

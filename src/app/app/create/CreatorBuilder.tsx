@@ -108,7 +108,8 @@ export function CreatorBuilder({ dashboard }: { dashboard?: ReactNode } = {}) {
         {/* ══ HUB ══ */}
         <div className={`pane${paneOn("p0") ? " on" : ""}`} id="p0">
           <div id="hero">
-            <div className="eb">Creator</div>
+            {/* the "Creator" eyebrow was a DUPLICATE of the header title (#hdTitle) — removed; the top
+                header is the single creator identifier (architect ruling). */}
             <h1>Run your own slate</h1>
             <p>Real followers, real pot, real payout. Write the questions your people argue about, set the prize, and put your name on the card.</p>
             {/* Addendum D — the identity strip is the tap target for the dashboard; a chevron (matching
@@ -229,8 +230,18 @@ export function CreatorBuilder({ dashboard }: { dashboard?: ReactNode } = {}) {
           <button className="gobig home2" onClick={enterBuilder}>Back to cash creator mode</button>
         </div>
 
-        {/* ══ DASHBOARD (re-parented, FROZEN markup passed in as a prop) ══ */}
-        <div className={`pane${paneOn("pDash") ? " on" : ""}`} id="pDash">
+        {/* ══ DASHBOARD (re-parented, FROZEN markup passed in as a prop) ══
+            Late addendum: the dashboard's "+ New contest" (an <a href="/app/creator"> in the frozen
+            markup) mounts the BUILDER ON STEP 1 DIRECTLY — it does NOT pass through the hub. Intercept
+            those clicks here → enterBuilder(); the dashboard markup itself is untouched. */}
+        <div
+          className={`pane${paneOn("pDash") ? " on" : ""}`}
+          id="pDash"
+          onClickCapture={(e) => {
+            const a = (e.target as HTMLElement).closest?.('a[href="/app/creator"]');
+            if (a) { e.preventDefault(); enterBuilder(); }
+          }}
+        >
           <div className="crumb"><button className="home" onClick={() => go("hub")}>‹ Creator</button></div>
           {dashboard}
         </div>

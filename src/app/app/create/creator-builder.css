@@ -171,3 +171,13 @@
 .cb-root .sep{border:1px solid var(--cash);border-radius:11px;padding:10px 12px;background:rgba(47,185,138,.08);color:#9BE3C8;font-size:12.5px;line-height:1.45}
 .cb-root .sep b{color:#fff}
 .cb-root #ls{position:fixed;right:14px;bottom:88px;width:52px;height:52px;border-radius:50%;border:2px solid var(--creator);background:var(--panel);color:var(--creator);font-size:20px;cursor:pointer;display:grid;place-items:center;z-index:20;box-shadow:0 6px 18px rgba(0,0,0,.6)}
+
+/* IDENTITY-STRIP FIT (architect: "top row for the creator identifier is jammed / text wrapping / wrong
+   size pills"). The name+reach column flexes and shrinks; the reach stays ONE line (ellipsis, never a
+   3-line wrap); the division + cash pills and the chevron are compact so the whole row fits 360px. */
+.cb-root #who{gap:8px}
+.cb-root #who .n{flex:1;min-width:0}
+.cb-root #who .n span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cb-root #who .dv,.cb-root #who #cashtag{margin-left:0;padding:4px 9px;font-size:10px;letter-spacing:.06em;flex:none}
+.cb-root #who .dv{margin-left:auto}
+.cb-root #who .cv{font-size:16px;flex:none;color:var(--dim2)}
