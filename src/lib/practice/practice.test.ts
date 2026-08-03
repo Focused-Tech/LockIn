@@ -60,7 +60,7 @@ describe("dynamic difficulty (target win-rate band)", () => {
 
 describe("instant scoring (coins are score)", () => {
   it("pays the full win-up-to on a perfect card", () => {
-    const r = scorePractice(["a", "a", "a"], ["a", "a", "a"], 50);
+    const r = scorePractice([0, 0, 0], [0, 0, 0], 50);
     expect(r.correct).toBe(3);
     expect(r.perfect).toBe(true);
     expect(r.won).toBe(true);
@@ -68,13 +68,13 @@ describe("instant scoring (coins are score)", () => {
     expect(r.net).toBe(50 * 8 - 50);
   });
   it("near-miss feedback at one short", () => {
-    const r = scorePractice(["a", "a", "b"], ["a", "a", "a"], 50);
+    const r = scorePractice([0, 0, 1], [0, 0, 0], 50);
     expect(r.correct).toBe(2);
     expect(r.message).toContain("So close");
   });
   it("below the win threshold loses the stake", () => {
     expect(winThreshold(5)).toBe(3);
-    const r = scorePractice(["a", "a", "b", "b", "b"], ["a", "b", "a", "a", "a"], 50);
+    const r = scorePractice([0, 0, 1, 1, 1], [0, 1, 0, 0, 0], 50);
     expect(r.won).toBe(false);
     expect(r.creditedCoins).toBe(0);
     expect(r.net).toBe(-50);
@@ -137,12 +137,12 @@ describe("urgency: countdown + spot race (config-driven, capped at 3)", () => {
 
 describe("spot bonus applied to scoring (SCORE only, winnings only)", () => {
   it("boosts winnings for a top spot, never the loss", () => {
-    const base = scorePractice(["a", "a", "a"], ["a", "a", "a"], 50);
-    const boosted = scorePractice(["a", "a", "a"], ["a", "a", "a"], 50, 1.6);
+    const base = scorePractice([0, 0, 0], [0, 0, 0], 50);
+    const boosted = scorePractice([0, 0, 0], [0, 0, 0], 50, 1.6);
     expect(boosted.creditedCoins).toBe(Math.round(base.creditedCoins * 1.6));
     expect(boosted.net).toBe(boosted.creditedCoins - 50);
     // A losing card credits 0 regardless of any spot multiplier.
-    const lost = scorePractice(["a", "a", "b", "b", "b"], ["a", "b", "a", "a", "a"], 50, 1.6);
+    const lost = scorePractice([0, 0, 1, 1, 1], [0, 1, 0, 0, 0], 50, 1.6);
     expect(lost.creditedCoins).toBe(0);
     expect(lost.net).toBe(-50);
   });

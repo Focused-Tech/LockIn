@@ -117,15 +117,15 @@ export interface PracticeContestView {
   /** Countdown + spot-race window (epoch ms), or null when not running. */
   urgency: { startAt: number; lockAt: number } | null;
   entryCount: number;
-  /** The current user's own entry, if they've played. */
+  /** The current user's own entry, if they've played. Picks are option INDEXES. */
   myEntry: {
-    picks: ("a" | "b")[];
+    picks: number[];
     correct: number;
     netCoins: number;
     won: boolean;
   } | null;
-  /** Outcomes + per-leg results — ONLY present once the user has played. */
-  reveal: { outcomes: ("a" | "b")[]; hits: boolean[] } | null;
+  /** Outcomes (option indexes) + per-leg results — ONLY present once the user has played. */
+  reveal: { outcomes: number[]; hits: boolean[] } | null;
   leaderboard: PracticeLeaderRow[];
 }
 
@@ -150,9 +150,13 @@ interface PracticeContestCore {
   legs: PracticeLeg[];
   urgency: { startAt: number; lockAt: number } | null;
   entryCount: number;
-  outcomes: ("a" | "b")[];
+  outcomes: number[];
   leaderboard: PracticeLeaderRow[];
 }
+
+/** Coerce a stored outcome/pick to an option index — legacy docs stored "a"/"b". */
+const asIndex = (v: number | string): number =>
+  typeof v === "number" ? v : v === "b" ? 1 : 0;
 
 async function fetchPracticeContestCore(
   contestId: string,
@@ -204,7 +208,7 @@ async function fetchPracticeContestCore(
         ? { startAt: c.urgencyStartAt, lockAt: c.urgencyLockAt }
         : null,
     entryCount: c.entryCount ?? 0,
-    outcomes: c.outcomes,
+    outcomes: (c.outcomes as (number | string)[]).map(asIndex),
     leaderboard,
   };
 }
@@ -241,12 +245,17 @@ export async function fetchPracticeContest(
   return {
     ...shared,
     myEntry: mine
-      ? { picks: mine.picks, correct: mine.correct, netCoins: mine.netCoins, won: mine.won }
+      ? {
+          picks: (mine.picks as (number | string)[]).map(asIndex),
+          correct: mine.correct,
+          netCoins: mine.netCoins,
+          won: mine.won,
+        }
       : null,
     reveal: mine
       ? {
           outcomes,
-          hits: outcomes.map((o, i) => mine.picks[i] === o),
+          hits: outcomes.map((o, i) => asIndex(mine.picks[i]!) === o),
         }
       : null,
   };

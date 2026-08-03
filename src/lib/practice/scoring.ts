@@ -11,7 +11,8 @@
 
 import { PRACTICE_CONFIG } from "./config";
 
-export type Choice = "a" | "b";
+/** A pick/outcome is an OPTION INDEX (0-based) — legs carry 2..N options. */
+export type Choice = number;
 
 /** Win-up-to coin multiplier by leg count (config-driven; index = legs). */
 const PERFECT_MULT = PRACTICE_CONFIG.perfectMultiplier;

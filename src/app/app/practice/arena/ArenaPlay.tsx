@@ -168,7 +168,7 @@ export function ArenaPlay({
           preview: current,
           legs: gen.legs,
           picks: ordered,
-          outcomes: gen.legs.map(() => "a" as Choice),
+          outcomes: gen.legs.map(() => 0 as Choice),
           hits: gen.legs.map(() => false),
           correct: 0,
           net: 0,

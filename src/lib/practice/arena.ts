@@ -10,6 +10,7 @@
 
 import { AI_CREATORS } from "./creators";
 import { PRACTICE_CONFIG } from "./config";
+import { buildPracticeSlate } from "./generate";
 import type { Choice } from "./scoring";
 import type { PracticeLeg } from "@/lib/firebase/types";
 
@@ -113,38 +114,16 @@ export interface ArenaPlayed {
 }
 
 /**
- * Curated LOCAL slate — the fallback when AI generation is unavailable, so the
- * arena flow always demonstrates end-to-end. Legs + hidden outcomes are rolled
- * here (weighted by probability, exactly like the server) and scored client-side.
+ * LOCAL slate — the fallback when server generation is unavailable, so the arena
+ * flow always runs end-to-end. Sourced from the shared ARCHETYPE LIBRARY (the same
+ * generator the host action uses): N-option legs with per-option context + hidden
+ * outcome indexes rolled by consensus, scored client-side.
  */
 export function buildLocalSlate(preview: ArenaSlatePreview): {
   legs: PracticeLeg[];
   outcomes: Choice[];
 } {
-  const n = preview.legCount;
-  const diffs: ArenaDifficulty[] = ["easy", "medium", "hard"];
-  const legs: PracticeLeg[] = Array.from({ length: n }, (_, i) => {
-    // Favorites lean easier; underdog-lean creators push probabilities to the
-    // coin-flip range. Purely cosmetic for a fallback.
-    const base =
-      preview.difficulty === "easy" ? 68 : preview.difficulty === "hard" ? 54 : 61;
-    const probA = Math.max(50, Math.min(80, base - (i % 3) * 4));
-    return {
-      id: `l${i}`,
-      question: `${preview.category} · call ${i + 1}: does the favorite hold?`,
-      optionA: "Favorite",
-      optionB: "Underdog",
-      probA,
-      probB: 100 - probA,
-      type: "binary",
-      line: null,
-      difficulty: diffs[i % 3]!,
-    };
-  });
-  const outcomes: Choice[] = legs.map((l) =>
-    Math.random() * 100 < l.probA ? "a" : "b",
-  );
-  return { legs, outcomes };
+  return buildPracticeSlate(preview.category, preview.legCount);
 }
 
 export const ARENA = PRACTICE_CONFIG.arena;

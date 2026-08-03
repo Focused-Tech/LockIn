@@ -257,7 +257,7 @@ export function ArenaReveal({
                       "shrink-0 pl-2 text-xs " + (hit ? "text-win" : "text-loss")
                     }
                   >
-                    {current.outcomes[i] === "a" ? l.optionA : l.optionB}
+                    {l.options[current.outcomes[i]!]?.label ?? ""}
                   </span>
                 </div>
               );

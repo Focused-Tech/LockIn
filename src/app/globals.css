@@ -204,6 +204,14 @@
 }
 .practice-check-pop { animation: practice-check-pop 0.19s cubic-bezier(0.2, 1.5, 0.4, 1) both; }
 
+/* §2 option lock badge — a 22px circular lock that springs in (scale .4→1) on the
+   chosen option row before the leg swipes away. */
+@keyframes opt-lock-pop {
+  0% { transform: scale(0.4); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.opt-lock-pop { animation: opt-lock-pop 0.26s cubic-bezier(0.2, 1.5, 0.4, 1) both; }
+
 /* A selected leg pulses once in its difficulty colour (--glow). */
 @keyframes practice-leg-glow {
   0% { box-shadow: 0 0 0 0 var(--glow, rgba(255, 59, 0, 0)); }

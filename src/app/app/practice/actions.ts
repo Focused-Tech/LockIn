@@ -15,7 +15,7 @@ import {
   type PracticeLeg,
   type UserDoc,
 } from "@/lib/firebase/types";
-import { generateSlate } from "@/lib/ai/aiEngine";
+import { buildPracticeSlate } from "@/lib/practice/generate";
 import { CATEGORIES } from "@/lib/categories";
 import { getAiCreator } from "@/lib/practice/creators";
 import { PRACTICE_CONFIG } from "@/lib/practice/config";
@@ -47,6 +47,9 @@ function recentWinRate(recent: boolean[] | undefined): number | undefined {
 }
 
 const clampProb = (p: number) => Math.max(1, Math.min(99, Math.round(p)));
+/** Coerce a stored outcome/pick to an option index — legacy docs stored "a"/"b". */
+const asIndex = (v: number | string): number =>
+  typeof v === "number" ? v : v === "b" ? 1 : 0;
 const randCode = () =>
   Array.from({ length: 6 }, () =>
     "ABCDEFGHJKMNPQRSTUVWXYZ23456789".charAt(Math.floor(Math.random() * 31)),
@@ -113,6 +116,7 @@ export async function createPracticeContest(
   );
 
   let legs: PracticeLeg[];
+  let outcomes: Choice[];
   let title: string;
 
   // A creator forces AI mode (they host engine-built slates in their style).
@@ -125,55 +129,36 @@ export async function createPracticeContest(
     if (raw.length < 2) {
       return { ok: false, error: "Add at least 2 legs" };
     }
+    // Host-authored legs are two-option; wrap them in the N-option shape with empty
+    // per-option context (a manual leg has no game/roster to draw context from).
+    const emptyCtx = { gameLine: "", seasonAvg: "", lastOut: "" };
     legs = raw.slice(0, 8).map((l, i) => {
       const probA = clampProb(l.probA);
       return {
         id: `m${i}`,
         question: l.question.trim().slice(0, 200),
-        optionA: l.optionA.trim().slice(0, 60),
-        optionB: l.optionB.trim().slice(0, 60),
-        probA,
-        probB: 100 - probA,
-        type: "binary",
-        line: null,
-        difficulty: "medium",
+        options: [
+          { label: l.optionA.trim().slice(0, 60), prob: probA, context: emptyCtx },
+          { label: l.optionB.trim().slice(0, 60), prob: 100 - probA, context: emptyCtx },
+        ],
+        archetype: "manual",
+        difficulty: "medium" as const,
       };
     });
+    // Roll each leg's hidden outcome weighted by option 0's consensus %.
+    outcomes = legs.map((l) => (Math.random() * 100 < l.options[0]!.prob ? 0 : 1));
     title = `${category} practice`;
   } else {
-    try {
-      // A creator's persona/style steers the lines; otherwise the tier difficulty.
-      const lineStyle = creator ? creator.lineStyle : difficulty.lineStyle;
-      const topic = `${input.topic?.trim() || `${category} practice slate`}. Difficulty: ${lineStyle}`;
-      const slate = await generateSlate({ topic, legCount: difficulty.legs });
-      if (!slate.legs.length) return { ok: false, error: "AI returned no legs" };
-      legs = slate.legs.map((leg, i) => ({
-        id: `g${i}`,
-        question: leg.question,
-        optionA: leg.optionA,
-        optionB: leg.optionB,
-        probA: leg.probA,
-        probB: leg.probB,
-        type: leg.type,
-        line: leg.overUnderLine,
-        difficulty: leg.difficulty,
-      }));
-      title = creator
-        ? `${creator.name}'s ${slate.category || category} slate`
-        : `${slate.category || category} practice`;
-    } catch (err) {
-      const code = err instanceof Error ? err.message : "";
-      if (code === "AI_NOT_CONFIGURED") {
-        return { ok: false, error: "AI is not configured — try manual legs" };
-      }
-      return { ok: false, error: "Could not generate a slate — try again" };
-    }
+    // AI/creator mode: draw N-option legs from the shared ARCHETYPE LIBRARY (the same
+    // source the feed uses) — with hidden outcomes pre-rolled by consensus.
+    const built = buildPracticeSlate(category, difficulty.legs);
+    if (!built.legs.length) return { ok: false, error: "Could not generate a slate — try again" };
+    legs = built.legs;
+    outcomes = built.outcomes;
+    title = creator
+      ? `${creator.name}'s ${category} slate`
+      : `${category} practice`;
   }
-
-  // Roll hidden outcomes weighted by each leg's probability (favorite likelier).
-  const outcomes: Choice[] = legs.map((l) =>
-    Math.random() * 100 < l.probA ? "a" : "b",
-  );
 
   // Start the urgency countdown at creation (fresh slates are played immediately).
   const nowMs = Date.now();
@@ -262,8 +247,19 @@ export async function submitPracticePicks(
   const contestSnap = await contestRef.get();
   if (!contestSnap.exists) return { ok: false, error: "Contest not found" };
   const contest = contestSnap.data() as PracticeContestDoc;
+  // Normalize outcomes to indexes (legacy contests stored "a"/"b").
+  const outcomes = (contest.outcomes as (number | string)[]).map(asIndex);
 
-  if (picks.length !== contest.legs.length || picks.some((p) => p !== "a" && p !== "b")) {
+  // Each pick is an option INDEX within its leg's option list.
+  const validPicks =
+    picks.length === contest.legs.length &&
+    picks.every(
+      (p, i) =>
+        Number.isInteger(p) &&
+        p >= 0 &&
+        p < (contest.legs[i]?.options.length ?? 0),
+    );
+  if (!validPicks) {
     return { ok: false, error: "Make a pick on every leg" };
   }
 
@@ -297,7 +293,7 @@ export async function submitPracticePicks(
           ? resolveSpot(contest.urgencyStartAt, contest.urgencyLockAt, now)
           : { spot: null, filled: 0, bonus: 1 };
 
-      const r = scorePractice(picks, contest.outcomes, stake, spotRes.bonus);
+      const r = scorePractice(picks, outcomes, stake, spotRes.bonus);
       const recent = [...(user.practiceRecent ?? []), r.won].slice(
         -PRACTICE_RECENT_WINDOW,
       );
@@ -368,7 +364,7 @@ export async function submitPracticePicks(
     nearMiss: !r.perfect && r.correct === r.legs - 1,
     message: r.message,
     hits: r.hits,
-    outcomes: contest.outcomes,
+    outcomes,
     newBalance,
     streak,
     tierUp,

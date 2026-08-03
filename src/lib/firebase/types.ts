@@ -176,16 +176,31 @@ export interface UserDoc {
 // ── practiceContests/{contestId} (multiplayer PRACTICE — play-money) ─────────────
 export type PracticeContestStatus = "open" | "closed";
 
-/** A practice leg shown to players (NO outcome — outcomes are server-only). */
+/** Per-option context (§2 leg layout) — game line · season average · last-out form.
+ *  Empty strings when the archetype carries context at the leg level (milestone chips
+ *  put the counted players + context on the leg `sub`, not on each bucket). */
+export interface PracticeOptionContext {
+  gameLine: string;
+  seasonAvg: string;
+  lastOut: string;
+}
+/** One selectable option on a practice leg — the consensus % is `prob`. */
+export interface PracticeOption {
+  label: string;
+  /** Consensus share, 0–100. Options on a leg sum to ~100. */
+  prob: number;
+  context: PracticeOptionContext;
+}
+/** A practice leg shown to players (NO outcome — outcomes are server-only). N options
+ *  (2..N), sourced from the shared archetype library. */
 export interface PracticeLeg {
   id: string;
   question: string;
-  optionA: string;
-  optionB: string;
-  probA: number; // 0–100 (AI estimate)
-  probB: number;
-  type: PredictionType;
-  line: number | null;
+  /** Leg sub-line — milestone_count names the counted players + their context here. */
+  sub?: string;
+  options: PracticeOption[];
+  /** The leg's archetype id (one of the approved six; "manual" for host-authored legs). */
+  archetype: string;
   difficulty: "easy" | "medium" | "hard";
 }
 
@@ -219,10 +234,11 @@ export interface PracticeContestDoc {
   stakeCoins: number;
   legs: PracticeLeg[];
   /**
-   * Hidden, pre-rolled per-leg outcomes ("a"/"b"), revealed to a player only
-   * after they submit. SERVER-ONLY — never sent to clients before settlement.
+   * Hidden, pre-rolled per-leg outcomes as OPTION INDEXES (0-based), revealed to a
+   * player only after they submit. SERVER-ONLY — never sent to clients before
+   * settlement. Legacy docs stored "a"/"b" — read those as index 0/1.
    */
-  outcomes: ("a" | "b")[];
+  outcomes: number[];
   entryCount: number;
   createdAt: FsTimestamp;
 }
@@ -233,7 +249,8 @@ export interface PracticeEntryDoc {
   username: string;
   /** Rank tier at submit time (for the leaderboard badge). */
   tier: string;
-  picks: ("a" | "b")[];
+  /** Player's picks as OPTION INDEXES (0-based), in leg order. Legacy: "a"/"b" = 0/1. */
+  picks: number[];
   correct: number;
   score: number; // = correct count (used to rank)
   netCoins: number;

@@ -19,7 +19,8 @@ import {
   type PlayedResult,
 } from "./PracticeResultAnimation";
 
-type Choice = "a" | "b";
+/** A pick is an option INDEX (0-based). */
+type Choice = number;
 
 export function PracticeContest({
   view,
@@ -80,8 +81,8 @@ export function PracticeContest({
         // Shape the per-leg reveal for the leg-by-leg settlement animation.
         const revealLegs = view.legs.map((l, i) => ({
           question: l.question,
-          pickedLabel: ordered[i] === "a" ? l.optionA : l.optionB,
-          correctLabel: res.outcomes[i] === "a" ? l.optionA : l.optionB,
+          pickedLabel: l.options[ordered[i]!]?.label ?? "",
+          correctLabel: l.options[res.outcomes[i]!]?.label ?? "",
           hit: res.hits[i] ?? false,
         }));
         const wait = Math.max(
@@ -256,7 +257,7 @@ export function PracticeContest({
           <div className="flex flex-col gap-1.5">
             {view.legs.map((l, i) => {
               const hit = view.reveal!.hits[i];
-              const correctSide = view.reveal!.outcomes[i];
+              const correctSide = view.reveal!.outcomes[i] ?? 0;
               return (
                 <div
                   key={l.id}
@@ -266,7 +267,7 @@ export function PracticeContest({
                     {hit ? "✓" : "✗"} {l.question}
                   </span>
                   <span className="shrink-0 pl-2 text-xs text-muted">
-                    {correctSide === "a" ? l.optionA : l.optionB}
+                    {l.options[correctSide]?.label ?? ""}
                   </span>
                 </div>
               );
