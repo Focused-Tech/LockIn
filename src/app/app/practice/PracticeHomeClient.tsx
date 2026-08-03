@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Card, Input } from "@/components/ui";
+import { Button, Input } from "@/components/ui";
 import { refillPractice } from "./actions";
 import { resolveAndGo } from "./joinActions";
 
@@ -54,7 +54,7 @@ export function PracticeHomeClient({
     });
 
   return (
-    <Card className="flex flex-col gap-3">
+    <div className="arena-panel flex flex-col gap-3">
       {busted && (
         <div className="rounded border border-loss-border bg-loss-soft px-3 py-2.5 text-sm">
           {canClaim ? (
@@ -105,6 +105,6 @@ export function PracticeHomeClient({
         </Button>
       </div>
       {error && <p className="text-xs text-loss">{error}</p>}
-    </Card>
+    </div>
   );
 }

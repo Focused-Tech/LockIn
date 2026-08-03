@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SkillGameDisclaimer } from "@/components/SkillGameDisclaimer";
-import { Card, Pill } from "@/components/ui";
+import { Pill } from "@/components/ui";
 import { RankBadge } from "@/components/practice/RankBadge";
 import { getCurrentUserProfile } from "@/lib/firebase/session";
 import { fetchPracticeHome } from "@/server/data/practice";
@@ -23,7 +23,7 @@ export default async function PracticeHomePage() {
   const busted = isBusted(home.practiceCoins);
 
   return (
-    <div className="page-enter flex flex-col gap-5 p-6">
+    <div className="page-enter flex flex-col gap-4 p-6">
       <PracticeMusic track="solo" />
       <div>
         <h1 className="text-xl font-semibold">Practice arena</h1>
@@ -35,7 +35,7 @@ export default async function PracticeHomePage() {
       </div>
 
       {/* Rank + coins */}
-      <Card className="flex flex-col gap-3">
+      <div className="arena-panel flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <RankBadge tier={tierKey} label={home.rank.tier.label} />
@@ -82,10 +82,11 @@ export default async function PracticeHomePage() {
             )}
           </span>
         </div>
-      </Card>
+      </div>
 
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-muted">
+      {/* Coins-are-score + audio */}
+      <div className="arena-panel flex items-center justify-between gap-3">
+        <p className="text-[13.5px] leading-[1.5] text-muted">
           Coins are score — they buy nothing &amp; never convert to cash.
         </p>
         <AudioSettings musicTrack="solo" />
@@ -101,11 +102,12 @@ export default async function PracticeHomePage() {
           one orange primary on this screen is "Host" below. */}
       <Link
         href="/app/practice/arena"
-        className="flex items-center justify-between rounded-xl border border-[rgba(34,197,94,0.35)] bg-[rgba(34,197,94,0.10)] p-4 text-win"
+        className="arena-cta flex items-center justify-between p-4"
+        style={{ backgroundColor: "#22C55E", color: "#06210F" }}
       >
         <span className="flex flex-col">
-          <span className="font-semibold">▶ Enter the Arena</span>
-          <span className="text-xs text-muted">
+          <span className="text-[15px] font-semibold">▶ Enter the Arena</span>
+          <span className="text-[11.5px] leading-[1.45]" style={{ color: "rgba(6,33,15,0.72)" }}>
             Pick categories, stack multiple slates, play them back-to-back.
           </span>
         </span>

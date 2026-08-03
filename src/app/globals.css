@@ -2,6 +2,43 @@
 @tailwind components;
 @tailwind utilities;
 
+/* PRACTICE ARENA landing — the slate-card panel LANGUAGE. Raised, with a 1px
+   hairline on three sides and a 4px heavy LEFT edge that runs a top-to-bottom
+   gradient from the accent into a darker shoulder of the same hue; the inner
+   shadow off the left edge is what reads as raised (not striped). Scoped to
+   `.arena-panel` so it only applies where the class is set. */
+.arena-panel {
+  position: relative;
+  background: linear-gradient(180deg, #161c25, #10151c);
+  background-clip: padding-box; /* keep the body gradient off the transparent left border */
+  border: 1px solid #1e2a38;
+  border-left: 4px solid transparent; /* reserve the heavy left edge; ::before paints it */
+  border-radius: 15px;
+  padding: 15px;
+  box-shadow:
+    inset 6px 0 14px -10px rgba(255, 59, 0, 0.75),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 8px 20px rgba(0, 0, 0, 0.55);
+}
+.arena-panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -4px; /* sit inside the 4px transparent left border */
+  width: 4px;
+  border-radius: 15px 0 0 15px;
+  background: linear-gradient(180deg, #ff3b00, #6e1b00);
+}
+/* Enter the Arena — an ACTION, not a panel: solid-fill CTA with an inset top
+   highlight + a drop shadow. (Colour unchanged — kept green per the ruling.) */
+.arena-cta {
+  border-radius: 15px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 8px 20px rgba(0, 0, 0, 0.55);
+}
+
 :root {
   color-scheme: dark;
 
