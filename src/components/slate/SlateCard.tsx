@@ -13,6 +13,7 @@
  */
 import { useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { LockAnimation } from "@/components/LockAnimation";
 import "./slate-card.css";
 
 export type CardCurrency = "cash" | "coins";
@@ -120,16 +121,15 @@ export function SlateCard(props: SlateCardProps) {
     compact = false, status, reach, pool, rush, withheld = false,
   } = props;
 
-  // LOCK-IN AUDIO — the padlock "seat" click (public/sounds/lock-close.mp3, the same lock sound the
-  // splash screen uses), fired ~0.3s into the .lockfx animation to land with the shackle seating. Only
-  // when locking begins; lock-in is user-initiated (the CTA tap), so autoplay is allowed.
+  // LOCK-IN AUDIO — public/sounds/lock-close.mp3 (the splash lock sound), fired at ~0.74s to land as
+  // the LockAnimation shackle SEATS. Only when locking begins; lock-in is user-initiated (the CTA tap).
   useEffect(() => {
     if (!locking) return;
     let audio: HTMLAudioElement | null = null;
     const t = window.setTimeout(() => {
       audio = new Audio("/sounds/lock-close.mp3");
       audio.play().catch(() => {});
-    }, 300);
+    }, 740);
     return () => { window.clearTimeout(t); audio?.pause(); };
   }, [locking]);
 
@@ -367,14 +367,11 @@ export function SlateCard(props: SlateCardProps) {
           </button>
         )}
 
-        {/* LOCK-IN overlay — ALWAYS in the DOM (matches the mockup); CSS shows it only on .slate.locking.
-            Exact mockup SVG so the structural gate diffs empty. */}
+        {/* LOCK-IN overlay — the app's LockAnimation (shackle slides straight DOWN into the base + a
+            click), the SAME lock used in practice / spot-race. CSS shows the overlay only on
+            .slate.locking; LockAnimation mounts only while locking so it plays ONCE, not on page load. */}
         <div className="lockfx" data-lockfx>
-          <svg viewBox="0 0 64 64">
-            <circle className="ring" cx="32" cy="38" r="20" fill="none" stroke="#FC3E01" strokeWidth="2" />
-            <path className="shackle" d="M20 28 V21 a12 12 0 0 1 24 0 V28" fill="none" stroke="#FC3E01" strokeWidth="5" strokeLinecap="round" />
-            <rect className="body" x="14" y="28" width="36" height="26" rx="6" fill="#FC3E01" />
-          </svg>
+          {locking && <LockAnimation size={112} sound={false} />}
           <div className="lw">Locked in</div>
         </div>
       </div>

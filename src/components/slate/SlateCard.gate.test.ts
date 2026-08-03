@@ -90,8 +90,14 @@ describe("§4 SlateCard STRUCTURAL gate vs approved mockup Section A", () => {
   });
 
   it("§4.1 — element trees MATCH (same tags, class names, nesting, order); diff is empty", () => {
-    const mock = sig(renderMockupSectionA());
-    const live = sig(renderLiveCard());
+    // The .lockfx lock-in OVERLAY is architect-approved to use the app's LockAnimation (shackle slides
+    // down), NOT the mockup's padlock svg — exclude that overlay's internals from the content comparison.
+    const mockEl = renderMockupSectionA().cloneNode(true) as Element;
+    const liveEl = renderLiveCard().cloneNode(true) as Element;
+    mockEl.querySelector(".lockfx")?.remove();
+    liveEl.querySelector(".lockfx")?.remove();
+    const mock = sig(mockEl);
+    const live = sig(liveEl);
     if (mock !== live) {
       const a = mock.split("\n"), b = live.split("\n");
       const diff: string[] = [];
