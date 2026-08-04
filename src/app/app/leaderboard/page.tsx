@@ -1,189 +1,122 @@
-import { Fragment } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ProBadge } from "@/components/ProBadge";
 import { SkillGameDisclaimer } from "@/components/SkillGameDisclaimer";
-import { Card, Pill } from "@/components/ui";
 import { adminDb } from "@/lib/firebase/admin";
-import { getCurrentUserId } from "@/lib/firebase/session";
+import { getCurrentUserProfile } from "@/lib/firebase/session";
 import {
   fetchLeaderboard,
   type LeaderRow,
   type LeaderboardWindow,
 } from "@/server/data/leaderboard";
-import { PAID_LINE } from "@/lib/beginner/payoutModel";
-import { formatCents } from "@/lib/utils";
+import "../lk-panels.css";
 
 const TABS: { key: LeaderboardWindow; label: string }[] = [
   { key: "today", label: "Today" },
-  { key: "week", label: "This Week" },
-  { key: "all", label: "All Time" },
+  { key: "week", label: "This week" },
+  { key: "all", label: "All time" },
 ];
 
+/**
+ * LEADERBOARD — RANK IS SCORE, NEVER MONEY (§3). The board is re-ranked by wins
+ * (then win rate, then plays) for display and shows no cash figure. Movement deltas
+ * have no prior-position source yet, so they render as "—" (honest empty). Your own
+ * row is highlighted; your standing shows position, percentile, and the gap to the
+ * player above you.
+ */
 export default async function LeaderboardPage({
   searchParams,
 }: {
   searchParams: Promise<{ window?: string }>;
 }) {
-  const uid = await getCurrentUserId();
-  if (!uid) redirect("/login");
+  const profile = await getCurrentUserProfile();
+  if (!profile) redirect("/login");
 
   const sp = await searchParams;
   const window: LeaderboardWindow =
     sp.window === "today" || sp.window === "week" ? sp.window : "all";
 
-  const data = await fetchLeaderboard(adminDb(), window, uid);
-  const podium = data.rows.slice(0, 3);
-  const rest = data.rows.slice(3);
+  const data = await fetchLeaderboard(adminDb(), window, profile.id);
 
-  // The paid line: in a contest the top PAID_LINE% of the field cash. Project
-  // that cutoff onto the visible field so players can see where they stand
-  // relative to "getting paid". Sourced from payoutModel so the number is one.
-  const fieldSize = data.rows.length;
-  const paidLineRank = Math.max(1, Math.round((fieldSize * PAID_LINE) / 100));
-  const paidLineIdx = rest.findIndex((r) => r.rank > paidLineRank);
+  // §3 — re-rank by SCORE (wins → win rate → plays), renumber, no money.
+  const pool = [...data.rows];
+  if (data.currentUserRow && !pool.some((r) => r.userId === data.currentUserRow!.userId)) {
+    pool.push(data.currentUserRow);
+  }
+  const ranked = pool
+    .sort((a, b) => b.wins - a.wins || b.winRate - a.winRate || b.plays - a.plays)
+    .map((r, i) => ({ ...r, rank: i + 1 }));
+
+  const field = ranked.length;
+  const meIdx = ranked.findIndex((r) => r.isCurrentUser);
+  const me = meIdx >= 0 ? ranked[meIdx]! : null;
+  const above = meIdx > 0 ? ranked[meIdx - 1]! : null;
+  const percentile = me && field > 0 ? Math.max(1, Math.round((me.rank / field) * 100)) : null;
+  const gapToNext = me && above ? above.wins - me.wins : 0;
 
   return (
-    <div className="flex flex-col gap-5 p-6">
-      <div>
-        <h1 className="text-xl font-semibold">Leaderboard</h1>
-        <p className="text-sm text-muted">
-          The green line marks the top {PAID_LINE}% — in a contest, that&apos;s
-          who finishes in the money.
-        </p>
-      </div>
-
-      {/* Window tabs */}
-      <div className="flex gap-2">
-        {TABS.map((t) => {
-          const active = t.key === window;
-          return (
-            <Link
-              key={t.key}
-              href={`/app/leaderboard?window=${t.key}`}
-              className={
-                "rounded-full border px-3 py-1.5 text-sm transition-colors " +
-                (active
-                  ? "border-accent-border bg-accent-soft text-accent"
-                  : "border-border text-muted hover:text-foreground")
-              }
-            >
-              {t.label}
-            </Link>
-          );
-        })}
-      </div>
-
-      {data.rows.length === 0 ? (
-        <Card className="py-10 text-center text-sm text-muted">
-          No settled contests in this window yet.
-        </Card>
-      ) : (
-        <>
-          {/* Podium */}
-          <div className="grid grid-cols-3 gap-2">
-            {podium.map((r) => (
-              <PodiumCard key={r.userId} row={r} />
-            ))}
-          </div>
-
-          {/* The rest */}
-          {rest.length > 0 && (
-            <ul className="flex flex-col overflow-hidden rounded border border-border">
-              {rest.map((r, idx) => (
-                <Fragment key={r.userId}>
-                  {idx === paidLineIdx && <PaidLineDivider rank={paidLineRank} />}
-                  <RankRow row={r} />
-                </Fragment>
-              ))}
-            </ul>
-          )}
-
-          {/* Pinned current user when outside the top list */}
-          {data.currentUserRow && (
-            <div>
-              <p className="mb-1 text-xs text-muted">Your rank</p>
-              <ul className="overflow-hidden rounded border border-accent-border">
-                <RankRow row={data.currentUserRow} />
-              </ul>
+    <div className="lk-acct flex flex-col gap-4 p-4 pb-24">
+      {/* Your standing */}
+      {me ? (
+        <div className="blk act">
+          <div className="lb">Your standing <i></i></div>
+          <div className="me">
+            <div className="pos">#{me.rank}</div>
+            <div className="n">
+              <b>{me.username || "You"}</b>
+              <span>{percentile != null ? `Top ${percentile}% this ${window === "all" ? "season" : window}` : "Unranked"}</span>
             </div>
-          )}
-        </>
+            <div className="sc">
+              <b>{me.wins.toLocaleString()}</b>
+              <span>wins</span>
+            </div>
+          </div>
+          <p className="hint mt-3">
+            {above
+              ? `${gapToNext <= 0 ? "Tied for" : `${gapToNext} win${gapToNext === 1 ? "" : "s"} to`} #${above.rank}. Placing top 3 in any contest moves you fastest.`
+              : "Top of the board. Placing top 3 in any contest keeps you there."}
+          </p>
+        </div>
+      ) : (
+        <div className="blk act">
+          <div className="lb">Your standing <i></i></div>
+          <p className="hint">Play a contest to land on the board — rank is your win count, not money.</p>
+        </div>
       )}
 
-      <SkillGameDisclaimer className="mt-auto pt-4" />
+      {/* The board */}
+      <div className="blk">
+        <div className="lb">The board <i></i></div>
+        <div className="tabs">
+          {TABS.map((t) => (
+            <Link key={t.key} href={`/app/leaderboard?window=${t.key}`} className={"tab" + (t.key === window ? " on" : "")}>
+              {t.label}
+            </Link>
+          ))}
+        </div>
+        {ranked.length === 0 ? (
+          <p className="hint">No settled contests in this window yet.</p>
+        ) : (
+          ranked.slice(0, 50).map((r) => <BoardRow key={r.userId} row={r} />)
+        )}
+      </div>
+
+      <p className="hint">Rank is score, not money. Every contest you finish counts toward it.</p>
+
+      <SkillGameDisclaimer className="mt-2" />
     </div>
   );
 }
 
-function PaidLineDivider({ rank }: { rank: number }) {
+function BoardRow({ row }: { row: LeaderRow }) {
+  const you = row.isCurrentUser;
   return (
-    <li className="flex items-center gap-2 bg-win-soft px-4 py-1.5 text-[11px] font-medium text-win">
-      <span className="h-px flex-1 bg-win-border" />
-      Paid line · top {PAID_LINE}% (≈ rank {rank})
-      <span className="h-px flex-1 bg-win-border" />
-    </li>
-  );
-}
-
-function PodiumCard({ row }: { row: LeaderRow }) {
-  const first = row.rank === 1;
-  return (
-    <Card
-      className={
-        "flex flex-col items-center gap-1 text-center " +
-        (first ? "border-accent-border bg-accent-soft" : "")
-      }
-    >
-      <span
-        className={
-          "flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold " +
-          (first ? "bg-accent text-background" : "bg-surface text-foreground")
-        }
-      >
-        {row.rank}
-      </span>
-      <span className="mt-1 flex max-w-full items-center gap-1 text-sm font-medium">
-        <span className="truncate">{row.username}</span>
-        {row.isPro && <ProBadge />}
-      </span>
-      <span className="text-sm font-semibold text-win">
-        {formatCents(row.totalWonCents)}
-      </span>
-      <span className="text-xs text-muted">{row.winRate}% win</span>
-    </Card>
-  );
-}
-
-function RankRow({ row }: { row: LeaderRow }) {
-  return (
-    <li
-      className={
-        "flex items-center justify-between px-4 py-3 " +
-        (row.isCurrentUser ? "bg-accent-soft" : "bg-surface-card")
-      }
-    >
-      <div className="flex items-center gap-3">
-        <span className="w-6 text-sm text-muted">{row.rank}</span>
-        <div>
-          <p className="flex items-center gap-1 text-sm font-medium text-foreground">
-            {row.username}
-            {row.isPro && <ProBadge />}
-            {row.isCurrentUser && (
-              <span className="text-xs text-accent">you</span>
-            )}
-          </p>
-          <p className="text-xs text-muted">
-            {row.wins}W · {row.winRate}% · {row.plays} played
-          </p>
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-        {row.streak > 0 && <Pill tone="live">{row.streak}🔥</Pill>}
-        <span className="text-sm font-semibold text-win">
-          {formatCents(row.totalWonCents)}
-        </span>
-      </div>
-    </li>
+    <div className={"lrow" + (you ? " you" : "")}>
+      <div className={"p" + (row.rank <= 3 ? " top" : "")}>{row.rank}</div>
+      <div className="av">{(row.username || "?").charAt(0).toUpperCase()}</div>
+      <div className="h">{you ? "You" : `@${row.username}`}</div>
+      <div className="s">{row.wins.toLocaleString()}</div>
+      {/* Movement deltas have no prior-position source yet — honest empty. */}
+      <div className="d eq">—</div>
+    </div>
   );
 }

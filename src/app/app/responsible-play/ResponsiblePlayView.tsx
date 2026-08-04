@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Card, Input } from "@/components/ui";
 import {
   DEPOSIT_LIMITS,
   NCPG_HOTLINE,
@@ -18,12 +17,45 @@ interface Limits {
   monthlyCents: number;
 }
 
+/** A local (device) preference toggle backed by localStorage. */
+function useLocalPref(key: string, dflt: boolean): [boolean, () => void] {
+  const [on, setOn] = useState(dflt);
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem(key);
+      if (v != null) setOn(v === "1");
+    } catch {
+      /* ignore */
+    }
+  }, [key]);
+  return [
+    on,
+    () => {
+      const next = !on;
+      setOn(next);
+      try {
+        localStorage.setItem(key, next ? "1" : "0");
+      } catch {
+        /* ignore */
+      }
+    },
+  ];
+}
+
+/**
+ * RESPONSIBLE PLAY — panel language, mode-aware. ADVANCED keeps the real deposit-limit
+ * and self-exclusion actions. BEGINNER states plainly that no money can move, so deposit
+ * limits do not apply — it keeps the reminder, break and support controls. The interactive
+ * limit/exclusion logic is unchanged; only the presentation moved to the panel language.
+ */
 export function ResponsiblePlayView({
+  advanced,
   limits,
   usage,
   exclusionUntilMs,
   permanent,
 }: {
+  advanced: boolean;
   limits: Limits;
   usage: Limits;
   exclusionUntilMs: number;
@@ -37,6 +69,9 @@ export function ResponsiblePlayView({
   const [daily, setDaily] = useState(String(limits.dailyCents / 100));
   const [weekly, setWeekly] = useState(String(limits.weeklyCents / 100));
   const [monthly, setMonthly] = useState(String(limits.monthlyCents / 100));
+
+  const [remind, toggleRemind] = useLocalPref("lockin.rp.remind", false);
+  const [spend, toggleSpend] = useLocalPref("lockin.rp.spend", false);
 
   const excluded = exclusionUntilMs > 0;
 
@@ -70,96 +105,110 @@ export function ResponsiblePlayView({
   }
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="lk-acct flex flex-col gap-4 p-4 pb-24">
       {excluded && (
-        <Card className="border-accent-border bg-accent-soft">
-          <p className="text-sm font-medium text-accent">
-            Your account is self-excluded
-          </p>
-          <p className="mt-1 text-xs text-muted">
+        <div className="blk warn">
+          <b className="block text-[15px] font-semibold text-white">Your account is self-excluded</b>
+          <p className="hint mt-1.5">
             {permanent
               ? "This exclusion is permanent."
-              : `Play and deposits are paused until ${new Date(
-                  exclusionUntilMs,
-                ).toLocaleString()}.`}
+              : `Play and deposits are paused until ${new Date(exclusionUntilMs).toLocaleString()}.`}
           </p>
-        </Card>
+        </div>
       )}
 
-      {/* Deposit limits */}
-      <Card className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold">Deposit limits</h2>
-        <LimitRow
-          label="Daily"
-          value={daily}
-          onChange={setDaily}
-          cap={DEPOSIT_LIMITS.dailyCents}
-          used={usage.dailyCents}
-        />
-        <LimitRow
-          label="Weekly"
-          value={weekly}
-          onChange={setWeekly}
-          cap={DEPOSIT_LIMITS.weeklyCents}
-          used={usage.weeklyCents}
-        />
-        <LimitRow
-          label="Monthly"
-          value={monthly}
-          onChange={setMonthly}
-          cap={DEPOSIT_LIMITS.monthlyCents}
-          used={usage.monthlyCents}
-        />
-        <Button
-          variant="accent"
-          size="md"
-          disabled={pending}
-          onClick={saveLimits}
-        >
-          {pending ? "Saving…" : "Save limits"}
-        </Button>
-        {saved && <p className="text-xs text-win">Limits updated.</p>}
-      </Card>
+      {advanced ? (
+        <>
+          {/* Deposit limits */}
+          <div className="blk money">
+            <div className="lb">Deposit limits <i></i></div>
+            <LimitRow label="Daily" value={daily} onChange={setDaily} cap={DEPOSIT_LIMITS.dailyCents} used={usage.dailyCents} />
+            <LimitRow label="Weekly" value={weekly} onChange={setWeekly} cap={DEPOSIT_LIMITS.weeklyCents} used={usage.weeklyCents} />
+            <LimitRow label="Monthly" value={monthly} onChange={setMonthly} cap={DEPOSIT_LIMITS.monthlyCents} used={usage.monthlyCents} />
+            <div className="btns">
+              <button type="button" className="btn pri" disabled={pending} onClick={saveLimits}>
+                {pending ? "Saving…" : "Save limits"}
+              </button>
+            </div>
+            {saved && <p className="hint mt-2" style={{ color: "#2fb98a" }}>Limits updated.</p>}
+            <p className="hint mt-3">Lowering a limit applies right away. Raising one takes effect after a waiting period.</p>
+          </div>
 
-      {/* Self-exclusion */}
-      <Card className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold">Take a break</h2>
-        <p className="text-xs text-muted">
-          Self-exclusion pauses deposits, contest entries, and purchases. It
-          can&apos;t be lifted early.
+          {/* Staying in control */}
+          <div className="blk">
+            <div className="lb">Staying in control <i></i></div>
+            <TgRow title="Session reminder" hint="Nudge me after an hour of play" on={remind} onFlip={toggleRemind} />
+            <TgRow title="Weekly spend summary" hint="Email me what I entered and won" on={spend} onFlip={toggleSpend} />
+            <div className="row static">
+              <span className="n"><b>Entry limit</b><span>Cap what you can put into contests</span></span>
+              <span className="val muted">Not set</span>
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="blk">
+          <div className="lb">Beginner mode <i></i></div>
+          <p className="hint">
+            You are playing with coins. No money can be deposited, spent or won in this mode, so deposit limits do not apply.
+          </p>
+        </div>
+      )}
+
+      {/* Taking a break — self-exclusion (both modes; pauses play). */}
+      <div className="blk warn">
+        <div className="lb">Taking a break <i></i></div>
+        <p className="hint" style={{ marginBottom: 10 }}>
+          A break pauses entries, deposits and purchases. It can&apos;t be lifted early.
         </p>
         <div className="grid grid-cols-2 gap-2">
           {SELF_EXCLUSION_PERIODS.map((p) => (
-            <Button
+            <button
               key={p.key}
-              variant="neutral"
-              size="md"
+              type="button"
+              className="btn"
               disabled={pending}
               onClick={() => exclude(p.key, p.label)}
-              className={p.key === "permanent" ? "text-loss" : ""}
+              style={p.key === "permanent" ? { color: "#E0432C" } : undefined}
             >
               {p.label}
-            </Button>
+            </button>
           ))}
         </div>
-      </Card>
+        <p className="hint mt-3">
+          Self-exclusion cannot be reversed before it ends. You will be signed out and any open contests play out on their own.
+        </p>
+      </div>
 
       {error && (
-        <p
-          role="alert"
-          className="rounded border border-[rgba(232,84,84,0.25)] bg-[rgba(232,84,84,0.10)] px-3 py-2 text-sm text-loss"
-        >
-          {error}
-        </p>
+        <div className="blk warn" role="alert">
+          <p className="hint" style={{ color: "#FFB3A7" }}>{error}</p>
+        </div>
       )}
 
-      {/* Help */}
-      <Card className="text-xs leading-relaxed text-muted">
-        If gambling stops being fun, help is available. Call the National Problem
-        Gambling Helpline:{" "}
-        <span className="font-semibold text-foreground">{NCPG_HOTLINE}</span> —
-        free, confidential, 24/7.
-      </Card>
+      {/* Support */}
+      <div className="blk">
+        <div className="lb">Support <i></i></div>
+        <p className="hint">
+          If play stops being fun, help is available. Call the National Problem Gambling Helpline:{" "}
+          <b className="text-white">{NCPG_HOTLINE}</b> — free, confidential, 24/7.
+        </p>
+      </div>
+
+      <p className="legal">
+        Skill-based prediction contest platform. Not gambling. Not sports betting. 18+.
+      </p>
+    </div>
+  );
+}
+
+function TgRow({ title, hint, on, onFlip }: { title: string; hint?: string; on: boolean; onFlip: () => void }) {
+  return (
+    <div className="row static">
+      <span className="n">
+        <b>{title}</b>
+        {hint && <span>{hint}</span>}
+      </span>
+      <button type="button" aria-pressed={on} className={"tg" + (on ? " on" : "")} onClick={onFlip} />
     </div>
   );
 }
@@ -178,23 +227,21 @@ function LimitRow({
   used: number;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3">
-      <div>
-        <p className="text-sm font-medium">{label}</p>
-        <p className="text-xs text-muted">
-          Used {formatCents(used)} · max {formatCents(cap)}
-        </p>
-      </div>
-      <div className="flex items-center gap-1 text-sm text-muted">
+    <div className="row static">
+      <span className="n">
+        <b>{label} limit</b>
+        <span>Used {formatCents(used)} · max {formatCents(cap)}</span>
+      </span>
+      <span className="flex items-center gap-1 text-[13.5px] text-[#98A0AE]">
         $
-        <Input
+        <input
           type="number"
           inputMode="decimal"
-          className="h-9 w-24"
+          className="h-8 w-20 rounded-[8px] border border-[#232b37] bg-[#0D1117] px-2 text-right text-[13.5px] text-white outline-none"
           value={value}
           onChange={(e) => onChange(e.target.value)}
         />
-      </div>
+      </span>
     </div>
   );
 }
