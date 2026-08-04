@@ -81,7 +81,8 @@ describe("§8 Creator hub gate — structure + behavior vs the spec", () => {
     expect(vis(q(host, "#ft"))).toBe(false);
     expect(vis(q(host, "#exit"))).toBe(false);
     expect(q(host, "#hdTitle")!.textContent).toBe("Creator");
-    expect(q(host, "#cashtag")!.textContent!.trim()).toBe("Cash");
+    // v2 identity strip has no #cashtag tag; the mode is cash by construction (data-mode="cash")
+    expect(host.querySelector('.cb-root[data-mode="cash"]')).toBeTruthy();
   });
 
   it("four tiles, in order; primary is Build a slate", () => {
@@ -89,7 +90,8 @@ describe("§8 Creator hub gate — structure + behavior vs the spec", () => {
     const titles = Array.from(host.querySelectorAll("#p0 .tile .n b")).map((b) => b.textContent);
     log(`tiles(${titles.length}): ${titles.join(" | ")}`);
     expect(titles).toEqual(["Read the rules", "How to become a creator", "Talk to the Locksmith", "Practice mode"]);
-    expect(q(host, "#goBuild")!.textContent!.trim()).toBe("Build a slate");
+    // #goBuild is the v2 gobig: icon + title (.n b) + subtitle + chevron
+    expect(q(host, "#goBuild .n b")!.textContent!.trim()).toBe("Build a slate");
   });
 
   it("every tile opens its own view and returns to the hub; chrome stays hidden", () => {
@@ -122,10 +124,11 @@ describe("§8 Creator hub gate — structure + behavior vs the spec", () => {
     expect(/rake/i.test(rules)).toBe(false);
   });
 
-  it("Lockpick: FAB hidden inside; asking appends Q + a fix-naming reply", async () => {
+  it("Lockpick: asking appends Q + a fix-naming reply (no floating FAB in v2)", async () => {
     const host = mount();
     click(q(host, "#goPick"));
-    expect(vis(q(host, "#ls"))).toBe(false);
+    // v2 has NO floating Locksmith FAB anywhere — the hub tile does that job
+    expect(host.querySelector("#ls")).toBeNull();
     const before = host.querySelectorAll("#thread .msg").length;
     click(host.querySelector('#askChips .chip[data-a="same"]'));
     const after = host.querySelectorAll("#thread .msg").length;
@@ -137,7 +140,7 @@ describe("§8 Creator hub gate — structure + behavior vs the spec", () => {
     log(`  reply names the fix: "${last.slice(0, 54)}…"  Giannis=${/Giannis/.test(last)}`);
     expect(/Giannis/.test(last)).toBe(true);
     click(host.querySelector("#pPick .crumb .home"));
-    expect(vis(q(host, "#ls"))).toBe(true);
+    expect(host.querySelector("#ls")).toBeNull(); // still no FAB after leaving Lockpick
   });
 
   it("Build a slate → step 1 with footer; step flow; invalid leg blocks step 3, fix unblocks", () => {
