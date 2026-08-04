@@ -9,7 +9,7 @@
  * surface; it never mounts a builder here. Styles: ./creator-builder.css (ported verbatim).
  *
  * The hub is the entry; the builder is ONE of six views. Chrome (progress bar, step labels, footer,
- * Save & exit) shows ONLY inside the builder. The Locksmith FAB hides inside the Lockpick view.
+ * Save & exit) shows ONLY inside the builder. There is NO floating Locksmith badge — the hub tile does that job (v2).
  */
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
@@ -543,7 +543,6 @@ export function CreatorBuilder({ dashboard, creator }: { dashboard?: ReactNode; 
         <button id="back" disabled={step === 1} style={{ visibility: step === 1 ? "hidden" : "visible" }} onClick={onBack}>Back</button>
         <button id="next" disabled={nextDisabled} onClick={onNext}>{nextLabel}</button>
       </div>
-      <button id="ls" title="Ask the Locksmith" style={{ display: view === "lockpick" ? "none" : "" }} onClick={() => go("lockpick")}>🦊</button>
     </div>
   );
 }

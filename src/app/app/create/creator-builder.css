@@ -180,7 +180,6 @@
 .cb-root .outlink{width:100%;border:1px solid var(--creator);border-radius:14px;padding:15px;background:transparent;color:var(--creator);font-weight:700;font-size:15.5px;cursor:pointer}
 .cb-root .sep{border:1px solid var(--cash);border-radius:11px;padding:10px 12px;background:rgba(47,185,138,.08);color:#9BE3C8;font-size:12.5px;line-height:1.45}
 .cb-root .sep b{color:#fff}
-.cb-root #ls{position:fixed;right:14px;bottom:88px;width:52px;height:52px;border-radius:50%;border:2px solid var(--creator);background:var(--panel);color:var(--creator);font-size:20px;cursor:pointer;display:grid;place-items:center;z-index:20;box-shadow:0 6px 18px rgba(0,0,0,.6)}
 
 /* IDENTITY-STRIP FIT (architect: "top row for the creator identifier is jammed / text wrapping / wrong
    size pills"). The name+reach column flexes and shrinks; the reach stays ONE line (ellipsis, never a
