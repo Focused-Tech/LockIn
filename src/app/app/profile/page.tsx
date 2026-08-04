@@ -96,7 +96,7 @@ export default async function ProfilePage() {
         <PlayRow href={advanced ? "/app" : "/app/beginner"} title="Find a slate" hint={advanced ? "Live contests from creators" : "Coin contests — same game, no cash"} />
         <PlayRow href="/app/leaderboard" title="Ranks" hint="Your standing on the board" />
         {advanced ? (
-          <PlayRow href={profile.creatorVerified ? "/app/create" : "/app/apply"} title="Become a creator" hint="Host your own slate for your audience" />
+          <PlayRow href={profile.creatorVerified ? "/app/creator" : "/app/apply"} title="Become a creator" hint="Host your own slate for your audience" />
         ) : (
           <PlayRow href="/app/choose" title="Move up to advanced" hint="Play the cash board when you are ready" />
         )}

@@ -313,7 +313,7 @@ export function PracticeContest({
       {/* Funnel nudge — earned, rare, recognition-framed, grants nothing */}
       {showNudge && (
         <Link
-          href="/app/create"
+          href="/app/creator"
           className="flex items-center justify-between rounded-xl border border-accent-border bg-accent-soft p-4"
         >
           <span className="text-sm">

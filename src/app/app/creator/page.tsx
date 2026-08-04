@@ -5,6 +5,7 @@ import { Card, Pill } from "@/components/ui";
 import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUserProfile } from "@/lib/firebase/session";
 import { fetchCreatorDashboard } from "@/server/data/creator";
+import { isCreatorOnboarded } from "@/server/data/creatorAgreement";
 import { formatCents } from "@/lib/utils";
 import { ConnectPayoutCard } from "./ConnectPayoutCard";
 import { CreatorBuilder, type CreatorMeta } from "../create/CreatorBuilder";
@@ -38,6 +39,9 @@ export default async function CreatorDashboardPage({
   const profile = await getCurrentUserProfile();
   if (!profile) redirect("/login");
   if (!profile.creatorVerified) redirect("/app/apply");
+  // Route-level agreement gate (deep-link-proof): a verified creator who has not signed the
+  // current Creator Agreement is sent to the acknowledgment flow before reaching the v2 hub.
+  if (!isCreatorOnboarded(profile)) redirect("/app/creator/agreement");
 
   const { connect } = await searchParams;
   const data = await fetchCreatorDashboard(adminDb(), profile.id);
