@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>LockIn — account screens</title>
+<style>
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent;
+ scrollbar-width:none;-ms-overflow-style:none}
+*::-webkit-scrollbar{display:none}
+:root{--orange:#FC3E01;--cash:#2FB98A;--coin:#F0C463;--creator:#7C5CF5;--bad:#E0432C;
+ --ink:#0A0D12;--edge:#232B37;--edge2:#1B222C;--grey:#E7E7EB;--dim:#98A0AE;--dim2:#6E7787}
+html{height:100%}
+body{min-height:100%;width:100%;max-width:100%;background:var(--ink);color:var(--grey);
+ overflow-x:hidden;
+ font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+ font-size:14px;line-height:1.45}
+#wrap{width:100%;max-width:390px;margin:0 auto;padding-bottom:80px}
+#hd{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;
+ padding:12px 16px;background:rgba(10,13,18,.93);backdrop-filter:blur(8px);
+ border-bottom:1px solid var(--edge2)}
+#hd .bk{border:1px solid var(--edge);border-radius:9px;padding:6px 11px;
+ background:linear-gradient(180deg,#1B212B,#151A22);color:var(--grey);
+ font-weight:600;font-size:12.5px}
+#hd b{font-weight:700;font-size:15px;color:#fff}
+#modechip{margin-left:auto;border-radius:99px;padding:4px 10px;font-weight:700;font-size:10px;
+ letter-spacing:.1em;text-transform:uppercase}
+#col{display:flex;flex-direction:column;gap:16px;padding:16px 16px 30px}
+#col>*{max-width:100%}
+
+.blk{position:relative;overflow:hidden;border-radius:15px;padding:15px;
+ background:linear-gradient(180deg,#161C25 0%,#10151C 100%);
+ border:1px solid var(--edge);border-left:4px solid var(--creator);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 8px 20px rgba(0,0,0,.55)}
+.blk::before{content:"";position:absolute;left:-4px;top:0;bottom:0;width:4px;
+ background:linear-gradient(180deg,var(--creator) 0%,#3B2C93 100%)}
+.blk.money{border-left-color:var(--cash)}
+.blk.money::before{background:linear-gradient(180deg,var(--cash) 0%,#166B4F 100%)}
+.blk.coin{border-left-color:var(--coin)}
+.blk.coin::before{background:linear-gradient(180deg,var(--coin) 0%,#8A6A20 100%)}
+.blk.act{border-left-color:var(--orange)}
+.blk.act::before{background:linear-gradient(180deg,var(--orange) 0%,#8E2201 100%)}
+.blk.warn{border-left-color:var(--bad)}
+.blk.warn::before{background:linear-gradient(180deg,var(--bad) 0%,#7E1F13 100%)}
+.lb{font-weight:700;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+ color:var(--dim2);margin-bottom:12px}
+.hint{font-size:12.5px;color:var(--dim2);line-height:1.5}
+
+.hero .k{font-size:11.5px;color:var(--dim2)}
+.hero .v{margin-top:3px;font-weight:800;font-size:38px;letter-spacing:-.025em;color:#fff;
+ font-variant-numeric:tabular-nums;line-height:1}
+.hero .v.cash{color:var(--cash)} .hero .v.coin{color:var(--coin)}
+.hero .sub{margin-top:8px;font-size:12px;color:var(--dim2)}
+.btns{display:flex;gap:9px;margin-top:14px}
+.btn{flex:1;border-radius:12px;padding:13px;font-weight:700;font-size:14px;cursor:pointer;
+ border:1px solid var(--edge);background:linear-gradient(180deg,#1B212B,#151A22);color:#fff}
+.btn.pri{border:none;background:var(--orange);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 6px 16px rgba(0,0,0,.5)}
+
+.row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+ font-family:inherit;font-size:14px;color:var(--grey);background:none;border:none;
+ cursor:pointer;padding:13px 0;border-top:1px solid var(--edge)}
+.row:first-of-type{border-top:none;padding-top:2px}
+.row .n{flex:1;min-width:0}
+.row .n b{display:block;font-weight:600;font-size:15px;color:#fff}
+.row .n span{display:block;margin-top:3px;font-size:11.5px;color:var(--dim2);line-height:1.45}
+.row .cv{flex:none;color:var(--dim2);font-size:19px;line-height:1}
+.row .val{flex:none;font-weight:700;font-size:13.5px;color:#fff;font-variant-numeric:tabular-nums}
+.row .val.cash{color:var(--cash)} .row .val.coin{color:var(--coin)}
+.row .val.neg{color:var(--bad)}
+
+/* toggle */
+.tg{flex:none;width:46px;height:27px;border-radius:99px;border:1px solid var(--edge);
+ background:#12171F;position:relative;cursor:pointer;transition:background .18s ease}
+.tg::after{content:"";position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:50%;
+ background:#5A6472;transition:transform .18s ease,background .18s ease}
+.tg.on{background:rgba(252,62,1,.25);border-color:var(--orange)}
+.tg.on::after{transform:translateX(19px);background:var(--orange)}
+
+/* leaderboard */
+.me{display:flex;align-items:center;gap:12px}
+.me .pos{flex:none;width:46px;height:46px;border-radius:13px;display:grid;place-items:center;
+ background:rgba(252,62,1,.14);border:2px solid rgba(252,62,1,.5);color:var(--orange);
+ font-weight:800;font-size:17px}
+.me .n b{display:block;font-weight:700;font-size:17px;color:#fff}
+.me .n span{display:block;margin-top:2px;font-size:11.5px;color:var(--dim2)}
+.me .sc{margin-left:auto;text-align:right}
+.me .sc b{display:block;font-weight:800;font-size:20px;color:#fff;font-variant-numeric:tabular-nums}
+.me .sc span{font-size:11px;color:var(--dim2)}
+.tabs{display:flex;gap:7px;margin-bottom:12px}
+.tab{border:1px solid var(--edge);border-radius:99px;padding:6px 13px;font-weight:600;
+ font-size:12.5px;background:linear-gradient(180deg,#1B212B,#151A22);color:var(--dim);
+ cursor:pointer}
+.tab.on{background:rgba(252,62,1,.14);border-color:var(--orange);color:var(--orange)}
+.lrow{display:flex;align-items:center;gap:11px;padding:10px 0;border-top:1px solid var(--edge)}
+.lrow:first-of-type{border-top:none}
+.lrow .p{flex:none;width:24px;font-weight:800;font-size:13px;color:var(--dim2);
+ font-variant-numeric:tabular-nums}
+.lrow .p.top{color:var(--coin)}
+.lrow .av{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;
+ background:#232B3C;border:1px solid var(--edge);color:#fff;font-weight:700;font-size:12px}
+.lrow .h{flex:1;min-width:0;font-weight:600;font-size:13.5px;color:#fff;
+ white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lrow .s{flex:none;font-weight:700;font-size:13.5px;color:#fff;font-variant-numeric:tabular-nums}
+.lrow .d{flex:none;width:34px;text-align:right;font-size:11.5px;font-weight:700}
+.lrow .d.up{color:var(--cash)} .lrow .d.dn{color:var(--bad)} .lrow .d.eq{color:var(--dim2)}
+.lrow.you{background:rgba(252,62,1,.07);border-radius:10px;padding:10px 8px;
+ border-top-color:transparent}
+
+/* refer */
+.code{display:flex;align-items:center;gap:10px;margin-top:2px}
+.code .c{flex:1;border:1px dashed var(--orange);border-radius:12px;padding:13px;
+ text-align:center;font-weight:800;font-size:22px;letter-spacing:.22em;color:#fff;
+ background:rgba(252,62,1,.07)}
+.step{display:flex;gap:12px;align-items:flex-start;padding:11px 0;border-top:1px solid var(--edge)}
+.step:first-of-type{border-top:none}
+.step .k{flex:none;width:25px;height:25px;border-radius:50%;display:grid;place-items:center;
+ background:var(--creator);color:#fff;font-weight:700;font-size:12px}
+.step .n b{display:block;font-weight:600;font-size:14px;color:#fff}
+.step .n span{display:block;margin-top:2px;font-size:12px;color:var(--dim2);line-height:1.45}
+
+#legal{text-align:center;font-size:11.5px;color:var(--dim2);line-height:1.5;padding:0 6px}
+#ft{position:fixed;left:0;right:0;bottom:0;z-index:6;display:flex;gap:6px;justify-content:center;
+ flex-wrap:wrap;padding:9px 10px 12px;background:rgba(10,13,18,.95);backdrop-filter:blur(8px);
+ border-top:1px solid var(--edge2)}
+#ft button{border:1px solid var(--edge);border-radius:9px;padding:7px 11px;
+ background:linear-gradient(180deg,#1B212B,#151A22);color:var(--grey);
+ font-weight:600;font-size:12px;cursor:pointer}
+#ft button.on{background:var(--orange);border-color:var(--orange);color:#fff}
+#ft .sep{width:1px;background:var(--edge);margin:2px 3px}
+</style></head><body>
+<div id="wrap">
+  <div id="hd"><button class="bk">‹ Back</button><b id="title"></b>
+    <span id="modechip"></span></div>
+  <div id="col"></div>
+</div>
+<div id="ft">
+  <button data-p="wallet" class="on">Wallet</button>
+  <button data-p="board">Leaderboard</button>
+  <button data-p="refer">Refer</button>
+  <button data-p="play">Responsible</button>
+  <button data-p="set">Settings</button>
+  <span class="sep"></span>
+  <button data-m="adv" class="on">Adv</button>
+  <button data-m="beg">Beg</button>
+</div>
+<script>
+var $=function(i){return document.getElementById(i);};
+var PAGE='wallet', MODE='adv';
+var T={};   /* toggle state */
+
+function row(b,s,right){return '<button class="row"><div class="n"><b>'+b+'</b>'+
+  (s?'<span>'+s+'</span>':'')+'</div>'+(right||'<div class="cv">›</div>')+'</button>';}
+function tgRow(id,b,s,on){return '<div class="row"><div class="n"><b>'+b+'</b>'+
+  (s?'<span>'+s+'</span>':'')+'</div><div class="tg'+(on?' on':'')+'" data-tg="'+id+'"></div></div>';}
+
+/* ── WALLET ─────────────────────────────────────────────
+   Advanced holds cash and is the only place money moves.
+   Beginner holds coins — score, never convertible.        */
+function wallet(){
+  if(MODE==='adv') return ''+
+   '<div class="blk money"><div class="lb">Cash balance <i></i></div>'+
+     '<div class="hero"><div class="k">Available to play or withdraw</div>'+
+       '<div class="v cash">$0.00</div>'+
+       '<div class="sub">Pending from open contests · $0.00</div></div>'+
+     '<div class="btns"><button class="btn pri">Deposit</button>'+
+       '<button class="btn">Withdraw</button></div></div>'+
+   '<div class="blk"><div class="lb">Payment method <i></i></div>'+
+     row('Add a card or bank','Used for deposits and payouts')+
+     row('Payout account','Where winnings are sent',
+         '<div class="val" style="color:var(--dim2)">Not set</div>')+'</div>'+
+   '<div class="blk"><div class="lb">Recent activity <i></i></div>'+
+     row('Entry — Friday Night Slate','2 Aug · Quill',
+         '<div class="val neg">−$5.00</div>')+
+     row('Payout — Thursday Slate','1 Aug · 4th of 812',
+         '<div class="val cash">+$18.40</div>')+
+     row('Deposit','28 Jul · Visa ending 4411',
+         '<div class="val">+$25.00</div>')+
+     row('See all activity','')+'</div>'+
+   '<p class="hint">Withdrawals go back to the method you deposited with. '+
+     'Entry fees leave your balance when a contest locks, not when you pick.</p>';
+  return ''+
+   '<div class="blk coin"><div class="lb">Coin balance <i></i></div>'+
+     '<div class="hero"><div class="k">Your score in beginner mode</div>'+
+       '<div class="v coin">390</div>'+
+       '<div class="sub">Next free refill in 6h 12m</div></div>'+
+     '<div class="btns"><button class="btn pri">Earn more</button>'+
+       '<button class="btn">Claim refill</button></div></div>'+
+   '<div class="blk"><div class="lb">Ways to earn <i></i></div>'+
+     row('Daily refill','Free coins every day',
+         '<div class="val coin">+100</div>')+
+     row('Finish a slate','Every contest you complete',
+         '<div class="val coin">+25</div>')+
+     row('Invite a friend','When they play their first slate',
+         '<div class="val coin">+250</div>')+'</div>'+
+   '<div class="blk"><div class="lb">Recent activity <i></i></div>'+
+     row('Entry — NBA practice','2 Aug',
+         '<div class="val neg">−50</div>')+
+     row('Won — NBA practice','2 Aug · 2 of 3 correct',
+         '<div class="val coin">+110</div>')+
+     row('Daily refill','1 Aug','<div class="val coin">+100</div>')+'</div>'+
+   '<p class="hint">Coins are score. They buy nothing and never convert to cash.</p>';
+}
+
+/* ── LEADERBOARD ───────────────────────────────────────── */
+var BOARD=[['1','vex','2,480','+3'],['2','marleym','2,310','−1'],['3','dpicks','2,145','+2'],
+           ['4','tenley','1,980','0'],['5','owner','1,860','+6'],['6','kaz','1,720','−2'],
+           ['7','junebug','1,655','0']];
+function board(){
+  var unit=(MODE==='adv')?'pts':'coins';
+  var rows=BOARD.map(function(r){
+    var you=(r[1]==='owner');
+    var d=r[3], cls=d.indexOf('+')===0?'up':(d==='0'?'eq':'dn');
+    return '<div class="lrow'+(you?' you':'')+'"><div class="p'+(+r[0]<=3?' top':'')+'">'+r[0]+
+      '</div><div class="av">'+r[1][0].toUpperCase()+'</div>'+
+      '<div class="h">'+(you?'You':'@'+r[1])+'</div>'+
+      '<div class="s">'+r[2]+'</div>'+
+      '<div class="d '+cls+'">'+(d==='0'?'—':d)+'</div></div>';}).join('');
+  return ''+
+   '<div class="blk act"><div class="lb">Your standing <i></i></div>'+
+     '<div class="me"><div class="pos">#5</div>'+
+       '<div class="n"><b>Rookie</b><span>Top 38% this week</span></div>'+
+       '<div class="sc"><b>1,860</b><span>'+unit+'</span></div></div>'+
+     '<p class="hint" style="margin-top:12px">340 '+unit+' to Sharp. Placing top 3 in any '+
+     'contest moves you fastest.</p></div>'+
+   '<div class="blk"><div class="lb">The board <i></i></div>'+
+     '<div class="tabs"><button class="tab on">This week</button>'+
+       '<button class="tab">All time</button><button class="tab">Friends</button></div>'+
+     rows+'</div>'+
+   '<p class="hint">Rank is score, not money. Every contest you finish counts toward it.</p>';
+}
+
+/* ── REFER ─────────────────────────────────────────────── */
+function refer(){
+  var reward=(MODE==='adv')?'$5 in contest credit':'250 coins';
+  return ''+
+   '<div class="blk act"><div class="lb">Your code <i></i></div>'+
+     '<div class="code"><div class="c">ABC123</div>'+
+       '<button class="btn" style="flex:none;padding:13px 15px">Copy</button></div>'+
+     '<div class="btns"><button class="btn pri">Share invite</button></div></div>'+
+   '<div class="blk"><div class="lb">How it works <i></i></div>'+
+     '<div class="step"><div class="k">1</div><div class="n"><b>Send your code</b>'+
+       '<span>Any friend who has never played.</span></div></div>'+
+     '<div class="step"><div class="k">2</div><div class="n"><b>They play a slate</b>'+
+       '<span>Their first contest, any category.</span></div></div>'+
+     '<div class="step"><div class="k">3</div><div class="n"><b>You both get '+reward+'</b>'+
+       '<span>Credited once their first slate settles.</span></div></div></div>'+
+   '<div class="blk money"><div class="lb">Earned so far <i></i></div>'+
+     row('Friends joined','',(MODE==='adv')
+       ? '<div class="val">0</div>' : '<div class="val">0</div>')+
+     row('Rewards earned','',(MODE==='adv')
+       ? '<div class="val cash">$0.00</div>' : '<div class="val coin">0</div>')+'</div>'+
+   '<p class="hint">Invites are one per person. Self-referrals and duplicate accounts '+
+     'do not qualify.</p>';
+}
+
+/* ── RESPONSIBLE PLAY ──────────────────────────────────── */
+function play(){
+  if(MODE==='beg') return ''+
+   '<div class="blk"><div class="lb">Beginner mode <i></i></div>'+
+     '<p class="hint">You are playing with coins. No money can be deposited, spent or won '+
+     'in this mode, so deposit limits do not apply.</p></div>'+
+   '<div class="blk"><div class="lb">Still available <i></i></div>'+
+     tgRow('remind','Session reminder','Nudge me after an hour of play',!!T.remind)+
+     row('Take a break','Pause your account for a set time')+
+     row('Get support','Confidential help and resources')+'</div>'+
+   '<p class="hint">Skill-based prediction contest platform. Not gambling. '+
+     'Not sports betting. 18+.</p>';
+  return ''+
+   '<div class="blk money"><div class="lb">Deposit limits <i></i></div>'+
+     row('Daily limit','','<div class="val" style="color:var(--dim2)">Not set</div>')+
+     row('Weekly limit','','<div class="val" style="color:var(--dim2)">Not set</div>')+
+     row('Monthly limit','','<div class="val" style="color:var(--dim2)">Not set</div>')+
+     '<p class="hint" style="margin-top:12px">Lowering a limit applies right away. '+
+     'Raising one takes effect after a waiting period.</p></div>'+
+   '<div class="blk"><div class="lb">Staying in control <i></i></div>'+
+     tgRow('remind','Session reminder','Nudge me after an hour of play',!!T.remind)+
+     tgRow('spend','Weekly spend summary','Email me what I entered and won',!!T.spend)+
+     row('Entry limit','Cap what you can put into contests',
+         '<div class="val" style="color:var(--dim2)">Not set</div>')+'</div>'+
+   '<div class="blk warn"><div class="lb">Taking a break <i></i></div>'+
+     row('Cool-off','Pause for 24 hours, 7 days or 30 days')+
+     row('Self-exclusion','Close access for 6 months or longer')+
+     '<p class="hint" style="margin-top:12px">Self-exclusion cannot be reversed before it '+
+     'ends. You will be signed out and any open contests play out on their own.</p></div>'+
+   '<div class="blk"><div class="lb">Support <i></i></div>'+
+     row('Get support','Confidential help and resources')+'</div>'+
+   '<p class="hint">Skill-based prediction contest platform. Not gambling. '+
+     'Not sports betting. 18+.</p>';
+}
+
+/* ── SETTINGS — the audio toggles get a permanent home here ──────── */
+function settings(){
+  return ''+
+   '<div class="blk"><div class="lb">Sound <i></i></div>'+
+     tgRow('sfx','Sound effects','Locks, reveals and card deals',T.sfx!==false)+
+     tgRow('music','Music','Background track in the arena',!!T.music)+
+     '<p class="hint" style="margin-top:12px">These follow you everywhere in the app, '+
+     'not just the arena.</p></div>'+
+   '<div class="blk"><div class="lb">Notifications <i></i></div>'+
+     tgRow('nLock','Locking soon','15 minutes before a slate you entered locks',T.nLock!==false)+
+     tgRow('nRes','Results','When a contest you entered settles',T.nRes!==false)+
+     tgRow('nCre','From creators you follow','New slates as they go live',!!T.nCre)+
+     tgRow('nRef','Referrals','When a friend you invited plays',!!T.nRef)+'</div>'+
+   '<div class="blk"><div class="lb">Account <i></i></div>'+
+     row('Email','owner@example.com')+
+     row('Password','Change your password')+
+     row('Verification','Confirm your identity to withdraw',
+         '<div class="val" style="color:var(--dim2)">Unverified</div>')+
+     row('Location','Used to check your state is eligible',
+         '<div class="val">Virginia</div>')+'</div>'+
+   '<div class="blk"><div class="lb">Privacy <i></i></div>'+
+     tgRow('pName','Show my handle on the board','Off means you appear as Anonymous',
+           T.pName!==false)+
+     tgRow('pFol','Let others follow me','',T.pFol!==false)+
+     row('Download my data','')+'</div>'+
+   '<div class="blk"><div class="lb">Legal <i></i></div>'+
+     row('Terms of service','')+row('Privacy policy','')+
+     row('Contest rules','How scoring and payouts work')+'</div>'+
+   '<div class="blk warn"><div class="lb">Danger zone <i></i></div>'+
+     row('Delete account','Permanent. Open contests play out first.')+'</div>';
+}
+
+var PAGES={wallet:{t:'Wallet',f:wallet},board:{t:'Leaderboard',f:board},
+           refer:{t:'Refer',f:refer},play:{t:'Responsible play',f:play},
+           set:{t:'Settings',f:settings}};
+
+function paint(){
+  var P=PAGES[PAGE], cash=(MODE==='adv');
+  $('title').textContent=P.t;
+  $('modechip').textContent=cash?'Cash':'Coins';
+  $('modechip').style.cssText=cash
+    ? 'background:rgba(47,185,138,.18);border:1px solid rgba(47,185,138,.55);color:#7FE3C0'
+    : 'background:rgba(240,196,99,.16);border:1px solid rgba(240,196,99,.5);color:#F5D89A';
+  $('col').innerHTML=P.f();
+  [].forEach.call(document.querySelectorAll('[data-tg]'),function(t){
+    t.addEventListener('click',function(){
+      var id=t.getAttribute('data-tg');
+      T[id]=!t.classList.contains('on'); t.classList.toggle('on',T[id]);
+    });
+  });
+  [].forEach.call(document.querySelectorAll('.tab'),function(b){
+    b.addEventListener('click',function(){
+      [].forEach.call(document.querySelectorAll('.tab'),function(x){x.classList.remove('on');});
+      b.classList.add('on');
+    });
+  });
+  [].forEach.call(document.querySelectorAll('#ft [data-p]'),function(b){
+    b.classList.toggle('on',b.getAttribute('data-p')===PAGE);});
+  [].forEach.call(document.querySelectorAll('#ft [data-m]'),function(b){
+    b.classList.toggle('on',b.getAttribute('data-m')===MODE);});
+  window.scrollTo(0,0);
+}
+[].forEach.call(document.querySelectorAll('#ft [data-p]'),function(b){
+  b.addEventListener('click',function(){PAGE=b.getAttribute('data-p');paint();});});
+[].forEach.call(document.querySelectorAll('#ft [data-m]'),function(b){
+  b.addEventListener('click',function(){MODE=b.getAttribute('data-m');paint();});});
+paint();
+window.__acct={get page(){return PAGE;},set page(v){PAGE=v;paint();},
+               get mode(){return MODE;},set mode(v){MODE=v;paint();},PAGES:PAGES};
+</script></body></html>

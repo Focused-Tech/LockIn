@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>LockIn — Creator: build a slate</title>
+<style>
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent;
+ scrollbar-width:none;-ms-overflow-style:none}
+*::-webkit-scrollbar{display:none;width:0;height:0}
+:root{--orange:#FC3E01;--gold:#F0C463;--cash:#2FB98A;--creator:#7C5CF5;
+ --creator-dim:#5B44B8;--bad:#E0432C;--warn:#F0A93C;
+ --ink:#0A0D12;--card:#0D1117;--panel:#161B22;--panel-hi:#1B212B;
+ --edge:#262E3A;--grey:#E7E7EB;--dim:#8B93A1;--dim2:#6E7684;
+ --cat-sport:#54B9FF;}
+html,body{height:100%;width:100%;max-width:100%;background:var(--ink);color:var(--grey);
+ overflow:hidden;overflow-x:hidden;
+ font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+#app{height:100%;max-width:440px;margin:0 auto;display:flex;flex-direction:column}
+
+/* ── header + progress ─────────────────────────────── */
+#hd{flex:0 0 auto;padding:12px 16px 0}
+#hd .t{display:flex;align-items:center;gap:10px}
+#hd .t b{flex:1;font:700 12px inherit;letter-spacing:.16em;text-transform:uppercase;
+ color:var(--creator)}
+#hd .t .x{border:1px solid var(--edge);border-radius:8px;padding:5px 10px;background:transparent;
+ color:var(--dim);font:600 12px inherit;cursor:pointer}
+#bar{display:flex;gap:6px;margin:12px 0 4px}
+#bar .seg{flex:1;height:4px;border-radius:99px;background:var(--edge)}
+#bar .seg.done{background:var(--creator)}
+#bar .seg.now{background:linear-gradient(90deg,var(--creator) 60%,var(--edge) 60%)}
+#steps{display:flex;gap:4px;padding-bottom:10px}
+#steps span{flex:1;font:600 10px inherit;letter-spacing:.08em;text-transform:uppercase;
+ color:var(--dim2);text-align:center}
+#steps span.on{color:var(--creator)}
+
+/* ── panes ─────────────────────────────────────────── */
+#body{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:6px 16px 26px}
+#body>.pane>*{max-width:100%}
+.pane{display:none;flex-direction:column;gap:16px}
+.pane.on{display:flex}
+h2{font:700 20px inherit;color:#fff;letter-spacing:-.01em}
+h2+.hint{margin-top:-10px}
+.hint{font-size:13.5px;color:var(--dim);line-height:1.45}
+.blk{position:relative;overflow:hidden;
+ background:linear-gradient(180deg,#161C25 0%,#10151C 100%);
+ border:1px solid var(--edge);border-left:4px solid var(--creator);border-radius:15px;
+ padding:15px 15px 14px;
+ box-shadow:inset 6px 0 14px -10px rgba(124,92,245,.75),
+            inset 0 1px 0 rgba(255,255,255,.05),
+            0 8px 20px rgba(0,0,0,.55)}
+.blk::before{content:"";position:absolute;left:-4px;top:0;bottom:0;width:4px;
+ background:linear-gradient(180deg,var(--creator) 0%,#3B2C93 100%)}
+.blk.creator{border-left-color:var(--creator)}
+.blk.warn{border-left-color:var(--bad);box-shadow:inset 6px 0 14px -10px rgba(224,67,44,.75),
+ inset 0 1px 0 rgba(255,255,255,.05),0 8px 20px rgba(0,0,0,.55)}
+.blk.warn::before{background:linear-gradient(180deg,var(--bad) 0%,#7E1F13 100%)}
+.blk.money{border-left-color:var(--cash);box-shadow:inset 6px 0 14px -10px rgba(47,185,138,.75),
+ inset 0 1px 0 rgba(255,255,255,.05),0 8px 20px rgba(0,0,0,.55)}
+.blk.money::before{background:linear-gradient(180deg,var(--cash) 0%,#166B4F 100%)}
+.lb{font:700 10.5px inherit;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);
+ margin-bottom:9px;display:flex;align-items:center;gap:8px}
+.lb i{flex:1;height:1px;background:var(--edge);font-style:normal}
+input[type=text],input[type=date],select{width:100%;border:1px solid var(--edge);border-radius:10px;
+ padding:11px 13px;background:var(--card);color:var(--grey);font:15px inherit;outline:none;
+ box-shadow:inset 0 1px 3px rgba(0,0,0,.5)}
+input::placeholder{color:var(--dim2)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid var(--edge);border-radius:99px;padding:8px 14px;
+ background:linear-gradient(180deg,#1B212B,#151A22);color:var(--grey);font:600 13px inherit;
+ cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 1px 3px rgba(0,0,0,.5)}
+.chip.on{background:var(--creator);border-color:var(--creator);color:#fff}
+.chip.orange.on{background:var(--orange);border-color:var(--orange)}
+
+/* ── step 1 social ─────────────────────────────────── */
+.soc{display:flex;align-items:center;gap:11px;padding:11px 0;border-top:1px solid var(--edge)}
+.soc:first-of-type{border-top:none}
+.soc .ic{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;
+ background:var(--card);border:1px solid var(--edge);font-size:15px;flex:none}
+.soc .n{flex:1;min-width:0}
+.soc .n b{display:block;font:600 14.5px inherit;color:#fff}
+.soc .n span{font-size:12.5px;color:var(--dim2)}
+.soc .n span.v{color:var(--cash)}
+.soc button{border:1px solid var(--creator);border-radius:9px;padding:7px 12px;background:transparent;
+ color:var(--creator);font:600 12.5px inherit;cursor:pointer;white-space:nowrap}
+.soc button.done{border-color:var(--edge);color:var(--dim2);cursor:default}
+.reach{display:flex;align-items:baseline;gap:10px;margin-top:12px;padding-top:12px;
+ border-top:1px solid var(--edge)}
+.reach .big{font:700 26px inherit;color:var(--creator)}
+.reach .dv{margin-left:auto;border:1px solid var(--creator);border-radius:99px;padding:5px 12px;
+ font:700 11.5px inherit;letter-spacing:.1em;text-transform:uppercase;color:var(--creator)}
+
+/* ── step 2 events ─────────────────────────────────── */
+.ev{display:flex;align-items:center;gap:11px;padding:11px 0;border-top:1px solid var(--edge);cursor:pointer}
+.ev:first-of-type{border-top:none}
+.ev .bx{width:22px;height:22px;border-radius:6px;border:1.5px solid var(--edge);flex:none;
+ display:grid;place-items:center;font-size:13px;color:transparent}
+.ev.on .bx{background:var(--creator);border-color:var(--creator);color:#fff}
+.ev .n{flex:1;min-width:0}
+.ev .n b{display:block;font:600 14.5px inherit;color:#fff}
+.ev .n span{font-size:12.5px;color:var(--dim2)}
+
+/* ── step 3 questions ──────────────────────────────── */
+.leg{background:var(--card);border:1.5px solid var(--edge);border-radius:13px;padding:13px;
+ display:flex;flex-direction:column;gap:10px}
+.leg.bad{border-color:var(--bad)}
+.leg.good{border-color:var(--cash)}
+.leg .arch{display:flex;align-items:center;gap:8px}
+.leg .arch select{flex:1;padding:8px 10px;font-size:13px}
+.leg .stem{width:100%;border:1px solid var(--edge);border-radius:9px;padding:10px 12px;
+ background:var(--panel);color:#fff;font:600 15px inherit;outline:none}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.opt{border:1px solid var(--edge);border-radius:10px;padding:10px;
+ background:linear-gradient(180deg,#1B212B,#151A22);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 1px 3px rgba(0,0,0,.5)}
+.opt .nm{font:600 14.5px inherit;color:#fff}
+.opt .cx{font-size:12px;color:var(--dim2);line-height:1.35;margin-top:4px}
+.flag{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;line-height:1.4;
+ border-radius:9px;padding:9px 11px}
+.flag.bad{background:rgba(224,67,44,.12);color:#FFB3A7;border:1px solid rgba(224,67,44,.5)}
+.flag.good{background:rgba(47,185,138,.10);color:#8FE3C4;border:1px solid rgba(47,185,138,.4)}
+.flag b{color:#fff}
+.pool{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px}
+.ath{flex:0 0 auto;border:1px solid var(--edge);border-radius:10px;padding:8px 11px;
+ background:var(--panel);cursor:pointer;min-width:0}
+.ath b{display:block;font:600 13.5px inherit;color:#fff;white-space:nowrap}
+.ath span{font-size:11.5px;color:var(--dim2);white-space:nowrap}
+.ath .star{color:var(--gold)}
+.meter{margin-top:4px}
+.meter .row{display:flex;justify-content:space-between;font-size:12.5px;color:var(--dim);margin-bottom:6px}
+.mbar{height:7px;background:#0F141B;border-radius:99px;overflow:hidden;
+ box-shadow:inset 0 1px 2px rgba(0,0,0,.7)}
+.mbar i{display:block;height:100%;background:var(--creator);border-radius:99px}
+
+/* ── step 4 prize ──────────────────────────────────── */
+.kv{display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;
+ border-top:1px solid var(--edge);font-size:13.5px}
+.kv:first-of-type{border-top:none}
+.kv b{color:#fff;font-weight:700}
+.kv .g{color:var(--cash);font-weight:700}
+table.earn{width:100%;border-collapse:collapse;font-size:12.5px}
+table.earn th{text-align:left;font:700 10px inherit;letter-spacing:.1em;text-transform:uppercase;
+ color:var(--dim2);padding:6px 4px}
+table.earn td{padding:7px 4px;border-top:1px solid var(--edge);color:var(--dim)}
+table.earn tr.now td{color:#fff;background:rgba(124,92,245,.12)}
+table.earn td b{color:var(--cash)}
+
+/* ── review card ───────────────────────────────────── */
+.preview{border:2px solid var(--cat-sport);border-radius:20px;background:var(--card);padding:15px;
+ display:flex;flex-direction:column;gap:11px;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.preview .eb{font:600 12.5px inherit;letter-spacing:.11em;color:var(--creator)}
+.preview .ttl{font:600 23px/1.15 inherit;color:#fff;letter-spacing:-.015em}
+.preview .sb{font-size:13px;color:var(--dim);margin-top:-6px}
+.preview .bdg{align-self:flex-start;background:var(--cash);color:var(--ink);border-radius:99px;
+ padding:6px 11px;font:600 12px inherit}
+.preview .pleg{background:var(--panel);border-radius:13px;padding:12px;
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.045), 0 2px 6px rgba(0,0,0,.45)}
+.preview .pleg .q{font:600 16px inherit;color:#fff;margin-bottom:9px}
+.preview .cta{width:100%;border:none;border-radius:12px;padding:15px;background:var(--orange);
+ color:#fff;font:700 16px inherit;cursor:pointer;
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.3), 0 6px 18px rgba(0,0,0,.55)}
+
+/* ── footer ────────────────────────────────────────── */
+#ft{flex:0 0 auto;display:flex;gap:9px;padding:10px 16px 14px;border-top:1px solid var(--edge)}
+#ft button{border-radius:12px;padding:14px;font:700 15px inherit;cursor:pointer;border:1px solid var(--edge)}
+#back{flex:0 0 auto;width:96px;background:linear-gradient(180deg,#1B212B,#151A22);color:var(--grey)}
+#next{flex:1;background:var(--creator);border-color:var(--creator);color:#fff;
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.28), 0 5px 16px rgba(0,0,0,.5)}
+#next:disabled{background:#2A2438;border-color:#2A2438;color:#6E7684;box-shadow:none;cursor:not-allowed}
+#prac{width:100%;border:1px dashed var(--creator-dim);border-radius:11px;padding:12px;
+ background:transparent;color:var(--creator);font:600 13.5px inherit;cursor:pointer}
+
+/* ── hub / landing — same visual language as the slate cards ─────────── */
+#hero{padding:8px 0 4px}
+#hero h1{font:700 clamp(25px,7.4vw,31px)/1.14 inherit;color:#fff;letter-spacing:-.02em;
+ margin:2px 0 9px;overflow-wrap:break-word}
+#hero p{font-size:14px;color:var(--dim);line-height:1.5}
+#who{position:relative;overflow:hidden;display:flex;align-items:center;gap:10px;
+ margin-top:16px;padding:12px 12px 12px 13px;border-radius:15px;
+ background:linear-gradient(180deg,#161C25 0%,#10151C 100%);
+ border:1px solid var(--edge);border-left:4px solid var(--cash);
+ box-shadow:inset 6px 0 14px -10px rgba(47,185,138,.75),
+            inset 0 1px 0 rgba(255,255,255,.05),
+            0 8px 20px rgba(0,0,0,.55)}
+#who::before{content:"";position:absolute;left:-4px;top:0;bottom:0;width:4px;
+ background:linear-gradient(180deg,var(--cash) 0%,#166B4F 100%)}
+#who .av{width:36px;height:36px;border-radius:50%;flex:none;display:grid;place-items:center;
+ background:var(--creator-dim);color:#fff;font:700 14.5px inherit;
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
+#who .nm{flex:1;min-width:0}
+#who .nm b{display:block;font:600 15px inherit;color:#fff;line-height:1.2}
+#who .nm span{display:block;margin-top:2px;font-size:11.5px;line-height:1.35;color:var(--dim2);
+ white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#who .nm span i{font-style:normal;color:var(--grey);font-weight:600}
+#who .nm span em{font-style:normal;color:var(--edge);margin:0 3px}
+#who #earn{color:var(--cash)}
+#who .cv{flex:none;color:var(--dim2);font-size:18px;line-height:1}
+/* two shades of one hue: darker fill, lighter type, mid-tone rim */
+.badge{flex:none;border-radius:99px;padding:4px 9px;font:700 10px inherit;letter-spacing:.1em;
+ text-transform:uppercase;white-space:nowrap}
+.badge.div{background:rgba(124,92,245,.20);border:1px solid rgba(124,92,245,.60);color:#C9BCFF}
+.gobig{position:relative;overflow:hidden;width:100%;cursor:pointer;text-align:left;
+ display:flex;align-items:center;gap:13px;
+ border-radius:15px;padding:15px 15px 15px 14px;font:inherit;
+ background:linear-gradient(180deg,#2A1006 0%,#180903 100%);
+ border:1px solid #3A1A0B;
+ border-left:4px solid var(--orange);border-right:4px solid var(--orange);
+ box-shadow:inset 6px 0 16px -10px rgba(252,62,1,.9),
+            inset -6px 0 16px -10px rgba(252,62,1,.9),
+            inset 0 1px 0 rgba(255,255,255,.06),
+            0 8px 20px rgba(0,0,0,.55);
+ transition:transform .16s ease}
+.gobig::before,.gobig::after{content:"";position:absolute;top:0;bottom:0;width:4px;
+ background:linear-gradient(180deg,var(--orange) 0%,#8E2201 100%)}
+.gobig::before{left:-4px} .gobig::after{right:-4px}
+.gobig:active{transform:scale(.988)}
+.gobig .ic{width:40px;height:40px;border-radius:12px;flex:none;display:grid;place-items:center;
+ font-size:17px;color:var(--orange);
+ background:linear-gradient(180deg,#341509,#1E0B04);border:1px solid #4A2110;
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+.gobig .n{flex:1;min-width:0}
+.gobig .n b{display:block;font:700 16px inherit;color:#fff;letter-spacing:.005em}
+.gobig .n span{display:block;margin-top:4px;font-size:11.5px;line-height:1.45;
+ color:rgba(255,255,255,.52)}
+.gobig .cv{flex:none;color:var(--orange);font-size:18px}
+.tiles{display:flex;flex-direction:column;gap:12px}
+.tile{position:relative;overflow:hidden;display:flex;align-items:center;gap:13px;
+ text-align:left;width:100%;font:inherit;color:var(--grey);cursor:pointer;
+ padding:15px 15px 15px 14px;border-radius:15px;
+ background:linear-gradient(180deg,#161C25 0%,#10151C 100%);
+ border:1px solid var(--edge);border-left:4px solid var(--creator);
+ box-shadow:inset 6px 0 14px -10px rgba(124,92,245,.75),
+            inset 0 1px 0 rgba(255,255,255,.05),
+            0 8px 20px rgba(0,0,0,.55);
+ transition:border-color .16s ease, transform .16s ease}
+.tile::before{content:"";position:absolute;left:-4px;top:0;bottom:0;width:4px;
+ background:linear-gradient(180deg,var(--creator) 0%,#3B2C93 100%)}
+.tile:active{transform:scale(.988)}
+.tile .ic{width:40px;height:40px;border-radius:12px;flex:none;display:grid;place-items:center;
+ font-size:18px;color:var(--creator);
+ background:linear-gradient(180deg,#1B212B,#12171F);border:1px solid var(--edge);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+.tile .n{flex:1;min-width:0}
+.tile .n b{display:block;font:600 15px inherit;color:#fff;overflow-wrap:break-word}
+.tile .n span{display:block;margin-top:4px;font-size:11.5px;color:var(--dim2);line-height:1.45}
+.tile .cv{color:var(--dim2);font-size:18px;flex:none}
+
+/* ── creator profile ──────────────────────────────────── */
+#phd{display:flex;align-items:center;gap:13px}
+#phd .av{width:56px;height:56px;border-radius:50%;flex:none;display:grid;place-items:center;
+ background:var(--creator-dim);color:#fff;font:700 22px inherit;
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
+#phd .n b{display:block;font:700 20px inherit;color:#fff;letter-spacing:-.01em}
+#phd .n span{display:block;margin-top:3px;font-size:12px;color:var(--dim2);line-height:1.4}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.stat{border:1px solid var(--edge);border-radius:12px;padding:11px 12px;
+ background:linear-gradient(180deg,#12171F,#0E131A);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.035)}
+.stat .k{font-size:11px;color:var(--dim2);letter-spacing:.04em}
+.stat .v{margin-top:4px;font:700 19px inherit;color:#fff;font-variant-numeric:tabular-nums}
+.stat .v.cash{color:var(--cash)}
+.row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;font:inherit;
+ color:var(--grey);background:none;border:none;cursor:pointer;
+ padding:12px 0;border-top:1px solid var(--edge)}
+.row:first-of-type{border-top:none}
+.row .n{flex:1;min-width:0}
+.row .n b{display:block;font:600 14.5px inherit;color:#fff}
+.row .n span{display:block;margin-top:2px;font-size:11.5px;color:var(--dim2);line-height:1.4}
+.row .cv{flex:none;color:var(--dim2);font-size:16px}
+#signout{width:100%;margin-top:2px;border:1px solid var(--edge);border-radius:13px;padding:13px;
+ background:linear-gradient(180deg,#1B212B,#151A22);color:var(--dim);
+ font:600 14px inherit;cursor:pointer}
+/* ── sub views ─────────────────────────────────────── */
+.crumb{display:flex;align-items:center;gap:9px;margin-bottom:2px}
+.crumb button{border:1px solid var(--edge);border-radius:9px;padding:6px 11px;
+ background:linear-gradient(180deg,#1B212B,#151A22);color:var(--grey);
+ font:600 12.5px inherit;cursor:pointer}
+.rule{display:flex;gap:11px;align-items:flex-start;padding:11px 0;border-top:1px solid var(--edge2,#1B222C);
+ font-size:13.5px;line-height:1.5;color:var(--dim)}
+.rule:first-of-type{border-top:none}
+.rule .m{flex:none;width:20px;text-align:center;font-weight:700}
+.rule .m.no{color:var(--bad)} .rule .m.yes{color:var(--cash)}
+.rule b{color:#fff;font-weight:600}
+.num{display:flex;gap:12px;align-items:flex-start;padding:11px 0;border-top:1px solid var(--edge)}
+.num:first-of-type{border-top:none}
+.num .k{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;
+ background:var(--creator-dim);color:#fff;font:700 12.5px inherit}
+.num .n b{display:block;font:600 14.5px inherit;color:#fff;margin-bottom:3px}
+.num .n span{font-size:13px;color:var(--dim);line-height:1.45}
+.msg{max-width:86%;border-radius:14px;padding:11px 13px;font-size:13.5px;line-height:1.45}
+.msg.them{align-self:flex-start;background:var(--panel);border:1px solid var(--creator-dim);
+ color:var(--grey);border-bottom-left-radius:5px}
+.msg.me{align-self:flex-end;background:var(--creator);color:#fff;border-bottom-right-radius:5px}
+.msg b{color:#fff}
+#thread{display:flex;flex-direction:column;gap:10px}
+#lsHero{padding:0;overflow:hidden}
+#lsImg{display:block;width:100%;height:auto;border-radius:0 12px 12px 0}
+#lsFall{display:none;height:150px;place-items:center;font-size:44px;color:var(--creator);
+ background:linear-gradient(180deg,#1B1636,#12101F)}
+#lsFall span{display:block;font-size:11px;letter-spacing:.08em;color:var(--dim2);margin-top:6px}
+.outlink{width:100%;border:1px solid var(--creator);border-radius:14px;padding:15px;
+ background:transparent;color:var(--creator);font:700 15.5px inherit;cursor:pointer}
+.sep{border:1px solid var(--cash);border-radius:11px;padding:10px 12px;background:rgba(47,185,138,.08);
+ color:#9BE3C8;font-size:12.5px;line-height:1.45}
+.sep b{color:#fff}
+</style></head><body>
+<div id="app">
+
+  <div id="hd">
+    <div class="t"><b id="hdTitle">Creator</b><button class="x" id="exit">Save &amp; exit</button></div>
+    <div id="bar">
+      <div class="seg" data-s="1"></div><div class="seg" data-s="2"></div>
+      <div class="seg" data-s="3"></div><div class="seg" data-s="4"></div>
+    </div>
+    <div id="steps">
+      <span data-s="1">1 · Profile</span><span data-s="2">2 · Event</span>
+      <span data-s="3">3 · Questions</span><span data-s="4">4 · Prize</span>
+    </div>
+  </div>
+
+  <div id="body">
+
+
+    <!-- ══ HUB ══ -->
+    <div class="pane on" id="p0">
+      <div id="hero">
+        <h1>Run your own slate</h1>
+        <p>Real followers, real pot, real payout. Write the questions your people argue
+          about, set the prize, and put your name on the card.</p>
+        <div id="who" role="button">
+          <div class="av">Q</div>
+          <div class="nm"><b>Quill</b>
+            <span id="stat"><i id="reach">224.6k</i> reach
+              <em>&middot;</em> <i id="earn">$18.6k</i> earned</span></div>
+          <span class="badge div">Wolf</span>
+          <span class="cv">›</span>
+        </div>
+      </div>
+
+      <button class="gobig" id="goBuild"><span class="ic">&#9635;</span>
+        <span class="n"><b>Build a slate</b>
+          <span>Pick the night, write the questions, set the prize</span></span>
+        <span class="cv">›</span></button>
+
+      <div class="tiles">
+        <button class="tile" id="goRules"><div class="ic">§</div>
+          <div class="n"><b>Read the rules</b>
+            <span>What a question can ask, and what is never allowed</span></div>
+          <div class="cv">›</div></button>
+
+        <button class="tile" id="goHow"><div class="ic">◷</div>
+          <div class="n"><b>How to become a creator</b>
+            <span>Five steps from connecting an account to publishing</span></div>
+          <div class="cv">›</div></button>
+
+        <button class="tile creatorish" id="goPick"><div class="ic">⚿</div>
+          <div class="n"><b>Talk to the Locksmith</b>
+            <span>Ask her anything — her lockpicks name the fix before you write it</span></div>
+          <div class="cv">›</div></button>
+
+        <button class="tile creatorish" id="goPrac"><div class="ic">◇</div>
+          <div class="n"><b>Practice mode</b>
+            <span>The Lone Fox journey — the coin version of this, on its own screens</span></div>
+          <div class="cv">›</div></button>
+      </div>
+    </div>
+
+
+    <!-- ══ CREATOR PROFILE ══ -->
+    <div class="pane" id="pProf">
+      <div class="crumb"><button class="home">&lsaquo; Creator</button></div>
+
+      <div class="blk">
+        <div id="phd">
+          <div class="av">Q</div>
+          <div class="n"><b>Quill</b>
+            <span>@quill &middot; Verified creator</span>
+            <span>Creator since Jun 2026</span></div>
+        </div>
+        <div class="badges" style="margin:12px 0 0">
+          <span class="badge div">Wolf</span>
+        </div>
+      </div>
+
+      <div class="blk">
+        <div class="lb">Creator stats <i></i></div>
+        <div class="grid">
+          <div class="stat"><div class="k">Contests hosted</div><div class="v">14</div></div>
+          <div class="stat"><div class="k">Total entries</div><div class="v">5.2k</div></div>
+          <div class="stat"><div class="k">Verified reach</div><div class="v">224.6k</div></div>
+          <div class="stat"><div class="k">Avg entries</div><div class="v">374</div></div>
+          <div class="stat"><div class="k">Lifetime earned</div><div class="v cash">$18.6k</div></div>
+          <div class="stat"><div class="k">Best contest</div><div class="v cash">$4.2k</div></div>
+        </div>
+      </div>
+
+      <div class="blk money">
+        <div class="lb">Payouts <i></i></div>
+        <button class="row" style="padding-top:4px">
+          <div class="n"><b>Connected</b><span>Earnings land in your account automatically</span></div>
+          <div class="cv">&rarr;</div></button>
+      </div>
+
+      <div class="blk">
+        <div class="lb">Creator tools <i></i></div>
+        <button class="row" id="toDash"><div class="n"><b>Creator dashboard</b>
+          <span>Your contests &amp; earnings</span></div><div class="cv">&rarr;</div></button>
+        <button class="row"><div class="n"><b>Share card</b>
+          <span>The card you post when a contest goes live</span></div><div class="cv">&rarr;</div></button>
+        <button class="row" id="toRules2"><div class="n"><b>The rules</b>
+          <span>What a question can ask</span></div><div class="cv">&rarr;</div></button>
+      </div>
+
+      <div class="blk">
+        <div class="lb">Account <i></i></div>
+        <button class="row"><div class="n"><b>Wallet</b>
+          <span>Balance, deposits &amp; withdrawals</span></div><div class="cv">&rarr;</div></button>
+        <button class="row"><div class="n"><b>Refer</b>
+          <span>Invite friends, earn rewards</span></div><div class="cv">&rarr;</div></button>
+        <button class="row"><div class="n"><b>Responsible play</b>
+          <span>Deposit limits &amp; self-exclusion</span></div><div class="cv">&rarr;</div></button>
+      </div>
+
+      <button id="signout">Sign out</button>
+    </div>
+
+    <!-- ══ RULES ══ -->
+    <div class="pane" id="pRules">
+      <div class="crumb"><button class="home">‹ Creator</button></div>
+      <h2>The rules</h2>
+      <p class="hint">Every slate runs the same validator — the currency does not change what
+        you are allowed to ask.</p>
+
+      <div class="blk">
+        <div class="lb">What a question can ask <i></i></div>
+        <div class="rule"><span class="m yes">✓</span><span><b>Cross-game head-to-head.</b>
+          Two names, two different games. Who has the bigger night.</span></div>
+        <div class="rule"><span class="m yes">✓</span><span><b>Field leader.</b>
+          Who tops a field drawn from several games.</span></div>
+        <div class="rule"><span class="m yes">✓</span><span><b>Split-squad duos.</b>
+          Two pairs, pulled from different games.</span></div>
+        <div class="rule"><span class="m yes">✓</span><span><b>Milestone count.</b>
+          How many players clear a milestone tonight — bucketed, never a number on one
+          player.</span></div>
+        <div class="rule"><span class="m yes">✓</span><span><b>First to N.</b>
+          Who gets there first across the night.</span></div>
+        <div class="rule"><span class="m yes">✓</span><span><b>Biggest night.</b>
+          The standout performance of the slate.</span></div>
+      </div>
+
+      <div class="blk warn">
+        <div class="lb">Never allowed <i></i></div>
+        <div class="rule"><span class="m no">✕</span><span>Who wins a game, final scores,
+          margins, spreads, team totals, over/under on anything.</span></div>
+        <div class="rule"><span class="m no">✕</span><span>Any number threshold on one
+          player, and any question that lives inside a single game.</span></div>
+        <div class="rule"><span class="m no">✕</span><span>Halftime or period outcomes.
+          Fight and race winners.</span></div>
+        <div class="rule"><span class="m no">✕</span><span><b>Two names from the same
+          game.</b> Two names means two different games — every time.</span></div>
+      </div>
+
+      <div class="blk">
+        <div class="lb">On every leg <i></i></div>
+        <div class="rule"><span class="m yes">✓</span><span>Each option carries the game line,
+          the season average and last-out form. <b>Context is never the thing being
+          predicted.</b></span></div>
+        <div class="rule"><span class="m yes">✓</span><span>A slate draws across archetypes.
+          <b>No question shape repeats on one slate.</b></span></div>
+        <div class="rule"><span class="m yes">✓</span><span>Write the argument real fans have.
+          Who shows out — not who wins.</span></div>
+      </div>
+
+      <div class="blk money">
+        <div class="lb">The pot <i></i></div>
+        <div class="rule"><span class="m yes">✓</span><span><b>One pot per slate.</b> Players
+          wager what they want; what they collect follows their stake and how much they got
+          right.</span></div>
+        <div class="rule"><span class="m yes">✓</span><span>Payouts are projected while the
+          slate is open and <b>become fixed the moment it closes</b> — which happens before the
+          event starts.</span></div>
+      </div>
+      <button class="gobig home2"><span class="ic">&#9635;</span><span class="n"><b>Got it — build a slate</b><span>Start the four steps</span></span><span class="cv">›</span></button>
+    </div>
+
+    <!-- ══ HOW ══ -->
+    <div class="pane" id="pHow">
+      <div class="crumb"><button class="home">‹ Creator</button></div>
+      <h2>How to become a creator</h2>
+      <p class="hint">Five steps. The first one is the only one you do once.</p>
+      <div class="blk">
+        <div class="num"><div class="k">1</div><div class="n"><b>Connect the accounts you post from</b>
+          <span>We read your public follower count and nothing else. No personal information,
+            no messages, no contacts.</span></div></div>
+        <div class="num"><div class="k">2</div><div class="n"><b>Your reach sets your division</b>
+          <span>The division sets your host fee tier, and it moves as your reach grows.</span></div></div>
+        <div class="num"><div class="k">3</div><div class="n"><b>Pick the night</b>
+          <span>Choose a category and a date. The events load from the live board — you never
+            leave the app to find a schedule.</span></div></div>
+        <div class="num"><div class="k">4</div><div class="n"><b>Write the questions</b>
+          <span>The Locksmith drafts them from the games you picked. Edit any of them; Lockpick
+            flags anything that would not pass <b>and names the fix</b>.</span></div></div>
+        <div class="num"><div class="k">5</div><div class="n"><b>Set the prize and publish</b>
+          <span>Your host fee is the only number you control. Review the card exactly as a
+            player sees it, then publish.</span></div></div>
+      </div>
+      <div class="blk creator">
+        <div class="lb">Before your first one <i></i></div>
+        <p class="hint">Never run a slate before? Build one end to end in practice first.
+          Nothing publishes and no money moves.</p>
+        <div class="chips" style="margin-top:10px">
+          <button class="chip" id="howToPrac">Practice mode ›</button>
+          <button class="chip" id="howToRules">Read the rules ›</button>
+        </div>
+      </div>
+      <button class="gobig home2"><span class="ic">&#9635;</span><span class="n"><b>Start building</b><span>Start the four steps</span></span><span class="cv">›</span></button>
+    </div>
+
+    <!-- ══ LOCKPICK ══ -->
+    <div class="pane" id="pPick">
+      <div class="crumb"><button class="home">‹ Creator</button></div>
+      <h2>The Locksmith</h2>
+      <p class="hint">She reads your slate while you write it and never says "invalid" —
+        every tip she hands you is a <b style="color:#fff">lockpick</b>: the fix, named.</p>
+      <div class="blk creator" id="lsHero">
+        <img id="lsImg" src="locksmith_desk.png" alt="The Locksmith at her desk">
+        <div id="lsFall">🦊<span>locksmith_desk.png</span></div>
+      </div>
+
+      <div class="blk creator">
+        <div id="thread">
+          <div class="msg them">Ask me anything about building a slate — or paste a question
+            and I'll tell you whether it passes.</div>
+          <div class="msg me">Who wins Lakers at Celtics?</div>
+          <div class="msg them"><b>That one can't run.</b> Game outcomes are out — no winners,
+            scores, margins or spreads. Ask who <b>shows out</b> instead: Luka against a name
+            from a different game, like Jokić in Denver vs Phoenix.</div>
+        </div>
+        <div class="chips" style="margin-top:12px" id="askChips">
+          <button class="chip" data-a="same">Why can't two names share a game?</button>
+          <button class="chip" data-a="ctx">What context do I have to show?</button>
+          <button class="chip" data-a="fee">How does my host fee work?</button>
+        </div>
+      </div>
+      <button class="gobig home2"><span class="ic">&#9635;</span><span class="n"><b>Take me to the builder</b><span>Start the four steps</span></span><span class="cv">›</span></button>
+    </div>
+
+    <!-- ══ PRACTICE ══ -->
+    <div class="pane" id="pPrac">
+      <div class="crumb"><button class="home">‹ Creator</button></div>
+      <h2>Practice mode</h2>
+      <p class="hint">The Lone Fox journey. The same four steps, the same validator, the same
+        review card — <b style="color:#fff">run on coins</b>.</p>
+      <div class="sep"><b>It is its own build, not this one.</b> This screen is cash creator
+        mode: real reach, a real pot, a real payout. Practice runs on the coin economy and
+        lives on its own screens.</div>
+      <div class="blk creator">
+        <div class="rule"><span class="m yes">✓</span><span>Same four steps, same questions,
+          same review card.</span></div>
+        <div class="rule"><span class="m yes">✓</span><span>The Locksmith flags your legs exactly
+          the way she does here.</span></div>
+        <div class="rule"><span class="m yes">✓</span><span>Coins throughout — every number a
+          coin number.</span></div>
+        <div class="rule"><span class="m no">✕</span><span>Nothing publishes. No player sees
+          it, and no cash moves.</span></div>
+      </div>
+      <button class="outlink" id="startPrac">Open practice mode ›</button>
+      <p class="hint" id="pracNote" style="display:none">Practice mode is a separate surface —
+        not in this file.</p>
+      <button class="gobig home2"><span class="ic">&#9635;</span><span class="n"><b>Back to cash creator mode</b><span>Real followers, real pot, real payout</span></span><span class="cv">›</span></button>
+    </div>
+
+
+    <!-- ══ STEP 1 ══ -->
+    <div class="pane" id="p1">
+      <h2>Confirm your reach</h2>
+      <p class="hint">Connect the accounts you post from. We read your public
+        follower count and nothing else — no personal information, no messages,
+        no contacts.</p>
+      <div class="blk creator">
+        <div class="lb">Accounts <i></i></div>
+        <div class="soc" data-net="x"><div class="ic">𝕏</div>
+          <div class="n"><b>X</b><span class="v">Connected · 128,400 followers</span></div>
+          <button class="done">Connected</button></div>
+        <div class="soc" data-net="ig"><div class="ic">◎</div>
+          <div class="n"><b>Instagram</b><span class="v">Connected · 96,200 followers</span></div>
+          <button class="done">Connected</button></div>
+        <div class="soc" data-net="tt"><div class="ic">♪</div>
+          <div class="n"><b>TikTok</b><span>Not connected</span></div>
+          <button>Connect</button></div>
+        <div class="soc" data-net="yt"><div class="ic">▶</div>
+          <div class="n"><b>YouTube</b><span>Not connected</span></div>
+          <button>Connect</button></div>
+        <div class="reach">
+          <span class="hint">Verified reach</span>
+          <span class="big" id="reachN">224,600</span>
+          <span class="dv" id="divN">Wolf</span>
+        </div>
+      </div>
+      <div class="blk">
+        <div class="lb">Display name <i></i></div>
+        <input type="text" id="handle" value="Quill" placeholder="How players see you">
+        <p class="hint" style="margin-top:9px">Your division sets your host fee tier.
+          It moves as your verified reach grows.</p>
+      </div>
+      <button id="prac">Never run one before? Practice in the Lone Fox journey first ›</button>
+    </div>
+
+    <!-- ══ STEP 2 ══ -->
+    <div class="pane" id="p2">
+      <h2>Pick the night</h2>
+      <p class="hint">Choose a category and a date. The events load from the live board —
+        you never leave the app to find a schedule.</p>
+      <div class="blk">
+        <div class="lb">Category <i></i></div>
+        <div class="chips" id="cats">
+          <button class="chip on">NBA</button><button class="chip">NFL</button>
+          <button class="chip">MLB</button><button class="chip">WNBA</button>
+          <button class="chip">Soccer</button><button class="chip">Reality TV</button>
+          <button class="chip">Music</button>
+        </div>
+      </div>
+      <div class="blk">
+        <div class="lb">Date <i></i></div>
+        <input type="date" id="dt" value="2026-08-04">
+      </div>
+      <div class="blk" id="evBlk">
+        <div class="lb">Events that night <i></i><span id="evCount" style="color:var(--creator)">3 picked</span></div>
+        <div class="ev on"><div class="bx">✓</div><div class="n"><b>Lakers at Celtics</b><span>7:10 pm</span></div></div>
+        <div class="ev on"><div class="bx">✓</div><div class="n"><b>Denver vs Phoenix</b><span>8:00 pm</span></div></div>
+        <div class="ev on"><div class="bx">✓</div><div class="n"><b>Milwaukee at Miami</b><span>8:30 pm</span></div></div>
+        <div class="ev"><div class="bx">✓</div><div class="n"><b>Golden State vs Sacramento</b><span>10:00 pm</span></div></div>
+        <div class="ev"><div class="bx">✓</div><div class="n"><b>New York at Indiana</b><span>10:30 pm</span></div></div>
+      </div>
+      <p class="hint">Slate closes at the earliest tip — <b style="color:#fff">7:10 pm</b>.</p>
+    </div>
+
+    <!-- ══ STEP 3 ══ -->
+    <div class="pane" id="p3">
+      <h2>Write the questions</h2>
+      <p class="hint">The Locksmith drafts them from the games you picked. Edit any of them —
+        she flags anything that would not pass.</p>
+
+      <div class="blk">
+        <div class="lb">Player pool <i></i></div>
+        <input type="text" id="search" placeholder="Search a name, show, or character…">
+        <div class="pool" id="pool" style="margin-top:10px">
+          <button class="ath"><b><span class="star">★</span> Luka</b><span>Lakers · 32 a night</span></button>
+          <button class="ath"><b><span class="star">★</span> Jokić</b><span>Denver · 26·12·9</span></button>
+          <button class="ath"><b><span class="star">★</span> Giannis</b><span>Milwaukee · 31 a night</span></button>
+          <button class="ath"><b>Tatum</b><span>Celtics · 27 a night</span></button>
+          <button class="ath"><b>Booker</b><span>Phoenix · 27 a night</span></button>
+          <button class="ath"><b>Adebayo</b><span>Miami · 19 a night</span></button>
+        </div>
+        <p class="hint" style="margin-top:8px">Stars and starters first. Type to find anyone else.</p>
+      </div>
+
+      <div class="leg good" id="leg1">
+        <div class="arch"><span class="lb" style="margin:0">Leg 1</span>
+          <select><option>Cross-game head-to-head</option><option>Field leader</option>
+            <option>Split-squad duos</option><option>Milestone count</option>
+            <option>First to N</option><option>Biggest night</option></select></div>
+        <input class="stem" value="Who has the bigger night?">
+        <div class="opts">
+          <div class="opt"><div class="nm">Luka</div>
+            <div class="cx">Lakers at Celtics<br>32 a night · 41 last out</div></div>
+          <div class="opt"><div class="nm">Jokić</div>
+            <div class="cx">Denver vs Phoenix<br>26 · 12 · 9 on the season</div></div>
+        </div>
+        <div class="flag good">✓ <span>Two names, two different games. Clean.</span></div>
+      </div>
+
+      <div class="leg bad" id="leg2">
+        <div class="arch"><span class="lb" style="margin:0">Leg 2</span>
+          <select><option>Cross-game head-to-head</option><option>Field leader</option>
+            <option>Split-squad duos</option><option>Milestone count</option>
+            <option>First to N</option><option>Biggest night</option></select></div>
+        <input class="stem" value="Who leads the floor tonight?">
+        <div class="opts">
+          <div class="opt"><div class="nm">Luka</div>
+            <div class="cx">Lakers at Celtics<br>32 a night</div></div>
+          <div class="opt"><div class="nm">Tatum</div>
+            <div class="cx">Lakers at Celtics<br>27 a night</div></div>
+        </div>
+        <div class="flag bad">✕ <span><b>Luka and Tatum are both in Lakers at Celtics.</b>
+          Drop one, or swap Tatum for Giannis — Milwaukee at Miami.</span></div>
+      </div>
+
+      <div class="blk creator">
+        <div class="lb">Locksmith <i></i></div>
+        <p class="hint">She can draft three more from the games you picked, or rewrite
+          any leg you are not happy with.</p>
+        <div class="chips" style="margin-top:10px">
+          <button class="chip" id="suggest">Suggest 3 more</button>
+          <button class="chip">Rewrite leg 2</button>
+          <button class="chip">Make it harder</button>
+        </div>
+      </div>
+
+      <div class="blk">
+        <div class="meter">
+          <div class="row"><span>This slate reaches</span><span id="reachStates">42 states</span></div>
+          <div class="mbar"><i style="width:84%"></i></div>
+          <p class="hint" style="margin-top:8px">Fix leg 2 and it reaches
+            <b style="color:#fff">44 states</b>.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ STEP 4 ══ -->
+    <div class="pane" id="p4">
+      <h2>Set the prize</h2>
+      <p class="hint">Players wager what they want into one pot. Your host fee is the
+        only number you control.</p>
+      <div class="blk">
+        <div class="lb">Target pot <i></i></div>
+        <input type="text" id="target" value="$25,000">
+        <p class="hint" style="margin-top:8px">A goal, not a guarantee. The meter keeps
+          climbing past it.</p>
+      </div>
+      <div class="blk">
+        <div class="lb">Entry stakes you allow <i></i></div>
+        <div class="chips" id="stakes">
+          <button class="chip orange on">$5</button><button class="chip orange on">$10</button>
+          <button class="chip orange on">$25</button><button class="chip orange">$50</button>
+        </div>
+      </div>
+      <div class="blk creator">
+        <div class="lb">Your host fee <i></i></div>
+        <div class="chips" id="fee">
+          <button class="chip">$1</button><button class="chip on">$2</button>
+          <button class="chip">$3</button>
+        </div>
+        <div class="kv" style="margin-top:12px"><span>Charged on top of the entry</span><b>$2</b></div>
+        <div class="kv"><span>Your cut at this pool size</span><b>38%</b></div>
+      </div>
+      <div class="blk">
+        <div class="lb">If your reach converts <i></i></div>
+        <table class="earn">
+          <tr><th>Entries</th><th>Host fees</th><th>You keep</th></tr>
+          <tr><td>5,000</td><td>$10,000</td><td><b>$4,400</b></td></tr>
+          <tr class="now"><td>12,500</td><td>$25,000</td><td><b>$9,500</b></td></tr>
+          <tr><td>30,000</td><td>$60,000</td><td><b>$19,800</b></td></tr>
+        </table>
+        <p class="hint" style="margin-top:9px">Wolf division · 10–25% of 224,600 followers.
+          Your $25,000 target sits <b style="color:#fff">right in range</b>.</p>
+      </div>
+      <div class="blk">
+        <div class="lb">What winners collect <i></i></div>
+        <div class="kv"><span>Top 5 perfect cards, fastest in</span><b>25% of the pot</b></div>
+        <div class="kv"><span>Next 45</span><b>10×</b></div>
+        <div class="kv"><span>Everyone in the top 20%</span><b>1.5×</b></div>
+        <p class="hint" style="margin-top:9px">Projected while open. These become fact the
+          moment the slate closes — before tip-off.</p>
+      </div>
+    </div>
+
+    <!-- ══ REVIEW ══ -->
+    <div class="pane" id="p5">
+      <h2>Ready to publish</h2>
+      <p class="hint">This is exactly what a player sees.</p>
+      <div class="preview" id="preview">
+        <div class="eb">QUILL · WOLF</div>
+        <div class="bdg">Cash · 44 states</div>
+        <div class="ttl">Tuesday Night Three</div>
+        <div class="sb">Three games · locks 7:10 pm</div>
+        <div class="pleg"><div class="q">Who has the bigger night?</div>
+          <div class="opts">
+            <div class="opt"><div class="nm">Luka</div><div class="cx">Lakers at Celtics<br>32 a night · 41 last out</div></div>
+            <div class="opt"><div class="nm">Jokić</div><div class="cx">Denver vs Phoenix<br>26 · 12 · 9 on the season</div></div>
+          </div></div>
+        <div class="pleg"><div class="q">Who leads the floor tonight?</div>
+          <div class="opts">
+            <div class="opt"><div class="nm">Luka</div><div class="cx">Lakers at Celtics<br>32 a night</div></div>
+            <div class="opt"><div class="nm">Giannis</div><div class="cx">Milwaukee at Miami<br>31 a night</div></div>
+          </div></div>
+        <button class="cta">Lock in · $25</button>
+      </div>
+      <div class="blk">
+        <div class="kv"><span>Target pot</span><b>$25,000</b></div>
+        <div class="kv"><span>Host fee</span><b>$2 per entry</b></div>
+        <div class="kv"><span>Reaches</span><span class="g">44 states</span></div>
+        <div class="kv"><span>Closes</span><b>Tue 7:10 pm</b></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="ft">
+    <button id="back">Back</button>
+    <button id="next">Next: pick the night</button>
+  </div>
+</div>
+
+<script>
+var $=function(i){return document.getElementById(i);};
+var STEP=1, MAX=5;
+var LABEL={1:'Next: pick the night',2:'Next: write the questions',
+           3:'Next: set the prize',4:'Review the slate',5:'Publish slate'};
+
+/* ── where the creator actually lands. The builder is ONE of five views;
+      the hub is the entry point and everything returns to it. ─────────── */
+var VIEW='hub';
+var SUB={hub:'p0',rules:'pRules',how:'pHow',lockpick:'pPick',practice:'pPrac',profile:'pProf'};
+
+function go(v){ VIEW=v; paint(); }
+function enterBuilder(){ VIEW='builder'; STEP=1; paint(); }
+
+function paint(){
+  var inB = (VIEW==='builder');
+  [].forEach.call(document.querySelectorAll('.pane'),function(p){p.classList.remove('on');});
+  if(inB){ var cur=$('p'+STEP); if(cur) cur.classList.add('on'); }
+  else { var sub=$(SUB[VIEW]); if(sub) sub.classList.add('on'); }
+
+  $('bar').style.display   = inB?'flex':'none';
+  $('steps').style.display = inB?'flex':'none';
+  $('ft').style.display    = inB?'flex':'none';
+  $('exit').style.display  = inB?'':'none';
+  $('hdTitle').textContent = inB ? 'Build a slate' : 'Creator';
+  if(!inB){ $('body').scrollTop=0; return; }
+  [].forEach.call(document.querySelectorAll('#bar .seg'),function(s){
+    var k=+s.getAttribute('data-s');
+    s.classList.toggle('done', k<Math.min(STEP,5));
+    s.classList.toggle('now', k===STEP);
+  });
+  [].forEach.call(document.querySelectorAll('#steps span'),function(s){
+    s.classList.toggle('on', +s.getAttribute('data-s')===Math.min(STEP,4));
+  });
+  $('back').disabled = STEP===1;
+  $('back').style.visibility='visible';
+  $('back').textContent = STEP===1 ? '‹ Creator' : 'Back';
+  $('next').textContent = LABEL[STEP];
+  // a slate with an invalid leg cannot advance past questions
+  var bad=document.querySelectorAll('#p3 .leg.bad').length;
+  $('next').disabled = (STEP===3 && bad>0);
+  if(STEP===3 && bad>0) $('next').textContent='Fix '+bad+' leg'+(bad>1?'s':'')+' to continue';
+  $('body').scrollTop=0;
+}
+$('next').addEventListener('click',function(){ if(this.disabled)return;
+  if(STEP<MAX){STEP++;paint();} });
+$('back').addEventListener('click',function(){ if(STEP>1){STEP--;paint();} else go('hub'); });
+$('exit').addEventListener('click',function(){ go('hub'); });
+
+/* ── compact notation ─────────────────────────────────────────────────
+   under 1,000 prints in full. 1,000+ collapses to k with one decimal, and
+   the decimal is dropped once it would be noise (124k, not 124.0k). 1M+
+   goes to M the same way. Keeps the line one line at any size.        */
+function compact(v){
+  var a=Math.abs(v),s;
+  if(a<1000) return String(v);
+  if(a<1e6){ s=v/1000; return (s>=100?Math.round(s):Math.round(s*10)/10)+'k'; }
+  s=v/1e6;   return (s>=100?Math.round(s):Math.round(s*10)/10)+'M';
+}
+var EARN=[840,4200,18600,124000,1200000], REACH=[9400,224600,224600,1830000,1830000], EI=2;
+function paintStat(){
+  $('earn').textContent='$'+compact(EARN[EI]);
+  $('reach').textContent=compact(REACH[EI]);
+}
+paintStat();
+$('stat').addEventListener('click',function(e){
+  e.stopPropagation(); EI=(EI+1)%EARN.length; paintStat();
+});
+
+/* ── hub routing ──────────────────────────────────────────────────────── */
+$('goBuild').addEventListener('click',function(){ enterBuilder(); });
+$('goRules').addEventListener('click',function(){ go('rules'); });
+$('who').addEventListener('click',function(){ go('profile'); });
+$('lsImg').addEventListener('error',function(){ this.style.display='none';
+  $('lsFall').style.display='grid'; });
+$('toRules2').addEventListener('click',function(){ go('rules'); });
+$('goHow').addEventListener('click',function(){ go('how'); });
+$('goPick').addEventListener('click',function(){ go('lockpick'); });
+$('goPrac').addEventListener('click',function(){ go('practice'); });
+$('startPrac').addEventListener('click',function(){
+  /* practice is a DIFFERENT surface on a DIFFERENT economy — it never opens this builder */
+  $('pracNote').style.display=''; this.disabled=true; this.style.opacity=.5; });
+$('howToPrac').addEventListener('click',function(){ go('practice'); });
+$('howToRules').addEventListener('click',function(){ go('rules'); });
+[].forEach.call(document.querySelectorAll('.crumb .home'),function(b){
+  b.addEventListener('click',function(){ go('hub'); });
+});
+[].forEach.call(document.querySelectorAll('.home2'),function(b){
+  b.addEventListener('click',function(){ enterBuilder(); });
+});
+$('prac').addEventListener('click',function(){ go('practice'); });
+
+/* ── Lockpick: the canned answers all NAME THE FIX ────────────────────── */
+var ANSWERS={
+  same:{q:"Why can't two names share a game?",
+    a:"Because then you are asking who wins that game with extra steps. Two names has to mean "+
+      "<b>two different games</b>. If you want Tatum, pair him with someone from another game "+
+      "— Giannis in Milwaukee at Miami."},
+  ctx:{q:"What context do I have to show?",
+    a:"Every option carries the game line, the season average and last-out form. What it "+
+      "<b>cannot</b> carry is the thing you are asking about — context sets the argument up, "+
+      "it never gives the answer away."},
+  fee:{q:"How does my host fee work?",
+    a:"It is charged on top of the entry, per player, and your division sets the tier you can "+
+      "pick from. It is the only number on the slate you control — the pot itself is the "+
+      "players'."}
+};
+[].forEach.call(document.querySelectorAll('#askChips .chip'),function(c){
+  c.addEventListener('click',function(){
+    var k=c.getAttribute('data-a'), A=ANSWERS[k]; if(!A) return;
+    var t=$('thread');
+    var me=document.createElement('div'); me.className='msg me'; me.textContent=A.q;
+    t.appendChild(me);
+    var th=document.createElement('div'); th.className='msg them'; th.innerHTML='…';
+    t.appendChild(th); c.disabled=true; c.style.opacity=.45;
+    setTimeout(function(){ th.innerHTML=A.a; $('body').scrollTop=$('body').scrollHeight; },420);
+    $('body').scrollTop=$('body').scrollHeight;
+  });
+});
+
+// step 2 — events toggle, count updates, close time follows
+[].forEach.call(document.querySelectorAll('#evBlk .ev'),function(e){
+  e.addEventListener('click',function(){
+    e.classList.toggle('on');
+    var n=document.querySelectorAll('#evBlk .ev.on').length;
+    $('evCount').textContent=n+' picked';
+    $('next').disabled = (STEP===2 && n<2);
+  });
+});
+// category + stake + fee chips
+function chipGroup(sel,multi){
+  [].forEach.call(document.querySelectorAll(sel+' .chip'),function(c){
+    c.addEventListener('click',function(){
+      if(multi){c.classList.toggle('on');}
+      else{[].forEach.call(document.querySelectorAll(sel+' .chip'),function(o){o.classList.remove('on');});
+           c.classList.add('on');}
+    });
+  });
+}
+chipGroup('#cats',false); chipGroup('#stakes',true); chipGroup('#fee',false);
+
+// step 3 — fixing leg 2 clears the flag and lifts the block
+$('leg2').querySelector('.stem').addEventListener('input',function(){});
+function fixLeg2(){
+  var l=$('leg2');
+  l.classList.remove('bad'); l.classList.add('good');
+  l.querySelectorAll('.opt')[1].innerHTML=
+    '<div class="nm">Giannis</div><div class="cx">Milwaukee at Miami<br>31 a night</div>';
+  l.querySelector('.flag').className='flag good';
+  l.querySelector('.flag').innerHTML='✓ <span>Two names, two different games. Clean.</span>';
+  $('reachStates').textContent='44 states';
+  document.querySelector('.mbar i').style.width='100%';
+  paint();
+}
+$('leg2').querySelector('.flag').addEventListener('click',fixLeg2);
+$('search').addEventListener('input',function(){
+  var q=this.value.toLowerCase();
+  [].forEach.call(document.querySelectorAll('#pool .ath'),function(a){
+    a.style.display = a.textContent.toLowerCase().indexOf(q)>-1 ? '' : 'none';
+  });
+});
+$('suggest').addEventListener('click',function(){ this.textContent='Drafting…';
+  var b=this; setTimeout(function(){b.textContent='Suggest 3 more';},900); });
+
+paint();
+window.__cb={ get step(){return STEP;}, set step(v){STEP=v;VIEW='builder';paint();},
+  get view(){return VIEW;}, set view(v){go(v);},
+  paint:paint, fixLeg2:fixLeg2, MAX:MAX, go:go, enterBuilder:enterBuilder };
+</script></body></html>

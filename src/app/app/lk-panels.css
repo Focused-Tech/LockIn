@@ -1,0 +1,509 @@
+/**
+ * THE PANEL LANGUAGE — shared by the player profile + the five account screens.
+ * Mirrors design/account_pages.html (.blk and friends), scoped under `.lk-acct` so the
+ * bare class names (.blk/.row/.tg/…) can't collide with the slate-card or creator-builder
+ * scopes. Left-edge accent CARRIES MEANING: creator purple · cash green · coin gold ·
+ * action orange · danger red. Literal box-shadow values only (var()/color-mix don't resolve).
+ */
+
+.lk-acct {
+  --orange: #fc3e01;
+  --cash: #2fb98a;
+  --coin: #f0c463;
+  --creator: #7c5cf5;
+  --bad: #e0432c;
+  --ink: #0a0d12;
+  --edge: #232b37;
+  --edge2: #1b222c;
+  --grey: #e7e7eb;
+  --dim: #98a0ae;
+  --dim2: #6e7787;
+  color: var(--grey);
+}
+
+/* ── panel ─────────────────────────────────────────────── */
+.lk-acct .blk {
+  position: relative;
+  overflow: hidden;
+  border-radius: 15px;
+  padding: 15px;
+  background: linear-gradient(180deg, #161c25 0%, #10151c 100%);
+  border: 1px solid var(--edge);
+  border-left: 4px solid var(--creator);
+  box-shadow:
+    inset 6px 0 14px -10px rgba(124, 92, 245, 0.75),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 8px 20px rgba(0, 0, 0, 0.55);
+}
+.lk-acct .blk::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, var(--creator) 0%, #3b2c93 100%);
+}
+.lk-acct .blk.money {
+  border-left-color: var(--cash);
+  box-shadow:
+    inset 6px 0 14px -10px rgba(47, 185, 138, 0.75),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 8px 20px rgba(0, 0, 0, 0.55);
+}
+.lk-acct .blk.money::before {
+  background: linear-gradient(180deg, var(--cash) 0%, #166b4f 100%);
+}
+.lk-acct .blk.coin {
+  border-left-color: var(--coin);
+  box-shadow:
+    inset 6px 0 14px -10px rgba(240, 196, 99, 0.75),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 8px 20px rgba(0, 0, 0, 0.55);
+}
+.lk-acct .blk.coin::before {
+  background: linear-gradient(180deg, var(--coin) 0%, #8a6a20 100%);
+}
+.lk-acct .blk.act {
+  border-left-color: var(--orange);
+  box-shadow:
+    inset 6px 0 14px -10px rgba(252, 62, 1, 0.75),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 8px 20px rgba(0, 0, 0, 0.55);
+}
+.lk-acct .blk.act::before {
+  background: linear-gradient(180deg, var(--orange) 0%, #8e2201 100%);
+}
+.lk-acct .blk.warn {
+  border-left-color: var(--bad);
+  box-shadow:
+    inset 6px 0 14px -10px rgba(224, 67, 44, 0.75),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 8px 20px rgba(0, 0, 0, 0.55);
+}
+.lk-acct .blk.warn::before {
+  background: linear-gradient(180deg, var(--bad) 0%, #7e1f13 100%);
+}
+
+.lk-acct .lb {
+  font-weight: 700;
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--dim2);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.lk-acct .lb i {
+  flex: 1;
+  height: 1px;
+  background: var(--edge);
+  font-style: normal;
+}
+.lk-acct .hint {
+  font-size: 12.5px;
+  color: var(--dim2);
+  line-height: 1.5;
+}
+
+/* ── hero balance (wallet / profile) ───────────────────── */
+.lk-acct .hero .k {
+  font-size: 11.5px;
+  color: var(--dim2);
+}
+.lk-acct .hero .v {
+  margin-top: 3px;
+  font-weight: 800;
+  font-size: 30px;
+  letter-spacing: -0.025em;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.lk-acct .hero .v.big {
+  font-size: 38px;
+}
+.lk-acct .hero .v.cash {
+  color: var(--cash);
+}
+.lk-acct .hero .v.coin {
+  color: var(--coin);
+}
+.lk-acct .hero .sub {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--dim2);
+}
+
+/* ── buttons ───────────────────────────────────────────── */
+.lk-acct .btns {
+  display: flex;
+  gap: 9px;
+  margin-top: 14px;
+}
+.lk-acct .btn {
+  flex: 1;
+  border-radius: 12px;
+  padding: 13px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  border: 1px solid var(--edge);
+  background: linear-gradient(180deg, #1b212b, #151a22);
+  color: #fff;
+  text-align: center;
+  font-family: inherit;
+}
+.lk-acct .btn.pri {
+  border: none;
+  background: var(--orange);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 6px 16px rgba(0, 0, 0, 0.5);
+}
+
+/* ── rows ──────────────────────────────────────────────── */
+.lk-acct .row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--grey);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 13px 0;
+  border-top: 1px solid var(--edge);
+}
+.lk-acct .row.static {
+  cursor: default;
+}
+.lk-acct .row:first-of-type {
+  border-top: none;
+  padding-top: 2px;
+}
+.lk-acct .row .n {
+  flex: 1;
+  min-width: 0;
+}
+.lk-acct .row .n b {
+  display: block;
+  font-weight: 600;
+  font-size: 15px;
+  color: #fff;
+}
+.lk-acct .row .n span {
+  display: block;
+  margin-top: 3px;
+  font-size: 11.5px;
+  color: var(--dim2);
+  line-height: 1.45;
+}
+.lk-acct .row .cv {
+  flex: none;
+  color: var(--dim2);
+  font-size: 19px;
+  line-height: 1;
+}
+.lk-acct .row .val {
+  flex: none;
+  font-weight: 700;
+  font-size: 13.5px;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+.lk-acct .row .val.cash {
+  color: var(--cash);
+}
+.lk-acct .row .val.coin {
+  color: var(--coin);
+}
+.lk-acct .row .val.neg {
+  color: var(--bad);
+}
+.lk-acct .row .val.muted {
+  color: var(--dim2);
+}
+
+/* ── toggle ────────────────────────────────────────────── */
+.lk-acct .tg {
+  flex: none;
+  width: 46px;
+  height: 27px;
+  border-radius: 99px;
+  border: 1px solid var(--edge);
+  background: #12171f;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.18s ease;
+  padding: 0;
+}
+.lk-acct .tg::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  background: #5a6472;
+  transition: transform 0.18s ease, background 0.18s ease;
+}
+.lk-acct .tg.on {
+  background: rgba(252, 62, 1, 0.25);
+  border-color: var(--orange);
+}
+.lk-acct .tg.on::after {
+  transform: translateX(19px);
+  background: var(--orange);
+}
+
+/* ── avatar (profile) — circular frame, 2px accent ring + outer halo ── */
+.lk-acct .av-ring {
+  flex: none;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 24px;
+  background: linear-gradient(180deg, #2a2540, #171526);
+  border: 2px solid var(--creator);
+  box-shadow: 0 0 0 4px rgba(124, 92, 245, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+.lk-acct .av-ring.money {
+  border-color: var(--cash);
+  box-shadow: 0 0 0 4px rgba(47, 185, 138, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+.lk-acct .av-ring.coin {
+  border-color: var(--coin);
+  box-shadow: 0 0 0 4px rgba(240, 196, 99, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+/* ── leaderboard ───────────────────────────────────────── */
+.lk-acct .me {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.lk-acct .me .pos {
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  display: grid;
+  place-items: center;
+  background: rgba(252, 62, 1, 0.14);
+  border: 2px solid rgba(252, 62, 1, 0.5);
+  color: var(--orange);
+  font-weight: 800;
+  font-size: 17px;
+}
+.lk-acct .me .n b {
+  display: block;
+  font-weight: 700;
+  font-size: 17px;
+  color: #fff;
+}
+.lk-acct .me .n span {
+  display: block;
+  margin-top: 2px;
+  font-size: 11.5px;
+  color: var(--dim2);
+}
+.lk-acct .me .sc {
+  margin-left: auto;
+  text-align: right;
+}
+.lk-acct .me .sc b {
+  display: block;
+  font-weight: 800;
+  font-size: 20px;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+.lk-acct .me .sc span {
+  font-size: 11px;
+  color: var(--dim2);
+}
+.lk-acct .tabs {
+  display: flex;
+  gap: 7px;
+  margin-bottom: 12px;
+}
+.lk-acct .tab {
+  border: 1px solid var(--edge);
+  border-radius: 99px;
+  padding: 6px 13px;
+  font-weight: 600;
+  font-size: 12.5px;
+  background: linear-gradient(180deg, #1b212b, #151a22);
+  color: var(--dim);
+  cursor: pointer;
+  font-family: inherit;
+}
+.lk-acct .tab.on {
+  background: rgba(252, 62, 1, 0.14);
+  border-color: var(--orange);
+  color: var(--orange);
+}
+.lk-acct .lrow {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 0;
+  border-top: 1px solid var(--edge);
+}
+.lk-acct .lrow:first-of-type {
+  border-top: none;
+}
+.lk-acct .lrow .p {
+  flex: none;
+  width: 24px;
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--dim2);
+  font-variant-numeric: tabular-nums;
+}
+.lk-acct .lrow .p.top {
+  color: var(--coin);
+}
+.lk-acct .lrow .av {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #232b3c;
+  border: 1px solid var(--edge);
+  color: #fff;
+  font-weight: 700;
+  font-size: 12px;
+}
+.lk-acct .lrow .h {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  font-size: 13.5px;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lk-acct .lrow .s {
+  flex: none;
+  font-weight: 700;
+  font-size: 13.5px;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+.lk-acct .lrow .d {
+  flex: none;
+  width: 34px;
+  text-align: right;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.lk-acct .lrow .d.up {
+  color: var(--cash);
+}
+.lk-acct .lrow .d.dn {
+  color: var(--bad);
+}
+.lk-acct .lrow .d.eq {
+  color: var(--dim2);
+}
+.lk-acct .lrow.you {
+  background: rgba(252, 62, 1, 0.07);
+  border-radius: 10px;
+  padding: 10px 8px;
+  border-top-color: transparent;
+}
+
+/* ── refer ─────────────────────────────────────────────── */
+.lk-acct .code {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 2px;
+}
+.lk-acct .code .c {
+  flex: 1;
+  border: 1px dashed var(--orange);
+  border-radius: 12px;
+  padding: 13px;
+  text-align: center;
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: 0.22em;
+  color: #fff;
+  background: rgba(252, 62, 1, 0.07);
+}
+.lk-acct .step {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 11px 0;
+  border-top: 1px solid var(--edge);
+}
+.lk-acct .step:first-of-type {
+  border-top: none;
+}
+.lk-acct .step .k {
+  flex: none;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--creator);
+  color: #fff;
+  font-weight: 700;
+  font-size: 12px;
+}
+.lk-acct .step .n b {
+  display: block;
+  font-weight: 600;
+  font-size: 14px;
+  color: #fff;
+}
+.lk-acct .step .n span {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--dim2);
+  line-height: 1.45;
+}
+
+/* ── legal + mode chip ─────────────────────────────────── */
+.lk-acct .legal {
+  text-align: center;
+  font-size: 11.5px;
+  color: var(--dim2);
+  line-height: 1.5;
+  padding: 0 6px;
+}
+.lk-acct .modechip {
+  border-radius: 99px;
+  padding: 4px 10px;
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.lk-acct .modechip.cash {
+  background: rgba(47, 185, 138, 0.18);
+  border: 1px solid rgba(47, 185, 138, 0.55);
+  color: #7fe3c0;
+}
+.lk-acct .modechip.coins {
+  background: rgba(240, 196, 99, 0.16);
+  border: 1px solid rgba(240, 196, 99, 0.5);
+  color: #f5d89a;
+}
