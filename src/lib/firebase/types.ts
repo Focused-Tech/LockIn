@@ -63,6 +63,8 @@ export const COLLECTIONS = {
    * leaderboard, rec signals, wallet activity) can never sweep up practice play.
    */
   practiceEntries: "practiceEntries",
+  /** Creator agreement signatures (append-only audit trail): users/{uid}/creatorSignatures/{version_section}. */
+  creatorSignatures: "creatorSignatures", // subcollection of users/{uid}
 } as const;
 
 /** Which Explore lane a user has chosen (set at onboarding, switchable later). */
@@ -114,6 +116,11 @@ export interface UserDoc {
   creatorStripeConnectId: string | null;
   /** True once the connected account can receive payouts (Stripe Connect). */
   creatorPayoutsEnabled: boolean;
+  /** Creator-agreement gate: set true only when ALL sections of `creatorAgreementVersion`
+   *  are signed. A version bump (counsel edit) leaves the old version here → re-sign. */
+  creatorOnboarded?: boolean;
+  /** The agreement version the creator has fully signed (matched against AGREEMENT_VERSION). */
+  creatorAgreementVersion?: string;
   proSubscriber: boolean;
   proExpiresAt: FsTimestamp | null;
   stripeSubscriptionId: string | null;
@@ -508,6 +515,17 @@ export interface CreatorEarningDoc {
   platformCutCents: number;
   creatorNetCents: number;
   createdAt: FsTimestamp;
+}
+
+/**
+ * One signed section of the Creator Agreement. Append-only audit trail at
+ * users/{uid}/creatorSignatures/{version}_{section} — a version bump writes NEW docs
+ * and never overwrites the old ones (the history is the enforceable record).
+ */
+export interface CreatorSignatureDoc {
+  section: string; // SectionKey
+  version: string; // AGREEMENT_VERSION at signing
+  signedAt: FsTimestamp;
 }
 
 /** A document paired with its Firestore id. */

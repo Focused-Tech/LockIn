@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SkillGameDisclaimer } from "@/components/SkillGameDisclaimer";
 import { getCurrentUserProfile } from "@/lib/firebase/session";
+import { isCreatorOnboarded } from "@/server/data/creatorAgreement";
 import { CATEGORIES } from "@/lib/categories";
 import { SlateBuilder } from "./SlateBuilder";
 
@@ -9,6 +10,9 @@ export default async function CreatePage() {
   const profile = await getCurrentUserProfile();
   if (!profile) redirect("/login");
   if (!profile.creatorVerified) redirect("/app/apply");
+  // The gate lives on the ROUTE (deep-link-proof): a verified creator who has not fully
+  // signed the current Creator Agreement is sent to the acknowledgment flow, not the builder.
+  if (!isCreatorOnboarded(profile)) redirect("/app/creator/agreement");
 
   return (
     <div className="flex flex-col gap-5 p-6">
