@@ -151,13 +151,11 @@ export function CreatorBuilder({ dashboard, creator }: { dashboard?: ReactNode; 
                 the tiles) makes it read as tappable. Same panel styling — NOT restyled into a tile. */}
             <div id="who" role="button" tabIndex={0} style={{ cursor: "pointer" }} onClick={() => go("profile")}>
               <div className="av">{initial}</div>
-              <div className="n"><b>{c.name}</b><span>
-                {c.reach != null ? `${compact(c.reach)} reach` : "reach not set"}
-                {" · "}<i style={{ fontStyle: "normal", color: "var(--cash)" }}>${compact(Math.round(c.earnedCents / 100))}</i> earned
-              </span></div>
-              {c.division && <div className="dv">{c.division}</div>}
-              <div id="cashtag">Cash</div>
-              <div className="cv">›</div>
+              <div className="nm"><b>{c.name}</b>
+                <span id="stat"><i id="reach">{c.reach != null ? compact(c.reach) : "—"}</i> reach
+                  <em>&middot;</em> <i id="earn">${compact(Math.round(c.earnedCents / 100))}</i> earned</span></div>
+              {c.division && <span className="badge div">{c.division}</span>}
+              <span className="cv">›</span>
             </div>
           </div>
           <button className="gobig" id="goBuild" onClick={enterBuilder}>
