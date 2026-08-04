@@ -47,12 +47,17 @@ describe("§9 route gate — the check is at the route, keyed on the current ver
     expect(isCreatorOnboarded({ creatorOnboarded: true, creatorAgreementVersion: AGREEMENT_VERSION })).toBe(true);
     console.log(`§9 gate: onboarded requires creatorOnboarded && version===${AGREEMENT_VERSION}. old v0.9 → re-sign.`);
   });
-  it("the builder route redirects an incomplete record to the flow; the flow redirects an onboarded creator to the hub", () => {
+  it("v1 /app/create is retired to the v2 hub; the hub route gates onboarding; the flow bounces an onboarded creator to the hub", () => {
     const CREATE = read("src/app/app/create/page.tsx");
+    const HUB = read("src/app/app/creator/page.tsx");
     const FLOW = read("src/app/app/creator/agreement/page.tsx");
-    expect(CREATE.includes('if (!isCreatorOnboarded(profile)) redirect("/app/creator/agreement")')).toBe(true);
+    // version one is retired — /app/create only redirects to the v2 hub, never renders SlateBuilder
+    expect(CREATE.includes('redirect("/app/creator")')).toBe(true);
+    expect(/import[^\n]*SlateBuilder|<SlateBuilder/.test(CREATE)).toBe(false); // not rendered (comment mention is fine)
+    // the agreement gate now lives on the v2 hub route (deep-link-proof)
+    expect(HUB.includes('if (!isCreatorOnboarded(profile)) redirect("/app/creator/agreement")')).toBe(true);
     expect(FLOW.includes('if (isCreatorOnboarded(profile)) redirect("/app/creator")')).toBe(true);
-    console.log("§9 builder route /app/create → (incomplete) → /app/creator/agreement ; flow → (onboarded) → /app/creator");
+    console.log("§9 /app/create → /app/creator (v1 retired); hub → (incomplete) → agreement ; flow → (onboarded) → hub");
   });
 });
 
