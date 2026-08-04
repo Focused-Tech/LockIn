@@ -1,15 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, Pill } from "@/components/ui";
 import { formatCents } from "@/lib/utils";
-import {
-  REFERRAL_PAID_BONUS_CENTS,
-  REFERRAL_SIGNUP_COINS,
-} from "@/lib/constants";
+import { REFERRAL_SIGNUP_COINS } from "@/lib/constants";
 import type { ReferralDashboard } from "@/server/data/referrals";
 
-export function ReferralView({ data }: { data: ReferralDashboard }) {
+/**
+ * REFER — code, copy, share, three-step how-it-works, earned so far. The reward
+ * DIFFERS BY MODE: advanced earns cash credit, beginner earns coins. Never renders
+ * the other currency (two-currency rule).
+ */
+export function ReferralView({
+  data,
+  advanced,
+}: {
+  data: ReferralDashboard;
+  advanced: boolean;
+}) {
   const [origin, setOrigin] = useState("");
   const [copied, setCopied] = useState(false);
 
@@ -18,7 +25,7 @@ export function ReferralView({ data }: { data: ReferralDashboard }) {
 
   async function copy() {
     try {
-      await navigator.clipboard.writeText(link);
+      await navigator.clipboard.writeText(link || data.code);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
@@ -26,81 +33,105 @@ export function ReferralView({ data }: { data: ReferralDashboard }) {
     }
   }
 
+  async function share() {
+    const nav = navigator as Navigator & { share?: (d: { title: string; text: string; url: string }) => Promise<void> };
+    if (nav.share && link) {
+      try {
+        await nav.share({ title: "LockIn", text: `Join me on LockIn — use my code ${data.code}`, url: link });
+        return;
+      } catch {
+        /* cancelled */
+      }
+    }
+    copy();
+  }
+
+  const reward = advanced ? "$5 in contest credit" : "250 coins";
+  // Referrer earns REFERRAL_SIGNUP_COINS per signup (both modes); advanced also earns cash.
+  const coinsEarned = data.totalReferred * REFERRAL_SIGNUP_COINS;
+
   return (
-    <div className="flex flex-col gap-5">
-      {/* Invite link */}
-      <Card className="flex flex-col gap-2">
-        <h2 className="text-sm font-semibold">Your invite link</h2>
-        <div className="flex gap-2">
-          <input
-            readOnly
-            value={link}
-            onFocus={(e) => e.currentTarget.select()}
-            className="h-9 flex-1 truncate rounded border border-border bg-surface px-3 text-xs text-foreground"
-          />
-          <button
-            type="button"
-            onClick={copy}
-            className="h-9 shrink-0 rounded border border-accent-border bg-accent-soft px-3 text-xs font-medium text-accent"
-          >
+    <div className="lk-acct flex flex-col gap-4 p-4 pb-24">
+      {/* Code */}
+      <div className="blk act">
+        <div className="lb">Your code <i></i></div>
+        <div className="code">
+          <div className="c">{data.code.toUpperCase()}</div>
+          <button type="button" className="btn" style={{ flex: "none", padding: "13px 15px" }} onClick={copy}>
             {copied ? "Copied" : "Copy"}
           </button>
         </div>
-        <p className="text-xs text-muted">
-          You earn {REFERRAL_SIGNUP_COINS} coins when a friend signs up, plus{" "}
-          {formatCents(REFERRAL_PAID_BONUS_CENTS)} cash when they make their first
-          deposit. They start with bonus coins too.
-        </p>
-      </Card>
-
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-3">
-        <Card>
-          <p className="text-xs text-muted">Referred</p>
-          <p className="mt-1 text-lg font-semibold">{data.totalReferred}</p>
-        </Card>
-        <Card>
-          <p className="text-xs text-muted">Converted</p>
-          <p className="mt-1 text-lg font-semibold">{data.converted}</p>
-        </Card>
-        <Card>
-          <p className="text-xs text-muted">Cash earned</p>
-          <p className="mt-1 text-lg font-semibold text-win">
-            {formatCents(data.earningsCents)}
-          </p>
-        </Card>
+        <div className="btns">
+          <button type="button" className="btn pri" onClick={share}>
+            Share invite
+          </button>
+        </div>
       </div>
 
-      {/* List */}
-      <div>
-        <h2 className="mb-2 text-sm font-semibold">Your referrals</h2>
-        {data.referrals.length === 0 ? (
-          <Card className="py-8 text-center text-sm text-muted">
-            No referrals yet — share your link to start earning.
-          </Card>
-        ) : (
-          <ul className="flex flex-col divide-y divide-border overflow-hidden rounded border border-border">
-            {data.referrals.map((r) => (
-              <li
-                key={r.username}
-                className="flex items-center justify-between bg-surface-card px-4 py-3"
-              >
-                <span className="text-sm font-medium">{r.username}</span>
-                <div className="flex items-center gap-2">
-                  {r.rewardCents > 0 && (
-                    <span className="text-sm font-semibold text-win">
-                      {formatCents(r.rewardCents)}
-                    </span>
-                  )}
-                  <Pill tone={r.status === "converted" ? "win" : "neutral"}>
-                    {r.status === "converted" ? "Converted" : "Signed up"}
-                  </Pill>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
+      {/* How it works */}
+      <div className="blk">
+        <div className="lb">How it works <i></i></div>
+        <div className="step">
+          <div className="k">1</div>
+          <div className="n">
+            <b>Send your code</b>
+            <span>Any friend who has never played.</span>
+          </div>
+        </div>
+        <div className="step">
+          <div className="k">2</div>
+          <div className="n">
+            <b>They play a slate</b>
+            <span>Their first contest, any category.</span>
+          </div>
+        </div>
+        <div className="step">
+          <div className="k">3</div>
+          <div className="n">
+            <b>You both get {reward}</b>
+            <span>Credited once their first slate settles.</span>
+          </div>
+        </div>
       </div>
+
+      {/* Earned so far */}
+      <div className={"blk " + (advanced ? "money" : "coin")}>
+        <div className="lb">Earned so far <i></i></div>
+        <div className="row static">
+          <span className="n"><b>Friends joined</b></span>
+          <span className="val">{data.totalReferred}</span>
+        </div>
+        <div className="row static">
+          <span className="n"><b>Converted</b></span>
+          <span className="val">{data.converted}</span>
+        </div>
+        <div className="row static">
+          <span className="n"><b>Rewards earned</b></span>
+          {advanced ? (
+            <span className="val cash">{formatCents(data.earningsCents)}</span>
+          ) : (
+            <span className="val coin">{coinsEarned.toLocaleString()}</span>
+          )}
+        </div>
+      </div>
+
+      {data.referrals.length > 0 && (
+        <div className="blk">
+          <div className="lb">Your referrals <i></i></div>
+          {data.referrals.map((r) => (
+            <div key={r.username} className="row static">
+              <span className="n"><b>@{r.username}</b></span>
+              <span className={"val " + (r.status === "converted" ? "cash" : "muted")}>
+                {r.status === "converted" ? "Converted" : "Signed up"}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <p className="hint">
+        Invites are one per person. Self-referrals and duplicate accounts do not qualify.
+      </p>
     </div>
   );
 }
