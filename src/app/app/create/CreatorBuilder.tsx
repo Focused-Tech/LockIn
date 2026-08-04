@@ -160,7 +160,10 @@ export function CreatorBuilder({ dashboard, creator }: { dashboard?: ReactNode; 
               <div className="cv">›</div>
             </div>
           </div>
-          <button className="gobig" id="goBuild" onClick={enterBuilder}>Build a slate</button>
+          <button className="gobig" id="goBuild" onClick={enterBuilder}>
+            <span className="ic">▣</span>
+            <span className="n"><b>Build a slate</b><span>Pick the night, write the questions, set the prize</span></span>
+            <span className="cv">›</span></button>
           <div className="tiles">
             <button className="tile" id="goRules" onClick={() => go("rules")}><div className="ic">§</div>
               <div className="n"><b>Read the rules</b><span>What a question can ask, and what is never allowed</span></div><div className="cv">›</div></button>
@@ -205,7 +208,10 @@ export function CreatorBuilder({ dashboard, creator }: { dashboard?: ReactNode; 
             <div className="rule"><span className="m yes">✓</span><span><b>One pot per slate.</b> Players wager what they want; what they collect follows their stake and how much they got right.</span></div>
             <div className="rule"><span className="m yes">✓</span><span>Payouts are projected while the slate is open and <b>become fixed the moment it closes</b> — which happens before the event starts.</span></div>
           </div>
-          <button className="gobig home2" onClick={enterBuilder}>Got it — build a slate</button>
+          <button className="gobig home2" onClick={enterBuilder}>
+            <span className="ic">▣</span>
+            <span className="n"><b>Got it — build a slate</b><span>Start the four steps</span></span>
+            <span className="cv">›</span></button>
         </div>
 
         {/* ══ HOW ══ */}
@@ -228,7 +234,10 @@ export function CreatorBuilder({ dashboard, creator }: { dashboard?: ReactNode; 
               <button className="chip" id="howToRules" onClick={() => go("rules")}>Read the rules ›</button>
             </div>
           </div>
-          <button className="gobig home2" onClick={enterBuilder}>Start building</button>
+          <button className="gobig home2" onClick={enterBuilder}>
+            <span className="ic">▣</span>
+            <span className="n"><b>Start building</b><span>Start the four steps</span></span>
+            <span className="cv">›</span></button>
         </div>
 
         {/* ══ LOCKPICK ══ */}
@@ -250,7 +259,10 @@ export function CreatorBuilder({ dashboard, creator }: { dashboard?: ReactNode; 
               <button className="chip" data-a="fee" disabled={askUsed.fee} style={askUsed.fee ? { opacity: 0.45 } : undefined} onClick={() => ask("fee")}>How does my host fee work?</button>
             </div>
           </div>
-          <button className="gobig home2" onClick={enterBuilder}>Take me to the builder</button>
+          <button className="gobig home2" onClick={enterBuilder}>
+            <span className="ic">▣</span>
+            <span className="n"><b>Take me to the builder</b><span>Start the four steps</span></span>
+            <span className="cv">›</span></button>
         </div>
 
         {/* ══ PRACTICE ══ (link OUT — never mounts a builder here) */}
@@ -269,7 +281,10 @@ export function CreatorBuilder({ dashboard, creator }: { dashboard?: ReactNode; 
           <button className="outlink" id="startPrac" disabled={pracDisabled} style={pracDisabled ? { opacity: 0.5 } : undefined}
             onClick={() => { setPracNote(true); setPracDisabled(true); router.push("/app/practice/create"); }}>Open practice mode ›</button>
           <p className="hint" id="pracNote" style={{ display: pracNote ? "" : "none" }}>Practice mode is a separate surface — its own screens.</p>
-          <button className="gobig home2" onClick={enterBuilder}>Back to cash creator mode</button>
+          <button className="gobig home2" onClick={enterBuilder}>
+            <span className="ic">▣</span>
+            <span className="n"><b>Back to cash creator mode</b><span>Real followers, real pot, real payout</span></span>
+            <span className="cv">›</span></button>
         </div>
 
         {/* ══ CREATOR PROFILE ══ — the identity strip's destination (NOT the player profile). */}
