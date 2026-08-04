@@ -264,7 +264,7 @@ table.earn td b{color:var(--cash)}
 .row .n{flex:1;min-width:0}
 .row .n b{display:block;font-weight:600;font-size:14.5px;color:#fff}
 .row .n span{display:block;margin-top:2px;font-size:11.5px;color:var(--dim2);line-height:1.4}
-.row .cv{flex:none;color:var(--dim2);font-size:16px}
+.row .cv{flex:none;color:var(--dim2);font-size:19px;line-height:1}
 #signout{width:100%;margin-top:2px;border:1px solid var(--edge);border-radius:13px;padding:13px;
  background:linear-gradient(180deg,#1B212B,#151A22);color:var(--dim);
  font-weight:600;font-size:14px;cursor:pointer}
@@ -396,27 +396,27 @@ table.earn td b{color:var(--cash)}
         <div class="lb">Payouts <i></i></div>
         <button class="row" style="padding-top:4px">
           <div class="n"><b>Connected</b><span>Earnings land in your account automatically</span></div>
-          <div class="cv">&rarr;</div></button>
+          <div class="cv">›</div></button>
       </div>
 
       <div class="blk">
         <div class="lb">Creator tools <i></i></div>
         <button class="row" id="toDash"><div class="n"><b>Creator dashboard</b>
-          <span>Your contests &amp; earnings</span></div><div class="cv">&rarr;</div></button>
+          <span>Your contests &amp; earnings</span></div><div class="cv">›</div></button>
         <button class="row"><div class="n"><b>Share card</b>
-          <span>The card you post when a contest goes live</span></div><div class="cv">&rarr;</div></button>
+          <span>The card you post when a contest goes live</span></div><div class="cv">›</div></button>
         <button class="row" id="toRules2"><div class="n"><b>The rules</b>
-          <span>What a question can ask</span></div><div class="cv">&rarr;</div></button>
+          <span>What a question can ask</span></div><div class="cv">›</div></button>
       </div>
 
       <div class="blk">
         <div class="lb">Account <i></i></div>
         <button class="row"><div class="n"><b>Wallet</b>
-          <span>Balance, deposits &amp; withdrawals</span></div><div class="cv">&rarr;</div></button>
+          <span>Balance, deposits &amp; withdrawals</span></div><div class="cv">›</div></button>
         <button class="row"><div class="n"><b>Refer</b>
-          <span>Invite friends, earn rewards</span></div><div class="cv">&rarr;</div></button>
+          <span>Invite friends, earn rewards</span></div><div class="cv">›</div></button>
         <button class="row"><div class="n"><b>Responsible play</b>
-          <span>Deposit limits &amp; self-exclusion</span></div><div class="cv">&rarr;</div></button>
+          <span>Deposit limits &amp; self-exclusion</span></div><div class="cv">›</div></button>
       </div>
 
       <button id="signout">Sign out</button>
@@ -467,6 +467,9 @@ table.earn td b{color:var(--cash)}
           <b>No question shape repeats on one slate.</b></span></div>
         <div class="rule"><span class="m yes">✓</span><span>Write the argument real fans have.
           Who shows out — not who wins.</span></div>
+        <div class="rule"><span class="m yes">✓</span><span><b>These six are the sports
+          shapes.</b> Entertainment, awards, music and reality run their own approved
+          shapes — the validator knows which set applies to the category you picked.</span></div>
       </div>
 
       <div class="blk money">
@@ -614,7 +617,9 @@ table.earn td b{color:var(--cash)}
         <div class="chips" id="cats">
           <button class="chip on">NBA</button><button class="chip">NFL</button>
           <button class="chip">MLB</button><button class="chip">WNBA</button>
-          <button class="chip">Soccer</button><button class="chip">Reality TV</button>
+          <button class="chip">Soccer</button><button class="chip">Entertainment</button>
+          <button class="chip">Awards</button><button class="chip">Music</button>
+          <button class="chip">Reality TV</button>
           <button class="chip">Music</button>
         </div>
       </div>

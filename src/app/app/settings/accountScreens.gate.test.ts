@@ -59,12 +59,13 @@ describe("§9 profile — parlay gone, currencies never co-render", () => {
     console.log("§9 profile: 'parlay' occurrences = 0");
   });
   it("cash (formatCents) and coins are guarded by the SAME per-mode branch", () => {
-    // both currency renders are gated on `advanced ? … : …` — mutually exclusive
-    expect(PROFILE.includes("advanced ? (")).toBe(true);
+    // reconciled profile: cash render and coin render are BOTH gated on `advanced ? … : …`
     expect(PROFILE.includes("formatCents(profile.cashBalanceCents)")).toBe(true);
-    expect(PROFILE.includes("coins.toLocaleString()")).toBe(true);
-    // the wallet panel class flips money/coin by mode — never both
+    expect(PROFILE.includes("profile.coinBalance.toLocaleString()")).toBe(true);
+    // the wallet + lifetime panels flip money/coin by mode — never both
     expect(PROFILE.includes('advanced ? "money" : "coin"')).toBe(true);
+    // and the single ternary that co-locates them proves mutual exclusion
+    expect(PROFILE.includes("advanced ? formatCents(profile.cashBalanceCents) : profile.coinBalance.toLocaleString()")).toBe(true);
     console.log("§9 profile: cash under advanced-true branch, coins under advanced-false — never co-render");
   });
 });
@@ -111,15 +112,46 @@ describe("§9 beginner wallet — no dollar figure renders", () => {
   });
 });
 
-describe("§9 chevrons — one distinct arrow", () => {
-  it("profile + settings use › (not long arrows) for rows", () => {
-    const SETTINGS = read("src/app/app/settings/SettingsView.tsx");
-    // the row chevron glyph
-    expect(PROFILE.includes("›")).toBe(true);
-    expect(SETTINGS.includes("›")).toBe(true);
-    // no long right-arrow in the new row markup
-    const longArrows = (PROFILE.match(/→/g) || []).length + (SETTINGS.match(/→/g) || []).length;
-    console.log(`§9 chevrons: › present · long-arrow (→) count = ${longArrows}`);
-    expect(longArrows).toBe(0);
+describe("§1/§6 chevron sweep — CHEVRON › IS CANON across every built screen", () => {
+  const SCREENS = [
+    "src/app/app/profile/page.tsx",
+    "src/app/app/wallet/WalletView.tsx",
+    "src/app/app/wallet/page.tsx",
+    "src/app/app/leaderboard/page.tsx",
+    "src/app/app/refer/ReferralView.tsx",
+    "src/app/app/responsible-play/ResponsiblePlayView.tsx",
+    "src/app/app/settings/SettingsView.tsx",
+    "src/app/app/create/CreatorBuilder.tsx",
+    "src/app/app/creator/page.tsx",
+  ];
+  it("the DISTINCT set of arrow glyphs rendered across all built screens is exactly { › }", () => {
+    const set = new Set<string>();
+    const glyphs = /[→➔➝⟶»›]|&rarr;/g;
+    const where: Record<string, string[]> = {};
+    for (const f of SCREENS) {
+      const src = read(f);
+      const m = src.match(glyphs) || [];
+      for (const g of m) {
+        set.add(g);
+        (where[g] ??= []).push(f.split("/").pop()!);
+      }
+    }
+    console.log(`§1 distinct arrow set = { ${[...set].join(" ")} } ; by-glyph = ${JSON.stringify(where)}`);
+    expect([...set]).toEqual(["›"]);
+  });
+});
+
+describe("§3 leaderboard — advanced ordering is CASH WON (reverted)", () => {
+  it("advanced uses fetchLeaderboard's cash-won order (no wins re-sort); beginner re-ranks by score", () => {
+    const LB = read("src/app/app/leaderboard/page.tsx");
+    // advanced maps data.rows straight through (cash-won order); it does NOT sort by wins.
+    expect(LB.includes("advanced\n    ? base.map((r, i) => ({ ...r, rank: i + 1 }))")).toBe(true);
+    // the cash paid-line is restored on the advanced board
+    expect(LB.includes("Paid line · top")).toBe(true);
+    expect(LB.includes("formatCents(row.totalWonCents)")).toBe(true);
+    // fetchLeaderboard still ranks by cash won (the source order)
+    const SRC = read("src/server/data/leaderboard.ts");
+    expect(SRC.includes("y.totalWonCents - x.totalWonCents")).toBe(true);
+    console.log("§3 advanced ordering = CASH WON (leaderboard.ts:134 totalWonCents) + paid-line restored; beginner = score");
   });
 });

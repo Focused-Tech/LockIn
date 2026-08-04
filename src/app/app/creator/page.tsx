@@ -43,7 +43,7 @@ export default async function CreatorDashboardPage({
   const data = await fetchCreatorDashboard(adminDb(), profile.id);
 
   // Real creator meta for the identity strip + creator profile. Verified reach + division
-  // have no social-follower source yet → null (rendered as an honest "—"/"reach not set").
+  // have no social-follower source yet, so null (rendered as an honest "—"/"reach not set").
   const memberSince = profile.createdAt?.toMillis?.()
     ? new Date(profile.createdAt.toMillis()).toLocaleDateString(undefined, { month: "short", year: "numeric" })
     : null;

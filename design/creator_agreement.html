@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>LockIn — creator acknowledgments</title>
+<style>
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent;
+ scrollbar-width:none;-ms-overflow-style:none}
+*::-webkit-scrollbar{display:none}
+:root{--orange:#FC3E01;--cash:#2FB98A;--creator:#7C5CF5;--bad:#E0432C;--gold:#F0C463;
+ --ink:#0A0D12;--edge:#232B37;--edge2:#1B222C;--grey:#E7E7EB;--dim:#98A0AE;--dim2:#6E7787}
+html{height:100%}
+body{min-height:100%;width:100%;max-width:100%;background:var(--ink);color:var(--grey);
+ overflow-x:hidden;
+ font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+ font-size:14px;line-height:1.45}
+#wrap{width:100%;max-width:390px;margin:0 auto;padding-bottom:104px}
+
+#hd{position:sticky;top:0;z-index:5;padding:12px 16px 14px;
+ background:rgba(10,13,18,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--edge2)}
+#hdr{display:flex;align-items:center;gap:10px}
+#hdr .bk{border:1px solid var(--edge);border-radius:9px;padding:6px 11px;
+ background:linear-gradient(180deg,#1B212B,#151A22);color:var(--grey);
+ font-weight:600;font-size:12.5px;cursor:pointer}
+#hdr b{font-weight:700;font-size:15px;color:#fff}
+#hdr span{margin-left:auto;font-weight:700;font-size:11px;letter-spacing:.1em;color:var(--dim2)}
+
+/* ── the rail: a dot per waiver, filled once signed ── */
+#rail{display:flex;align-items:center;margin-top:14px;padding:0 4px}
+.node{position:relative;width:30px;height:30px;border-radius:50%;flex:none;display:grid;
+ place-items:center;font-weight:800;font-size:12px;
+ background:#141A23;border:2px solid var(--edge);color:var(--dim2);
+ transition:background .25s ease,border-color .25s ease,color .25s ease}
+.node.now{border-color:var(--orange);color:var(--orange);background:rgba(252,62,1,.12)}
+.node.done{background:var(--orange);border-color:var(--orange);color:#fff}
+.link{flex:1;height:2px;background:var(--edge);margin:0 2px;position:relative;overflow:hidden}
+.link i{position:absolute;inset:0;width:0;background:var(--orange);transition:width .3s ease}
+.link.done i{width:100%}
+
+#col{padding:16px 16px 30px;display:flex;flex-direction:column;gap:16px}
+.blk{position:relative;overflow:hidden;border-radius:15px;padding:15px;
+ background:linear-gradient(180deg,#161C25 0%,#10151C 100%);
+ border:1px solid var(--edge);border-left:4px solid var(--creator);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 8px 20px rgba(0,0,0,.55)}
+.blk::before{content:"";position:absolute;left:-4px;top:0;bottom:0;width:4px;
+ background:linear-gradient(180deg,var(--creator) 0%,#3B2C93 100%)}
+.blk.warn{border-left-color:var(--bad)}
+.blk.warn::before{background:linear-gradient(180deg,var(--bad) 0%,#7E1F13 100%)}
+.blk.money{border-left-color:var(--cash)}
+.blk.money::before{background:linear-gradient(180deg,var(--cash) 0%,#166B4F 100%)}
+.lb{font-weight:700;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+ color:var(--dim2);margin-bottom:11px}
+
+h1{font-weight:700;font-size:22px;line-height:1.25;color:#fff;letter-spacing:-.01em}
+.sub{margin-top:8px;font-size:13px;color:var(--dim);line-height:1.5}
+p.t{font-size:13.5px;line-height:1.6;color:var(--dim)}
+p.t + p.t{margin-top:11px}
+p.t b{color:#fff;font-weight:600}
+.pt{display:flex;gap:11px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--edge)}
+.pt:first-of-type{border-top:none;padding-top:2px}
+.pt .m{flex:none;width:18px;text-align:center;font-weight:800;font-size:13px;line-height:1.5}
+.pt .m.no{color:var(--bad)} .pt .m.yes{color:var(--cash)}
+.pt div{font-size:13.5px;line-height:1.55;color:var(--dim)}
+.pt div b{color:#fff;font-weight:600}
+
+/* ── the signature block ── */
+.sign{display:flex;gap:13px;align-items:flex-start;padding:14px;border-radius:13px;
+ background:rgba(252,62,1,.06);border:1px solid rgba(252,62,1,.35);cursor:pointer;
+ margin-top:2px}
+.box{flex:none;width:26px;height:26px;border-radius:7px;border:2px solid var(--edge);
+ background:#0E131A;display:grid;place-items:center;color:transparent;
+ font-weight:800;font-size:15px;transition:all .16s ease}
+.sign.on .box{background:var(--orange);border-color:var(--orange);color:#fff}
+.sign .tx{flex:1;min-width:0;font-size:13px;line-height:1.5;color:var(--dim)}
+.sign .tx b{color:#fff;font-weight:600}
+.esig{margin-top:12px;font-size:11.5px;line-height:1.5;color:var(--dim2)}
+
+#ft{position:fixed;left:0;right:0;bottom:0;z-index:6;
+ padding:12px 16px 16px;background:rgba(10,13,18,.96);backdrop-filter:blur(8px);
+ border-top:1px solid var(--edge2)}
+#ftin{width:100%;max-width:390px;margin:0 auto;display:flex;gap:9px;align-items:center}
+#next{flex:1;border:none;border-radius:13px;padding:15px;background:var(--orange);color:#fff;
+ font-weight:700;font-size:15.5px;cursor:pointer;
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 6px 16px rgba(0,0,0,.5)}
+#next:disabled{background:#1A1F28;color:#4E5765;box-shadow:none;cursor:not-allowed}
+#back{flex:none;border:1px solid var(--edge);border-radius:13px;padding:15px 16px;
+ background:linear-gradient(180deg,#1B212B,#151A22);color:var(--grey);
+ font-weight:600;font-size:14px;cursor:pointer}
+#hintline{max-width:390px;margin:8px auto 0;text-align:center;font-size:11.5px;color:var(--dim2)}
+
+/* done */
+#done{display:none;text-align:center;padding:6px 0 0}
+#done.on{display:block}
+#done .tick{width:66px;height:66px;border-radius:50%;margin:0 auto 16px;display:grid;
+ place-items:center;background:rgba(47,185,138,.14);border:2px solid var(--cash);
+ color:var(--cash);font-size:30px}
+#done h1{margin-bottom:8px}
+.rec{display:flex;gap:10px;align-items:center;padding:11px 0;border-top:1px solid var(--edge);
+ text-align:left}
+.rec:first-of-type{border-top:none}
+.rec .c{flex:none;color:var(--cash);font-weight:800}
+.rec .n{flex:1;min-width:0;font-size:13.5px;color:#fff;font-weight:600}
+.rec .d{flex:none;font-size:11.5px;color:var(--dim2)}
+</style></head><body>
+<div id="wrap">
+  <div id="hd">
+    <div id="hdr"><button class="bk" id="hbk">‹ Back</button><b>Creator agreement</b>
+      <span id="cnt"></span></div>
+    <div id="rail"></div>
+  </div>
+  <div id="col"></div>
+</div>
+<div id="ft">
+  <div id="ftin">
+    <button id="back">Back</button>
+    <button id="next" disabled>Continue</button>
+  </div>
+  <div id="hintline"></div>
+</div>
+<script>
+var $=function(i){return document.getElementById(i);};
+
+/* Three waivers, signed one at a time. Continue stays dead until the box on
+   THIS step is ticked — a creator cannot scroll past a term they did not read
+   and then claim they never saw it. Each signature is recorded separately with
+   its own timestamp and version, which is what makes it enforceable later. */
+var STEPS=[
+{ k:'content', tag:'1 of 3', title:'What you can post',
+  sub:'You choose the image and the caption on your share card, whatever you run \u2014 '+
+      'sports, entertainment, awards, music, reality. That makes them yours, and it '+
+      'makes them your responsibility.',
+  blocks:[
+   {cls:'',lb:'You are warranting',pts:[
+    ['yes','<b>You own it, or you are licensed to use it.</b> Your own photos, your own '+
+      'graphics, or artwork you hold rights to.'],
+    ['yes','<b>It is yours to answer for.</b> LockIn does not create, select or endorse '+
+      'creator images and captions, and is not responsible for them.']]},
+   {cls:'warn',lb:'You may not upload',pts:[
+    ['no','<b>Anything captured from a broadcast or a stream.</b> Game footage, show '+
+      'clips, film or series stills, music videos, awards-show footage, red-carpet '+
+      'photos, album art, promotional posters. <b>This gets slates pulled fastest, and '+
+      'it is not a sports-only rule.</b>'],
+    ['no','League, team, network, studio, label, festival or awards-body logos and '+
+      'marks \u2014 in any category.'],
+    ['no','Sexual content, nudity, gore, violence, hate, harassment, or anything '+
+      'involving a minor.'],
+    ['no','Anyone else\u2019s likeness without their permission.'],
+    ['no','Anything implying a league, team, network, studio, label, artist, awards body '+
+      'or brand endorses your contest.']]},
+   {cls:'',lb:'This applies to every category',pts:[
+    ['yes','<b>Sports</b> \u2014 and every league within it.'],
+    ['yes','<b>Entertainment</b> \u2014 film, television, streaming.'],
+    ['yes','<b>Awards</b> \u2014 and the shows that hand them out.'],
+    ['yes','<b>Music</b> \u2014 releases, charts, ceremonies.'],
+    ['yes','<b>Reality</b> \u2014 competition and unscripted series.'],
+    ['yes','Any category added later. The rules follow the category list, not the '+
+      'other way round.']]},
+   {cls:'warn',lb:'If you break this',pts:[
+    ['no','The image is removed and the slate can be pulled.'],
+    ['no','<b>Your host fee on that contest is forfeited.</b> Player entries and payouts '+
+      'are unaffected \u2014 that money is theirs, not yours and not ours.'],
+    ['no','Repeat or serious breaches suspend or close your creator account.'],
+    ['no','You cover the cost if a third party comes after us for something you posted.']]}],
+  sign:'I own or am licensed to use everything I upload, in every category I run, I will '+
+       'not post the prohibited content listed above, and I accept the consequences if '+
+       'I do.' },
+
+{ k:'contest', tag:'2 of 3', title:'How your contests run',
+  sub:'Your slate is a skill contest in whatever category you run it \u2014 sports, '+
+      'entertainment, awards, music, reality. The rules that keep it one are not '+
+      'suggestions, and they are checked before anything publishes.',
+  blocks:[
+   {cls:'',lb:'Every question you write',pts:[
+    ['yes','Draws from the question shapes approved <b>for the category you are running '+
+      'in</b>, and passes validation before it can go live. <b>The shapes are not the '+
+      'same in every category.</b>'],
+    ['yes','In <b>sports</b>: compares performance across <b>different games</b> \u2014 '+
+      'never who wins a game, a score, a margin, a spread, a total, or a number on one '+
+      'player.'],
+    ['yes','In <b>every</b> category: nothing that turns your slate into a wager on a '+
+      'single outcome someone else already takes bets on.'],
+    ['yes','Carries the context a player needs to judge it, whatever the category.']]},
+   {cls:'warn',lb:'You will not',pts:[
+    ['no','Enter your own contest, or have anyone acting for you enter it.'],
+    ['no','Use information the public does not have, or edit a slate after it locks.'],
+    ['no','Arrange, influence or profit from an outcome you are asking players to call.'],
+    ['no','Run contests on outcomes you have any control over \u2014 including a show, '+
+      'award, release or vote you take part in, work on, or can influence.']]},
+   {cls:'',lb:'You understand',pts:[
+    ['yes','You set your host fee. <b>The pot belongs to the players.</b>'],
+    ['yes','LockIn can decline, pause, correct or void any contest that breaks these '+
+      'rules, and will tell you why.'],
+    ['yes','Eligibility, age and state restrictions apply to your players and are '+
+      'enforced by the platform, not by you.']]}],
+  sign:'I will run my contests within the rules approved for each category I use, I will '+
+       'not enter or influence my own contests, and I accept that LockIn can void a '+
+       'contest that breaks them.' },
+
+{ k:'payout', tag:'3 of 3', title:'Getting paid',
+  sub:'Host fees are income. That brings tax paperwork, verification, and a few '+
+      'things worth knowing before your first payout.',
+  blocks:[
+   {cls:'money',lb:'How payment works',pts:[
+    ['yes','You earn a <b>host fee</b> on entries. It is the only figure on the slate '+
+      'you control.'],
+    ['yes','Fees settle after a contest closes and results are final, into the payout '+
+      'account you connect.'],
+    ['yes','You must verify your identity before your first withdrawal.']]},
+   {cls:'',lb:'Tax',pts:[
+    ['yes','You are an <b>independent contractor</b>, not an employee. Nothing is '+
+      'withheld for you.'],
+    ['yes','US creators supply a W-9. Past the annual threshold you receive a 1099 '+
+      'and so does the IRS.'],
+    ['yes','What you owe on it is yours to handle.']]},
+   {cls:'warn',lb:'When a fee can be withheld',pts:[
+    ['no','A contest voided for breaking the rules in step 2.'],
+    ['no','Content pulled under step 1.'],
+    ['no','A chargeback, fraud review, or an account under investigation.'],
+    ['no','Player entries and payouts are never touched by any of this.']]}],
+  sign:'I understand how host fees are paid and taxed, that I am an independent '+
+       'contractor, and when a fee can be withheld.' }
+];
+
+var STATE={}, I=0, DONE=false;
+
+function rail(){
+  var h='';
+  for(var i=0;i<STEPS.length;i++){
+    if(i) h+='<div class="link'+((STATE[STEPS[i-1].k]||DONE)?' done':'')+'"><i></i></div>';
+    var cls=STATE[STEPS[i].k]?'done':(i===I&&!DONE?'now':'');
+    h+='<div class="node '+cls+'">'+(STATE[STEPS[i].k]?'\u2713':(i+1))+'</div>';
+  }
+  $('rail').innerHTML=h;
+}
+
+function paint(){
+  rail();
+  if(DONE){ renderDone(); return; }
+  var S=STEPS[I], signed=!!STATE[S.k];
+  $('cnt').textContent=S.tag;
+  var blocks=S.blocks.map(function(b){
+    return '<div class="blk '+b.cls+'"><div class="lb">'+b.lb+' <i></i></div>'+
+      b.pts.map(function(p){
+        return '<div class="pt"><span class="m '+p[0]+'">'+(p[0]==='no'?'\u2715':'\u2713')+
+          '</span><div>'+p[1]+'</div></div>';}).join('')+'</div>';}).join('');
+  $('col').innerHTML=
+    '<div><h1>'+S.title+'</h1><p class="sub">'+S.sub+'</p></div>'+
+    blocks+
+    '<div class="blk act" style="border-left-color:var(--orange)">'+
+      '<div class="lb">Sign this section <i></i></div>'+
+      '<div class="sign'+(signed?' on':'')+'" id="sign"><div class="box">\u2713</div>'+
+        '<div class="tx">'+S.sign+'</div></div>'+
+      '<p class="esig">By ticking this box you are signing this section of the LockIn '+
+      'Creator Agreement. You agree your electronic signature has the same legal meaning, '+
+      'validity and effect as your handwritten signature. Your name, the time and the '+
+      'version of this agreement are recorded.</p>'+
+    '</div>';
+  $('sign').addEventListener('click',function(){
+    STATE[S.k]=!STATE[S.k];
+    this.classList.toggle('on',STATE[S.k]);
+    gate(); rail();
+  });
+  $('back').style.visibility=I===0?'hidden':'visible';
+  $('next').textContent=(I===STEPS.length-1)?'Finish':'Continue';
+  gate();
+  window.scrollTo(0,0);
+}
+function gate(){
+  var ok=!!STATE[STEPS[I].k];
+  $('next').disabled=!ok;
+  $('hintline').textContent=ok?'':'Tick the box above to continue';
+}
+function renderDone(){
+  $('cnt').textContent='Signed';
+  $('col').innerHTML='<div id="done" class="on"><div class="tick">\u2713</div>'+
+    '<h1>You are cleared to create</h1>'+
+    '<p class="sub">All three sections signed. You can read them again any time from '+
+    'Settings, and we will ask you to re-sign if they change.</p></div>'+
+    '<div class="blk money"><div class="lb">Your signatures <i></i></div>'+
+      STEPS.map(function(s){
+        return '<div class="rec"><span class="c">\u2713</span>'+
+          '<span class="n">'+s.title+'</span>'+
+          '<span class="d">v1.0 &middot; just now</span></div>';}).join('')+'</div>'+
+    '<p class="esig" style="text-align:center">Draft text \u2014 not reviewed by counsel.</p>';
+  $('back').style.visibility='visible';
+  $('next').textContent='Start over';
+  $('next').disabled=false;
+  $('hintline').textContent='';
+  window.scrollTo(0,0);
+}
+$('next').addEventListener('click',function(){
+  if(DONE){ DONE=false; STATE={}; I=0; paint(); return; }
+  if(!STATE[STEPS[I].k]) return;
+  if(I<STEPS.length-1){ I++; } else { DONE=true; }
+  paint();
+});
+$('back').addEventListener('click',function(){
+  if(DONE){ DONE=false; I=STEPS.length-1; paint(); return; }
+  if(I>0){ I--; paint(); }
+});
+paint();
+window.__ack={STEPS:STEPS,get i(){return I;},set i(v){I=v;paint();},
+  get state(){return STATE;},get done(){return DONE;}};
+</script></body></html>

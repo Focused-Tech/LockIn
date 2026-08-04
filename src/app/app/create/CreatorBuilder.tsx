@@ -328,7 +328,7 @@ export function CreatorBuilder({ dashboard, creator }: { dashboard?: ReactNode; 
         {/* ══ DASHBOARD (re-parented, FROZEN markup passed in as a prop) ══
             Late addendum: the dashboard's "+ New contest" (an <a href="/app/creator"> in the frozen
             markup) mounts the BUILDER ON STEP 1 DIRECTLY — it does NOT pass through the hub. Intercept
-            those clicks here → enterBuilder(); the dashboard markup itself is untouched. */}
+            those clicks here call enterBuilder(); the dashboard markup itself is untouched. */}
         <div
           className={`pane${paneOn("pDash") ? " on" : ""}`}
           id="pDash"

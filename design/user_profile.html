@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>LockIn — profile</title>
+<style>
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent;
+ scrollbar-width:none;-ms-overflow-style:none}
+*::-webkit-scrollbar{display:none}
+:root{--orange:#FC3E01;--cash:#2FB98A;--coin:#F0C463;--creator:#7C5CF5;
+ --ink:#0A0D12;--edge:#232B37;--edge2:#1B222C;--grey:#E7E7EB;--dim:#98A0AE;--dim2:#6E7787}
+html{height:100%}
+body{min-height:100%;width:100%;max-width:100%;background:var(--ink);color:var(--grey);
+ overflow-x:hidden;
+ font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+/* the page itself scrolls — no fixed-height flex box to trap it */
+#wrap{width:100%;max-width:390px;margin:0 auto;padding-bottom:76px}
+#hd{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;
+ padding:12px 16px;background:rgba(10,13,18,.92);backdrop-filter:blur(8px);
+ border-bottom:1px solid var(--edge2)}
+#hd b{font-weight:700;font-size:15px;color:#fff}
+#hd .bk{border:1px solid var(--edge);border-radius:9px;padding:6px 11px;
+ background:linear-gradient(180deg,#1B212B,#151A22);color:var(--grey);font-weight:600;font-size:12.5px}
+#modechip{margin-left:auto;border-radius:99px;padding:4px 10px;font-weight:700;font-size:10px;
+ letter-spacing:.1em;text-transform:uppercase}
+#col{display:flex;flex-direction:column;gap:16px;padding:16px 16px 30px}
+#col>*{max-width:100%}
+
+.blk{position:relative;overflow:hidden;border-radius:15px;padding:15px;
+ background:linear-gradient(180deg,#161C25 0%,#10151C 100%);
+ border:1px solid var(--edge);border-left:4px solid var(--creator);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 8px 20px rgba(0,0,0,.55)}
+.blk::before{content:"";position:absolute;left:-4px;top:0;bottom:0;width:4px;
+ background:linear-gradient(180deg,var(--creator) 0%,#3B2C93 100%)}
+.blk.money{border-left-color:var(--cash)}
+.blk.money::before{background:linear-gradient(180deg,var(--cash) 0%,#166B4F 100%)}
+.blk.coin{border-left-color:var(--coin)}
+.blk.coin::before{background:linear-gradient(180deg,var(--coin) 0%,#8A6A20 100%)}
+.blk.act{border-left-color:var(--orange)}
+.blk.act::before{background:linear-gradient(180deg,var(--orange) 0%,#8E2201 100%)}
+.lb{font-weight:700;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim2);
+ margin-bottom:12px}
+
+#phd{display:flex;align-items:center;gap:14px}
+/* the avatar keeps its ring — it is a badge, not a blob */
+#phd .av{width:60px;height:60px;border-radius:50%;flex:none;display:grid;place-items:center;
+ background:#232B3C;color:#fff;font-weight:700;font-size:23px;
+ border:2px solid var(--creator);
+ box-shadow:0 0 0 4px rgba(124,92,245,.12), inset 0 1px 0 rgba(255,255,255,.16)}
+#phd .n{min-width:0}
+#phd .n b{display:block;font-weight:700;font-size:21px;color:#fff;letter-spacing:-.01em}
+#phd .n span{display:block;margin-top:3px;font-size:12px;color:var(--dim2);line-height:1.4}
+.badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:13px}
+.badge{border-radius:99px;padding:5px 11px;font-weight:700;font-size:10px;letter-spacing:.1em;
+ text-transform:uppercase;white-space:nowrap}
+.badge.rank{background:rgba(124,92,245,.20);border:1px solid rgba(124,92,245,.60);color:#C9BCFF}
+.badge.mode{background:rgba(47,185,138,.18);border:1px solid rgba(47,185,138,.55);color:#7FE3C0}
+.badge.mode.b{background:rgba(240,196,99,.16);border-color:rgba(240,196,99,.5);color:#F5D89A}
+
+/* WALLET — the balance is the point, so it gets the size */
+#wal{display:flex;align-items:flex-end;gap:12px}
+#wal .l{flex:1;min-width:0}
+#wal .k{font-size:11.5px;color:var(--dim2)}
+#wal .v{margin-top:3px;font-weight:800;font-size:30px;letter-spacing:-.02em;color:#fff;
+ font-variant-numeric:tabular-nums}
+#wal .v.cash{color:var(--cash)} #wal .v.coin{color:var(--coin)}
+#wal .go{flex:none;border:1px solid var(--edge);border-radius:11px;padding:9px 13px;
+ background:linear-gradient(180deg,#1B212B,#151A22);color:#fff;font-weight:700;font-size:12.5px;
+ cursor:pointer;white-space:nowrap}
+#walsub{margin-top:12px;padding-top:12px;border-top:1px solid var(--edge);
+ font-size:12px;color:var(--dim2);line-height:1.45}
+
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{border:1px solid var(--edge);border-radius:12px;padding:12px 13px;
+ background:linear-gradient(180deg,#12171F,#0E131A);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.035)}
+.stat .k{font-size:11px;color:var(--dim2);letter-spacing:.04em}
+.stat .v{margin-top:5px;font-weight:700;font-size:20px;color:#fff;font-variant-numeric:tabular-nums}
+.stat .v.cash{color:var(--cash)} .stat .v.coin{color:var(--coin)}
+
+.row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;font:inherit;
+ color:var(--grey);background:none;border:none;cursor:pointer;
+ padding:13px 0;border-top:1px solid var(--edge)}
+.row:first-of-type{border-top:none;padding-top:2px}
+.row .n{flex:1;min-width:0}
+.row .n b{display:block;font-weight:600;font-size:15px;color:#fff}
+.row .n span{display:block;margin-top:3px;font-size:11.5px;color:var(--dim2);line-height:1.45}
+.row .cv{flex:none;color:var(--dim2);font-size:19px;line-height:1}
+
+#signout{width:100%;border:1px solid var(--edge);border-radius:13px;padding:14px;
+ background:linear-gradient(180deg,#1B212B,#151A22);color:var(--dim);
+ font-weight:600;font-size:14px;cursor:pointer}
+#legal{text-align:center;font-size:11.5px;color:var(--dim2);line-height:1.5;padding:0 6px}
+#ft{position:fixed;left:0;right:0;bottom:0;z-index:6;display:flex;gap:8px;justify-content:center;
+ padding:10px 16px 14px;background:rgba(10,13,18,.94);backdrop-filter:blur(8px);
+ border-top:1px solid var(--edge2)}
+#ft button{border:1px solid var(--edge);border-radius:9px;padding:8px 14px;
+ background:linear-gradient(180deg,#1B212B,#151A22);color:var(--grey);font-weight:600;font-size:13px;
+ cursor:pointer}
+#ft button.on{background:var(--orange);border-color:var(--orange);color:#fff}
+</style></head><body>
+<div id="wrap">
+  <div id="hd"><button class="bk">‹ Back</button><b>Profile</b>
+    <span id="modechip"></span></div>
+
+  <div id="col">
+    <div class="blk">
+      <div id="phd">
+        <div class="av">O</div>
+        <div class="n"><b>owner</b><span id="sub1"></span></div>
+      </div>
+      <div class="badges">
+        <span class="badge rank" id="rank">Rookie</span>
+        <span class="badge mode" id="modebadge">Cash</span>
+      </div>
+    </div>
+
+    <div class="blk money" id="walletblk">
+      <div class="lb">Wallet <i></i></div>
+      <div id="wal">
+        <div class="l"><div class="k" id="wK"></div><div class="v" id="wV"></div></div>
+        <button class="go" id="wGo"></button>
+      </div>
+      <div id="walsub"></div>
+    </div>
+
+    <div class="blk" id="statblk">
+      <div class="lb">Lifetime <i></i></div>
+      <div class="grid" id="stats"></div>
+    </div>
+
+    <div class="blk act">
+      <div class="lb">Play <i></i></div>
+      <button class="row"><div class="n"><b id="playT"></b><span id="playS"></span></div>
+        <div class="cv">›</div></button>
+      <button class="row"><div class="n"><b>Ranks</b>
+        <span>Your standing on the board</span></div><div class="cv">›</div></button>
+      <button class="row"><div class="n"><b id="upT"></b><span id="upS"></span></div>
+        <div class="cv">›</div></button>
+    </div>
+
+    <div class="blk">
+      <div class="lb">Account <i></i></div>
+      <div id="acctrows"></div>
+    </div>
+
+    <button id="signout">Sign out</button>
+    <p id="legal">Skill-based prediction contest platform. Not gambling.
+      Not sports betting. 18+.</p>
+  </div>
+</div>
+
+<div id="ft">
+  <button id="mAdv" class="on">Advanced</button>
+  <button id="mBeg">Beginner</button>
+</div>
+<script>
+var $=function(i){return document.getElementById(i);};
+var MODE='adv';
+
+/* ADVANCED is the only place cash moves. BEGINNER is coins — its own economy.
+   Same page, different currency, and the two never share the screen. */
+var VIEW={
+ adv:{chip:'Cash',badge:'Cash',badgeCls:'badge mode',rank:'Rookie',
+   sub:'Verified · Member since Jun 2026',
+   wallet:{k:'Cash balance',v:'$0.00',cls:'cash',go:'Deposit',
+     sub:'Deposits, withdrawals and payout history. Your winnings land here.'},
+   stats:[['Contests played','0'],['Wins','0'],['Win rate','0%'],
+          ['Total won','$0.00','cash'],['Best finish','—'],['Current streak','0']],
+   play:['Find a slate','Live contests from creators'],
+   up:['Become a creator','Host your own slate for your audience'],
+   rows:[['Wallet','Balance, deposits &amp; withdrawals'],
+         ['Refer','Invite friends, earn rewards'],
+         ['Responsible play','Deposit limits &amp; self-exclusion'],
+         ['Settings','Notifications, sound &amp; privacy']]},
+ beg:{chip:'Coins',badge:'Coins',badgeCls:'badge mode b',rank:'Rookie',
+   sub:'Member since Jun 2026',
+   wallet:{k:'Coin balance',v:'390',cls:'coin',go:'Earn more',
+     sub:'Coins are score. They buy nothing and never convert to cash.'},
+   stats:[['Contests played','0'],['Wins','0'],['Win rate','0%'],
+          ['Coins won','0','coin'],['Best finish','—'],['Current streak','0']],
+   play:['Find a slate','Coin contests — same game, no cash'],
+   up:['Move up to advanced','Play the cash board when you are ready'],
+   rows:[['Wallet','Your coin balance and daily refill'],
+         ['Refer','Invite friends, earn rewards'],
+         ['Responsible play','Limits &amp; self-exclusion'],
+         ['Settings','Notifications, sound &amp; privacy']]}
+};
+
+function paint(){
+  var V=VIEW[MODE], cash=(MODE==='adv');
+  $('modechip').textContent=V.chip;
+  $('modechip').style.cssText=cash
+    ? 'background:rgba(47,185,138,.18);border:1px solid rgba(47,185,138,.55);color:#7FE3C0'
+    : 'background:rgba(240,196,99,.16);border:1px solid rgba(240,196,99,.5);color:#F5D89A';
+  $('modebadge').textContent=V.badge; $('modebadge').className=V.badgeCls;
+  $('rank').textContent=V.rank; $('sub1').textContent=V.sub;
+
+  $('walletblk').className='blk '+(cash?'money':'coin');
+  $('wK').textContent=V.wallet.k;
+  $('wV').textContent=V.wallet.v; $('wV').className='v '+V.wallet.cls;
+  $('wGo').textContent=V.wallet.go;
+  $('walsub').textContent=V.wallet.sub;
+
+  $('statblk').className='blk '+(cash?'money':'coin');
+  $('stats').innerHTML=V.stats.map(function(s){
+    return '<div class="stat"><div class="k">'+s[0]+'</div>'+
+           '<div class="v'+(s[2]?' '+s[2]:'')+'">'+s[1]+'</div></div>';}).join('');
+
+  $('playT').textContent=V.play[0]; $('playS').textContent=V.play[1];
+  $('upT').textContent=V.up[0];     $('upS').textContent=V.up[1];
+  $('acctrows').innerHTML=V.rows.map(function(r){
+    return '<button class="row"><div class="n"><b>'+r[0]+'</b><span>'+r[1]+
+           '</span></div><div class="cv">›</div></button>';}).join('');
+
+  $('mAdv').classList.toggle('on',cash);
+  $('mBeg').classList.toggle('on',!cash);
+  window.scrollTo(0,0);
+}
+$('mAdv').addEventListener('click',function(){MODE='adv';paint();});
+$('mBeg').addEventListener('click',function(){MODE='beg';paint();});
+paint();
+window.__prof={get mode(){return MODE;},set mode(m){MODE=m;paint();},VIEW:VIEW};
+</script></body></html>
