@@ -5,20 +5,28 @@ import Link from "next/link";
 import { doc, onSnapshot } from "firebase/firestore";
 import { getDb } from "@/lib/firebase/client";
 import { COLLECTIONS } from "@/lib/firebase/types";
-import { Button, Card } from "@/components/ui";
 import { formatCents } from "@/lib/utils";
+import { REFERRAL_SIGNUP_COINS } from "@/lib/constants";
 import type { Transaction } from "@/lib/wallet";
 import { DepositSheet } from "./DepositSheet";
 import { WithdrawSheet } from "./WithdrawSheet";
 
+/**
+ * WALLET — one currency per mode (two-currency rule). ADVANCED holds cash and is the
+ * only place money moves: balance, deposit/withdraw (the real Stripe sheets, unchanged),
+ * payment method, cash activity. BEGINNER holds coins: balance, ways to earn, coin note.
+ * NO DOLLAR FIGURE EVER RENDERS IN BEGINNER.
+ */
 export function WalletView({
   uid,
+  advanced,
   coinBalance: initialCoins,
   cashBalanceCents: initialCash,
   kycVerified,
   transactions,
 }: {
   uid: string;
+  advanced: boolean;
   coinBalance: number;
   cashBalanceCents: number;
   kycVerified: boolean;
@@ -28,7 +36,6 @@ export function WalletView({
   const [cash, setCash] = useState(initialCash);
   const [sheet, setSheet] = useState<"deposit" | "withdraw" | null>(null);
 
-  // Live balances — the deposit webhook credits asynchronously.
   useEffect(() => {
     const unsub = onSnapshot(
       doc(getDb(), COLLECTIONS.users, uid),
@@ -36,86 +43,112 @@ export function WalletView({
         const data = snap.data();
         if (!data) return;
         if (typeof data.coinBalance === "number") setCoins(data.coinBalance);
-        if (typeof data.cashBalanceCents === "number")
-          setCash(data.cashBalanceCents);
+        if (typeof data.cashBalanceCents === "number") setCash(data.cashBalanceCents);
       },
       () => {},
     );
     return unsub;
   }, [uid]);
 
+  if (!advanced) {
+    return (
+      <div className="lk-acct flex flex-col gap-4 p-4 pb-24">
+        <div className="blk coin">
+          <div className="lb">Coin balance <i></i></div>
+          <div className="hero">
+            <div className="k">Your score in beginner mode</div>
+            <div className="v coin">{coins.toLocaleString()}</div>
+            <div className="sub">Coins are score — they buy nothing and never convert to cash</div>
+          </div>
+          <div className="btns">
+            <Link href="/app/beginner" className="btn pri text-center">
+              Earn more
+            </Link>
+          </div>
+        </div>
+
+        <div className="blk">
+          <div className="lb">Ways to earn <i></i></div>
+          <div className="row static">
+            <span className="n"><b>Finish a slate</b><span>Every contest you complete</span></span>
+            <span className="val coin">score</span>
+          </div>
+          <div className="row static">
+            <span className="n"><b>Invite a friend</b><span>When they play their first slate</span></span>
+            <span className="val coin">+{REFERRAL_SIGNUP_COINS}</span>
+          </div>
+        </div>
+
+        <div className="blk">
+          <div className="lb">Recent activity <i></i></div>
+          <p className="hint">Your coin play shows up here once you enter a beginner contest.</p>
+        </div>
+
+        <p className="hint">Coins are score. They buy nothing and never convert to cash.</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col gap-5">
-      {/* Dual balance */}
-      <div className="grid grid-cols-2 gap-3">
-        <Card>
-          <p className="text-xs text-muted">Coins</p>
-          <p className="mt-1 text-2xl font-semibold text-win">{coins}</p>
-          <p className="mt-1 text-xs text-muted">Play free contests</p>
-        </Card>
-        <Card>
-          <p className="text-xs text-muted">Cash</p>
-          <p className="mt-1 text-2xl font-semibold text-accent">
-            {formatCents(cash)}
-          </p>
-          <p className="mt-1 text-xs text-muted">Enter paid contests</p>
-        </Card>
+    <div className="lk-acct flex flex-col gap-4 p-4 pb-24">
+      {/* Cash balance */}
+      <div className="blk money">
+        <div className="lb">Cash balance <i></i></div>
+        <div className="hero">
+          <div className="k">Available to play or withdraw</div>
+          <div className="v cash">{formatCents(cash)}</div>
+          <div className="sub">Entry fees leave your balance when a contest locks, not when you pick</div>
+        </div>
+        <div className="btns">
+          <button type="button" className="btn pri" onClick={() => setSheet("deposit")}>
+            Deposit
+          </button>
+          <button type="button" className="btn" onClick={() => setSheet("withdraw")}>
+            Withdraw
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <Button variant="accent" size="lg" onClick={() => setSheet("deposit")}>
-          Add funds
-        </Button>
-        <Button
-          variant="neutral"
-          size="lg"
-          onClick={() => setSheet("withdraw")}
-        >
-          Withdraw
-        </Button>
-      </div>
-
-      {/* KYC banner */}
       {!kycVerified && (
-        <Link
-          href="/onboarding"
-          className="flex items-center justify-between rounded border border-accent-border bg-accent-soft px-4 py-3"
-        >
-          <span className="text-sm text-accent">
-            Verify your identity for paid contests
-          </span>
-          <span className="text-sm text-accent">→</span>
+        <Link href="/onboarding" className="blk act block">
+          <div className="flex items-center gap-3">
+            <span className="n min-w-0 flex-1">
+              <b className="block text-[15px] font-semibold text-white">Verify your identity</b>
+              <span className="block text-[11.5px] text-[#6E7787]">Required before you can withdraw</span>
+            </span>
+            <span className="text-[19px] leading-none text-[#fc3e01]">›</span>
+          </div>
         </Link>
       )}
 
-      {/* Educational note */}
-      <Card className="text-xs leading-relaxed text-muted">
-        <span className="font-medium text-foreground">Coins vs cash.</span>{" "}
-        Coins are free to play with and have no cash value — you earn them and
-        spend them on free contests. Cash is real money: deposit it to enter paid
-        contests and withdraw your winnings.
-      </Card>
+      {/* Payment method */}
+      <div className="blk">
+        <div className="lb">Payment method <i></i></div>
+        <button type="button" className="row" onClick={() => setSheet("deposit")}>
+          <span className="n"><b>Add a card or bank</b><span>Used for deposits and payouts</span></span>
+          <span className="cv">›</span>
+        </button>
+        <div className="row static">
+          <span className="n"><b>Payout account</b><span>Where winnings are sent</span></span>
+          <span className="val muted">Not set</span>
+        </div>
+      </div>
 
-      {/* Transaction history */}
-      <div>
-        <h2 className="mb-2 text-sm font-semibold">Activity</h2>
+      {/* Recent activity */}
+      <div className="blk">
+        <div className="lb">Recent activity <i></i></div>
         {transactions.length === 0 ? (
-          <p className="rounded border border-border bg-surface-card p-6 text-center text-sm text-muted">
-            No transactions yet.
-          </p>
+          <p className="hint">No activity yet.</p>
         ) : (
-          <ul className="flex flex-col divide-y divide-border overflow-hidden rounded border border-border">
-            {transactions.map((t) => (
-              <TransactionRow key={t.id} txn={t} />
-            ))}
-          </ul>
+          transactions.map((t) => <TxnRow key={t.id} txn={t} />)
         )}
       </div>
 
-      <DepositSheet
-        open={sheet === "deposit"}
-        onClose={() => setSheet(null)}
-      />
+      <p className="hint">
+        Withdrawals go back to the method you deposited with. Entry fees leave your balance when a contest locks, not when you pick.
+      </p>
+
+      <DepositSheet open={sheet === "deposit"} onClose={() => setSheet(null)} />
       <WithdrawSheet
         open={sheet === "withdraw"}
         onClose={() => setSheet(null)}
@@ -126,32 +159,24 @@ export function WalletView({
   );
 }
 
-function TransactionRow({ txn }: { txn: Transaction }) {
+function TxnRow({ txn }: { txn: Transaction }) {
   const credit = txn.amountCents >= 0;
   const date =
     txn.timestampMs > 0
-      ? new Date(txn.timestampMs).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-        })
+      ? new Date(txn.timestampMs).toLocaleDateString("en-US", { month: "short", day: "numeric" })
       : "—";
-
   return (
-    <li className="flex items-center justify-between bg-surface-card px-4 py-3">
-      <div>
-        <p className="text-sm font-medium text-foreground">{txn.description}</p>
-        <p className="text-xs text-muted">
+    <div className="row static">
+      <span className="n">
+        <b>{txn.description}</b>
+        <span>
           {date} · {txn.status}
-        </p>
-      </div>
-      <span
-        className={
-          "text-sm font-semibold " + (credit ? "text-win" : "text-foreground")
-        }
-      >
+        </span>
+      </span>
+      <span className={"val " + (credit ? "cash" : "neg")}>
         {credit ? "+" : "−"}
         {formatCents(Math.abs(txn.amountCents))}
       </span>
-    </li>
+    </div>
   );
 }

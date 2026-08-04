@@ -96,6 +96,21 @@ describe("§9 settings — one source of truth with the practice page", () => {
   });
 });
 
+describe("§9 beginner wallet — no dollar figure renders", () => {
+  it("the WalletView beginner branch contains no '$' and no formatCents", () => {
+    const WALLET = read("src/app/app/wallet/WalletView.tsx");
+    // isolate the `if (!advanced) { … }` beginner branch
+    const start = WALLET.indexOf("if (!advanced) {");
+    const advIdx = WALLET.indexOf("\n  return (", start); // the advanced return that follows
+    const begBranch = WALLET.slice(start, advIdx);
+    const dollars = (begBranch.match(/\$/g) || []).length;
+    const cents = (begBranch.match(/formatCents/g) || []).length;
+    console.log(`§9 beginner wallet: '$' count = ${dollars} · formatCents count = ${cents}`);
+    expect(dollars).toBe(0);
+    expect(cents).toBe(0);
+  });
+});
+
 describe("§9 chevrons — one distinct arrow", () => {
   it("profile + settings use › (not long arrows) for rows", () => {
     const SETTINGS = read("src/app/app/settings/SettingsView.tsx");

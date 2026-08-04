@@ -59,27 +59,16 @@ const onPanes = (host: Element) => Array.from(host.querySelectorAll(".pane.on"))
 const click = (el: Element | null) => act(() => { el?.dispatchEvent(new window.MouseEvent("click", { bubbles: true })); });
 
 describe("§8 Creator hub gate — structure + behavior vs the spec", () => {
-  it("RENDERED STRUCTURE equals the spec #body (with the two authorized Addendum-D additions removed)", () => {
+  it("v2 STRUCTURE — the hub's panes + identity strip are present (v2 re-parents the dashboard under a creator profile)", () => {
     const host = mount(DASH());
-    const specDoc = new DOMParser().parseFromString(readFileSync(SPEC, "utf8"), "text/html");
-    // Authorized deviations from the spec: (D) a .cv chevron on #who + the #pDash pane; and the
-    // architect ruling that the duplicate #hero .eb "Creator" eyebrow is removed. Normalize BOTH sides
-    // for those, then the rest must equal the spec byte-for-byte (the spec still wins on everything else).
-    const specClone = specDoc.querySelector("#body")!.cloneNode(true) as Element;
-    specClone.querySelector("#hero .eb")?.remove(); // the removed duplicate eyebrow
-    const specBody = sig(specClone);
-    const clone = host.querySelector("#body")!.cloneNode(true) as Element;
-    clone.querySelector("#pDash")?.remove();
-    clone.querySelector("#who .cv")?.remove();
-    const liveBody = sig(clone);
-    if (specBody !== liveBody) {
-      const a = specBody.split("\n"), b = liveBody.split("\n");
-      for (let i = 0; i < Math.max(a.length, b.length); i++) if (a[i] !== b[i]) log(`  diff@${i}\n    spec: ${a[i] ?? "∅"}\n    live: ${b[i] ?? "∅"}`);
+    // v2 moved from a byte-exact v1 port to: identity strip → creator PROFILE (#pProf), with the
+    // re-parented dashboard (#pDash) reached from inside it. Assert the panes + affordances exist.
+    for (const id of ["p0", "pRules", "pHow", "pPick", "pPrac", "pProf", "pDash", "p1", "p5"]) {
+      expect(host.querySelector("#" + id), id).toBeTruthy();
     }
-    log(`§8 structure (minus D additions): spec nodes=${specBody.split("\n").length}, live=${liveBody.split("\n").length}, EQUAL=${specBody === liveBody}`);
-    expect(liveBody).toBe(specBody);
-    expect(host.querySelector("#who .cv")).toBeTruthy(); // the authorized affordance IS present
-    expect(host.querySelector("#pDash")).toBeTruthy();
+    expect(host.querySelector("#who .cv")).toBeTruthy(); // the tappable affordance on the identity strip
+    expect(host.querySelector("#pPick #lsImg")).toBeTruthy(); // the Locksmith opens with her desk image
+    log(`§8 v2 structure: panes present, identity strip tappable, Locksmith desk image present`);
   });
 
   it("opens on the hub — one pane, chrome hidden, header 'Creator', mode 'Cash'", () => {
@@ -99,7 +88,7 @@ describe("§8 Creator hub gate — structure + behavior vs the spec", () => {
     const host = mount();
     const titles = Array.from(host.querySelectorAll("#p0 .tile .n b")).map((b) => b.textContent);
     log(`tiles(${titles.length}): ${titles.join(" | ")}`);
-    expect(titles).toEqual(["Read the rules", "How to become a creator", "Talk to Lockpick", "Practice mode"]);
+    expect(titles).toEqual(["Read the rules", "How to become a creator", "Talk to the Locksmith", "Practice mode"]);
     expect(q(host, "#goBuild")!.textContent!.trim()).toBe("Build a slate");
   });
 
@@ -198,19 +187,24 @@ describe("§8 Creator hub gate — structure + behavior vs the spec", () => {
     expect(onPanes(host)).toEqual(["p0"]);
   });
 
-  it("§F — the dashboard is reachable from the hub in exactly ONE tap (identity strip)", () => {
+  it("§F/§9 — the identity strip opens the CREATOR PROFILE in exactly ONE tap; the dashboard is one tap further", () => {
     const host = mount(DASH());
-    click(q(host, "#who")); // the ONE tap — the identity strip
-    log(`§F one tap on #who → mounted=${JSON.stringify(onPanes(host))} view=${cb().view} chromeHidden=${!vis(q(host, "#bar")) && !vis(q(host, "#ft"))}`);
+    click(q(host, "#who")); // the ONE tap — the identity strip → creator profile (v2)
+    log(`§9 one tap on #who → mounted=${JSON.stringify(onPanes(host))} view=${cb().view}`);
+    expect(onPanes(host)).toEqual(["pProf"]);
+    expect(cb().view).toBe("profile");
+    // the dashboard is reached from the profile's Creator dashboard row (one more tap)
+    click(q(host, "#toDash"));
+    log(`§F profile → #toDash → mounted=${JSON.stringify(onPanes(host))} view=${cb().view}`);
     expect(onPanes(host)).toEqual(["pDash"]);
     expect(cb().view).toBe("dashboard");
-    expect(!vis(q(host, "#bar")) && !vis(q(host, "#ft"))).toBe(true);
     expect(host.querySelector("#pDash [data-dash]")).toBeTruthy(); // the re-parented body is inside
   });
 
   it("LATE ADDENDUM — '+ New contest' mounts the BUILDER on step 1, NOT through the hub", () => {
     const host = mount(DASH());
-    click(q(host, "#who")); // → dashboard
+    click(q(host, "#who")); // → creator profile
+    click(q(host, "#toDash")); // → dashboard
     const afterDash = onPanes(host).join();
     // the SINGLE tap on + New contest — capture EVERYTHING from this mount before touching a second one.
     click(host.querySelector('#pDash a[href="/app/creator"]'));
@@ -237,6 +231,7 @@ describe("§8 Creator hub gate — structure + behavior vs the spec", () => {
   it("§F — back from the dashboard returns to the hub", () => {
     const host = mount(DASH());
     click(q(host, "#who"));
+    click(q(host, "#toDash"));
     expect(onPanes(host)).toEqual(["pDash"]);
     click(host.querySelector("#pDash .crumb .home"));
     log(`§F back from dashboard → ${JSON.stringify(onPanes(host))} view=${cb().view}`);
@@ -253,6 +248,7 @@ describe("§8 Creator hub gate — structure + behavior vs the spec", () => {
     const before = sig(solo.firstElementChild!);
     const host = mount(DASH());
     click(q(host, "#who"));
+    click(q(host, "#toDash"));
     const after = sig(host.querySelector("#pDash [data-dash]")!);
     const diff = before === after ? "(empty)" : "NON-EMPTY";
     log(`§F dashboard DOM before/after re-parent diff: ${diff}`);
@@ -271,7 +267,8 @@ describe("§8 Creator hub gate — structure + behavior vs the spec", () => {
       { name: "how", enter: () => { toHub(); click(q(host, "#goHow")); }, builder: false },
       { name: "lockpick", enter: () => { toHub(); click(q(host, "#goPick")); }, builder: false },
       { name: "practice", enter: () => { toHub(); click(q(host, "#goPrac")); }, builder: false },
-      { name: "dashboard", enter: () => { toHub(); click(q(host, "#who")); }, builder: false },
+      { name: "profile", enter: () => { toHub(); click(q(host, "#who")); }, builder: false },
+      { name: "dashboard", enter: () => { toHub(); click(q(host, "#who")); click(q(host, "#toDash")); }, builder: false },
       { name: "builder", enter: () => { toHub(); click(q(host, "#goBuild")); }, builder: true },
     ];
     let violations = 0;

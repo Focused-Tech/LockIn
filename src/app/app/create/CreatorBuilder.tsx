@@ -1,9 +1,9 @@
 "use client";
 
 /**
- * CREATOR HUB + 4-STEP BUILDER — a faithful port of the spec
- * public/design/Creator Builder/creator_builder.html
- * (sha256 9a9c84c9eed18d9f21c0ec890dd9427659090ce029234a76bea17144341a29c4). The FILE is canon: same
+ * CREATOR HUB + 4-STEP BUILDER — ported to the v2 spec
+ * public/design/Creator Builder/creator_builder_v2.html
+ * (sha256 82128b3e1fb88fa3febbea7344a6a04089c4154cb7f740eb8fdb9e69796c5270). The FILE is canon: same
  * tags, class names, ids, nesting, order, copy. CASH creator mode only — no coin balance, no coin
  * price, no free toggle, and the string "rake" never renders. Practice is a LINK OUT to its own
  * surface; it never mounts a builder here. Styles: ./creator-builder.css (ported verbatim).
@@ -17,8 +17,37 @@ import "./creator-builder.css";
 
 // Addendum C/D — the existing creator DASHBOARD is RE-PARENTED under the hub as a seventh view. Its
 // markup is passed in verbatim (frozen); the hub's identity strip (#who) is its tap target.
-type View = "hub" | "rules" | "how" | "lockpick" | "practice" | "dashboard" | "builder";
-const SUB: Record<Exclude<View, "builder">, string> = { hub: "p0", rules: "pRules", how: "pHow", lockpick: "pPick", practice: "pPrac", dashboard: "pDash" };
+type View = "hub" | "rules" | "how" | "lockpick" | "practice" | "profile" | "dashboard" | "builder";
+const SUB: Record<Exclude<View, "builder">, string> = { hub: "p0", rules: "pRules", how: "pHow", lockpick: "pPick", practice: "pPrac", profile: "pProf", dashboard: "pDash" };
+
+/** Real creator stats for the identity strip + creator profile (from fetchCreatorDashboard). */
+export interface CreatorMeta {
+  name: string;
+  handle: string;
+  verified: boolean;
+  memberSince: string | null;
+  /** null when there is no verified-reach source yet (honest empty). */
+  reach: number | null;
+  division: string | null;
+  earnedCents: number;
+  contests: number;
+  entries: number;
+  bestContestCents: number;
+  payoutsConnected: boolean;
+}
+
+/** Compact notation: full under 1,000, then k with one decimal dropped when it is noise
+ *  (124k not 124.0k), then M. Matches creator_builder_v2.html compact(). */
+function compact(v: number): string {
+  const a = Math.abs(v);
+  if (a < 1000) return String(v);
+  if (a < 1e6) {
+    const s = v / 1000;
+    return (s >= 100 ? Math.round(s) : Math.round(s * 10) / 10) + "k";
+  }
+  const s = v / 1e6;
+  return (s >= 100 ? Math.round(s) : Math.round(s * 10) / 10) + "M";
+}
 const MAX = 5;
 const LABEL: Record<number, string> = { 1: "Next: pick the night", 2: "Next: write the questions", 3: "Next: set the prize", 4: "Review the slate", 5: "Publish slate" };
 const EVENTS = ["Lakers at Celtics", "Denver vs Phoenix", "Milwaukee at Miami", "Golden State vs Sacramento", "New York at Indiana"];
@@ -33,7 +62,13 @@ const ANSWERS: Record<string, { q: string; a: string }> = {
 
 interface Msg { role: "them" | "me"; html: string }
 
-export function CreatorBuilder({ dashboard }: { dashboard?: ReactNode } = {}) {
+export function CreatorBuilder({ dashboard, creator }: { dashboard?: ReactNode; creator?: CreatorMeta } = {}) {
+  const c: CreatorMeta = creator ?? {
+    name: "Creator", handle: "", verified: false, memberSince: null, reach: null,
+    division: null, earnedCents: 0, contests: 0, entries: 0, bestContestCents: 0, payoutsConnected: false,
+  };
+  const initial = (c.name || "C").charAt(0).toUpperCase();
+  const avgEntries = c.contests > 0 ? Math.round(c.entries / c.contests) : 0;
   const router = useRouter();
   const [view, setView] = useState<View>("hub");
   const [step, setStep] = useState(1);
@@ -114,10 +149,13 @@ export function CreatorBuilder({ dashboard }: { dashboard?: ReactNode } = {}) {
             <p>Real followers, real pot, real payout. Write the questions your people argue about, set the prize, and put your name on the card.</p>
             {/* Addendum D — the identity strip is the tap target for the dashboard; a chevron (matching
                 the tiles) makes it read as tappable. Same panel styling — NOT restyled into a tile. */}
-            <div id="who" role="button" tabIndex={0} style={{ cursor: "pointer" }} onClick={() => go("dashboard")}>
-              <div className="av">Q</div>
-              <div className="n"><b>Quill</b><span>224,600 verified reach</span></div>
-              <div className="dv">Wolf</div>
+            <div id="who" role="button" tabIndex={0} style={{ cursor: "pointer" }} onClick={() => go("profile")}>
+              <div className="av">{initial}</div>
+              <div className="n"><b>{c.name}</b><span>
+                {c.reach != null ? `${compact(c.reach)} reach` : "reach not set"}
+                {" · "}<i style={{ fontStyle: "normal", color: "var(--cash)" }}>${compact(Math.round(c.earnedCents / 100))}</i> earned
+              </span></div>
+              {c.division && <div className="dv">{c.division}</div>}
               <div id="cashtag">Cash</div>
               <div className="cv">›</div>
             </div>
@@ -129,7 +167,7 @@ export function CreatorBuilder({ dashboard }: { dashboard?: ReactNode } = {}) {
             <button className="tile" id="goHow" onClick={() => go("how")}><div className="ic">◷</div>
               <div className="n"><b>How to become a creator</b><span>Five steps from connecting an account to publishing</span></div><div className="cv">›</div></button>
             <button className="tile creatorish" id="goPick" onClick={() => go("lockpick")}><div className="ic">⚿</div>
-              <div className="n"><b>Talk to Lockpick</b><span>Ask anything, or have your legs checked before you write them</span></div><div className="cv">›</div></button>
+              <div className="n"><b>Talk to the Locksmith</b><span>Ask her anything — her lockpicks name the fix before you write it</span></div><div className="cv">›</div></button>
             <button className="tile creatorish" id="goPrac" onClick={() => go("practice")}><div className="ic">◇</div>
               <div className="n"><b>Practice mode</b><span>The Lone Fox journey — the coin version of this, on its own screens</span></div><div className="cv">›</div></button>
           </div>
@@ -196,8 +234,12 @@ export function CreatorBuilder({ dashboard }: { dashboard?: ReactNode } = {}) {
         {/* ══ LOCKPICK ══ */}
         <div className={`pane${paneOn("pPick") ? " on" : ""}`} id="pPick">
           <div className="crumb"><button className="home" onClick={() => go("hub")}>‹ Creator</button></div>
-          <h2>Lockpick</h2>
-          <p className="hint">The Locksmith reads your slate while you write it. She never says &quot;invalid&quot; — she names the fix.</p>
+          <h2>The Locksmith</h2>
+          <p className="hint">She reads your slate while you write it and never says &quot;invalid&quot; — every tip she hands you is a <b style={{ color: "#fff" }}>lockpick</b>: the fix, named.</p>
+          <div className="blk creator" id="lsHero">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img id="lsImg" src="/foxpit/locksmith/locksmith_desk.png" alt="The Locksmith at her desk" />
+          </div>
           <div className="blk creator">
             <div id="thread">
               {thread.map((m, i) => <div key={i} className={`msg ${m.role}`} dangerouslySetInnerHTML={{ __html: m.html }} />)}
@@ -219,7 +261,7 @@ export function CreatorBuilder({ dashboard }: { dashboard?: ReactNode } = {}) {
           <div className="sep"><b>It is its own build, not this one.</b> This screen is cash creator mode: real reach, a real pot, a real payout. Practice runs on the coin economy and lives on its own screens.</div>
           <div className="blk creator">
             <div className="rule"><span className="m yes">✓</span><span>Same four steps, same questions, same review card.</span></div>
-            <div className="rule"><span className="m yes">✓</span><span>Lockpick flags your legs exactly the way it does here.</span></div>
+            <div className="rule"><span className="m yes">✓</span><span>The Locksmith flags your legs exactly the way she does here.</span></div>
             <div className="rule"><span className="m yes">✓</span><span>Coins throughout — every number a coin number.</span></div>
             <div className="rule"><span className="m no">✕</span><span>Nothing publishes. No player sees it, and no cash moves.</span></div>
           </div>
@@ -228,6 +270,59 @@ export function CreatorBuilder({ dashboard }: { dashboard?: ReactNode } = {}) {
             onClick={() => { setPracNote(true); setPracDisabled(true); router.push("/app/practice/create"); }}>Open practice mode ›</button>
           <p className="hint" id="pracNote" style={{ display: pracNote ? "" : "none" }}>Practice mode is a separate surface — its own screens.</p>
           <button className="gobig home2" onClick={enterBuilder}>Back to cash creator mode</button>
+        </div>
+
+        {/* ══ CREATOR PROFILE ══ — the identity strip's destination (NOT the player profile). */}
+        <div className={`pane${paneOn("pProf") ? " on" : ""}`} id="pProf">
+          <div className="crumb"><button className="home" onClick={() => go("hub")}>‹ Creator</button></div>
+          <div className="blk">
+            <div id="phd">
+              <div className="av">{initial}</div>
+              <div className="n"><b>{c.name}</b>
+                <span>{c.handle ? `@${c.handle} · ` : ""}{c.verified ? "Verified creator" : "Creator"}</span>
+                {c.memberSince && <span>Creator since {c.memberSince}</span>}</div>
+            </div>
+            {c.division && <div style={{ margin: "12px 0 0" }}><span className="badge div">{c.division}</span></div>}
+          </div>
+
+          <div className="blk">
+            <div className="lb">Creator stats <i></i></div>
+            <div className="grid">
+              <div className="stat"><div className="k">Contests hosted</div><div className="v">{compact(c.contests)}</div></div>
+              <div className="stat"><div className="k">Total entries</div><div className="v">{compact(c.entries)}</div></div>
+              <div className="stat"><div className="k">Verified reach</div><div className="v">{c.reach != null ? compact(c.reach) : "—"}</div></div>
+              <div className="stat"><div className="k">Avg entries</div><div className="v">{avgEntries ? compact(avgEntries) : "—"}</div></div>
+              <div className="stat"><div className="k">Lifetime earned</div><div className="v cash">${compact(Math.round(c.earnedCents / 100))}</div></div>
+              <div className="stat"><div className="k">Best contest</div><div className="v cash">{c.bestContestCents > 0 ? `$${compact(Math.round(c.bestContestCents / 100))}` : "—"}</div></div>
+            </div>
+          </div>
+
+          <div className="blk money">
+            <div className="lb">Payouts <i></i></div>
+            <button className="row" style={{ paddingTop: 4 }} onClick={() => go("dashboard")}>
+              <div className="n"><b>{c.payoutsConnected ? "Connected" : "Set up payouts"}</b>
+                <span>{c.payoutsConnected ? "Earnings land in your account automatically" : "Connect an account to receive earnings"}</span></div>
+              <div className="cv">›</div></button>
+          </div>
+
+          <div className="blk">
+            <div className="lb">Creator tools <i></i></div>
+            <button className="row" id="toDash" onClick={() => go("dashboard")}>
+              <div className="n"><b>Creator dashboard</b><span>Your contests &amp; earnings</span></div><div className="cv">›</div></button>
+            <button className="row" onClick={enterBuilder}>
+              <div className="n"><b>New contest</b><span>Build a slate from step one</span></div><div className="cv">›</div></button>
+            <button className="row" onClick={() => go("rules")}>
+              <div className="n"><b>The rules</b><span>What a question can ask</span></div><div className="cv">›</div></button>
+          </div>
+
+          <div className="blk">
+            <div className="lb">Account <i></i></div>
+            <a className="row" href="/app/wallet"><div className="n"><b>Wallet</b><span>Balance, deposits &amp; withdrawals</span></div><div className="cv">›</div></a>
+            <a className="row" href="/app/refer"><div className="n"><b>Refer</b><span>Invite friends, earn rewards</span></div><div className="cv">›</div></a>
+            <a className="row" href="/app/responsible-play"><div className="n"><b>Responsible play</b><span>Deposit limits &amp; self-exclusion</span></div><div className="cv">›</div></a>
+          </div>
+
+          <a id="signout" href="/app/profile" style={{ display: "block", textAlign: "center", textDecoration: "none" }}>Player profile ›</a>
         </div>
 
         {/* ══ DASHBOARD (re-parented, FROZEN markup passed in as a prop) ══

@@ -7,7 +7,7 @@ import { getCurrentUserProfile } from "@/lib/firebase/session";
 import { fetchCreatorDashboard } from "@/server/data/creator";
 import { formatCents } from "@/lib/utils";
 import { ConnectPayoutCard } from "./ConnectPayoutCard";
-import { CreatorBuilder } from "../create/CreatorBuilder";
+import { CreatorBuilder, type CreatorMeta } from "../create/CreatorBuilder";
 
 /**
  * CREATOR ENTRY — renders the HUB (landing). The existing dashboard is RE-PARENTED under the hub: its
@@ -41,6 +41,25 @@ export default async function CreatorDashboardPage({
 
   const { connect } = await searchParams;
   const data = await fetchCreatorDashboard(adminDb(), profile.id);
+
+  // Real creator meta for the identity strip + creator profile. Verified reach + division
+  // have no social-follower source yet → null (rendered as an honest "—"/"reach not set").
+  const memberSince = profile.createdAt?.toMillis?.()
+    ? new Date(profile.createdAt.toMillis()).toLocaleDateString(undefined, { month: "short", year: "numeric" })
+    : null;
+  const creatorMeta: CreatorMeta = {
+    name: profile.username,
+    handle: profile.username,
+    verified: profile.creatorVerified,
+    memberSince,
+    reach: null,
+    division: null,
+    earnedCents: data.totalNetCents,
+    contests: data.slateCount,
+    entries: data.totalEntries,
+    bestContestCents: data.slates.reduce((m, s) => Math.max(m, s.netCents), 0),
+    payoutsConnected: profile.creatorPayoutsEnabled,
+  };
 
   // The dashboard body — FROZEN markup, verbatim. Only the "+ New contest" / "Host your first contest"
   // targets change: they route to the hub (/app/creator), where a new contest starts (Addendum C.3).
@@ -168,5 +187,5 @@ export default async function CreatorDashboardPage({
     </div>
   );
 
-  return <CreatorBuilder dashboard={dashboard} />;
+  return <CreatorBuilder dashboard={dashboard} creator={creatorMeta} />;
 }

@@ -19,16 +19,16 @@ html,body{height:100%;width:100%;max-width:100%;background:var(--ink);color:var(
 /* ── header + progress ─────────────────────────────── */
 #hd{flex:0 0 auto;padding:12px 16px 0}
 #hd .t{display:flex;align-items:center;gap:10px}
-#hd .t b{flex:1;font:700 12px inherit;letter-spacing:.16em;text-transform:uppercase;
+#hd .t b{flex:1;font-weight:700;font-size:12px;letter-spacing:.16em;text-transform:uppercase;
  color:var(--creator)}
 #hd .t .x{border:1px solid var(--edge);border-radius:8px;padding:5px 10px;background:transparent;
- color:var(--dim);font:600 12px inherit;cursor:pointer}
+ color:var(--dim);font-weight:600;font-size:12px;cursor:pointer}
 #bar{display:flex;gap:6px;margin:12px 0 4px}
 #bar .seg{flex:1;height:4px;border-radius:99px;background:var(--edge)}
 #bar .seg.done{background:var(--creator)}
 #bar .seg.now{background:linear-gradient(90deg,var(--creator) 60%,var(--edge) 60%)}
 #steps{display:flex;gap:4px;padding-bottom:10px}
-#steps span{flex:1;font:600 10px inherit;letter-spacing:.08em;text-transform:uppercase;
+#steps span{flex:1;font-weight:600;font-size:10px;letter-spacing:.08em;text-transform:uppercase;
  color:var(--dim2);text-align:center}
 #steps span.on{color:var(--creator)}
 
@@ -37,7 +37,7 @@ html,body{height:100%;width:100%;max-width:100%;background:var(--ink);color:var(
 #body>.pane>*{max-width:100%}
 .pane{display:none;flex-direction:column;gap:16px}
 .pane.on{display:flex}
-h2{font:700 20px inherit;color:#fff;letter-spacing:-.01em}
+h2{font-weight:700;font-size:20px;color:#fff;letter-spacing:-.01em}
 h2+.hint{margin-top:-10px}
 .hint{font-size:13.5px;color:var(--dim);line-height:1.45}
 .blk{position:relative;overflow:hidden;
@@ -56,16 +56,16 @@ h2+.hint{margin-top:-10px}
 .blk.money{border-left-color:var(--cash);box-shadow:inset 6px 0 14px -10px rgba(47,185,138,.75),
  inset 0 1px 0 rgba(255,255,255,.05),0 8px 20px rgba(0,0,0,.55)}
 .blk.money::before{background:linear-gradient(180deg,var(--cash) 0%,#166B4F 100%)}
-.lb{font:700 10.5px inherit;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);
+.lb{font-weight:700;font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);
  margin-bottom:9px;display:flex;align-items:center;gap:8px}
 .lb i{flex:1;height:1px;background:var(--edge);font-style:normal}
 input[type=text],input[type=date],select{width:100%;border:1px solid var(--edge);border-radius:10px;
- padding:11px 13px;background:var(--card);color:var(--grey);font:15px inherit;outline:none;
+ padding:11px 13px;background:var(--card);color:var(--grey);font-family:inherit;font-size:15px;outline:none;
  box-shadow:inset 0 1px 3px rgba(0,0,0,.5)}
 input::placeholder{color:var(--dim2)}
 .chips{display:flex;gap:8px;flex-wrap:wrap}
 .chip{border:1px solid var(--edge);border-radius:99px;padding:8px 14px;
- background:linear-gradient(180deg,#1B212B,#151A22);color:var(--grey);font:600 13px inherit;
+ background:linear-gradient(180deg,#1B212B,#151A22);color:var(--grey);font-weight:600;font-size:13px;
  cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 1px 3px rgba(0,0,0,.5)}
 .chip.on{background:var(--creator);border-color:var(--creator);color:#fff}
 .chip.orange.on{background:var(--orange);border-color:var(--orange)}
@@ -76,17 +76,17 @@ input::placeholder{color:var(--dim2)}
 .soc .ic{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;
  background:var(--card);border:1px solid var(--edge);font-size:15px;flex:none}
 .soc .n{flex:1;min-width:0}
-.soc .n b{display:block;font:600 14.5px inherit;color:#fff}
+.soc .n b{display:block;font-weight:600;font-size:14.5px;color:#fff}
 .soc .n span{font-size:12.5px;color:var(--dim2)}
 .soc .n span.v{color:var(--cash)}
 .soc button{border:1px solid var(--creator);border-radius:9px;padding:7px 12px;background:transparent;
- color:var(--creator);font:600 12.5px inherit;cursor:pointer;white-space:nowrap}
+ color:var(--creator);font-weight:600;font-size:12.5px;cursor:pointer;white-space:nowrap}
 .soc button.done{border-color:var(--edge);color:var(--dim2);cursor:default}
 .reach{display:flex;align-items:baseline;gap:10px;margin-top:12px;padding-top:12px;
  border-top:1px solid var(--edge)}
-.reach .big{font:700 26px inherit;color:var(--creator)}
+.reach .big{font-weight:700;font-size:26px;color:var(--creator)}
 .reach .dv{margin-left:auto;border:1px solid var(--creator);border-radius:99px;padding:5px 12px;
- font:700 11.5px inherit;letter-spacing:.1em;text-transform:uppercase;color:var(--creator)}
+ font-weight:700;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--creator)}
 
 /* ── step 2 events ─────────────────────────────────── */
 .ev{display:flex;align-items:center;gap:11px;padding:11px 0;border-top:1px solid var(--edge);cursor:pointer}
@@ -95,7 +95,7 @@ input::placeholder{color:var(--dim2)}
  display:grid;place-items:center;font-size:13px;color:transparent}
 .ev.on .bx{background:var(--creator);border-color:var(--creator);color:#fff}
 .ev .n{flex:1;min-width:0}
-.ev .n b{display:block;font:600 14.5px inherit;color:#fff}
+.ev .n b{display:block;font-weight:600;font-size:14.5px;color:#fff}
 .ev .n span{font-size:12.5px;color:var(--dim2)}
 
 /* ── step 3 questions ──────────────────────────────── */
@@ -106,12 +106,12 @@ input::placeholder{color:var(--dim2)}
 .leg .arch{display:flex;align-items:center;gap:8px}
 .leg .arch select{flex:1;padding:8px 10px;font-size:13px}
 .leg .stem{width:100%;border:1px solid var(--edge);border-radius:9px;padding:10px 12px;
- background:var(--panel);color:#fff;font:600 15px inherit;outline:none}
+ background:var(--panel);color:#fff;font-weight:600;font-size:15px;outline:none}
 .opts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .opt{border:1px solid var(--edge);border-radius:10px;padding:10px;
  background:linear-gradient(180deg,#1B212B,#151A22);
  box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 1px 3px rgba(0,0,0,.5)}
-.opt .nm{font:600 14.5px inherit;color:#fff}
+.opt .nm{font-weight:600;font-size:14.5px;color:#fff}
 .opt .cx{font-size:12px;color:var(--dim2);line-height:1.35;margin-top:4px}
 .flag{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;line-height:1.4;
  border-radius:9px;padding:9px 11px}
@@ -121,7 +121,7 @@ input::placeholder{color:var(--dim2)}
 .pool{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px}
 .ath{flex:0 0 auto;border:1px solid var(--edge);border-radius:10px;padding:8px 11px;
  background:var(--panel);cursor:pointer;min-width:0}
-.ath b{display:block;font:600 13.5px inherit;color:#fff;white-space:nowrap}
+.ath b{display:block;font-weight:600;font-size:13.5px;color:#fff;white-space:nowrap}
 .ath span{font-size:11.5px;color:var(--dim2);white-space:nowrap}
 .ath .star{color:var(--gold)}
 .meter{margin-top:4px}
@@ -137,7 +137,7 @@ input::placeholder{color:var(--dim2)}
 .kv b{color:#fff;font-weight:700}
 .kv .g{color:var(--cash);font-weight:700}
 table.earn{width:100%;border-collapse:collapse;font-size:12.5px}
-table.earn th{text-align:left;font:700 10px inherit;letter-spacing:.1em;text-transform:uppercase;
+table.earn th{text-align:left;font-weight:700;font-size:10px;letter-spacing:.1em;text-transform:uppercase;
  color:var(--dim2);padding:6px 4px}
 table.earn td{padding:7px 4px;border-top:1px solid var(--edge);color:var(--dim)}
 table.earn tr.now td{color:#fff;background:rgba(124,92,245,.12)}
@@ -146,31 +146,31 @@ table.earn td b{color:var(--cash)}
 /* ── review card ───────────────────────────────────── */
 .preview{border:2px solid var(--cat-sport);border-radius:20px;background:var(--card);padding:15px;
  display:flex;flex-direction:column;gap:11px;box-shadow:0 10px 30px rgba(0,0,0,.5)}
-.preview .eb{font:600 12.5px inherit;letter-spacing:.11em;color:var(--creator)}
-.preview .ttl{font:600 23px/1.15 inherit;color:#fff;letter-spacing:-.015em}
+.preview .eb{font-weight:600;font-size:12.5px;letter-spacing:.11em;color:var(--creator)}
+.preview .ttl{font-weight:600;font-size:23px;line-height:1.15;color:#fff;letter-spacing:-.015em}
 .preview .sb{font-size:13px;color:var(--dim);margin-top:-6px}
 .preview .bdg{align-self:flex-start;background:var(--cash);color:var(--ink);border-radius:99px;
- padding:6px 11px;font:600 12px inherit}
+ padding:6px 11px;font-weight:600;font-size:12px}
 .preview .pleg{background:var(--panel);border-radius:13px;padding:12px;
  box-shadow:inset 0 1px 0 rgba(255,255,255,.045), 0 2px 6px rgba(0,0,0,.45)}
-.preview .pleg .q{font:600 16px inherit;color:#fff;margin-bottom:9px}
+.preview .pleg .q{font-weight:600;font-size:16px;color:#fff;margin-bottom:9px}
 .preview .cta{width:100%;border:none;border-radius:12px;padding:15px;background:var(--orange);
- color:#fff;font:700 16px inherit;cursor:pointer;
+ color:#fff;font-weight:700;font-size:16px;cursor:pointer;
  box-shadow:inset 0 1px 0 rgba(255,255,255,.3), 0 6px 18px rgba(0,0,0,.55)}
 
 /* ── footer ────────────────────────────────────────── */
 #ft{flex:0 0 auto;display:flex;gap:9px;padding:10px 16px 14px;border-top:1px solid var(--edge)}
-#ft button{border-radius:12px;padding:14px;font:700 15px inherit;cursor:pointer;border:1px solid var(--edge)}
+#ft button{border-radius:12px;padding:14px;font-weight:700;font-size:15px;cursor:pointer;border:1px solid var(--edge)}
 #back{flex:0 0 auto;width:96px;background:linear-gradient(180deg,#1B212B,#151A22);color:var(--grey)}
 #next{flex:1;background:var(--creator);border-color:var(--creator);color:#fff;
  box-shadow:inset 0 1px 0 rgba(255,255,255,.28), 0 5px 16px rgba(0,0,0,.5)}
 #next:disabled{background:#2A2438;border-color:#2A2438;color:#6E7684;box-shadow:none;cursor:not-allowed}
 #prac{width:100%;border:1px dashed var(--creator-dim);border-radius:11px;padding:12px;
- background:transparent;color:var(--creator);font:600 13.5px inherit;cursor:pointer}
+ background:transparent;color:var(--creator);font-weight:600;font-size:13.5px;cursor:pointer}
 
 /* ── hub / landing — same visual language as the slate cards ─────────── */
 #hero{padding:8px 0 4px}
-#hero h1{font:700 clamp(25px,7.4vw,31px)/1.14 inherit;color:#fff;letter-spacing:-.02em;
+#hero h1{font-weight:700;font-size:clamp(25px,7.4vw,31px);line-height:1.14;color:#fff;letter-spacing:-.02em;
  margin:2px 0 9px;overflow-wrap:break-word}
 #hero p{font-size:14px;color:var(--dim);line-height:1.5}
 #who{position:relative;overflow:hidden;display:flex;align-items:center;gap:10px;
@@ -183,10 +183,10 @@ table.earn td b{color:var(--cash)}
 #who::before{content:"";position:absolute;left:-4px;top:0;bottom:0;width:4px;
  background:linear-gradient(180deg,var(--cash) 0%,#166B4F 100%)}
 #who .av{width:36px;height:36px;border-radius:50%;flex:none;display:grid;place-items:center;
- background:var(--creator-dim);color:#fff;font:700 14.5px inherit;
+ background:var(--creator-dim);color:#fff;font-weight:700;font-size:14.5px;
  box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
 #who .nm{flex:1;min-width:0}
-#who .nm b{display:block;font:600 15px inherit;color:#fff;line-height:1.2}
+#who .nm b{display:block;font-weight:600;font-size:15px;color:#fff;line-height:1.2}
 #who .nm span{display:block;margin-top:2px;font-size:11.5px;line-height:1.35;color:var(--dim2);
  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #who .nm span i{font-style:normal;color:var(--grey);font-weight:600}
@@ -194,7 +194,7 @@ table.earn td b{color:var(--cash)}
 #who #earn{color:var(--cash)}
 #who .cv{flex:none;color:var(--dim2);font-size:18px;line-height:1}
 /* two shades of one hue: darker fill, lighter type, mid-tone rim */
-.badge{flex:none;border-radius:99px;padding:4px 9px;font:700 10px inherit;letter-spacing:.1em;
+.badge{flex:none;border-radius:99px;padding:4px 9px;font-weight:700;font-size:10px;letter-spacing:.1em;
  text-transform:uppercase;white-space:nowrap}
 .badge.div{background:rgba(124,92,245,.20);border:1px solid rgba(124,92,245,.60);color:#C9BCFF}
 .gobig{position:relative;overflow:hidden;width:100%;cursor:pointer;text-align:left;
@@ -217,7 +217,7 @@ table.earn td b{color:var(--cash)}
  background:linear-gradient(180deg,#341509,#1E0B04);border:1px solid #4A2110;
  box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
 .gobig .n{flex:1;min-width:0}
-.gobig .n b{display:block;font:700 16px inherit;color:#fff;letter-spacing:.005em}
+.gobig .n b{display:block;font-weight:700;font-size:16px;color:#fff;letter-spacing:.005em}
 .gobig .n span{display:block;margin-top:4px;font-size:11.5px;line-height:1.45;
  color:rgba(255,255,255,.52)}
 .gobig .cv{flex:none;color:var(--orange);font-size:18px}
@@ -239,40 +239,40 @@ table.earn td b{color:var(--cash)}
  background:linear-gradient(180deg,#1B212B,#12171F);border:1px solid var(--edge);
  box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
 .tile .n{flex:1;min-width:0}
-.tile .n b{display:block;font:600 15px inherit;color:#fff;overflow-wrap:break-word}
+.tile .n b{display:block;font-weight:600;font-size:15px;color:#fff;overflow-wrap:break-word}
 .tile .n span{display:block;margin-top:4px;font-size:11.5px;color:var(--dim2);line-height:1.45}
 .tile .cv{color:var(--dim2);font-size:18px;flex:none}
 
 /* ── creator profile ──────────────────────────────────── */
 #phd{display:flex;align-items:center;gap:13px}
 #phd .av{width:56px;height:56px;border-radius:50%;flex:none;display:grid;place-items:center;
- background:var(--creator-dim);color:#fff;font:700 22px inherit;
+ background:var(--creator-dim);color:#fff;font-weight:700;font-size:22px;
  box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
-#phd .n b{display:block;font:700 20px inherit;color:#fff;letter-spacing:-.01em}
+#phd .n b{display:block;font-weight:700;font-size:20px;color:#fff;letter-spacing:-.01em}
 #phd .n span{display:block;margin-top:3px;font-size:12px;color:var(--dim2);line-height:1.4}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 .stat{border:1px solid var(--edge);border-radius:12px;padding:11px 12px;
  background:linear-gradient(180deg,#12171F,#0E131A);
  box-shadow:inset 0 1px 0 rgba(255,255,255,.035)}
 .stat .k{font-size:11px;color:var(--dim2);letter-spacing:.04em}
-.stat .v{margin-top:4px;font:700 19px inherit;color:#fff;font-variant-numeric:tabular-nums}
+.stat .v{margin-top:4px;font-weight:700;font-size:19px;color:#fff;font-variant-numeric:tabular-nums}
 .stat .v.cash{color:var(--cash)}
 .row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;font:inherit;
  color:var(--grey);background:none;border:none;cursor:pointer;
  padding:12px 0;border-top:1px solid var(--edge)}
 .row:first-of-type{border-top:none}
 .row .n{flex:1;min-width:0}
-.row .n b{display:block;font:600 14.5px inherit;color:#fff}
+.row .n b{display:block;font-weight:600;font-size:14.5px;color:#fff}
 .row .n span{display:block;margin-top:2px;font-size:11.5px;color:var(--dim2);line-height:1.4}
 .row .cv{flex:none;color:var(--dim2);font-size:16px}
 #signout{width:100%;margin-top:2px;border:1px solid var(--edge);border-radius:13px;padding:13px;
  background:linear-gradient(180deg,#1B212B,#151A22);color:var(--dim);
- font:600 14px inherit;cursor:pointer}
+ font-weight:600;font-size:14px;cursor:pointer}
 /* ── sub views ─────────────────────────────────────── */
 .crumb{display:flex;align-items:center;gap:9px;margin-bottom:2px}
 .crumb button{border:1px solid var(--edge);border-radius:9px;padding:6px 11px;
  background:linear-gradient(180deg,#1B212B,#151A22);color:var(--grey);
- font:600 12.5px inherit;cursor:pointer}
+ font-weight:600;font-size:12.5px;cursor:pointer}
 .rule{display:flex;gap:11px;align-items:flex-start;padding:11px 0;border-top:1px solid var(--edge2,#1B222C);
  font-size:13.5px;line-height:1.5;color:var(--dim)}
 .rule:first-of-type{border-top:none}
@@ -282,8 +282,8 @@ table.earn td b{color:var(--cash)}
 .num{display:flex;gap:12px;align-items:flex-start;padding:11px 0;border-top:1px solid var(--edge)}
 .num:first-of-type{border-top:none}
 .num .k{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;
- background:var(--creator-dim);color:#fff;font:700 12.5px inherit}
-.num .n b{display:block;font:600 14.5px inherit;color:#fff;margin-bottom:3px}
+ background:var(--creator-dim);color:#fff;font-weight:700;font-size:12.5px}
+.num .n b{display:block;font-weight:600;font-size:14.5px;color:#fff;margin-bottom:3px}
 .num .n span{font-size:13px;color:var(--dim);line-height:1.45}
 .msg{max-width:86%;border-radius:14px;padding:11px 13px;font-size:13.5px;line-height:1.45}
 .msg.them{align-self:flex-start;background:var(--panel);border:1px solid var(--creator-dim);
@@ -297,7 +297,7 @@ table.earn td b{color:var(--cash)}
  background:linear-gradient(180deg,#1B1636,#12101F)}
 #lsFall span{display:block;font-size:11px;letter-spacing:.08em;color:var(--dim2);margin-top:6px}
 .outlink{width:100%;border:1px solid var(--creator);border-radius:14px;padding:15px;
- background:transparent;color:var(--creator);font:700 15.5px inherit;cursor:pointer}
+ background:transparent;color:var(--creator);font-weight:700;font-size:15.5px;cursor:pointer}
 .sep{border:1px solid var(--cash);border-radius:11px;padding:10px 12px;background:rgba(47,185,138,.08);
  color:#9BE3C8;font-size:12.5px;line-height:1.45}
 .sep b{color:#fff}
