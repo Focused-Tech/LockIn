@@ -10,6 +10,7 @@ import { Card, Pill } from "@/components/ui";
 import { computeSlateMetrics } from "@/lib/contest";
 import { CardRushMeta } from "@/components/CardRushMeta";
 import { catColors, catSoft } from "@/lib/categoryColors";
+import { LockAnimation } from "@/components/LockAnimation";
 import { EXCLUDED_STATES, type EntryTier } from "@/lib/constants";
 import type { FeedSlate, FeedPrediction } from "@/lib/feed";
 import type { ShadowEarnings } from "@/server/data/shadowEarnings";
@@ -91,6 +92,7 @@ export function SlatePicker({
   registeredState,
   existingEntry,
   shadowEarnings,
+  isDemo = false,
 }: {
   slate: FeedSlate;
   cashBalanceCents: number;
@@ -99,6 +101,9 @@ export function SlatePicker({
   registeredState: string | null;
   existingEntry: LockedEntry | null;
   shadowEarnings?: ShadowEarnings | null;
+  /** DEMO slate — free to play through (no cash, no attestation, no DB write); exists so any tester
+   *  can experience the pick → lock-in flow + animation without funding a wallet. */
+  isDemo?: boolean;
 }) {
   const router = useRouter();
   const { predictions } = slate;
@@ -122,7 +127,8 @@ export function SlatePicker({
   // §2 — the residence attestation now lives at signup + the wallet (not re-confirmed per contest).
   // The slate stays affirmation-free; the server still requires it (verifyForCash). A player who
   // hasn't attested yet is pointed to the wallet rather than gated with perjury text here.
-  const canEnterCash = !geoBlocked && availableTiers.length > 0 && cashAttested;
+  // DEMO slates bypass the cash/attestation gate entirely — they never move money.
+  const canEnterCash = isDemo || (!geoBlocked && availableTiers.length > 0 && cashAttested);
   const locked = slate.status !== "live";
 
   const [tier, setTier] = useState<EntryTier>(availableTiers[0] ?? 5);
@@ -171,14 +177,40 @@ export function SlatePicker({
   const contextBlocked = predictions.some((p) => p.contextError);
   const remaining = predictions.filter((p) => !picks[p.id]).length;
 
+  // LOCK-IN AUDIO — the lock-close click, fired at ~740ms to land as the shackle SEATS. Only while
+  // submitting (user-initiated). Matches the tower's lock-in sound.
+  useEffect(() => {
+    if (!submitting) return;
+    let audio: HTMLAudioElement | null = null;
+    const t = window.setTimeout(() => {
+      audio = new Audio("/sounds/lock-close.mp3");
+      audio.play().catch(() => {});
+    }, 740);
+    return () => {
+      window.clearTimeout(t);
+      audio?.pause();
+    };
+  }, [submitting]);
+
   async function onSubmit() {
     setError(null);
     setSubmitting(true);
-    const startedAt = Date.now(); // to hold the lock-in state for a moment before transitioning
+    const startedAt = Date.now(); // hold the lock-in animation for its full ~950ms before transitioning
     const picksArr: EntryPick[] = predictions.map((p) => ({
       predictionId: p.id,
       choice: picks[p.id]!,
     }));
+
+    // DEMO — never touches the server or a balance; just plays the lock-in animation through, then
+    // shows the "locked in" confirmation so a tester feels the full flow.
+    if (isDemo) {
+      window.setTimeout(() => {
+        setSubmitting(false);
+        setLockedEntry({ picks: picksArr, isPaid: false });
+      }, 1000);
+      return;
+    }
+
     const result = await submitEntry({
       slateId: slate.id,
       tier,
@@ -186,7 +218,7 @@ export function SlatePicker({
       picks: picksArr,
     });
     if (result.ok) {
-      const wait = Math.max(0, 700 - (Date.now() - startedAt));
+      const wait = Math.max(0, 950 - (Date.now() - startedAt));
       window.setTimeout(() => {
         setSubmitting(false);
         setLockedEntry({ picks: picksArr, isPaid: true });
@@ -356,7 +388,15 @@ export function SlatePicker({
   } as React.CSSProperties;
 
   return (
-    <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start lg:gap-6">
+    <div className="relative flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start lg:gap-6">
+      {/* LOCK-IN overlay — the padlock shackle slides down + lock-close click; mounts only while
+          submitting so it plays ONCE (the app's LockAnimation, same as the tower's lock-in). */}
+      {submitting && (
+        <div className="sd-lockfx">
+          <LockAnimation size={112} sound={false} />
+          <span className="sd-lw">Locking in</span>
+        </div>
+      )}
       {rushMeta && <div className="lg:col-span-2">{rushMeta}</div>}
       {prizeBlock}
 
@@ -431,8 +471,8 @@ export function SlatePicker({
           )}
       </div>
 
-      {/* stake block — reveals once every leg is answered (cash-green edge) */}
-      {allPicked && !geoBlocked && (
+      {/* stake block — reveals once every leg is answered (cash-green edge). Hidden for demo (free). */}
+      {allPicked && !geoBlocked && !isDemo && (
         <div
           className="sd-blk lg:col-start-2"
           style={{ "--sc": CASH, "--scd": CASH_DEEP, "--scsoft": catSoft(CASH, 0.14) } as React.CSSProperties}
@@ -462,8 +502,8 @@ export function SlatePicker({
         </div>
       )}
 
-      {/* geo block — coins fallback; residence attestation lives at signup + wallet now. */}
-      {geoBlocked ? (
+      {/* geo block — coins fallback; residence attestation lives at signup + wallet now. Demo skips both. */}
+      {isDemo ? null : geoBlocked ? (
         <div className="rounded border border-border bg-surface px-3 py-2 text-xs text-muted lg:col-start-2">
           Paid contests aren&apos;t available in your state.{" "}
           <Link href="/app/beginner" className="font-semibold text-accent">Play the beginner lane in coins →</Link>
@@ -488,9 +528,15 @@ export function SlatePicker({
             ? "Locking in…"
             : !allPicked
               ? `Pick ${remaining} more`
-              : `Lock in · ${formatCents(entryCostCents)}`}
+              : isDemo
+                ? "Lock in · Demo"
+                : `Lock in · ${formatCents(entryCostCents)}`}
         </button>
-        <div className="sd-ctasub">Entry leaves your balance when the slate locks.</div>
+        <div className="sd-ctasub">
+          {isDemo
+            ? "Demo contest — free to play through. Nothing leaves your balance."
+            : "Entry leaves your balance when the slate locks."}
+        </div>
       </div>
 
       {error && (

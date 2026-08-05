@@ -13,6 +13,7 @@ const CAT_COLORS: Record<string, [string, string]> = {
   AWARDS: ["#C05CF5", "#5B2A78"],
   NFL: ["#F0C463", "#7A5F16"],
   TENNIS: ["#3E9BE9", "#1B4B74"],
+  "BLACK ENTERTAINMENT": ["#C05CF5", "#5B2A78"],
 };
 
 /** [edge, shoulder] for a category. */

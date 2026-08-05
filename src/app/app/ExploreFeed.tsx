@@ -9,6 +9,7 @@ import { FEED_STATUSES, type FeedSlate } from "@/lib/feed";
 import { ENTRY_TIERS, type EntryTier } from "@/lib/constants";
 // THE FLOOR contest card (explore.html) — feed-only, so the uniform tower slate/SlateCard is untouched.
 import { FloorCard } from "@/components/feed/FloorCard";
+import { DEMO_SLATES } from "@/lib/demoSlates";
 import { recommendSlates, type RecSignals } from "@/lib/recommendations";
 
 const FOR_YOU = "For you";
@@ -199,14 +200,21 @@ export function ExploreFeed({
         <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-muted">Popular right now</h2>
       )}
 
-      {/* §5.1 — a single full-width vertical column. Every card is the uniform SlateCard (compact). */}
-      {ordered.length === 0 ? (
-        <div className="rounded border border-border bg-surface-card p-8 text-center text-sm text-muted">
-          No live contests right now. Check back soon.
-        </div>
-      ) : (
-        <div className="flex flex-col gap-3">
-          {ordered.map((slate) => (
+      {/* §5.1 — a single full-width vertical column. Demo slates are PINNED at the top (free to
+          play through) so any tester can reach the pick → lock-in flow without a funded wallet;
+          the real feed follows. */}
+      <div className="flex flex-col gap-3">
+        {DEMO_SLATES.map((slate) => (
+          <Link key={slate.id} href={`/app/slate/${slate.id}`} className="block">
+            <FloorCard slate={slate} tier={tier} currency="cash" />
+          </Link>
+        ))}
+        {ordered.length === 0 ? (
+          <div className="rounded border border-border bg-surface-card p-8 text-center text-sm text-muted">
+            No live contests right now — try a demo above while you wait.
+          </div>
+        ) : (
+          ordered.map((slate) => (
             <Link key={slate.id} href={`/app/slate/${slate.id}`} className="block">
               {slate.withheld ? (
                 <div data-withheld="true" className="rounded-[15px] border border-border bg-surface-card p-4">
@@ -218,9 +226,9 @@ export function ExploreFeed({
                 <FloorCard slate={slate} tier={tier} currency={free ? "coins" : "cash"} />
               )}
             </Link>
-          ))}
-        </div>
-      )}
+          ))
+        )}
+      </div>
     </div>
   );
 }

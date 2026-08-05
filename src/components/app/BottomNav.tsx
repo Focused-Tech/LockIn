@@ -30,7 +30,12 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex shrink-0 border-t border-border bg-surface">
+    // Safe-area: the tab bar background extends into the Android gesture/nav-bar inset so the labels
+    // sit ABOVE the phone's system bar (viewport-fit=cover makes env() resolve on-device).
+    <nav
+      className="flex shrink-0 border-t border-border bg-surface"
+      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+    >
       {TABS.map((t) => {
         const active = t.match(pathname);
         return (

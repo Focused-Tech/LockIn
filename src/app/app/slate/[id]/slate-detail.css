@@ -198,6 +198,59 @@
 .sd-opt.on {
   border-color: var(--sd-cat, #3e9be9);
   background: var(--sd-catsoft, rgba(62, 155, 233, 0.09));
+  /* seal — a quick crush on select (matches the practice-seal family) */
+  animation: sd-seal 0.34s ease-out;
+}
+/* swipe — a light bar sweeps across the option the instant it's selected */
+.sd-opt.on::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent 22%, rgba(255, 255, 255, 0.16) 50%, transparent 78%);
+  transform: translateX(-120%) skewX(-16deg);
+  animation: sd-swipe 0.5s ease-out;
+}
+@keyframes sd-seal {
+  0% { transform: scale(1); }
+  45% { transform: scale(0.985); }
+  100% { transform: scale(1); }
+}
+@keyframes sd-swipe {
+  0% { transform: translateX(-120%) skewX(-16deg); opacity: 0; }
+  20% { opacity: 0.9; }
+  100% { transform: translateX(120%) skewX(-16deg); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sd-opt.on { animation: none; }
+  .sd-opt.on::after { animation: none; opacity: 0; }
+}
+
+/* LOCK-IN overlay — the app's LockAnimation (shackle slides straight DOWN into the base),
+ * mounted only while submitting so it plays ONCE. Mirrors SlateCard's .lockfx. */
+.sd-lockfx {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  background: rgba(8, 9, 12, 0.9);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  border-radius: 15px;
+}
+.sd-lockfx .sd-lw {
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #ff5a1f;
+  animation: sd-lw-fade 0.3s ease-out 0.45s both;
+}
+@keyframes sd-lw-fade {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
 }
 
 /* stake block */

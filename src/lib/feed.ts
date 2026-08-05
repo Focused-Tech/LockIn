@@ -57,6 +57,8 @@ export interface FeedSlate {
    *  Null for house/feed slates (creatorId === null). */
   creatorName?: string | null;
   creatorTrackRecord?: string | null;
+  /** DEMO — a free, pinned tester slate that runs the flow locally (no cash, no DB). */
+  isDemo?: boolean;
 }
 
 /** Statuses shown in the Explore feed. */

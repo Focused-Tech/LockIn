@@ -13,6 +13,7 @@ import {
 import { EmbedSnippet } from "@/components/EmbedSnippet";
 import { ShareCardPanel } from "@/components/ShareCardPanel";
 import { FollowButton } from "@/components/feed/FollowButton";
+import { getDemoSlate } from "@/lib/demoSlates";
 import { SlatePicker } from "./SlatePicker";
 
 export default async function SlatePage({
@@ -24,6 +25,43 @@ export default async function SlatePage({
 
   const profile = await getCurrentUserProfile();
   if (!profile) redirect("/login");
+
+  // DEMO slate — free, pinned tester contest. No Firestore, no entry lookup, no creator panels;
+  // the picker runs the pick → lock-in flow locally (isDemo) without moving money.
+  const demoSlate = getDemoSlate(id);
+  if (demoSlate) {
+    return (
+      <div className="flex flex-col gap-5 p-6">
+        <Link
+          href="/app"
+          className="flex items-center gap-1 self-start text-sm font-semibold text-muted"
+        >
+          ‹ Back to The Floor
+        </Link>
+        <div>
+          <div className="mb-2 flex items-center gap-2">
+            <Pill tone="accent">{demoSlate.category}</Pill>
+            <Pill tone="live">Demo</Pill>
+          </div>
+          <h1 className="text-xl font-semibold leading-snug">{demoSlate.title}</h1>
+          <p className="mt-1 text-sm text-muted">
+            Free to play through — pick every leg and lock in to see the flow. Nothing leaves your
+            balance.
+          </p>
+        </div>
+        <SlatePicker
+          slate={demoSlate}
+          cashBalanceCents={profile.cashBalanceCents}
+          cashAttested
+          registeredState={profile.registeredState}
+          existingEntry={null}
+          shadowEarnings={null}
+          isDemo
+        />
+        <SkillGameDisclaimer className="mt-auto pt-4" />
+      </div>
+    );
+  }
 
   const slate = await fetchSlate(adminDb(), id);
   if (!slate) notFound();

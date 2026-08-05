@@ -63,13 +63,17 @@ describe("§6 GATE — Explore redesign", () => {
 
     // §6.2 — every feed card is the FloorCard (explore.html panel language). BATCH directive replaced
     // the tower's uniform SlateCard on the feed with this feed-only card (so the §9 tower is untouched).
+    // 2 DEMO slates are pinned at the top (free tester contests), so 3 real + 2 demos = 5 FloorCards.
     const cards = [...el.querySelectorAll(".fc-card")] as HTMLElement[];
-    log(`§6.2 FloorCards rendered: ${cards.length}`);
-    expect(cards.length).toBe(3);
+    log(`§6.2 FloorCards rendered: ${cards.length} (3 feed + 2 pinned demos)`);
+    expect(cards.length).toBe(5);
+    // the first two are the pinned demos (free to play), before any real slate.
+    expect(cards[0]!.textContent).toMatch(/demo/i);
+    expect(cards[1]!.textContent).toMatch(/demo/i);
     // each shows the category eyebrow, the pot figures, and the creator eyebrow.
-    expect(cards[0]!.querySelector(".fc-cat")).not.toBeNull();
-    expect(cards[0]!.querySelector(".fc-pool")).not.toBeNull();
-    expect(cards[0]!.querySelector(".fc-by")).not.toBeNull();
+    expect(cards[2]!.querySelector(".fc-cat")).not.toBeNull();
+    expect(cards[2]!.querySelector(".fc-pool")).not.toBeNull();
+    expect(cards[2]!.querySelector(".fc-by")).not.toBeNull();
 
     // §6.3 — no rake string anywhere on Explore.
     const html = el.innerHTML.toLowerCase();

@@ -29,6 +29,7 @@ export function FloorCard({
   currency: "cash" | "coins";
 }) {
   const [cat, catd] = catColors(slate.category);
+  const demo = slate.isDemo === true;
   const coin = currency === "coins";
   const locked = slate.status === "locked";
   const legs = slate.predictions.length;
@@ -47,13 +48,17 @@ export function FloorCard({
   const multLabel = coin
     ? `${(coinFirst / FREE_ENTRY_COIN_COST).toFixed(1)}×`
     : metrics ? formatMultiple(metrics.firstPlaceMultiple) : "";
-  const entryLabel = coin ? `Coin entry · ${FREE_ENTRY_COIN_COST}` : `Cash entry · $${config?.tier ?? tier}`;
+  const entryLabel = demo
+    ? "Demo · free to play"
+    : coin
+      ? `Coin entry · ${FREE_ENTRY_COIN_COST}`
+      : `Cash entry · $${config?.tier ?? tier}`;
 
   return (
     <div className="fc-card" style={{ "--fc-cat": cat, "--fc-catd": catd } as React.CSSProperties}>
       <div className="fc-top">
         <span className="fc-cat">{slate.category}</span>
-        <span className={"fc-st " + (locked ? "lock" : "live")}>{locked ? "Locked" : "Live"}</span>
+        <span className={"fc-st " + (demo ? "live" : locked ? "lock" : "live")}>{demo ? "Demo" : locked ? "Locked" : "Live"}</span>
       </div>
       <h3 className="fc-title">{slate.title}</h3>
       <div className="fc-by">
