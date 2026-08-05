@@ -334,7 +334,7 @@ export function SlatePicker({
           href="/app"
           className="rounded border border-border bg-surface-card px-4 py-3 text-center text-sm font-medium text-foreground"
         >
-          Back to Explore
+          Back to The Floor
         </Link>
       </div>
     );
@@ -353,7 +353,7 @@ export function SlatePicker({
           href="/app"
           className="rounded border border-border bg-surface-card px-4 py-3 text-center text-sm font-medium text-foreground"
         >
-          Back to Explore
+          Back to The Floor
         </Link>
       </div>
     );

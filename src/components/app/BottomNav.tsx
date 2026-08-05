@@ -11,7 +11,7 @@ import { usePathname } from "next/navigation";
  * the /app/rush route is intentionally kept in place, just unlinked.)
  */
 const TABS = [
-  { href: "/app", label: "Explore", icon: "◎", match: (p: string) => p === "/app" },
+  { href: "/app", label: "The Floor", icon: "◎", match: (p: string) => p === "/app" },
   {
     href: "/app/leaderboard",
     label: "Board",

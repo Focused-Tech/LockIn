@@ -8,7 +8,7 @@ import { ProBadge } from "@/components/ProBadge";
 import { formatCents } from "@/lib/utils";
 
 const LINKS = [
-  { href: "/app", label: "Explore", match: (p: string) => p === "/app" },
+  { href: "/app", label: "The Floor", match: (p: string) => p === "/app" },
   { href: "/app/packages", label: "Packages", match: (p: string) => p.startsWith("/app/packages") },
   { href: "/app/leaderboard", label: "Ranks", match: (p: string) => p.startsWith("/app/leaderboard") },
   { href: "/app/creator", label: "Creator", match: (p: string) => p.startsWith("/app/creator") },

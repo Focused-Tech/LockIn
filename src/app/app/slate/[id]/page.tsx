@@ -68,7 +68,7 @@ export default async function SlatePage({
         href="/app"
         className="flex items-center gap-1 self-start text-sm font-semibold text-muted"
       >
-        ‹ Back to Explore
+        ‹ Back to The Floor
       </Link>
       <div>
         <div className="mb-2 flex items-center gap-2">

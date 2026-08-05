@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>LockIn — the feed</title>
+<style>
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent;
+ scrollbar-width:none;-ms-overflow-style:none}
+*::-webkit-scrollbar{display:none}
+:root{
+ --orange:#FF5A1F;          /* warmer than #FC3E01 — toggle at the foot */
+ --orange-deep:#8E2C01;
+ --cash:#2FB98A;--coin:#F0C463;--creator:#7C5CF5;--gold:#F0C463;
+ --ink:#0A0D12;--edge:#232B37;--edge2:#1B222C;--grey:#E7E7EB;--dim:#98A0AE;--dim2:#6E7787;
+ --mlb:#3E9BE9;--soccer:#2FB98A;--nba:#FF5A1F;--nascar:#E0432C;--ent:#C05CF5;--fox:#F0C463;
+}
+html{height:100%}
+body{min-height:100%;width:100%;max-width:100%;background:var(--ink);color:var(--grey);
+ overflow-x:hidden;
+ font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+ font-size:14px;line-height:1.45}
+#wrap{width:100%;max-width:390px;margin:0 auto;padding-bottom:96px}
+
+#hero{padding:18px 16px 6px}
+#hero h1{font-weight:700;font-size:32px;line-height:1.1;color:#fff;letter-spacing:-.025em}
+#hero p{margin-top:9px;font-size:14px;color:var(--dim);line-height:1.5}
+
+#swatch{display:flex;align-items:center;gap:9px;margin-top:13px;font-size:11px;
+ letter-spacing:.12em;text-transform:uppercase;color:var(--dim2)}
+#swatch i{width:52px;height:22px;border-radius:7px;background:var(--orange);
+ border:1px solid rgba(255,255,255,.25)}
+#bar{display:flex;gap:8px;padding:14px 16px 4px;overflow-x:auto}
+.f{flex:none;border:1px solid var(--edge);border-radius:99px;padding:8px 14px;
+ background:linear-gradient(180deg,#1B212B,#151A22);color:var(--dim);
+ font-weight:600;font-size:13px;cursor:pointer;white-space:nowrap}
+.f.on{background:var(--orange-soft,rgba(255,90,31,.14));border-color:var(--orange);
+ color:var(--orange)}
+.f b{color:inherit;font-weight:800;margin-left:5px;opacity:.85}
+
+.sect{padding:20px 16px 0}
+.sh{font-weight:700;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+ color:var(--dim2);margin-bottom:11px;display:flex;align-items:center;gap:8px}
+.sh span{margin-left:auto;font-weight:600;letter-spacing:.02em;text-transform:none;
+ color:var(--dim2);font-size:11.5px}
+
+/* ══ THE CONTEST CARD — same construction as the slate card:
+      4px heavy left edge in the CATEGORY colour, its darker shoulder, the
+      inner shadow off that edge, hairline on the other three sides. ══ */
+.cards{display:flex;flex-direction:column;gap:13px}
+.c{position:relative;overflow:hidden;border-radius:15px;padding:14px 15px 13px;cursor:pointer;
+ background:linear-gradient(180deg,#161C25 0%,#10151C 100%);
+ border-width:1px;border-style:solid;border-color:#232B37;
+ border-left-width:4px;border-left-color:var(--cat,#FF5A1F);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 8px 20px rgba(0,0,0,.55);
+ transition:transform .16s ease}
+.c::before{content:"";position:absolute;left:-4px;top:0;bottom:0;width:4px;
+ background:linear-gradient(180deg,var(--cat,var(--orange)) 0%,var(--catd,#8E2C01) 100%)}
+.c:active{transform:scale(.99)}
+.ctop{display:flex;align-items:center;gap:9px}
+.cat{font-weight:800;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+ color:var(--cat,var(--orange))}
+.st{margin-left:auto;border-radius:99px;padding:3px 9px;font-weight:800;font-size:9.5px;
+ letter-spacing:.12em;text-transform:uppercase}
+.st.live{background:rgba(240,196,99,.15);border:1px solid rgba(240,196,99,.5);color:var(--gold)}
+.st.lock{background:rgba(110,119,135,.14);border:1px solid rgba(110,119,135,.4);color:var(--dim)}
+.st.soon{background:rgba(47,185,138,.14);border:1px solid rgba(47,185,138,.45);color:var(--cash)}
+.c h3{margin-top:9px;font-weight:700;font-size:17px;line-height:1.28;color:#fff;
+ letter-spacing:-.01em}
+.by{margin-top:6px;display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--dim2)}
+.by .av{width:19px;height:19px;border-radius:50%;flex:none;display:grid;place-items:center;
+ background:#2A2160;border:1px solid var(--creator);color:#fff;font-weight:800;font-size:9px}
+.pool{margin-top:11px;display:flex;align-items:baseline;gap:14px;
+ border-top:1px solid var(--edge);padding-top:11px}
+.pool .k{font-weight:700;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;
+ color:var(--dim2);display:block}
+.pool .v{margin-top:2px;font-weight:800;font-size:21px;color:var(--cash);
+ font-variant-numeric:tabular-nums;line-height:1}
+.pool .v.w{color:#fff;font-size:18px}
+.pool .v small{font-size:12px;color:var(--dim2);font-weight:700;margin-left:4px}
+.pool .rt{margin-left:auto;text-align:right;font-size:11.5px;color:var(--dim2)}
+.pool .rt b{display:block;color:#fff;font-weight:700;font-size:13px}
+.entry{margin-top:10px;display:flex;align-items:center;gap:8px;font-size:11.5px;
+ color:var(--dim2)}
+.entry .tag{border-radius:99px;padding:3px 9px;font-weight:800;font-size:9.5px;
+ letter-spacing:.1em;text-transform:uppercase}
+.entry .tag.cash{background:rgba(47,185,138,.15);border:1px solid rgba(47,185,138,.45);
+ color:var(--cash)}
+.entry .tag.coin{background:rgba(240,196,99,.14);border:1px solid rgba(240,196,99,.45);
+ color:var(--coin)}
+.entry .rt{margin-left:auto}
+
+/* the Fox Pit rail — same edge, its own colour */
+.pit{position:relative;overflow:hidden;border-radius:15px;padding:15px;cursor:pointer;
+ background:linear-gradient(180deg,#1D1A14 0%,#12100B 100%);
+ border-width:1px;border-style:solid;border-color:#33301F;
+ border-left-width:4px;border-left-color:var(--fox);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 8px 20px rgba(0,0,0,.55)}
+.pit::before{content:"";position:absolute;left:-4px;top:0;bottom:0;width:4px;
+ background:linear-gradient(180deg,var(--fox) 0%,#7A5F16 100%)}
+.pit b{display:block;font-weight:700;font-size:16px;color:#fff}
+.pit span{display:block;margin-top:5px;font-size:12.5px;color:var(--dim2);line-height:1.5}
+.pit .cv{position:absolute;right:14px;top:50%;margin-top:-10px;color:var(--fox);font-size:19px}
+
+#ft{position:fixed;left:0;right:0;bottom:0;z-index:6;
+ padding:9px 12px 12px;background:rgba(10,13,18,.95);backdrop-filter:blur(8px);
+ border-top:1px solid var(--edge2)}
+#ftin{max-width:390px;margin:0 auto;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+#ftin button{border:1px solid var(--edge);border-radius:9px;padding:7px 10px;
+ background:linear-gradient(180deg,#1B212B,#151A22);color:var(--grey);
+ font-weight:600;font-size:11.5px;cursor:pointer}
+#ftin button.on{background:var(--orange);border-color:var(--orange);color:#fff}
+#ftin .sw{display:inline-block;width:13px;height:13px;border-radius:4px;margin-right:7px;
+ vertical-align:-2px;border:1px solid rgba(255,255,255,.35)}
+#ftin .lbl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim2);
+ width:100%;margin-bottom:1px}
+</style></head><body>
+<div id="wrap">
+  <div id="hero"><h1 id="ttl"></h1><p id="sub"></p>
+    <div id="swatch"><i id="sw1"></i><span>brand orange</span></div></div>
+
+  <div id="bar">
+    <button class="f on">For you <b>4</b></button>
+    <button class="f">All <b>12</b></button>
+    <button class="f">Cash</button>
+    <button class="f">Coins</button>
+    <button class="f">Tonight</button>
+  </div>
+
+  <div class="sect">
+    <div class="sh">Popular right now <span>updated live</span></div>
+    <div class="cards" id="hot"></div>
+  </div>
+
+  <div class="sect">
+    <div class="sh">From creators you follow</div>
+    <div class="cards" id="fol"></div>
+  </div>
+
+  <div class="sect">
+    <div class="sh">Practice</div>
+    <div class="pit"><b>The Fox Pit</b>
+      <span>Climb the tower on coins. Nothing here costs cash.</span>
+      <span class="cv">›</span></div>
+  </div>
+</div>
+
+<div id="ft"><div id="ftin">
+  <span class="lbl">Brand orange — swatch, chips and the NBA card all repaint</span>
+  <button data-o="#FF5A1F" class="on"><i class="sw" style="background:#FF5A1F"></i>Warmer</button>
+  <button data-o="#FF7A26"><i class="sw" style="background:#FF7A26"></i>Warmest</button>
+  <button data-o="#FC3E01"><i class="sw" style="background:#FC3E01"></i>Current</button>
+</div></div>
+<script>
+var $=function(i){return document.getElementById(i);};
+
+var NAMES=[['The Floor','Every contest live right now. Call the night, climb the board.']];
+
+var CATS={MLB:['#3E9BE9','#1B4B74'],SOCCER:['#2FB98A','#166B4F'],NBA:['#FF5A1F','#8E2C01'],
+ NASCAR:['#E0432C','#7E1F13'],AWARDS:['#C05CF5','#5B2A78'],NFL:['#F0C463','#7A5F16']};
+
+var HOT=[
+ {cat:'MLB',state:['lock','Locked'],t:'MLB Trade Deadline — Blockbuster Watch',
+  by:'Quill',av:'Q',pool:'$15k',first:'$1.8k',mult:'299.6×',entries:'5,240',
+  entry:['cash','Cash entry · $5'],legs:3},
+ {cat:'SOCCER',state:['live','Live'],t:'Premier League — Opening Weekend',
+  by:'Tenley',av:'T',pool:'$9.8k',first:'$1.2k',mult:'195.9×',entries:'3,110',
+  entry:['cash','Cash entry · $5'],legs:4},
+ {cat:'AWARDS',state:['soon','Opens 6pm'],t:'Awards Night — Who Shows Out',
+  by:'Marley',av:'M',pool:'$2.4k',first:'$480',mult:'96.0×',entries:'820',
+  entry:['cash','Cash entry · $5'],legs:3}];
+
+var FOL=[
+ {cat:'NBA',state:['live','Live'],t:"Quill's Friday Night Slate",
+  by:'Quill',av:'Q',pool:'$15k',first:'$1.8k',mult:'299.6×',entries:'5,240',
+  entry:['cash','Cash entry · $5'],legs:3},
+ {cat:'NFL',state:['soon','Opens Sun'],t:'Sunday Openers — Biggest Night',
+  by:'Dpicks',av:'D',pool:'620 coins',first:'150',mult:'12.0×',entries:'410',
+  entry:['coin','Coin entry · 50'],legs:3}];
+
+function card(c){
+  var col=CATS[c.cat]||['#FF5A1F','#8E2C01'];
+  var coin=(c.entry[0]==='coin');
+  return '<div class="c" style="--cat:'+col[0]+';--catd:'+col[1]+'">'+
+    '<div class="ctop"><span class="cat">'+c.cat+'</span>'+
+      '<span class="st '+c.state[0]+'">'+c.state[1]+'</span></div>'+
+    '<h3>'+c.t+'</h3>'+
+    '<div class="by"><span class="av">'+c.av+'</span>@'+c.by+
+      ' <span style="color:#39424F">&middot;</span> '+c.legs+' legs</div>'+
+    '<div class="pool">'+
+      '<div><span class="k">Prize pool</span>'+
+        '<span class="v"'+(coin?' style="color:var(--coin)"':'')+'>'+c.pool+'</span></div>'+
+      '<div><span class="k">1st place</span>'+
+        '<span class="v w">'+c.first+'<small>'+c.mult+'</small></span></div>'+
+      '<div class="rt">'+c.entries+'<b>in</b></div></div>'+
+    '<div class="entry"><span class="tag '+c.entry[0]+'">'+c.entry[1]+'</span>'+
+      '<span class="rt">Tap to open ›</span></div>'+
+  '</div>';
+}
+
+var NAME=0;
+function paint(){
+  $('ttl').textContent=NAMES[NAME][0];
+  $('sub').textContent=NAMES[NAME][1];
+  $('hot').innerHTML=HOT.map(card).join('');
+  $('fol').innerHTML=FOL.map(card).join('');
+}
+[].forEach.call(document.querySelectorAll('[data-n]'),function(b){
+  b.addEventListener('click',function(){
+    NAME=+b.getAttribute('data-n');
+    [].forEach.call(document.querySelectorAll('[data-n]'),function(x){x.classList.remove('on');});
+    b.classList.add('on'); paint();
+  });
+});
+[].forEach.call(document.querySelectorAll('[data-o]'),function(b){
+  b.addEventListener('click',function(){
+    var o=b.getAttribute('data-o');
+    var deep={'#FF5A1F':'#8E2C01','#FF7A26':'#8A3A05','#FC3E01':'#7E1F00'}[o];
+    var R=parseInt(o.slice(1,3),16),G=parseInt(o.slice(3,5),16),B=parseInt(o.slice(5,7),16);
+    document.documentElement.style.setProperty('--orange',o);
+    document.documentElement.style.setProperty('--orange-deep',deep);
+    document.documentElement.style.setProperty('--orange-soft',
+      'rgba('+R+','+G+','+B+',.15)');
+    document.documentElement.style.setProperty('--nba',o);
+    CATS.NBA=[o,deep];
+    $('sw1').style.background=o;
+    [].forEach.call(document.querySelectorAll('[data-o]'),function(x){x.classList.remove('on');});
+    b.classList.add('on'); paint();
+  });
+});
+paint();
+window.__explore={NAMES:NAMES,CATS:CATS,get name(){return NAMES[NAME][0];},
+  set name(i){NAME=i;paint();}};
+</script></body></html>

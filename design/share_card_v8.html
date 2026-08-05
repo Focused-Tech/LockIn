@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>LockIn — share card</title>
+<style>
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent;
+ scrollbar-width:none;-ms-overflow-style:none}
+*::-webkit-scrollbar{display:none}
+:root{--orange:#FC3E01;--cash:#2FB98A;--gold:#F0C463;--cat:#FC3E01;--cat-deep:#8E2201;
+ --ink:#0A0D12;--edge:#232B37;--grey:#E7E7EB;--dim:#98A0AE;--dim2:#6E7787}
+html{height:100%}
+body{min-height:100%;width:100%;max-width:100%;background:#07090D;color:var(--grey);
+ overflow-x:hidden;
+ font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+#wrap{width:100%;max-width:390px;margin:0 auto;padding:14px 14px 40px}
+h2.t{font-weight:700;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim2);
+ margin-bottom:12px}
+
+/* ── collapsible section per size ─────────────────────── */
+.sec{margin-bottom:14px;border:1px solid var(--edge);border-radius:15px;overflow:hidden;
+ background:linear-gradient(180deg,#12171F,#0C1016)}
+.sh{display:flex;align-items:center;gap:10px;width:100%;padding:14px 15px;cursor:pointer;
+ background:none;border:none;color:var(--grey);font:inherit;text-align:left}
+.sh b{font-weight:700;font-size:15px;color:#fff}
+.sh span{font-size:11.5px;color:var(--dim2)}
+.sh .cv{margin-left:auto;color:var(--dim2);font-size:20px;line-height:1;
+ transition:transform .2s ease}
+.sec.open .sh .cv{transform:rotate(90deg)}
+.sb{display:none;padding:0 15px 15px}
+.sec.open .sb{display:block}
+.stage{overflow:hidden}
+
+/* ══ THE ARTWORK — sized for a FEED THUMBNAIL. Few elements, big type.
+      No spine on the card; the category colour belongs to the legs. ══ */
+.card{position:relative;overflow:hidden;transform-origin:top left;display:flex;
+ background:
+  radial-gradient(85% 50% at 100% 0%, rgba(252,62,1,.15) 0%, rgba(252,62,1,0) 60%),
+  linear-gradient(180deg,#141A23 0%,#090D12 100%);
+ border:1px solid #202834;color:var(--grey);
+ font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.col{display:flex;flex-direction:column;min-width:0}
+
+.brow{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:.45em}
+.brow .lft{justify-self:start} .brow .rgt{justify-self:end}
+.mark{justify-self:center;font-weight:800;font-size:var(--mk);color:#fff;
+ letter-spacing:-.02em;white-space:nowrap}
+.mark i{font-style:normal;color:var(--orange)}
+.chip{border-radius:99px;padding:.32em .95em;font-weight:800;font-size:var(--st);letter-spacing:.16em;
+ text-transform:uppercase;white-space:nowrap}
+.chip.cat{background:rgba(252,62,1,.16);border:3px solid rgba(252,62,1,.6);color:var(--orange)}
+.chip.live{background:rgba(240,196,99,.16);
+ border:3px solid rgba(240,196,99,.55);color:var(--gold)}
+
+/* creator on the left, scan code on the right, sharing one band directly
+   under the wordmark row — the code sits in LIVE's column. */
+.topband{display:grid;grid-template-columns:1fr auto;
+ column-gap:var(--fg);row-gap:var(--tg);align-items:end}
+.topband .who{grid-column:1;grid-row:1;align-self:center;min-width:0}
+.topband .qrcell{grid-column:2;grid-row:1;justify-self:end}
+.topband h1{grid-column:1;grid-row:2;align-self:end;margin:0}
+.topband .qrlink{grid-column:2;grid-row:2;justify-self:end;align-self:end}
+.who{display:flex;align-items:center;gap:.6em}
+.who .av{width:var(--avs);height:var(--avs);border-radius:50%;flex:none;display:grid;
+ place-items:center;background:#2A2160;color:#fff;font-weight:800;font-size:calc(var(--avs)*.44);
+ border:calc(var(--avs)*.055) solid #7C5CF5}
+.who .n b{display:block;font-weight:800;font-size:var(--nm);color:#fff;line-height:1.1}
+.who .n span{display:block;margin-top:.1em;font-size:var(--hn);color:#8E97A6}
+
+h1{font-weight:900;font-size:var(--h1);line-height:1.06;color:#fff;letter-spacing:-.03em}
+.meta{font-weight:800;font-size:var(--mt);letter-spacing:.1em;text-transform:uppercase;color:#8E97A6}
+.meta b{color:var(--gold)}
+
+/* one leg, one card — the QUESTION only. Options and context are app content;
+   at feed size they turn into grey noise. */
+/* When three legs will not fit the frame, the viewport clamps and the track
+   rolls top-to-bottom on a loop instead of a leg being dropped. All three are
+   always in the markup — the roll only changes what is on screen when. */
+.legsvp{position:relative;overflow:hidden}
+.legsvp.roll{-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 5%,#000 95%,transparent 100%);
+ mask-image:linear-gradient(180deg,transparent 0,#000 5%,#000 95%,transparent 100%)}
+.legsvp.roll .legs{animation:legroll var(--rolldur,9s) cubic-bezier(.6,0,.4,1) infinite}
+@keyframes legroll{
+  0%,14%   {transform:translateY(0)}
+  47%,61%  {transform:translateY(var(--roll1,0px))}
+  92%,100% {transform:translateY(var(--roll2,0px))}
+}
+.legs{display:flex;flex-direction:column;gap:var(--lg)}
+.leg{position:relative;overflow:hidden;border-radius:var(--lr);display:flex;
+ align-items:center;gap:var(--lgap);
+ background:linear-gradient(180deg,#1A222D,#11171F);
+ border:1px solid #263040;border-left:var(--lb) solid var(--cat);
+ padding:var(--lp)}
+.leg::before{content:"";position:absolute;left:calc(var(--lb)*-1);top:0;bottom:0;width:var(--lb);
+ background:linear-gradient(180deg,var(--cat) 0%,var(--cat-deep) 100%)}
+.leg .no{flex:none;width:var(--lno);height:var(--lno);border-radius:50%;display:grid;
+ place-items:center;background:rgba(252,62,1,.14);border:2px solid rgba(252,62,1,.5);
+ color:var(--orange);font-weight:900;font-size:calc(var(--lno)*.5)}
+.leg .q{font-weight:800;font-size:var(--lq);line-height:1.2;color:#fff;min-width:0}
+
+.foot{display:flex;align-items:flex-end;gap:var(--fg)}
+.money{flex:1;min-width:0}
+/* ── the space between the prize and the legs is now the creator's ── */
+.cap2{display:flex;flex-direction:column;align-items:center;text-align:center}
+.cap2 .hd{font-weight:900;font-size:var(--ch);letter-spacing:.16em;text-transform:uppercase;
+ color:var(--orange)}
+.cap2 .med{width:var(--cm);height:var(--cm);border-radius:50%;margin-top:var(--cg);
+ display:grid;place-items:center;flex:none;
+ background:radial-gradient(circle at 32% 26%,#4A3A9E 0%,#241C57 70%);
+ color:#fff;font-weight:900;font-size:calc(var(--cm)*.4);
+ border:calc(var(--cm)*.045) solid var(--gold);
+ box-shadow:0 0 0 calc(var(--cm)*.02) rgba(240,196,99,.28),
+            inset 0 calc(var(--cm)*.02) 0 rgba(255,255,255,.22),
+            0 calc(var(--cm)*.06) calc(var(--cm)*.14) rgba(0,0,0,.6)}
+.cap2 .med img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
+.cap2 .tx{margin-top:var(--cg);font-weight:700;font-size:var(--ct);line-height:1.3;
+ color:#fff;max-width:92%}
+.money .k{font-weight:800;font-size:var(--mk2);letter-spacing:.16em;text-transform:uppercase;color:#7C8695}
+.mrow{display:flex;align-items:baseline;gap:var(--fg);flex-wrap:wrap}
+.money .v{margin-top:.1em;font-weight:900;font-size:var(--mv);color:var(--cash);letter-spacing:-.03em;
+ line-height:1;white-space:nowrap}
+.money .sub{font-weight:800;font-size:var(--ms);color:#fff;white-space:nowrap}
+.money .sub em{font-style:normal;color:#7C8695;font-weight:700}
+.qrbox{flex:none;display:flex;flex-direction:column;align-items:center;gap:calc(var(--qr)*.09)}
+.qrlink{font-weight:800;font-size:var(--lk);color:var(--orange);white-space:nowrap;
+ letter-spacing:.01em}
+.qr{width:var(--qr);height:var(--qr);flex:none;border-radius:calc(var(--qr)*.1);background:#fff;
+ display:grid;place-items:center;color:#000;font-weight:900;font-size:calc(var(--qr)*.13);
+ text-align:center;line-height:1.15}
+.link{font-weight:800;font-size:var(--lk);color:#fff}
+.link b{color:var(--orange)}
+.legal{font-weight:600;font-size:var(--lg2);color:#5A6472}
+</style></head><body>
+<div id="wrap">
+  <h2 class="t">Share card</h2>
+  <div id="edit">
+    <div class="el">Caption <span>edit it — every card updates</span></div>
+    <textarea id="capIn" maxlength="200" rows="3"></textarea>
+    <div class="er"><span id="capCount"></span>
+      <button id="capReset">Reset</button></div>
+  </div>
+  <div id="secs"></div>
+</div>
+<script>
+var $=function(i){return document.getElementById(i);};
+
+var S={cat:'NBA',state:'Live',handle:'@quill',name:'Quill',avatar:'Q',
+ title:'Friday Night Slate',
+ when:'Fri 7 Aug',lock:'Locks 7:30 PM ET',legs:3,
+ pool:'$15,000',first:'$1,800',entries:'5,240',
+ /* /s/<id> is the real share-landing route. The DOMAIN is not known to me and
+    is NOT invented here — it stays a marked placeholder until supplied. */
+ domain:'lockin.com', slug:'quill-friday',
+ capHead:'Lock in and win:',
+ caption:'Two weeks of you telling me Luka is washed. Three legs, one night — settle it.',
+ avatar_img:'avatar_quill.png',
+ Q:['Who leads all scorers tonight?',
+    'Luka or Joki\u0107 \u2014 bigger night?',
+    'How many go for 30 or more?']};
+
+/* Every size gets its OWN scale. A 630px-tall frame cannot borrow a
+   1920px frame's type. Sizes are the three the endpoint already emits. */
+var CFG={
+ story:{label:'Story',w:1080,h:1920,legs:3,medallion:true,cols:false,pad:'64px 58px 54px',gap:'30px',
+  v:{mk:'74px',st:'27px',avs:'92px',nm:'40px',hn:'26px',h1:'104px',mt:'34px',
+     lg:'22px',lr:'26px',lb:'12px',lp:'30px',lgap:'22px',lno:'54px',lq:'40px',
+     fg:'40px',mk2:'20px',mv:'86px',ms:'28px',qr:'170px',lk:'26px',lg2:'21px',
+     ch:'40px',cm:'270px',cg:'20px',ct:'36px'}},
+ square:{label:'Square',w:1080,h:1080,legs:3,medallion:false,cols:false,pad:'46px 46px 42px',gap:'20px',
+  v:{mk:'56px',st:'23px',avs:'74px',nm:'32px',hn:'21px',h1:'62px',mt:'27px',
+     lg:'16px',lr:'22px',lb:'11px',lp:'24px',lgap:'20px',lno:'48px',lq:'36px',
+     fg:'30px',mk2:'16px',mv:'54px',ms:'22px',qr:'128px',lk:'20px',lg2:'17px',
+     ch:'30px',cm:'0px',cg:'12px',ct:'27px'}},
+ land:{label:'Landscape',w:1200,h:630,legs:3,medallion:true,cols:true,pad:'40px 38px 34px',gap:'18px',
+  v:{mk:'44px',st:'18px',avs:'58px',nm:'26px',hn:'17px',h1:'54px',mt:'21px',
+     lg:'10px',lr:'15px',lb:'8px',lp:'14px',lgap:'13px',lno:'34px',lq:'23px',
+     fg:'24px',mk2:'13px',mv:'50px',ms:'19px',qr:'110px',lk:'17px',lg2:'15px',
+     ch:'22px',cm:'150px',cg:'12px',ct:'19px',tg:'10px'}}};
+
+function head(){return '<div class="brow">'+
+  '<div class="chip cat lft">'+S.cat+'</div>'+
+  '<div class="mark">L<i>&#9679;</i>ckIn</div>'+
+  '<div class="chip live rgt">'+S.state+'</div></div>';}
+function who(){return '<div class="who"><div class="av">'+S.avatar+'</div>'+
+  '<div class="n"><b>'+S.name+'</b><span>'+S.handle+'</span></div></div>';}
+function meta(){return '<div class="meta">'+S.legs+' legs <b>&middot;</b> '+S.when+
+  ' <b>&middot;</b> '+S.lock+'</div>';}
+function legs(n){
+  var rest=S.Q.length-n;
+  return '<div class="legsvp"><div class="legs">'+S.Q.slice(0,n).map(function(q,i){
+    return '<div class="leg"><div class="no">'+(i+1)+'</div><div class="q">'+q+'</div></div>';
+  }).join('')+
+  (rest>0?'<div class="more2">+ '+rest+' more '+(rest===1?'question':'questions')+
+    ' on the slate</div>':'')+'</div></div>';}
+function money(vSize,sSize){return '<div class="money"><div class="k">Prize pool</div>'+
+  '<div class="mrow"><div class="v"'+(vSize?' style="font-size:'+vSize+'"':'')+'>'+S.pool+'</div>'+
+  '<div class="sub"'+(sSize?' style="font-size:'+sSize+'"':'')+'>1st '+S.first+
+    ' <em>&middot;</em> '+S.entries+' in</div></div></div>';}
+function qr(){return '<div class="qrcell"><div class="qr">SCAN<br>TO<br>ENTER</div></div>'+
+  '<div class="qrlink">'+S.domain+'/s/'+S.slug+'</div>';}
+/* header · medallion of their LockIn avatar · the caption they write */
+function caption(C){
+  return '<div class="cap2"><div class="hd">'+S.capHead+'</div>'+
+    (C.medallion?'<div class="med"><img class="avimg" src="'+S.avatar_img+'" alt=""></div>':'')+
+    '<div class="tx">'+S.caption.replace(/</g,'&lt;')+'</div></div>';
+}
+function linkline(){return '<div class="link">Play it &#9656; <b>'+S.domain+'/s/'+S.slug+
+  '</b></div>';}
+function legal(){return '<div class="legal">Skill-based prediction contest. '+
+  'Not gambling. Not sports betting. 18+.</div>';}
+
+function cardHTML(key,availW,nLegs){
+  var C=CFG[key],vars='';
+  var LN=(nLegs===undefined)?C.legs:nLegs;
+  for(var k in C.v) vars+='--'+k+':'+C.v[k]+';';
+  var inner;
+  if(key==='story'){
+    /* A story is a POSTER, seen full-screen for five seconds: the hook up top,
+       the prize as the hero, the questions as proof, the code at the thumb.
+       Square is a FEED TILE: dense, scanned in half a second. Same slate, and
+       deliberately not the same hierarchy. */
+    inner='<div class="col" style="flex:1;padding:'+C.pad+'">'+
+      head()+
+      '<div class="topband" style="margin-top:40px">'+
+        who()+qr()+'<h1>'+S.title+'</h1></div>'+meta()+
+      '<div style="margin-top:30px">'+money('104px','32px')+
+        '<div style="margin-top:6px">'+caption(C)+'</div></div>'+
+      '<div style="margin-top:30px">'+legs(LN)+'</div>'+
+      '<div style="margin-top:auto">'+legal()+'</div>'+
+    '</div>';
+  }else if(C.cols){
+    inner='<div class="col" style="flex:0 0 46%;gap:'+C.gap+';padding:'+C.pad+
+      ';border-right:1px solid #1C2430">'+head()+
+       '<div class="topband">'+
+         who()+qr()+'<h1>'+S.title+'</h1></div>'+meta()+caption(C)+
+      '<div style="margin-top:auto;display:flex;align-items:flex-end;gap:var(--fg)">'+
+      '<div style="flex:1;min-width:0">'+money()+'</div></div></div>'+
+     '<div class="col" style="flex:1;gap:'+C.gap+';padding:'+C.pad+';justify-content:center">'+
+      legs(LN)+'<div style="margin-top:auto">'+legal()+'</div></div>';
+  }else{
+    inner='<div class="col" style="flex:1;gap:'+C.gap+';padding:'+C.pad+'">'+
+      head()+
+      '<div class="topband">'+
+        who()+qr()+'<h1>'+S.title+'</h1></div>'+meta()+
+      '<div>'+money()+'<div style="margin-top:6px">'+caption(C)+'</div></div>'+legs(LN)+
+      '<div style="margin-top:auto">'+legal()+'</div></div>';
+  }
+  var k=availW/C.w;
+  return {html:'<div class="card" style="'+vars+'width:'+C.w+'px;height:'+C.h+
+    'px;transform:scale('+k+')">'+inner+'</div>', h:C.h*k};
+}
+
+/* Fall back to the initial if the avatar file is not beside this page.
+   Capture the parent BEFORE removing the node — reading parentNode after
+   remove() returns null, which is what threw the first time. */
+function fallback(img){
+  var med=img.parentNode; if(!med) return;
+  img.remove(); med.textContent=S.avatar;
+}
+
+/* Draw one size, then MEASURE it. If three legs will not sit still, clamp the
+   leg viewport and roll the track through it — every leg stays in the markup,
+   nothing is dropped, nothing hides behind an edge. */
+function draw(key){
+  var C=CFG[key], st=$('st-'+key);
+  if(!st) return;
+  var availW=st.clientWidth || ($('secs').clientWidth-30) || 330;
+  var n=C.legs, r, over=0, rolled=false;
+  r=cardHTML(key,availW,n);
+  st.innerHTML=r.html; st.style.height=r.h+'px';
+  var col=st.querySelector('.card .col');
+  over=col?(col.scrollHeight-C.h):0;
+  if(over>0){
+    var vp=st.querySelector('.legsvp');
+    if(vp){
+      var track=vp.querySelector('.legs');
+      var full=vp.scrollHeight, vis=Math.max(120,full-over-2);
+      vp.style.height=vis+'px';
+      vp.classList.add('roll');
+      var cards=vp.querySelectorAll('.leg');
+      var gap=parseFloat(window.getComputedStyle(track).rowGap)||0;
+      var h1=cards[0]?cards[0].offsetHeight:0;
+      var span=Math.max(0,full-vis);
+      track.style.setProperty('--roll1','-'+Math.min(h1+gap,span)+'px');
+      track.style.setProperty('--roll2','-'+span+'px');
+      track.style.setProperty('--rolldur',(S.Q.length*3.4)+'s');
+      rolled=true;
+    }
+  }
+  [].forEach.call(st.querySelectorAll('.avimg'),function(img){
+    img.addEventListener('error',function(){ fallback(img); });
+    if(img.complete && img.naturalWidth===0) fallback(img);
+  });
+  var chip=$('fit-'+key);
+  if(chip) chip.textContent=rolled?'rolling':'fits';
+  return n;
+}
+
+function build(){
+  $('secs').innerHTML=Object.keys(CFG).map(function(key,i){
+    var C=CFG[key];
+    return '<div class="sec'+(key==='square'?' open':'')+'" data-k="'+key+'">'+
+      '<button class="sh"><div><b>'+C.label+'</b><br><span>'+C.w+' \u00D7 '+C.h+
+      ' &middot; <i id="fit-'+key+'" style="font-style:normal"></i></span></div>'+
+      '<span class="cv">\u203A</span></button>'+
+      '<div class="sb"><div class="stage" id="st-'+key+'"></div></div></div>';
+  }).join('');
+  Object.keys(CFG).forEach(draw);
+  [].forEach.call(document.querySelectorAll('.sh'),function(b){
+    b.addEventListener('click',function(){
+      var sec=b.parentNode, open=!sec.classList.contains('open');
+      sec.classList.toggle('open',open);
+      /* only now does the stage have a width to measure against */
+      if(open) draw(sec.getAttribute('data-k'));
+    });
+  });
+}
+var DEFAULT_CAP=S.caption;
+function syncCap(){
+  S.caption=$('capIn').value||' ';
+  $('capCount').textContent=$('capIn').value.length+' / 200';
+  build();
+}
+$('capIn').value=S.caption;
+$('capCount').textContent=S.caption.length+' / 200';
+$('capIn').addEventListener('input',syncCap);
+$('capReset').addEventListener('click',function(){
+  $('capIn').value=DEFAULT_CAP; syncCap(); });
+build();
+window.addEventListener('resize',build);
+window.__share={S:S,CFG:CFG,build:build,draw:draw};
+</script></body></html>

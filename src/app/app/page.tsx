@@ -29,9 +29,9 @@ export default async function ExplorePage() {
         {/* Header spans the full width on its own line so the description wraps
             normally and never gets crushed by the action pills. */}
         <div>
-          <h1 className="text-xl font-semibold">Explore</h1>
+          <h1 className="text-xl font-semibold">The Floor</h1>
           <p className="text-sm text-muted">
-            Live contests from creators. Call the night, climb the board.
+            Every contest live right now. Call the night, climb the board.
           </p>
         </div>
         {/* Action pills on their own row below. (Switch journey + Host removed —

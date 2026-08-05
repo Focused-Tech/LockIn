@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>LockIn — The Fox Pit</title>
+<style>
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent;
+ scrollbar-width:none;-ms-overflow-style:none}
+*::-webkit-scrollbar{display:none}
+:root{--orange:#FF5A1F;--orange-deep:#8E2C01;--fox:#F0C463;--fox-deep:#7A5F16;
+ --creator:#7C5CF5;--creator-deep:#3B2C93;--cash:#2FB98A;--cash-deep:#166B4F;--coin:#F0C463;
+ --ink:#0A0D12;--edge:#232B37;--edge2:#1B222C;--grey:#E7E7EB;--dim:#98A0AE;--dim2:#6E7787;
+ --navpad:22px}
+html{height:100%}
+body{min-height:100%;width:100%;max-width:100%;background:var(--ink);color:var(--grey);
+ overflow-x:hidden;
+ font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+ font-size:14px;line-height:1.45}
+/* the app's own nav clears the phone's gesture bar */
+#wrap{width:100%;max-width:390px;margin:0 auto;
+ padding-bottom:calc(72px + var(--navpad) + env(safe-area-inset-bottom,0px))}
+
+#hero{text-align:center;padding:26px 16px 4px}
+#hero .med{width:132px;height:132px;border-radius:50%;margin:0 auto;display:grid;
+ place-items:center;overflow:hidden;
+ background:radial-gradient(circle at 34% 28%,#4A3A9E 0%,#241C57 72%);
+ border:3px solid var(--orange);
+ box-shadow:0 0 0 6px rgba(255,90,31,.13), 0 12px 30px rgba(0,0,0,.65)}
+#hero .med img{width:100%;height:100%;object-fit:cover;display:block}
+#hero .med .fb{font-size:52px}
+#hero h1{margin-top:16px;font-weight:800;font-size:38px;line-height:1.05;color:var(--orange);
+ letter-spacing:-.02em}
+#hero p{margin-top:10px;font-size:14.5px;color:var(--dim);line-height:1.5}
+#hero p b{color:var(--coin);font-weight:700}
+
+.sh{font-weight:700;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+ color:var(--dim2);padding:26px 16px 11px}
+.cards{display:flex;flex-direction:column;gap:13px;padding:0 16px}
+
+/* one construction, the left edge names the journey */
+.j{position:relative;overflow:hidden;border-radius:15px;padding:15px 15px 14px;cursor:pointer;
+ background:linear-gradient(180deg,#161C25 0%,#10151C 100%);
+ border-width:1px;border-style:solid;border-color:var(--edge);
+ border-left-width:4px;border-left-color:var(--c,var(--orange));
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 8px 20px rgba(0,0,0,.55);
+ transition:transform .16s ease}
+.j::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;
+ background:linear-gradient(180deg,var(--c,var(--orange)) 0%,var(--cd,#8E2C01) 100%)}
+.j:active{transform:scale(.99)}
+.jt{display:flex;align-items:flex-start;gap:11px}
+.jt b{flex:1;min-width:0;font-weight:700;font-size:17px;line-height:1.25;color:#fff;
+ letter-spacing:-.01em}
+.cur{flex:none;border-radius:99px;padding:4px 11px;font-weight:800;font-size:9.5px;
+ letter-spacing:.14em;text-transform:uppercase;color:var(--c);
+ border:1px solid var(--c);background:var(--csoft)}
+.j p{margin-top:8px;font-size:13px;color:var(--dim2);line-height:1.5}
+.jf{margin-top:11px;padding-top:11px;border-top:1px solid var(--edge);
+ display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--dim2)}
+.jf .tag{border-radius:99px;padding:3px 9px;font-weight:800;font-size:9.5px;
+ letter-spacing:.1em;text-transform:uppercase;color:var(--c);border:1px solid var(--c);
+ background:var(--csoft)}
+.jf .cv{margin-left:auto;color:var(--c);font-size:18px;line-height:1}
+
+#nav{position:fixed;left:0;right:0;bottom:0;z-index:9;display:flex;
+ padding:9px 8px calc(9px + var(--navpad) + env(safe-area-inset-bottom,0px));
+ background:rgba(10,13,18,.96);backdrop-filter:blur(10px);
+ border-top:1px solid var(--edge2)}
+#nav a{flex:1;text-align:center;font-weight:600;font-size:10.5px;letter-spacing:.06em;
+ color:var(--dim2);text-decoration:none}
+#nav a i{display:block;font-style:normal;font-size:17px;margin-bottom:3px;opacity:.75}
+#nav a.on{color:var(--orange)} #nav a.on i{opacity:1}
+#gest{position:fixed;left:0;right:0;bottom:0;height:var(--navpad);z-index:10;
+ background:repeating-linear-gradient(45deg,#141821 0 6px,#0E1219 6px 12px);
+ display:grid;place-items:center;font-size:9px;letter-spacing:.14em;text-transform:uppercase;
+ color:#3E4756}
+#tog{position:fixed;right:10px;bottom:calc(var(--navpad) + 78px);z-index:11;
+ border:1px solid var(--edge);border-radius:9px;padding:7px 10px;
+ background:rgba(20,25,33,.95);color:var(--grey);font-weight:600;font-size:11px;cursor:pointer}
+.note{padding:18px 16px 0;font-size:12px;color:var(--dim2);line-height:1.5}
+.note b{color:#fff}
+</style></head><body>
+<div id="wrap">
+  <div id="hero">
+    <div class="med"><img src="foxpit_fox.png" alt=""><span class="fb">🦊</span></div>
+    <h1>The Fox Pit</h1>
+    <p>Use your skills to Lock In and win up to <b>1000x</b> in cash payouts.</p>
+  </div>
+
+  <div class="sh">Switch journey</div>
+  <div class="cards">
+    <div class="j" style="--c:var(--creator);--cd:var(--creator-deep);--csoft:rgba(124,92,245,.14)">
+      <div class="jt"><b>Beginner — simple &amp; guided</b></div>
+      <p>Creator picks, plain-language calls, coins not odds. We teach you up to the
+        full game, step by step.</p>
+      <div class="jf"><span class="tag">Coins</span><span class="cv">›</span></div>
+    </div>
+
+    <div class="j" style="--c:var(--orange);--cd:var(--orange-deep);--csoft:rgba(255,90,31,.14)">
+      <div class="jt"><b>Advanced — full market</b><span class="cur">Current</span></div>
+      <p>Here knowledge reigns supreme. Every contest, every category, real payouts.
+        Lock In to win.</p>
+      <div class="jf"><span class="tag">Cash</span><span class="cv">›</span></div>
+    </div>
+
+    <div class="j" style="--c:var(--creator);--cd:var(--creator-deep);--csoft:rgba(124,92,245,.14)">
+      <div class="jt"><b>Creator — host contests</b></div>
+      <p>Build prediction slates with AI-suggested odds, sell pick packages, and earn.</p>
+      <div class="jf"><span class="tag">Cash</span><span class="cv">›</span></div>
+    </div>
+
+    <div class="j" style="--c:var(--fox);--cd:var(--fox-deep);--csoft:rgba(240,196,99,.14)">
+      <div class="jt"><b>The Fox Pit — practice journey</b></div>
+      <p>Walk into the Pit. Choose the floor, face the boss, run it back.</p>
+      <div class="jf"><span class="tag">Coins</span><span class="cv">›</span></div>
+    </div>
+  </div>
+
+  <p class="note"><b>No back button.</b> This is a root screen — there is nothing above it
+    to go back to, so the header chevron is gone. Phone back from here goes to the app's
+    home surface, never out of the app.</p>
+</div>
+
+<nav id="nav">
+  <a href="#" class="on"><i>◎</i>The Floor</a>
+  <a href="#"><i>▦</i>Board</a>
+  <a href="#"><i>★</i>Creators</a>
+</nav>
+<div id="gest">phone gesture bar</div>
+<button id="tog">Safe area: on</button>
+<script>
+var $=function(i){return document.getElementById(i);};
+[].forEach.call(document.querySelectorAll('img'),function(img){
+  function go(){img.style.display='none';}
+  img.addEventListener('error',go);
+  if(img.complete&&img.naturalWidth===0) go();
+});
+var on=true;
+$('tog').addEventListener('click',function(){
+  on=!on;
+  document.documentElement.style.setProperty('--navpad',on?'22px':'0px');
+  $('gest').style.display=on?'grid':'none';
+  this.textContent='Safe area: '+(on?'on':'off');
+});
+window.__pit={get safeArea(){return on;},
+  set safeArea(v){ if(v!==on) $('tog').click(); },
+  journeys:document.querySelectorAll('.j').length};
+</script></body></html>
