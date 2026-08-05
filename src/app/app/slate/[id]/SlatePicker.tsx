@@ -93,6 +93,7 @@ export function SlatePicker({
   existingEntry,
   shadowEarnings,
   isDemo = false,
+  demoReplay,
 }: {
   slate: FeedSlate;
   cashBalanceCents: number;
@@ -104,6 +105,8 @@ export function SlatePicker({
   /** DEMO slate — free to play through (no cash, no attestation, no DB write); exists so any tester
    *  can experience the pick → lock-in flow + animation without funding a wallet. */
   isDemo?: boolean;
+  /** DEMO rotation — after a play, offer a fresh set with one more leg (up to 5). */
+  demoReplay?: { nextLegs: number; atMax: boolean; onReplay: () => void };
 }) {
   const router = useRouter();
   const { predictions } = slate;
@@ -292,7 +295,9 @@ export function SlatePicker({
           <Card className="flex items-center gap-2">
             <Pill tone="win">Locked in</Pill>
             <span className="text-sm text-muted">
-              {lockedEntry.isPaid ? "Paid entry" : "Free entry"} · good luck.
+              {isDemo
+                ? "Demo locked in — nothing was charged."
+                : `${lockedEntry.isPaid ? "Paid entry" : "Free entry"} · good luck.`}
             </span>
           </Card>
         )}
@@ -347,6 +352,15 @@ export function SlatePicker({
             );
           })}
         </div>
+
+        {/* DEMO rotation — replay with one more leg (up to 5), fresh questions each time. */}
+        {demoReplay && (
+          <button type="button" className="sd-lock" onClick={demoReplay.onReplay}>
+            {demoReplay.atMax
+              ? "Play again · 5 legs, new questions"
+              : `Play again · ${demoReplay.nextLegs} legs`}
+          </button>
+        )}
 
         <Link
           href="/app"

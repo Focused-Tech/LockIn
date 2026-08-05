@@ -15,6 +15,7 @@ import { ShareCardPanel } from "@/components/ShareCardPanel";
 import { FollowButton } from "@/components/feed/FollowButton";
 import { getDemoSlate } from "@/lib/demoSlates";
 import { SlatePicker } from "./SlatePicker";
+import { DemoSlatePlayer } from "./DemoSlatePlayer";
 
 export default async function SlatePage({
   params,
@@ -45,18 +46,14 @@ export default async function SlatePage({
           </div>
           <h1 className="text-xl font-semibold leading-snug">{demoSlate.title}</h1>
           <p className="mt-1 text-sm text-muted">
-            Free to play through — pick every leg and lock in to see the flow. Nothing leaves your
-            balance.
+            Free to play through — pick every leg and lock in to see the flow. Each replay adds a leg
+            (up to 5) with fresh questions. Nothing leaves your balance.
           </p>
         </div>
-        <SlatePicker
-          slate={demoSlate}
+        <DemoSlatePlayer
+          base={demoSlate}
           cashBalanceCents={profile.cashBalanceCents}
-          cashAttested
           registeredState={profile.registeredState}
-          existingEntry={null}
-          shadowEarnings={null}
-          isDemo
         />
         <SkillGameDisclaimer className="mt-auto pt-4" />
       </div>
