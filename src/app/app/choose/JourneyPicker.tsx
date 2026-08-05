@@ -129,7 +129,7 @@ export function JourneyPicker({
           title="The Fox Pit — practice journey"
           body="Walk into the Pit. Choose the floor, face the boss, run it back."
           tag="Coins"
-          color="fox"
+          color="orange"
           active={false}
           busy={busy === "foxpit"}
           disabled={pending}
