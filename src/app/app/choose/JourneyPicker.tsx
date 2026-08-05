@@ -130,7 +130,7 @@ export function JourneyPicker({
       {/* Advanced */}
       <JourneyCard
         title="Advanced — full market"
-        body="Here knowledge reigns supreme. Every contest, odds and parlays. Lockin to win."
+        body="Here knowledge reigns supreme. Every contest, every category, real payouts. Lock In to win."
         active={currentLane === "advanced"}
         busy={busy === "advanced"}
         disabled={pending}

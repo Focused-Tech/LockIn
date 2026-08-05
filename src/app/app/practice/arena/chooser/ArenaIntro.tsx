@@ -195,8 +195,8 @@ export function ArenaIntro({
           transition:
             opacity 0.9s ease 0.55s,
             transform 0.9s cubic-bezier(0.2, 0.8, 0.3, 1) 0.55s;
-          background: rgba(252, 62, 1, 0.2);
-          border: 1.5px solid rgba(252, 62, 1, 0.72);
+          background: rgba(255, 90, 31, 0.2);
+          border: 1.5px solid rgba(255, 90, 31, 0.72);
           color: #ffefe8;
           border-radius: 999px;
           padding: 9px 20px;
@@ -206,7 +206,7 @@ export function ArenaIntro({
           white-space: nowrap;
           cursor: pointer;
           backdrop-filter: blur(1px);
-          box-shadow: 0 0 18px rgba(252, 62, 1, 0.35);
+          box-shadow: 0 0 18px rgba(255, 90, 31, 0.35);
         }
         .door-scene.backed .reveal-continue {
           opacity: 1;

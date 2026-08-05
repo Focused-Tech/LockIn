@@ -7,7 +7,7 @@
  */
 
 .lk-acct {
-  --orange: #fc3e01;
+  --orange: #FF5A1F;
   --cash: #2fb98a;
   --coin: #f0c463;
   --creator: #7c5cf5;
@@ -67,12 +67,12 @@
 .lk-acct .blk.act {
   border-left-color: var(--orange);
   box-shadow:
-    inset 6px 0 14px -10px rgba(252, 62, 1, 0.75),
+    inset 6px 0 14px -10px rgba(255, 90, 31, 0.75),
     inset 0 1px 0 rgba(255, 255, 255, 0.05),
     0 8px 20px rgba(0, 0, 0, 0.55);
 }
 .lk-acct .blk.act::before {
-  background: linear-gradient(180deg, var(--orange) 0%, #8e2201 100%);
+  background: linear-gradient(180deg, var(--orange) 0%, #8E2C01 100%);
 }
 .lk-acct .blk.warn {
   border-left-color: var(--bad);
@@ -253,7 +253,7 @@
   transition: transform 0.18s ease, background 0.18s ease;
 }
 .lk-acct .tg.on {
-  background: rgba(252, 62, 1, 0.25);
+  background: rgba(255, 90, 31, 0.25);
   border-color: var(--orange);
 }
 .lk-acct .tg.on::after {
@@ -298,8 +298,8 @@
   border-radius: 13px;
   display: grid;
   place-items: center;
-  background: rgba(252, 62, 1, 0.14);
-  border: 2px solid rgba(252, 62, 1, 0.5);
+  background: rgba(255, 90, 31, 0.14);
+  border: 2px solid rgba(255, 90, 31, 0.5);
   color: var(--orange);
   font-weight: 800;
   font-size: 17px;
@@ -348,7 +348,7 @@
   font-family: inherit;
 }
 .lk-acct .tab.on {
-  background: rgba(252, 62, 1, 0.14);
+  background: rgba(255, 90, 31, 0.14);
   border-color: var(--orange);
   color: var(--orange);
 }
@@ -420,7 +420,7 @@
   color: var(--dim2);
 }
 .lk-acct .lrow.you {
-  background: rgba(252, 62, 1, 0.07);
+  background: rgba(255, 90, 31, 0.07);
   border-radius: 10px;
   padding: 10px 8px;
   border-top-color: transparent;
@@ -443,7 +443,7 @@
   font-size: 22px;
   letter-spacing: 0.22em;
   color: #fff;
-  background: rgba(252, 62, 1, 0.07);
+  background: rgba(255, 90, 31, 0.07);
 }
 .lk-acct .step {
   display: flex;

@@ -38,7 +38,7 @@ import type { PlayerContext } from "@/server/feeds/creatorGames";
 const ALL_STAKES = [...BASE_STAKES, ...BIG_POT_STAKES]; // 5,10,15,25,50
 const EARN_MARKS = [5000, 15000, 30000, 75000, 150000];
 const C = {
-  orange: "#FC3E01", gold: "#F0C463", panel: "#12161d", panel2: "#171b23", edge: "#232a35",
+  orange: "#FF5A1F", gold: "#F0C463", panel: "#12161d", panel2: "#171b23", edge: "#232a35",
   grey: "#E7E7EB", dim: "#8B93A1", ok: "#5DCAA5", bad: "#E0432C", warn: "#EF9F27", ink: "#0A0D12",
 };
 const EMPTY_CONTEXT: LegContext = { seasonAverage: "", last3Form: "", matchupNote: "" };
@@ -367,7 +367,7 @@ export function CreatorMode({
           <thead><tr><Th>Entries</Th><Th r>Host fees</Th><Th r>Your cut</Th><Th r>You keep</Th></tr></thead>
           <tbody>
             {earnRows.map((row) => (
-              <tr key={row.n} style={row.now ? { background: "rgba(252,62,1,.10)" } : undefined}>
+              <tr key={row.n} style={row.now ? { background: "rgba(255, 90, 31,.10)" } : undefined}>
                 <Td first={row.now}>{row.n.toLocaleString()}</Td>
                 <Td r>${row.gross.toLocaleString()}</Td>
                 <Td r>{(row.cut * 100).toFixed(0)}%</Td>
@@ -436,7 +436,7 @@ function Th({ children, r }: { children: React.ReactNode; r?: boolean }) {
   return <th style={{ textAlign: r ? "right" : "left", fontWeight: 400, color: "#8B93A1", fontSize: 10.5, letterSpacing: ".1em", textTransform: "uppercase", padding: "0 0 5px", borderBottom: "1px solid #232a35" }}>{children}</th>;
 }
 function Td({ children, r, first, color }: { children: React.ReactNode; r?: boolean; first?: boolean; color?: string }) {
-  return <td style={{ padding: "6px 0", borderBottom: "1px solid #1b212a", fontVariantNumeric: "tabular-nums", textAlign: r ? "right" : "left", color, boxShadow: first ? "inset 3px 0 0 #FC3E01" : undefined }}>{children}</td>;
+  return <td style={{ padding: "6px 0", borderBottom: "1px solid #1b212a", fontVariantNumeric: "tabular-nums", textAlign: r ? "right" : "left", color, boxShadow: first ? "inset 3px 0 0 #FF5A1F" : undefined }}>{children}</td>;
 }
 function potVerdict(target: number, pj: { potLo: number; potHi: number }): { text: string; color: string } {
   if (!target) return { text: "Set a target and I'll tell you if it's realistic.", color: "#8B93A1" };
