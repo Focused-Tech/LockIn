@@ -145,7 +145,7 @@ export function JourneyPicker({
         title="Creator — host contests"
         body={
           creatorVerified
-            ? "Build prediction slates with AI-suggested odds, sell pick packages, and earn."
+            ? "Build prediction slates with AI-drafted questions, sell pick packages, and earn."
             : "Apply to host prediction contests for your audience and earn."
         }
         active={false}
