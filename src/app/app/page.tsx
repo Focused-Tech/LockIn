@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SkillGameDisclaimer } from "@/components/SkillGameDisclaimer";
 import { adminDb } from "@/lib/firebase/admin";
@@ -34,16 +33,8 @@ export default async function ExplorePage() {
             Every contest live right now. Call the night, climb the board.
           </p>
         </div>
-        {/* Action pills on their own row below. (Switch journey + Host removed —
-            the LockIn logo routes to The Fox Pit; hosting lives on the creator page.) */}
-        <div className="flex flex-wrap items-center gap-2">
-          <Link
-            href="/app/packages"
-            className="rounded border border-border px-3 py-1.5 text-sm font-medium text-muted hover:text-foreground"
-          >
-            Packages
-          </Link>
-        </div>
+        {/* Packages pill removed (Frank's call) — the marketplace lives on the
+            slate/creator surfaces, not the Floor header. */}
       </div>
 
       <ExploreFeed initialSlates={slates} signals={signals} />

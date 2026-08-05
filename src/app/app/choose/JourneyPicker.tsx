@@ -4,34 +4,23 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { JourneyLane } from "@/lib/firebase/types";
 import { setJourneyLane } from "@/app/app/beginner/actions";
+import "./journey.css";
 
 /**
- * Journey hub — the app's front door. Three first-class, one-tap journeys
- * (Beginner / Advanced / Creator) plus a "Continue to my feed" shortcut that
- * respects the saved lane (so returning users aren't forced to re-pick).
- * Reachable any time via the "Switch journey" link in the Explore header.
+ * The Fox Pit — the app's front door / journey selector (foxpit_landing.html).
+ * A root screen: NO back chevron (nothing sits above it). Four one-tap journeys,
+ * each named by its 4px left edge colour + currency tag:
+ *   Beginner (creator purple / Coins) · Advanced (brand orange / Cash) ·
+ *   Creator (creator purple / Cash) · The Fox Pit practice (fox gold / Coins).
+ * The active lane wears the "Current" pill, which also resumes that lane.
  *
  * Beginner/Advanced persist the lane then route; Creator is a role (not a lane)
- * so it just navigates to the creator dashboard (which gates non-creators to the
- * application flow).
+ * so it navigates to the creator dashboard (which gates non-creators to apply).
  */
-/**
- * Fox Pit card accents alternate orange / electric violet (design reference:
- * arena-workflow-BASE.html). Orange = LockIn brand #FF3B00.
- */
-const TONE = {
-  orange: {
-    background:
-      "linear-gradient(135deg, rgba(255,59,0,0.14), rgba(255,59,0,0.03))",
-    border: "1.5px solid rgba(255,59,0,0.5)",
-    accent: "#FF3B00",
-  },
-  violet: {
-    background:
-      "linear-gradient(135deg, rgba(124,92,245,0.16), rgba(124,92,245,0.03))",
-    border: "1.5px solid rgba(124,92,245,0.62)",
-    accent: "#7C5CF5",
-  },
+const COLORS = {
+  creator: { c: "#7C5CF5", cd: "#3B2C93", soft: "rgba(124,92,245,.14)" },
+  orange: { c: "#FF5A1F", cd: "#8E2C01", soft: "rgba(255,90,31,.14)" },
+  fox: { c: "#F0C463", cd: "#7A5F16", soft: "rgba(240,196,99,.14)" },
 } as const;
 
 export function JourneyPicker({
@@ -55,7 +44,7 @@ export function JourneyPicker({
       router.replace(laneHref(lane));
     });
 
-  const continueToFeed = () => {
+  const resume = () => {
     if (!currentLane) return;
     setBusy("continue");
     router.push(laneHref(currentLane));
@@ -72,101 +61,82 @@ export function JourneyPicker({
   };
 
   return (
-    <div className="flex flex-col gap-4 p-6">
-      <header className="practice-deal flex flex-col items-center gap-2 pt-1">
-        {/* Boss Fox crest avatar in the body (the wordmark lives only in the top
-            header, via the shared Logo — not duplicated here). */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/arena/fox-crest.png"
-          alt=""
-          aria-hidden
-          width={92}
-          height={92}
-          className="h-[92px] w-[92px] rounded-full object-cover"
-          style={{
-            border: "2px solid rgba(255,59,0,0.65)",
-            boxShadow: "0 0 22px rgba(255,59,0,0.4)",
-          }}
-        />
+    <div className="flex flex-col gap-3.5 p-4">
+      {/* hero */}
+      <header className="practice-deal pt-3 text-center">
+        <div className="jp-med">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/arena/fox-crest.png" alt="" aria-hidden />
+        </div>
+        <h1 className="jp-h1">The Fox Pit</h1>
+        <p className="jp-tag">
+          Use your skills to Lock In and win up to <b>1000x</b> in cash payouts.
+        </p>
       </header>
 
-      <div className="practice-deal text-center" style={{ animationDelay: "50ms" }}>
-        <h1
-          className="text-3xl font-extrabold tracking-wide text-accent"
-          style={{ textShadow: "0 0 18px rgba(255,59,0,0.45)" }}
-        >
-          The Fox Pit
-        </h1>
-        <p className="mt-1 text-sm text-muted">
-          Use your skills to Lock In and win up to{" "}
-          <span className="text-accent">1000x</span> in cash payouts.
-        </p>
-      </div>
-
-      {/* Resume lives on the "Current" badge below (the single way back) — the
-          separate "Continue to my feed" button was redundant and was removed. */}
-
-      <p
-        className="practice-deal pt-1 text-xs font-medium uppercase tracking-wide text-muted"
-        style={{ animationDelay: "150ms" }}
-      >
+      <p className="jp-sh practice-deal" style={{ animationDelay: "80ms" }}>
         {currentLane ? "Switch journey" : "Choose your journey"}
       </p>
 
-      {/* Beginner */}
-      <JourneyCard
-        title="Beginner — simple & guided"
-        body="Creator picks, plain-language calls, coins not odds. We teach you up to the full game, step by step."
-        active={currentLane === "beginner"}
-        busy={busy === "beginner"}
-        disabled={pending}
-        delayMs={190}
-        tone="violet"
-        onClick={() => pickLane("beginner")}
-        onResume={continueToFeed}
-      />
+      <div className="flex flex-col gap-3">
+        {/* Beginner */}
+        <JourneyCard
+          title="Beginner — simple & guided"
+          body="Creator picks, plain-language calls, coins not odds. We teach you up to the full game, step by step."
+          tag="Coins"
+          color="creator"
+          active={currentLane === "beginner"}
+          busy={busy === "beginner"}
+          disabled={pending}
+          delayMs={140}
+          onClick={() => pickLane("beginner")}
+          onResume={resume}
+        />
 
-      {/* Advanced */}
-      <JourneyCard
-        title="Advanced — full market"
-        body="Here knowledge reigns supreme. Every contest, every category, real payouts. Lock In to win."
-        active={currentLane === "advanced"}
-        busy={busy === "advanced"}
-        disabled={pending}
-        delayMs={240}
-        tone="orange"
-        onClick={() => pickLane("advanced")}
-        onResume={continueToFeed}
-      />
+        {/* Advanced */}
+        <JourneyCard
+          title="Advanced — full market"
+          body="Here knowledge reigns supreme. Every contest, every category, real payouts. Lock In to win."
+          tag="Cash"
+          color="orange"
+          active={currentLane === "advanced"}
+          busy={busy === "advanced"}
+          disabled={pending}
+          delayMs={190}
+          onClick={() => pickLane("advanced")}
+          onResume={resume}
+        />
 
-      {/* Creator — first-class entry (a role, not a lane) */}
-      <JourneyCard
-        title="Creator — host contests"
-        body={
-          creatorVerified
-            ? "Build prediction slates with AI-drafted questions, sell pick packages, and earn."
-            : "Apply to host prediction contests for your audience and earn."
-        }
-        active={false}
-        busy={busy === "creator"}
-        disabled={pending}
-        delayMs={290}
-        tone="violet"
-        onClick={goCreator}
-      />
+        {/* Creator — a role, not a lane */}
+        <JourneyCard
+          title="Creator — host contests"
+          body={
+            creatorVerified
+              ? "Build prediction slates with AI-drafted questions, sell pick packages, and earn."
+              : "Apply to host prediction contests for your audience and earn."
+          }
+          tag="Cash"
+          color="creator"
+          active={false}
+          busy={busy === "creator"}
+          disabled={pending}
+          delayMs={240}
+          onClick={goCreator}
+        />
 
-      {/* The Fox Pit — the painted practice-mode journey (lobby → tower → rooms) */}
-      <JourneyCard
-        title="The Fox Pit — practice journey"
-        body="Walk into the Pit. Choose the Lone Fox or the Boss Journey, climb the tower, and beat each boss to win their key."
-        active={false}
-        busy={busy === "foxpit"}
-        disabled={pending}
-        delayMs={390}
-        tone="orange"
-        onClick={goFoxPit}
-      />
+        {/* The Fox Pit — painted practice journey (lobby → tower → rooms) */}
+        <JourneyCard
+          title="The Fox Pit — practice journey"
+          body="Walk into the Pit. Choose the floor, face the boss, run it back."
+          tag="Coins"
+          color="fox"
+          active={false}
+          busy={busy === "foxpit"}
+          disabled={pending}
+          delayMs={290}
+          onClick={goFoxPit}
+        />
+      </div>
 
       {pending && (
         <p className="text-center text-sm text-muted">Setting up your feed…</p>
@@ -178,47 +148,52 @@ export function JourneyPicker({
 function JourneyCard({
   title,
   body,
+  tag,
+  color,
   active,
   busy,
   disabled,
   delayMs,
-  tone,
   onClick,
   onResume,
 }: {
   title: string;
   body: string;
+  tag: string;
+  color: keyof typeof COLORS;
   active: boolean;
   busy: boolean;
   disabled: boolean;
   delayMs: number;
-  tone: keyof typeof TONE;
   onClick: () => void;
-  /** Tapping the "Current" badge resumes the user's last session. Only the
-   *  active card renders the badge, so only it uses this. */
+  /** The "Current" pill (active card only) resumes the user's saved lane. */
   onResume?: () => void;
 }) {
-  const t = TONE[tone];
+  const t = COLORS[color];
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
       aria-busy={busy}
-      style={{
-        animationDelay: `${delayMs}ms`,
-        background: t.background,
-        border: t.border,
-      }}
-      className="practice-deal flex flex-col gap-1 rounded-xl p-5 text-left transition active:scale-[0.98] disabled:opacity-60"
+      className="jp-j practice-deal"
+      style={
+        {
+          animationDelay: `${delayMs}ms`,
+          "--jc": t.c,
+          "--jcd": t.cd,
+          "--jsoft": t.soft,
+        } as React.CSSProperties
+      }
     >
-      <span className="flex items-center gap-2 text-base font-bold text-foreground">
-        {title}
+      <div className="jp-jt">
+        <b>{title}</b>
         {active && (
           <span
             role="button"
             tabIndex={0}
             aria-label="Resume where you left off"
+            className="jp-cur"
             onClick={(e) => {
               e.stopPropagation();
               onResume?.();
@@ -230,14 +205,18 @@ function JourneyCard({
                 onResume?.();
               }
             }}
-            className="cursor-pointer rounded-full px-2 py-0.5 text-[10px] font-medium uppercase transition hover:bg-white/10 active:scale-95"
-            style={{ border: `1px solid ${t.accent}`, color: t.accent }}
           >
             Current
           </span>
         )}
-      </span>
-      <span className="text-sm text-muted">{body}</span>
+      </div>
+      <p className="jp-body">{body}</p>
+      <div className="jp-jf">
+        <span className="tag">{tag}</span>
+        <span className="cv" aria-hidden>
+          ›
+        </span>
+      </div>
     </button>
   );
 }

@@ -14,6 +14,7 @@ import { Logo } from "@/components/Logo";
  * not via an in-page control.
  */
 const NO_BACK = new Set<string>([
+  "/app/choose", // The Fox Pit landing — root screen, nothing above it
   "/app", // Explore (Advanced lane)
   "/app/beginner", // Beginner lane
   "/app/leaderboard", // Board
