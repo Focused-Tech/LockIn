@@ -1,0 +1,169 @@
+/**
+ * THE FLOOR contest card — mirrors public/design/Creator Builder/explore.html (.c).
+ * A NEW feed-only card so the uniform slate/SlateCard (shared with the Fox Pit tower, §9)
+ * is left untouched. 4px LEFT edge in the CATEGORY colour + its darker shoulder, hairline
+ * on the other three sides, inner highlight + drop shadow, radius 15. Scoped .fc-*.
+ */
+.fc-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 15px;
+  padding: 14px 15px 13px;
+  cursor: pointer;
+  background: linear-gradient(180deg, #161c25 0%, #10151c 100%);
+  border: 1px solid #232b37;
+  border-left: 4px solid var(--fc-cat, #ff5a1f);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 8px 20px rgba(0, 0, 0, 0.55);
+  transition: transform 0.16s ease;
+  color: #e7e7eb;
+}
+.fc-card::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, var(--fc-cat, #ff5a1f) 0%, var(--fc-catd, #8e2c01) 100%);
+}
+.fc-card:active {
+  transform: scale(0.99);
+}
+.fc-top {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.fc-cat {
+  font-weight: 800;
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fc-cat, #ff5a1f);
+}
+.fc-st {
+  margin-left: auto;
+  border-radius: 99px;
+  padding: 3px 9px;
+  font-weight: 800;
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.fc-st.live {
+  background: rgba(240, 196, 99, 0.15);
+  border: 1px solid rgba(240, 196, 99, 0.5);
+  color: #f0c463;
+}
+.fc-st.lock {
+  background: rgba(110, 119, 135, 0.14);
+  border: 1px solid rgba(110, 119, 135, 0.4);
+  color: #98a0ae;
+}
+.fc-title {
+  margin-top: 9px;
+  font-weight: 700;
+  font-size: 17px;
+  line-height: 1.28;
+  color: #fff;
+  letter-spacing: -0.01em;
+}
+.fc-by {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  color: #6e7787;
+}
+.fc-by .av {
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  flex: none;
+  display: grid;
+  place-items: center;
+  background: #2a2160;
+  border: 1px solid #7c5cf5;
+  color: #fff;
+  font-weight: 800;
+  font-size: 9px;
+}
+.fc-pool {
+  margin-top: 11px;
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  border-top: 1px solid #232b37;
+  padding-top: 11px;
+}
+.fc-pool .k {
+  font-weight: 700;
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #6e7787;
+  display: block;
+}
+.fc-pool .v {
+  margin-top: 2px;
+  font-weight: 800;
+  font-size: 21px;
+  color: #2fb98a;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.fc-pool .v.coin {
+  color: #f0c463;
+}
+.fc-pool .v.w {
+  color: #fff;
+  font-size: 18px;
+}
+.fc-pool .v small {
+  font-size: 12px;
+  color: #6e7787;
+  font-weight: 700;
+  margin-left: 4px;
+}
+.fc-pool .rt {
+  margin-left: auto;
+  text-align: right;
+  font-size: 11.5px;
+  color: #6e7787;
+}
+.fc-pool .rt b {
+  display: block;
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+}
+.fc-entry {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  color: #6e7787;
+}
+.fc-entry .tag {
+  border-radius: 99px;
+  padding: 3px 9px;
+  font-weight: 800;
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.fc-entry .tag.cash {
+  background: rgba(47, 185, 138, 0.15);
+  border: 1px solid rgba(47, 185, 138, 0.45);
+  color: #2fb98a;
+}
+.fc-entry .tag.coin {
+  background: rgba(240, 196, 99, 0.14);
+  border: 1px solid rgba(240, 196, 99, 0.45);
+  color: #f0c463;
+}
+.fc-entry .rt {
+  margin-left: auto;
+}

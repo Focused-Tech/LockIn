@@ -7,11 +7,8 @@ import { getDb } from "@/lib/firebase/client";
 import { COLLECTIONS, type EntryTierConfig, type SlateStatus } from "@/lib/firebase/types";
 import { FEED_STATUSES, type FeedSlate } from "@/lib/feed";
 import { ENTRY_TIERS, type EntryTier } from "@/lib/constants";
-// §3.1 — the UNIFORM SlateCard (the same component Fox Pit + SlatePicker use), compact state.
-import { SlateCard } from "@/components/slate/SlateCard";
-import { computeSlateMetrics } from "@/lib/contest";
-import { categoryTint } from "@/lib/practice/tints";
-import { formatCentsShort, formatMultiple } from "@/lib/utils";
+// THE FLOOR contest card (explore.html) — feed-only, so the uniform tower slate/SlateCard is untouched.
+import { FloorCard } from "@/components/feed/FloorCard";
 import { recommendSlates, type RecSignals } from "@/lib/recommendations";
 
 const FOR_YOU = "For you";
@@ -30,10 +27,6 @@ interface SlateSnapshot {
   lockTime?: { toMillis(): number };
 }
 
-/** Resolve which tier config to show for the pool figures: the selected tier, else the lowest. */
-function tierConfig(slate: FeedSlate, selected: EntryTier) {
-  return slate.entryTiers.find((t) => t.tier === selected) ?? [...slate.entryTiers].sort((a, b) => a.tier - b.tier)[0];
-}
 
 export function ExploreFeed({
   initialSlates,
@@ -213,39 +206,19 @@ export function ExploreFeed({
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {ordered.map((slate) => {
-            const config = tierConfig(slate, tier);
-            const metrics = config
-              ? computeSlateMetrics(config.tier, config.hostingFeeCents, slate.entryCount, slate.rushMultiplier)
-              : null;
-            return (
-              <Link key={slate.id} href={`/app/slate/${slate.id}`} className="block">
-                <SlateCard
-                  mode="feed"
-                  compact
-                  currency={free ? "coins" : "cash"}
-                  catColor={categoryTint(slate.category).border}
-                  legs={[]}
-                  eyebrow={slate.category}
-                  title={slate.title}
-                  status={slate.status === "locked" ? "locked" : "live"}
-                  withheld={slate.withheld}
-                  creator={slate.creatorName ? { name: slate.creatorName, note: slate.creatorTrackRecord ?? undefined } : null}
-                  reach={slate.entryCount > 0 ? `${slate.entryCount.toLocaleString()} in` : "Be first in"}
-                  rush={slate.isCardRush ? { multiplier: slate.rushMultiplier } : null}
-                  pool={
-                    metrics
-                      ? {
-                          poolLabel: formatCentsShort(metrics.prizePoolCents),
-                          firstLabel: formatCentsShort(metrics.firstPlaceCents),
-                          multipleLabel: formatMultiple(metrics.firstPlaceMultiple),
-                        }
-                      : null
-                  }
-                />
-              </Link>
-            );
-          })}
+          {ordered.map((slate) => (
+            <Link key={slate.id} href={`/app/slate/${slate.id}`} className="block">
+              {slate.withheld ? (
+                <div className="rounded-[15px] border border-border bg-surface-card p-4">
+                  <p className="text-xs font-semibold text-muted">{slate.category} · Under review</p>
+                  <h3 className="mt-1 text-base font-semibold">{slate.title}</h3>
+                  <p className="mt-1 text-sm text-muted">This contest is under review and isn&apos;t available to play.</p>
+                </div>
+              ) : (
+                <FloorCard slate={slate} tier={tier} currency={free ? "coins" : "cash"} />
+              )}
+            </Link>
+          ))}
         </div>
       )}
     </div>
