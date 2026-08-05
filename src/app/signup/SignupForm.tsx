@@ -131,6 +131,18 @@ export function SignupForm({ referralCode }: { referralCode?: string }) {
         </span>
       </label>
 
+      <label className="flex items-start gap-2.5 text-sm text-foreground">
+        <input
+          type="checkbox"
+          name="residenceConfirm"
+          className="mt-0.5 accent-accent"
+          required
+        />
+        <span>
+          I affirm the residence information I provide is true and correct
+        </span>
+      </label>
+
       {error && (
         <p
           role="alert"

@@ -1,28 +1,11 @@
 "use client";
 
 import { computeSlateMetrics } from "@/lib/contest";
-import { categoryTint } from "@/lib/practice/tints";
+import { catColors } from "@/lib/categoryColors";
 import { FREE_ENTRY_COIN_COST, type EntryTier } from "@/lib/constants";
 import type { FeedSlate } from "@/lib/feed";
 import { formatCentsShort, formatMultiple } from "@/lib/utils";
 import "./floor-card.css";
-
-/** explore.html category palette: [edge, darker shoulder]. Falls back to the app's per-category tint. */
-const CAT_COLORS: Record<string, [string, string]> = {
-  MLB: ["#3E9BE9", "#1B4B74"],
-  SOCCER: ["#2FB98A", "#166B4F"],
-  NBA: ["#FF5A1F", "#8E2C01"],
-  NASCAR: ["#E0432C", "#7E1F13"],
-  AWARDS: ["#C05CF5", "#5B2A78"],
-  NFL: ["#F0C463", "#7A5F16"],
-};
-
-function catColors(category: string): [string, string] {
-  const hit = CAT_COLORS[category.toUpperCase()];
-  if (hit) return hit;
-  const c = categoryTint(category).color;
-  return [c, c];
-}
 
 function tierConfig(slate: FeedSlate, selected: EntryTier) {
   return (

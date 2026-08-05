@@ -23,6 +23,7 @@ export function WalletView({
   coinBalance: initialCoins,
   cashBalanceCents: initialCash,
   kycVerified,
+  cashAttested = true,
   transactions,
 }: {
   uid: string;
@@ -30,6 +31,8 @@ export function WalletView({
   coinBalance: number;
   cashBalanceCents: number;
   kycVerified: boolean;
+  /** §2 — residence attestation already on file; the deposit sheet captures it when false. */
+  cashAttested?: boolean;
   transactions: Transaction[];
 }) {
   const [coins, setCoins] = useState(initialCoins);
@@ -148,7 +151,7 @@ export function WalletView({
         Withdrawals go back to the method you deposited with. Entry fees leave your balance when a contest locks, not when you pick.
       </p>
 
-      <DepositSheet open={sheet === "deposit"} onClose={() => setSheet(null)} />
+      <DepositSheet open={sheet === "deposit"} onClose={() => setSheet(null)} cashAttested={cashAttested} />
       <WithdrawSheet
         open={sheet === "withdraw"}
         onClose={() => setSheet(null)}

@@ -43,11 +43,11 @@ describe("§9 panel construction — numbers from lk-panels.css", () => {
       creator: /linear-gradient\(180deg, var\(--creator\) 0%, #3b2c93/.test(rule(".lk-acct .blk::before")),
       cash: /linear-gradient\(180deg, var\(--cash\) 0%, #166b4f/.test(rule(".lk-acct .blk.money::before")),
       coin: /linear-gradient\(180deg, var\(--coin\) 0%, #8a6a20/.test(rule(".lk-acct .blk.coin::before")),
-      action: /linear-gradient\(180deg, var\(--orange\) 0%, #8e2201/.test(rule(".lk-acct .blk.act::before")),
+      action: /linear-gradient\(180deg, var\(--orange\) 0%, #8e2c01/.test(rule(".lk-acct .blk.act::before")),
       danger: /linear-gradient\(180deg, var\(--bad\) 0%, #7e1f13/.test(rule(".lk-acct .blk.warn::before")),
     };
     console.log("§9 panel:", JSON.stringify(nums));
-    console.log("§9 left-edge colours: creator #7c5cf5 · cash #2fb98a · coin #f0c463 · action #fc3e01 · danger #e0432c · radius 15px · padding 15px · gap 16px");
+    console.log("§9 left-edge colours: creator #7c5cf5 · cash #2fb98a · coin #f0c463 · action #ff5a1f · danger #e0432c · radius 15px · padding 15px · gap 16px");
     for (const [k, v] of Object.entries(nums)) expect(v, k).toBe(true);
     for (const [k, v] of Object.entries(edges)) expect(v, k).toBe(true);
   });

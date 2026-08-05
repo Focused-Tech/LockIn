@@ -30,6 +30,7 @@ export default async function WalletPage() {
         coinBalance={profile.coinBalance}
         cashBalanceCents={profile.cashBalanceCents}
         kycVerified={profile.kycStatus === "verified"}
+        cashAttested={!!profile.cashAttestation}
         transactions={transactions}
       />
     </>

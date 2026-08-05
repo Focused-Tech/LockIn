@@ -209,7 +209,7 @@ export function ExploreFeed({
           {ordered.map((slate) => (
             <Link key={slate.id} href={`/app/slate/${slate.id}`} className="block">
               {slate.withheld ? (
-                <div className="rounded-[15px] border border-border bg-surface-card p-4">
+                <div data-withheld="true" className="rounded-[15px] border border-border bg-surface-card p-4">
                   <p className="text-xs font-semibold text-muted">{slate.category} · Under review</p>
                   <h3 className="mt-1 text-base font-semibold">{slate.title}</h3>
                   <p className="mt-1 text-sm text-muted">This contest is under review and isn&apos;t available to play.</p>

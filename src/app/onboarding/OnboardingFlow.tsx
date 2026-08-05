@@ -165,6 +165,7 @@ function KycStep({ onDone }: { onDone: () => void }) {
         zip: String(form.get("zip") ?? ""),
         ssnLast4: String(form.get("ssnLast4") ?? ""),
         phone: String(form.get("phone") ?? ""),
+        affirmResidence: form.get("affirmResidence") === "on",
       };
       const result = await verifyIdentity(input);
       if (result.ok) onDone();
@@ -255,6 +256,21 @@ function KycStep({ onDone }: { onDone: () => void }) {
       <p className="text-xs text-muted">
         Paid contests are unavailable in {EXCLUDED_STATES.join(", ")}.
       </p>
+
+      {/* §2 — residence attestation captured HERE (signup flow), not on every slate. */}
+      <label className="flex items-start gap-2.5 text-sm text-foreground">
+        <input
+          type="checkbox"
+          name="affirmResidence"
+          className="mt-0.5 accent-accent"
+          required
+        />
+        <span className="text-xs text-muted">
+          I affirm, under penalty of perjury, that the state of residence I have
+          provided is true and correct, and I accept liability for any false
+          statement.
+        </span>
+      </label>
 
       {error && (
         <p

@@ -61,15 +61,15 @@ describe("§6 GATE — Explore redesign", () => {
     ];
     const el = mount(h(ExploreFeed, { initialSlates: slates, signals: SIGNALS }));
 
-    // §6.2 — every feed card is the uniform SlateCard compact instance (data-mode="feed" + data-compact).
-    const cards = [...el.querySelectorAll("[data-compact]")] as HTMLElement[];
-    const allFeed = cards.every((c) => c.getAttribute("data-mode") === "feed");
-    log(`§6.2 feed cards rendered: ${cards.length} · all uniform SlateCard(compact, mode=feed): ${allFeed}`);
+    // §6.2 — every feed card is the FloorCard (explore.html panel language). BATCH directive replaced
+    // the tower's uniform SlateCard on the feed with this feed-only card (so the §9 tower is untouched).
+    const cards = [...el.querySelectorAll(".fc-card")] as HTMLElement[];
+    log(`§6.2 FloorCards rendered: ${cards.length}`);
     expect(cards.length).toBe(3);
-    expect(allFeed).toBe(true);
-    // each shows the pot figures (pool + 1st) and creator eyebrow — the compact contract.
-    expect(cards[0]!.querySelector("[data-pool]")).not.toBeNull();
-    expect(cards[0]!.querySelector("[data-creator]")).not.toBeNull();
+    // each shows the category eyebrow, the pot figures, and the creator eyebrow.
+    expect(cards[0]!.querySelector(".fc-cat")).not.toBeNull();
+    expect(cards[0]!.querySelector(".fc-pool")).not.toBeNull();
+    expect(cards[0]!.querySelector(".fc-by")).not.toBeNull();
 
     // §6.3 — no rake string anywhere on Explore.
     const html = el.innerHTML.toLowerCase();
@@ -102,11 +102,12 @@ describe("§6 GATE — Explore redesign", () => {
     expect(label).toBeTruthy();
   });
 
-  it("a withheld slate still renders as a SlateCard (under review), never banned legs", () => {
+  it("a withheld slate renders a safe under-review card (never a playable FloorCard / banned legs)", () => {
     const el = mount(h(ExploreFeed, { initialSlates: [slate({ id: "w1", withheld: true, predictions: [] })], signals: SIGNALS }));
-    const card = el.querySelector('[data-compact][data-withheld="true"]') as HTMLElement;
-    log(`§compliance withheld card is a SlateCard instance: ${!!card} · shows "under review": ${/under review/i.test(el.innerHTML)}`);
+    const card = el.querySelector('[data-withheld="true"]') as HTMLElement;
+    log(`§compliance withheld card present: ${!!card} · not a FloorCard: ${!card?.querySelector(".fc-card")} · shows "under review": ${/under review/i.test(el.innerHTML)}`);
     expect(card).not.toBeNull();
-    expect(card.querySelector("[data-pool]")).toBeNull(); // no pool/legs on a withheld card
+    expect(card.querySelector(".fc-pool")).toBeNull(); // no pool/legs on a withheld card
+    expect(/under review/i.test(el.innerHTML)).toBe(true);
   });
 });

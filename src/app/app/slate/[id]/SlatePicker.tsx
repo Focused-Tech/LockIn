@@ -6,18 +6,50 @@ import Link from "next/link";
 import { doc, onSnapshot } from "firebase/firestore";
 import { getDb } from "@/lib/firebase/client";
 import { COLLECTIONS, type EntryPick } from "@/lib/firebase/types";
-import { Button, Card, Pill } from "@/components/ui";
+import { Card, Pill } from "@/components/ui";
 import { computeSlateMetrics } from "@/lib/contest";
 import { CardRushMeta } from "@/components/CardRushMeta";
-import { categoryTint } from "@/lib/practice/tints";
+import { catColors, catSoft } from "@/lib/categoryColors";
 import { EXCLUDED_STATES, type EntryTier } from "@/lib/constants";
-import { PERJURY_ATTESTATION_TEXT } from "@/lib/eligibility";
 import type { FeedSlate, FeedPrediction } from "@/lib/feed";
-import { SlateCard, type SlateLeg } from "@/components/slate/SlateCard";
 import type { ShadowEarnings } from "@/server/data/shadowEarnings";
 import { AddToParlay } from "@/components/cross-parlay/AddToParlay";
 import { formatCents, formatCentsShort, formatMultiple } from "@/lib/utils";
-import { submitEntry, acceptCashAttestation } from "./actions";
+import { submitEntry } from "./actions";
+import "./slate-detail.css";
+
+// Cash accent (the prize/stake blocks' left edge) — advanced is cash-only.
+const CASH = "#2FB98A";
+const CASH_DEEP = "#166B4F";
+
+/** Prettify an archetype slug ("head_to_head") into a leg pill label ("Head to head"). */
+function archLabel(slug: string): string {
+  const s = slug.replace(/[_-]+/g, " ").trim();
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/** A leg's pickable options with the % + context the panel leg card renders. Binary legs carry
+ *  the probability (probA / 100−A); archetype legs have no per-option %, so the meter is omitted. */
+function legOptions(p: FeedPrediction): { key: string; label: string; cx: string | null; pct: number | null }[] {
+  if (p.type === "archetype" && p.options) {
+    return p.options.map((o) => ({
+      key: o.key,
+      label: o.label,
+      cx: [o.seasonAverage, o.last3Form].filter(Boolean).join(" · ") || null,
+      pct: null,
+    }));
+  }
+  const split = (s: string) => {
+    const parts = s.split(" · ");
+    return { label: parts[0]!, cx: parts.length > 1 ? parts.slice(1).join(" · ") : null };
+  };
+  const a = split(p.optionA);
+  const b = split(p.optionB);
+  return [
+    { key: "a", label: a.label, cx: a.cx, pct: Math.round(p.probA) },
+    { key: "b", label: b.label, cx: b.cx, pct: Math.round(p.probB) },
+  ];
+}
 
 // §1.1 — a prediction's pickable options + its pick style. Archetype legs render their N options;
 // binary legs render A/B. Milestone COUNT is bucket chips; every other archetype is the contest style.
@@ -70,7 +102,8 @@ export function SlatePicker({
 }) {
   const router = useRouter();
   const { predictions } = slate;
-  const tint = categoryTint(slate.category);
+  const [catEdge, catShoulder] = catColors(slate.category);
+  const catSoftFill = catSoft(catEdge);
 
   const availableTiers = useMemo(
     () =>
@@ -86,9 +119,10 @@ export function SlatePicker({
   const geoBlocked = registeredState
     ? (EXCLUDED_STATES as readonly string[]).includes(registeredState)
     : false;
-  const [attested, setAttested] = useState(cashAttested);
-  const [attesting, setAttesting] = useState(false);
-  const canEnterCash = !geoBlocked && availableTiers.length > 0 && attested;
+  // §2 — the residence attestation now lives at signup + the wallet (not re-confirmed per contest).
+  // The slate stays affirmation-free; the server still requires it (verifyForCash). A player who
+  // hasn't attested yet is pointed to the wallet rather than gated with perjury text here.
+  const canEnterCash = !geoBlocked && availableTiers.length > 0 && cashAttested;
   const locked = slate.status !== "live";
 
   const [tier, setTier] = useState<EntryTier>(availableTiers[0] ?? 5);
@@ -135,52 +169,12 @@ export function SlatePicker({
   const isPro = predictions.some((p) => p.type === "archetype");
   // §1.2 — a leg whose player stats couldn't load can't be entered; block submit + flag it.
   const contextBlocked = predictions.some((p) => p.contextError);
-  // §1.1 — every prediction as a SlateCard leg (N-way for pro, A/B for binary), with §1.2 context.
-  const slateLegs: SlateLeg[] = predictions.map((p) => {
-    const opts = optionsFor(p);
-    return {
-      question: p.question,
-      qs: p.type === "archetype" ? (p.gameLine ?? undefined) : undefined,
-      picks: opts.map((o) => ({ label: o.label, secondary: o.secondary, selected: picks[p.id] === o.key })),
-      state: "neutral" as SlateLeg["state"], // playable card — no per-leg grading outline
-      pickStyle: pickStyleFor(p),
-      flag: p.contextError ? { variant: "bad" as const, message: p.contextError } : null,
-    };
-  });
-
-  // §2.3 — header sub + badge. §2.5 — the cash balance + affirmation move INSIDE the card as its footer.
-  const lockLabel = new Date(slate.lockTimeMs).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-  const subLine = `${predictions.length} question${predictions.length === 1 ? "" : "s"} · locks ${lockLabel}`;
-  const badgeLabel = `Cash · ${50 - EXCLUDED_STATES.length} states`;
-  const entryFooter = (
-    <div className="flex flex-col gap-2 pt-1">
-      <p className="text-xs text-muted">Cash balance {formatCents(cashBalanceCents)}</p>
-      {geoBlocked ? (
-        <div className="rounded border border-border bg-surface px-3 py-2 text-xs text-muted">
-          Paid contests aren&apos;t available in your state.{" "}
-          <Link href="/app/beginner" className="font-semibold text-accent">Play the beginner lane in coins →</Link>
-        </div>
-      ) : !attested ? (
-        <div className="flex flex-col gap-2 rounded border border-border bg-surface px-3 py-2.5">
-          <p className="text-xs text-muted">{PERJURY_ATTESTATION_TEXT}</p>
-          <Button variant="accent" size="sm" disabled={attesting} onClick={onAttest}>
-            {attesting ? "Confirming…" : `I affirm — enter for cash${registeredState ? ` (${registeredState})` : ""}`}
-          </Button>
-          <p className="text-[11px] text-muted">No ID upload needed to play — identity checks apply only at withdrawal.</p>
-        </div>
-      ) : null}
-      {error && (
-        <p role="alert" className="rounded border border-[rgba(232,84,84,0.25)] bg-[rgba(232,84,84,0.10)] px-3 py-2 text-sm text-loss">
-          {error}
-        </p>
-      )}
-    </div>
-  );
+  const remaining = predictions.filter((p) => !picks[p.id]).length;
 
   async function onSubmit() {
     setError(null);
     setSubmitting(true);
-    const startedAt = Date.now(); // to hold the lock-in animation for its full duration
+    const startedAt = Date.now(); // to hold the lock-in state for a moment before transitioning
     const picksArr: EntryPick[] = predictions.map((p) => ({
       predictionId: p.id,
       choice: picks[p.id]!,
@@ -192,9 +186,7 @@ export function SlatePicker({
       picks: picksArr,
     });
     if (result.ok) {
-      // Hold `locking` so the SlateCard's lock-in padlock animation + lock-close audio play FULLY
-      // (~1.2s) before we transition to the locked-in card. A fast submit otherwise flashes it.
-      const wait = Math.max(0, 1200 - (Date.now() - startedAt));
+      const wait = Math.max(0, 700 - (Date.now() - startedAt));
       window.setTimeout(() => {
         setSubmitting(false);
         setLockedEntry({ picks: picksArr, isPaid: true });
@@ -206,36 +198,30 @@ export function SlatePicker({
     }
   }
 
-  // §2 — accept the residence attestation (the cash-entry route). No ID upload; records the perjury
-  // attestation, then cash entry unlocks.
-  async function onAttest() {
-    setError(null);
-    setAttesting(true);
-    const r = await acceptCashAttestation();
-    setAttesting(false);
-    if (r.ok) setAttested(true);
-    else setError(r.error ?? "Couldn't record your attestation.");
-  }
-
-  // ── Live prize pool header (always shown) ───────────────────────────────────
-  const poolHeader = (
-    <Card className="flex items-center justify-between lg:col-start-2 lg:row-start-1">
-      <div>
-        <p className="text-xs text-muted">Prize pool</p>
-        <p className="text-xl font-semibold text-win">
-          {formatCentsShort(metrics.prizePoolCents)}
-        </p>
-      </div>
-      <div className="text-right">
-        <p className="text-xs text-muted">1st place</p>
-        <p className="text-xl font-semibold">
-          {formatCentsShort(metrics.firstPlaceCents)}
-          <span className="ml-1 text-sm text-muted">
-            {formatMultiple(metrics.firstPlaceMultiple)}
+  // ── Live prize pool block (panel language, cash-green edge) ──────────────────
+  const prizeBlock = (
+    <div
+      className="sd-blk lg:col-start-2 lg:row-start-1"
+      style={{ "--sc": CASH, "--scd": CASH_DEEP } as React.CSSProperties}
+    >
+      <div className="sd-prow">
+        <div>
+          <span className="k">Prize pool</span>
+          <span className="v">{formatCentsShort(metrics.prizePoolCents)}</span>
+        </div>
+        <div>
+          <span className="k">1st place</span>
+          <span className="v w">
+            {formatCentsShort(metrics.firstPlaceCents)}
+            <small>{formatMultiple(metrics.firstPlaceMultiple)}</small>
           </span>
-        </p>
+        </div>
+        <div className="rt">
+          {entryCount.toLocaleString()}
+          <b>in</b>
+        </div>
       </div>
-    </Card>
+    </div>
   );
 
   // ── Already entered / just submitted ────────────────────────────────────────
@@ -255,7 +241,7 @@ export function SlatePicker({
     return (
       <div className="flex flex-col gap-4" data-tour="entry-confirmation">
         {rushMeta}
-        {poolHeader}
+        {prizeBlock}
 
         {settled ? (
           <Card className="flex items-center justify-between">
@@ -345,7 +331,7 @@ export function SlatePicker({
     return (
       <div className="flex flex-col gap-4">
         {rushMeta}
-        {poolHeader}
+        {prizeBlock}
         <Card className="text-sm text-muted">
           This contest is locked — entries are closed and results are pending.
         </Card>
@@ -359,53 +345,74 @@ export function SlatePicker({
     );
   }
 
-  // ── Active pick flow ────────────────────────────────────────────────────────
-  // Desktop (≥lg): two columns — predictions left, pick slip (pool + entry +
-  // submit) in a 280px right sidebar. Mobile keeps the single-column stack: the
-  // lg: grid-placement classes are inert in the flex column, so DOM order (and
-  // the mobile layout) is unchanged.
+  // ── Active pick flow (panel language, slate_detail.html) ────────────────────
+  // §9 — this does NOT render the tower's shared SlateCard; it's the slate-page-only panel set.
+  // Category-coloured leg cards, cash-green prize/stake blocks, one Lock-in CTA disabled until every
+  // leg is answered. Desktop: prize/stake ride a 280px right rail; mobile is the single stack.
+  const legVars = {
+    "--sd-cat": catEdge,
+    "--sd-catd": catShoulder,
+    "--sd-catsoft": catSoftFill,
+  } as React.CSSProperties;
+
   return (
     <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start lg:gap-6">
       {rushMeta && <div className="lg:col-span-2">{rushMeta}</div>}
-      {poolHeader}
+      {prizeBlock}
 
       <div
         className="flex flex-col gap-3 lg:col-start-1 lg:row-start-1 lg:row-span-6"
         data-tour="prediction-options"
       >
-        {/* §1.1 — the picks render through the ONE SlateCard (N-way for pro, A/B for binary), with
-            §1.2 read-only context and §1.3 category bezel + lock-in animation. */}
-        <SlateCard
-          mode="contest"
-          currency="cash"
-          catColor={tint.border}
-          eyebrow={slate.category}
-          title={slate.title}
-          sub={subLine}
-          badge={badgeLabel}
-          legs={slateLegs}
-          // §4 — the stake chips + CTA + lock-in live INSIDE the one SlateCard (not a separate panel).
-          // §1 — cash only: the $ tiers are the stake chips; they reveal once every leg is answered.
-          stakeMode="afterAnswers"
-          stakeOptions={availableTiers}
-          selectedStake={tier}
-          stakeLabel="Entry"
-          answered={allPicked}
-          onStake={(s) => setTier(s as EntryTier)}
-          cta={{
-            label: submitting ? "Locking in…" : !allPicked ? `Pick all ${predictions.length} to enter` : `Lock in · ${formatCents(entryCostCents)}`,
-            disabled: !allPicked || submitting || contextBlocked || !canEnterCash,
-          }}
-          onCta={onSubmit}
-          locked={locked}
-          locking={submitting}
-          footer={entryFooter}
-          onPick={(li, pi) => {
-            const p = predictions[li];
-            const key = p && optionsFor(p)[pi]?.key;
-            if (p && key) setPicks((x) => ({ ...x, [p.id]: key }));
-          }}
-        />
+        <div className="sd-sh">
+          The questions
+          <span>
+            {predictions.length} leg{predictions.length === 1 ? "" : "s"}
+          </span>
+        </div>
+
+        {/* ONE LEG, ONE CARD — category edge, options with % + context + meter. */}
+        {predictions.map((p, i) => {
+          const opts = legOptions(p);
+          return (
+            <div key={p.id} className="sd-leg" style={legVars}>
+              <div className="sd-lh">
+                <span className="sd-lno">{i + 1}</span>
+                {p.archetype && <span className="sd-arch">{archLabel(p.archetype)}</span>}
+              </div>
+              <div className="sd-q">{p.question}</div>
+              {p.gameLine && (
+                <div className="mt-1 text-xs text-muted">{p.gameLine}</div>
+              )}
+              {p.contextError ? (
+                <p data-flag="bad" className="mt-2 text-xs text-loss">{p.contextError}</p>
+              ) : (
+                <div className="sd-opts">
+                  {opts.map((o) => {
+                    const on = picks[p.id] === o.key;
+                    return (
+                      <button
+                        key={o.key}
+                        type="button"
+                        className={"sd-opt" + (on ? " on" : "")}
+                        aria-pressed={on}
+                        onClick={() => setPicks((x) => ({ ...x, [p.id]: o.key }))}
+                      >
+                        <div className="l1">
+                          <span className="nm">{o.label}</span>
+                          {o.pct != null && <span className="pc">{o.pct}%</span>}
+                        </div>
+                        {o.cx && <div className="cx">{o.cx}</div>}
+                        {o.pct != null && <span className="mtr" style={{ width: `${o.pct}%` }} />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+
         {/* cross-parlay add-in stays available for binary slates (archetype legs aren't parlayable). */}
         {!isPro &&
           predictions.map((p) =>
@@ -424,6 +431,77 @@ export function SlatePicker({
           )}
       </div>
 
+      {/* stake block — reveals once every leg is answered (cash-green edge) */}
+      {allPicked && !geoBlocked && (
+        <div
+          className="sd-blk lg:col-start-2"
+          style={{ "--sc": CASH, "--scd": CASH_DEEP, "--scsoft": catSoft(CASH, 0.14) } as React.CSSProperties}
+        >
+          <div className="sd-srow">
+            <div>
+              <span className="k">Your stake</span>{" "}
+              <span className="v">${tier}</span>
+            </div>
+            <div className="rt">
+              <span>To win 1st</span>
+              <b>{formatCentsShort(metrics.firstPlaceCents)}</b>
+            </div>
+          </div>
+          <div className="sd-stakes">
+            {availableTiers.map((t) => (
+              <button
+                key={t}
+                type="button"
+                className={"sd-stk" + (tier === t ? " on" : "")}
+                onClick={() => setTier(t)}
+              >
+                ${t}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* geo block — coins fallback; residence attestation lives at signup + wallet now. */}
+      {geoBlocked ? (
+        <div className="rounded border border-border bg-surface px-3 py-2 text-xs text-muted lg:col-start-2">
+          Paid contests aren&apos;t available in your state.{" "}
+          <Link href="/app/beginner" className="font-semibold text-accent">Play the beginner lane in coins →</Link>
+        </div>
+      ) : !cashAttested ? (
+        <div className="rounded border border-border bg-surface px-3 py-2 text-xs text-muted lg:col-start-2">
+          Confirm your residence in your{" "}
+          <Link href="/app/wallet" className="font-semibold text-accent">wallet</Link>{" "}
+          to enter for cash.
+        </div>
+      ) : null}
+
+      {/* Lock in — one CTA, disabled until every leg is answered */}
+      <div className="lg:col-start-2">
+        <button
+          type="button"
+          className="sd-lock"
+          disabled={!allPicked || submitting || contextBlocked || !canEnterCash}
+          onClick={onSubmit}
+        >
+          {submitting
+            ? "Locking in…"
+            : !allPicked
+              ? `Pick ${remaining} more`
+              : `Lock in · ${formatCents(entryCostCents)}`}
+        </button>
+        <div className="sd-ctasub">Entry leaves your balance when the slate locks.</div>
+      </div>
+
+      {error && (
+        <p role="alert" className="rounded border border-[rgba(232,84,84,0.25)] bg-[rgba(232,84,84,0.10)] px-3 py-2 text-sm text-loss lg:col-start-2">
+          {error}
+        </p>
+      )}
+
+      <p className="sd-legal lg:col-start-2">
+        Skill-based prediction contest platform. Not gambling. Not sports betting. 18+.
+      </p>
     </div>
   );
 }

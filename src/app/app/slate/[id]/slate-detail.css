@@ -1,0 +1,284 @@
+/**
+ * SLATE DETAIL — panel language, mirrors public/design/Creator Builder/slate_detail.html.
+ * A NEW, slate-page-only card set so the tower's shared SlateCard (§9) is untouched.
+ * Cash contest = cash-green left edge on the prize/stake blocks; each leg wears the
+ * category-coloured 4px edge. Scoped .sd-* . Literal colours in box-shadow.
+ */
+
+/* prize + stake blocks share the .blk construction; --sc/--scd carry the accent (cash green). */
+.sd-blk {
+  position: relative;
+  overflow: hidden;
+  border-radius: 15px;
+  padding: 15px;
+  background: linear-gradient(180deg, #161c25 0%, #10151c 100%);
+  border: 1px solid #232b37;
+  border-left: 4px solid var(--sc, #2fb98a);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 8px 20px rgba(0, 0, 0, 0.55);
+  color: #e7e7eb;
+}
+.sd-blk::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, var(--sc, #2fb98a) 0%, var(--scd, #166b4f) 100%);
+}
+
+/* prize row */
+.sd-prow {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+}
+.sd-prow .k {
+  font-weight: 700;
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #6e7787;
+  display: block;
+}
+.sd-prow .v {
+  margin-top: 3px;
+  font-weight: 800;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--sc, #2fb98a);
+  font-variant-numeric: tabular-nums;
+}
+.sd-prow .v.w {
+  color: #fff;
+  font-size: 21px;
+}
+.sd-prow .v small {
+  font-size: 12.5px;
+  color: #6e7787;
+  font-weight: 700;
+  margin-left: 5px;
+}
+.sd-prow .rt {
+  margin-left: auto;
+  text-align: right;
+  font-size: 11.5px;
+  color: #6e7787;
+}
+.sd-prow .rt b {
+  display: block;
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+/* section header */
+.sd-sh {
+  font-weight: 700;
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #6e7787;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sd-sh span {
+  margin-left: auto;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  font-weight: 600;
+  font-size: 11.5px;
+}
+
+/* ONE LEG, ONE CARD — category-coloured left edge */
+.sd-leg {
+  position: relative;
+  overflow: hidden;
+  border-radius: 15px;
+  padding: 14px 15px 13px;
+  background: linear-gradient(180deg, #161c25 0%, #10151c 100%);
+  border: 1px solid #232b37;
+  border-left: 4px solid var(--sd-cat, #3e9be9);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 8px 20px rgba(0, 0, 0, 0.55);
+}
+.sd-leg::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, var(--sd-cat, #3e9be9) 0%, var(--sd-catd, #1b4b74) 100%);
+}
+.sd-lh {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.sd-lno {
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: #6e7787;
+}
+.sd-arch {
+  font-weight: 600;
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #6e7787;
+  border: 1px solid #232b37;
+  border-radius: 99px;
+  padding: 3px 8px;
+}
+.sd-q {
+  margin-top: 10px;
+  font-weight: 600;
+  font-size: 16.5px;
+  line-height: 1.35;
+  color: #fff;
+}
+.sd-opts {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sd-opt {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #0e131a;
+  border: 1px solid #1b222c;
+  padding: 11px 12px 12px;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+  transition: border-color 0.16s, background 0.16s;
+  color: #e7e7eb;
+}
+.sd-opt .l1 {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.sd-opt .nm {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  font-size: 15px;
+  color: #fff;
+}
+.sd-opt .pc {
+  font-weight: 700;
+  font-size: 13px;
+  color: #98a0ae;
+  font-variant-numeric: tabular-nums;
+}
+.sd-opt .cx {
+  margin-top: 4px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: #6e7787;
+}
+.sd-opt .cx i {
+  font-style: normal;
+  color: #98a0ae;
+}
+.sd-opt .mtr {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2.5px;
+  background: var(--sd-cat, #3e9be9);
+  opacity: 0.42;
+}
+.sd-opt.on {
+  border-color: var(--sd-cat, #3e9be9);
+  background: var(--sd-catsoft, rgba(62, 155, 233, 0.09));
+}
+
+/* stake block */
+.sd-srow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sd-srow .k {
+  font-size: 11.5px;
+  color: #6e7787;
+}
+.sd-srow .v {
+  font-weight: 800;
+  font-size: 24px;
+  color: var(--sc, #2fb98a);
+  font-variant-numeric: tabular-nums;
+}
+.sd-srow .rt {
+  margin-left: auto;
+  font-size: 11.5px;
+  color: #6e7787;
+  text-align: right;
+}
+.sd-srow .rt b {
+  display: block;
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+}
+.sd-stakes {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.sd-stk {
+  flex: 1;
+  border: 1px solid #232b37;
+  border-radius: 11px;
+  padding: 9px 0;
+  text-align: center;
+  background: linear-gradient(180deg, #1b212b, #151a22);
+  color: #e7e7eb;
+  font-weight: 700;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+.sd-stk.on {
+  border-color: var(--sc, #2fb98a);
+  color: var(--sc, #2fb98a);
+  background: var(--scsoft, rgba(47, 185, 138, 0.14));
+}
+
+/* fixed lock-in CTA */
+.sd-lock {
+  width: 100%;
+  border: none;
+  border-radius: 14px;
+  padding: 16px;
+  background: #ff5a1f;
+  color: #fff;
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 8px 20px rgba(0, 0, 0, 0.55);
+}
+.sd-lock:disabled {
+  background: #1a1f28;
+  color: #4e5765;
+  box-shadow: none;
+  cursor: default;
+}
+.sd-ctasub {
+  margin-top: 8px;
+  text-align: center;
+  font-size: 11.5px;
+  color: #6e7787;
+}
+.sd-legal {
+  text-align: center;
+  font-size: 11.5px;
+  color: #6e7787;
+  line-height: 1.5;
+}

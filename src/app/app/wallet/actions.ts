@@ -18,6 +18,7 @@ import {
   fetchDepositUsage,
   isSelfExcluded,
 } from "@/server/data/responsiblePlay";
+import { PERJURY_ATTESTATION_TEXT, PERJURY_ATTESTATION_VERSION } from "@/lib/eligibility";
 
 export type DepositResult =
   | {
@@ -38,6 +39,8 @@ export type DepositResult =
 export async function createDepositIntent(input: {
   amountCents: number;
   method: PaymentMethodKind;
+  /** §2 — set when the deposit sheet's residence attestation was accepted (captured at the wallet). */
+  affirmResidence?: boolean;
 }): Promise<DepositResult> {
   const uid = await getCurrentUserId();
   if (!uid) return { ok: false, error: "Not signed in" };
@@ -63,6 +66,26 @@ export async function createDepositIntent(input: {
   // Responsible play: block while self-excluded, enforce deposit limits.
   if (isSelfExcluded(user)) {
     return { ok: false, error: "Your account is self-excluded. Deposits are paused." };
+  }
+
+  // §2 — the residence attestation is captured at the wallet (moved off the per-contest slate).
+  // Record it once on the first deposit where the box is checked; the affirmed state is the
+  // registered address on file (falls back to geo). Idempotent — never overwritten once set.
+  if (input.affirmResidence && !user.cashAttestation) {
+    const affirmedState = (user.registeredState ?? user.geoState ?? "").toUpperCase();
+    if (affirmedState) {
+      await userRef.set(
+        {
+          cashAttestation: {
+            affirmedState,
+            acceptedAt: FieldValue.serverTimestamp(),
+            text: PERJURY_ATTESTATION_TEXT,
+            version: PERJURY_ATTESTATION_VERSION,
+          },
+        },
+        { merge: true },
+      );
+    }
   }
   const usage = await fetchDepositUsage(db, uid);
   const dailyLimit = user.depositLimitDailyCents ?? DEPOSIT_LIMITS.dailyCents;

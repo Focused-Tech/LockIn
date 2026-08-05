@@ -22,9 +22,12 @@ import { createDepositIntent } from "./actions";
 export function DepositSheet({
   open,
   onClose,
+  cashAttested = true,
 }: {
   open: boolean;
   onClose: () => void;
+  /** §2 — whether the residence attestation is already on file. When false, the sheet requires it. */
+  cashAttested?: boolean;
 }) {
   const stripePromise = useMemo(() => getStripe(), []);
 
@@ -33,6 +36,8 @@ export function DepositSheet({
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [affirmed, setAffirmed] = useState(false);
+  const needsAffirm = !cashAttested;
 
   const netCents = Math.round((parseFloat(dollars) || 0) * 100);
   const valid = netCents >= DEPOSIT_MIN_CENTS && netCents <= DEPOSIT_MAX_CENTS;
@@ -53,7 +58,11 @@ export function DepositSheet({
   async function onContinue() {
     setError(null);
     setPending(true);
-    const result = await createDepositIntent({ amountCents: netCents, method });
+    const result = await createDepositIntent({
+      amountCents: netCents,
+      method,
+      affirmResidence: needsAffirm ? affirmed : undefined,
+    });
     setPending(false);
     if (result.ok) setClientSecret(result.clientSecret);
     else setError(result.error);
@@ -161,6 +170,23 @@ export function DepositSheet({
             fee-free.
           </p>
 
+          {/* §2 — residence attestation captured at the wallet (once), not on every contest. */}
+          {needsAffirm && (
+            <label className="flex items-start gap-2.5 rounded border border-border bg-surface px-3 py-2.5 text-sm text-foreground">
+              <input
+                type="checkbox"
+                checked={affirmed}
+                onChange={(e) => setAffirmed(e.target.checked)}
+                className="mt-0.5 accent-accent"
+              />
+              <span className="text-xs text-muted">
+                I affirm, under penalty of perjury, that the state of residence I
+                have provided is true and correct, and I accept liability for any
+                false statement.
+              </span>
+            </label>
+          )}
+
           {error && (
             <p
               role="alert"
@@ -173,7 +199,7 @@ export function DepositSheet({
           <Button
             variant="accent"
             size="lg"
-            disabled={!valid || pending}
+            disabled={!valid || pending || (needsAffirm && !affirmed)}
             onClick={onContinue}
           >
             {pending
