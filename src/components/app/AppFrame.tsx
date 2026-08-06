@@ -1,5 +1,6 @@
 import { TopNav } from "./TopNav";
 import { BottomNav } from "./BottomNav";
+import { ScrollReset } from "./ScrollReset";
 
 /**
  * Phone-shaped app shell. The mobile experience is the product at every viewport
@@ -46,7 +47,8 @@ export function AppFrame({
           coinBalance={coinBalance}
           cashBalanceCents={cashBalanceCents}
         />
-        <main className="flex-1 overflow-y-auto overflow-x-hidden">
+        <ScrollReset />
+        <main id="app-scroll" className="flex-1 overflow-y-auto overflow-x-hidden">
           {children}
         </main>
         <BottomNav />

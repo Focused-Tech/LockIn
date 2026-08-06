@@ -19,7 +19,7 @@ import "./journey.css";
  */
 const COLORS = {
   creator: { c: "#7C5CF5", cd: "#3B2C93", soft: "rgba(124,92,245,.14)" },
-  orange: { c: "#FF5A1F", cd: "#8E2C01", soft: "rgba(255,90,31,.14)" },
+  orange: { c: "var(--brand-orange)", cd: "#8E2C01", soft: "rgba(255,90,31,.14)" },
   fox: { c: "#F0C463", cd: "#7A5F16", soft: "rgba(240,196,99,.14)" },
 } as const;
 

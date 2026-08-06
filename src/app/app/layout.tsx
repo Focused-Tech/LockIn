@@ -2,7 +2,10 @@ import { ChatAssistant } from "@/components/ChatAssistant";
 import { AppFrame } from "@/components/app/AppFrame";
 import { CrossParlayProvider } from "@/components/cross-parlay/CrossParlayProvider";
 import { NativeBridge } from "@/components/notifications/NativeBridge";
+import { TutorialLauncher } from "@/components/app/TutorialLauncher";
 import { getCurrentUserProfile } from "@/lib/firebase/session";
+import { getTutorialRecord } from "@/app/app/tutorial/actions";
+import { laneToTutorialMode, isTutorialSeen } from "@/lib/tutorial/tutorials";
 
 /**
  * All authenticated app screens render inside the mobile {@link AppFrame} (phone
@@ -30,6 +33,13 @@ export default async function AppLayout({
     );
   }
 
+  // §4 — the tutorial fires once after onboarding, for the mode the user selected (their journey
+  // lane). Only offered to onboarded users (a lane is set); the seen-record (version-aware) gates it.
+  const tutorialMode = laneToTutorialMode(profile.journeyLane);
+  const tutorialSeen = profile.journeyLane
+    ? isTutorialSeen(await getTutorialRecord(tutorialMode))
+    : true;
+
   return (
     <CrossParlayProvider>
       <AppFrame
@@ -42,6 +52,9 @@ export default async function AppLayout({
                 a compliance issue. The context provider stays (consumers reference it); the visible
                 bottom-left launcher is gone. */}
             <ChatAssistant />
+            {profile.journeyLane && (
+              <TutorialLauncher mode={tutorialMode} initialSeen={tutorialSeen} />
+            )}
           </>
         }
       >

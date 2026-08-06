@@ -245,7 +245,7 @@
   font-size: 14px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #ff5a1f;
+  color: var(--brand-orange);
   animation: sd-lw-fade 0.3s ease-out 0.45s both;
 }
 @keyframes sd-lw-fade {
@@ -310,7 +310,7 @@
   border: none;
   border-radius: 14px;
   padding: 16px;
-  background: #ff5a1f;
+  background: var(--brand-orange);
   color: #fff;
   font-weight: 700;
   font-size: 16px;

@@ -12,7 +12,7 @@
   cursor: pointer;
   background: linear-gradient(180deg, #161c25 0%, #10151c 100%);
   border: 1px solid #232b37;
-  border-left: 4px solid var(--fc-cat, #ff5a1f);
+  border-left: 4px solid var(--fc-cat, var(--brand-orange));
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 8px 20px rgba(0, 0, 0, 0.55);
   transition: transform 0.16s ease;
   color: #e7e7eb;
@@ -24,7 +24,7 @@
   top: 0;
   bottom: 0;
   width: 4px;
-  background: linear-gradient(180deg, var(--fc-cat, #ff5a1f) 0%, var(--fc-catd, #8e2c01) 100%);
+  background: linear-gradient(180deg, var(--fc-cat, var(--brand-orange)) 0%, var(--fc-catd, #8e2c01) 100%);
 }
 .fc-card:active {
   transform: scale(0.99);
@@ -39,7 +39,7 @@
   font-size: 10.5px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--fc-cat, #ff5a1f);
+  color: var(--fc-cat, var(--brand-orange));
 }
 .fc-st {
   margin-left: auto;

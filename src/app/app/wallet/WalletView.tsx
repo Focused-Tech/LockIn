@@ -119,7 +119,7 @@ export function WalletView({
               <b className="block text-[15px] font-semibold text-white">Verify your identity</b>
               <span className="block text-[11.5px] text-[#6E7787]">Required before you can withdraw</span>
             </span>
-            <span className="text-[19px] leading-none text-[#fc3e01]">›</span>
+            <span className="text-[19px] leading-none text-[color:var(--brand-orange)]">›</span>
           </div>
         </Link>
       )}

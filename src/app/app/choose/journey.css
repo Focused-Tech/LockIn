@@ -16,7 +16,7 @@
   place-items: center;
   overflow: hidden;
   background: radial-gradient(circle at 34% 28%, #4a3a9e 0%, #241c57 72%);
-  border: 3px solid #ff5a1f;
+  border: 3px solid var(--brand-orange);
   box-shadow: 0 0 0 6px rgba(255, 90, 31, 0.13), 0 12px 30px rgba(0, 0, 0, 0.65);
 }
 .jp-med img {
@@ -30,7 +30,7 @@
   font-weight: 800;
   font-size: 38px;
   line-height: 1.05;
-  color: #ff5a1f;
+  color: var(--brand-orange);
   letter-spacing: -0.02em;
   text-align: center;
 }
@@ -65,7 +65,7 @@
   text-align: left;
   background: linear-gradient(180deg, #161c25 0%, #10151c 100%);
   border: 1px solid #232b37;
-  border-left: 4px solid var(--jc, #ff5a1f);
+  border-left: 4px solid var(--jc, var(--brand-orange));
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 8px 20px rgba(0, 0, 0, 0.55);
   transition: transform 0.16s ease;
   color: #e7e7eb;
@@ -77,7 +77,7 @@
   top: 0;
   bottom: 0;
   width: 4px;
-  background: linear-gradient(180deg, var(--jc, #ff5a1f) 0%, var(--jcd, #8e2c01) 100%);
+  background: linear-gradient(180deg, var(--jc, var(--brand-orange)) 0%, var(--jcd, #8e2c01) 100%);
 }
 .jp-j:active {
   transform: scale(0.99);

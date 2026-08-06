@@ -229,10 +229,19 @@ function ExploreScreen({
   onPick: (c: BeginnerCard, choice: "a" | "b", pick?: BeginnerPick) => void;
 }) {
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
 
       {feed.cards.length === 0 && (
-        <div className="rounded-2xl border border-border bg-surface-card p-4 text-sm text-muted">
+        <div
+          className="text-sm text-muted"
+          style={{
+            borderRadius: 15,
+            padding: 15,
+            background: "linear-gradient(180deg, #161c25 0%, #10151c 100%)",
+            border: "1px solid #232b37",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,.05), 0 8px 20px rgba(0,0,0,.55)",
+          }}
+        >
           No live contests right now. Check back soon — new picks drop daily.
         </div>
       )}
@@ -240,10 +249,22 @@ function ExploreScreen({
       {feed.cards.map((c) => {
         const t = categoryTint(c.headline.category);
         return (
+        // §5 — the approved panel language: gradient body, 1px hairline on three sides, 4px LEFT
+        // edge in the category colour (with a darker shoulder via the inset glow), radius 15,
+        // padding 15, inner highlight + drop shadow. Coins-only throughout (no dollar figure).
         <div
           key={`${c.creatorId ?? "house"}-${c.headline.predictionId}`}
-          className="rounded-2xl border bg-surface-card p-4"
-          style={{ borderColor: t.border, "--cat": t.color } as React.CSSProperties}
+          style={{
+            position: "relative",
+            overflow: "hidden",
+            borderRadius: 15,
+            padding: 15,
+            background: "linear-gradient(180deg, #161c25 0%, #10151c 100%)",
+            border: "1px solid #232b37",
+            borderLeft: `4px solid ${t.color}`,
+            boxShadow: `inset 6px 0 14px -10px ${t.color}, inset 0 1px 0 rgba(255,255,255,.05), 0 8px 20px rgba(0,0,0,.55)`,
+            "--cat": t.color,
+          } as React.CSSProperties}
         >
           <div className="flex items-center justify-between gap-2">
             <CreatorRow card={c} />
@@ -791,37 +812,9 @@ function ResultScreen({
         </div>
       </div>
 
-      {/* two-way shadow cash */}
-      <div className="rounded-2xl border border-[rgba(61,214,140,.28)] bg-[rgba(61,214,140,.10)] p-3.5">
-        <div className="mb-1.5 flex items-center justify-between">
-          <span className="text-xs font-bold text-[#3DD68C]">
-            If this had been the live ${PAYOUT_MODEL.CASH_ENTRY} cash pool
-          </span>
-          <span className="rounded border border-[rgba(232,161,78,.25)] bg-[rgba(232,161,78,.10)] px-1.5 py-0.5 text-[8px] font-bold text-live">
-            TUNABLE
-          </span>
-        </div>
-        <div
-          className={
-            "text-[22px] font-extrabold " +
-            (r.cashNet >= 0 ? "text-[#3DD68C]" : "text-live")
-          }
-        >
-          {r.cashNet >= 0
-            ? `+$${r.cashNet.toFixed(2)}`
-            : `−$${Math.abs(r.cashNet).toFixed(2)}`}
-        </div>
-        <div className="mt-0.5 text-xs text-muted">
-          {r.cashNet >= 0
-            ? `what you'd have won with a $${PAYOUT_MODEL.CASH_ENTRY} cash entry`
-            : `what a $${PAYOUT_MODEL.CASH_ENTRY} cash entry would have cost you`}
-        </div>
-        <div className="my-3 border-t border-border" />
-        <p className="text-sm text-muted">
-          Same picks, same skill — the only difference is whether you were in with
-          cash. We show you both ways, every time.
-        </p>
-      </div>
+      {/* §5 — COINS ONLY: the "if this had been a cash pool" dollar preview is removed from the
+          beginner lane (no dollar figure renders anywhere in beginner). The cash-conversion nudge
+          lives on the advanced/wallet surfaces, not here. */}
 
       {canFollow ? (
         <PrimaryButton onClick={onFollow}>Follow {creatorName} for more</PrimaryButton>

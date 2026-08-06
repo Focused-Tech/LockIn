@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Pill } from "@/components/ui";
 import { formatCents } from "@/lib/utils";
 import { HeaderBack } from "./HeaderBack";
+import { AccountMenu } from "./AccountMenu";
 
 /**
  * Persistent mobile top bar (design: prototype `.top-nav`). Logo left; coin +
@@ -30,13 +31,7 @@ export function TopNav({
           <Pill tone="win">{formatCents(cashBalanceCents)}</Pill>
         </Link>
 
-        <Link
-          href="/app/profile"
-          aria-label="Your profile"
-          className="flex h-[30px] w-[30px] items-center justify-center rounded-full border border-accent-border bg-accent-soft text-xs font-bold text-accent"
-        >
-          {username.charAt(0).toUpperCase()}
-        </Link>
+        <AccountMenu username={username} />
       </div>
     </header>
   );

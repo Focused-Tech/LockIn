@@ -3,9 +3,51 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import type { ChatMessage } from "@/lib/ai/chat";
+import {
+  TUTORIALS,
+  TUTORIAL_PLACEHOLDER,
+  type TutorialMode,
+} from "@/lib/tutorial/tutorials";
+
+/** Best-effort mode for the screen the user is standing on (for contextual "How to play"). */
+function pathnameToMode(pathname: string): TutorialMode {
+  if (pathname.startsWith("/app/foxpit")) return "tower_boss";
+  if (pathname.startsWith("/app/practice")) return "lone_fox";
+  if (pathname.startsWith("/app/create") || pathname.startsWith("/app/creator")) return "creator";
+  if (pathname.startsWith("/app/beginner")) return "beginner";
+  return "advanced";
+}
 
 const GREETING =
   "I'm the Locksmith 🦊 — your fox guide to picking the lock on a win. Ask me how odds, parlays, or payouts work, about your balance or deposits, or anything else on LockIn.";
+
+// Minimal Web Speech API shapes (the DOM lib doesn't ship these in this TS config).
+interface SpeechRecognitionEventLike {
+  results: ArrayLike<ArrayLike<{ transcript: string }>>;
+}
+interface SpeechRecognitionLike {
+  lang: string;
+  interimResults: boolean;
+  onresult: (e: SpeechRecognitionEventLike) => void;
+  onend: () => void;
+  onerror: () => void;
+  start: () => void;
+  stop: () => void;
+}
+type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
+
+/**
+ * The Locksmith is contextual (§3d): she auto-appears (the FAB) only where a DECISION is being made
+ * — slate detail while picking, the creator builder, practice, and tower play. She does NOT auto-show
+ * on profile, wallet, settings, responsible play, leaderboard, refer, legal, or the agreement flow.
+ * (The nav Locksmith slot can still open her from anywhere — that's the explicit help entry.)
+ */
+const DECISION_PREFIXES = ["/app/slate/", "/app/create", "/app/creator", "/app/practice", "/app/foxpit"];
+const DECISION_DENY = ["/app/creator/agreement"];
+function isDecisionScreen(pathname: string): boolean {
+  if (DECISION_DENY.some((p) => pathname.startsWith(p))) return false;
+  return DECISION_PREFIXES.some((p) => pathname.startsWith(p));
+}
 
 export function ChatAssistant() {
   const [open, setOpen] = useState(false);
@@ -20,6 +62,54 @@ export function ChatAssistant() {
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [messages, open]);
+
+  // §3b — the nav Locksmith slot (and any help entry point) opens THIS same Locksmith, reused.
+  useEffect(() => {
+    const openIt = () => setOpen(true);
+    window.addEventListener("locksmith:open", openIt);
+    return () => window.removeEventListener("locksmith:open", openIt);
+  }, []);
+
+  // §3c — speech-to-text. Uses the platform Web Speech API when the shell exposes it; when it does
+  // NOT (this Capacitor WebView does not bundle a native STT plugin), the mic ships DISABLED with an
+  // honest state rather than faked. Capability is detected at runtime (SSR-safe).
+  const [listening, setListening] = useState(false);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const [sttAvailable, setSttAvailable] = useState(false);
+  useEffect(() => {
+    const w = window as unknown as {
+      SpeechRecognition?: SpeechRecognitionCtor;
+      webkitSpeechRecognition?: SpeechRecognitionCtor;
+    };
+    const Ctor = w.SpeechRecognition ?? w.webkitSpeechRecognition;
+    setSttAvailable(typeof Ctor === "function");
+  }, []);
+
+  function toggleMic() {
+    const w = window as unknown as {
+      SpeechRecognition?: SpeechRecognitionCtor;
+      webkitSpeechRecognition?: SpeechRecognitionCtor;
+    };
+    const Ctor = w.SpeechRecognition ?? w.webkitSpeechRecognition;
+    if (!Ctor) return; // disabled state — never faked
+    if (listening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+    const rec = new Ctor();
+    recognitionRef.current = rec;
+    rec.lang = "en-US";
+    rec.interimResults = true;
+    rec.onresult = (e: SpeechRecognitionEventLike) => {
+      let text = "";
+      for (let i = 0; i < e.results.length; i++) text += e.results[i]?.[0]?.transcript ?? "";
+      setInput(text);
+    };
+    rec.onend = () => setListening(false);
+    rec.onerror = () => setListening(false);
+    setListening(true);
+    rec.start();
+  }
 
   async function send() {
     const text = input.trim();
@@ -77,45 +167,61 @@ export function ChatAssistant() {
     }
   }
 
-  // Show only in the Beginner/Advanced app — hide on the Fox Pit landing +
-  // journey, the arena mode picker/modes, and the Creator dashboard.
-  if (
-    ["/app/choose", "/app/foxpit", "/app/practice", "/app/creator"].some((p) =>
-      pathname.startsWith(p),
-    )
-  )
-    return null;
+  // §3d — the FAB (auto-launcher) only appears where a decision is being made. The panel itself can
+  // still be opened from anywhere via the nav Locksmith slot (locksmith:open), so we render the
+  // launcher on decision screens OR whenever the panel is already open (to close it).
+  const showFab = isDecisionScreen(pathname);
+  if (!showFab && !open) return null;
 
   return (
     <>
       {/* Launcher */}
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-label={open ? "Close Locksmith" : "Open Locksmith — your AI guide"}
-        className="fixed bottom-[4.5rem] right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full border border-[rgba(59,139,255,0.4)] bg-[rgba(59,139,255,0.15)] text-lg text-ai shadow-lg backdrop-blur transition-colors hover:bg-[rgba(59,139,255,0.25)]"
-      >
-        {open ? (
-          "✕"
-        ) : (
-          // The architect-approved Locksmith FAB image (LOCKIN_GREENSCREEN_ASSETS/_INDEX.txt:
-          // "locksmith_badge.png is the ONE the Locksmith FAB uses"). No more crops.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src="/foxpit/locksmith/locksmith_badge.png" alt="" className="h-9 w-9 rounded-full object-cover" />
-        )}
-      </button>
+      {(showFab || open) && (
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-label={open ? "Close Locksmith" : "Open Locksmith — your AI guide"}
+          className="fixed bottom-[4.5rem] right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full border border-[rgba(59,139,255,0.4)] bg-[rgba(59,139,255,0.15)] text-lg text-ai shadow-lg backdrop-blur transition-colors hover:bg-[rgba(59,139,255,0.25)]"
+        >
+          {open ? (
+            "✕"
+          ) : (
+            // The architect-approved Locksmith FAB image (LOCKIN_GREENSCREEN_ASSETS/_INDEX.txt:
+            // "locksmith_badge.png is the ONE the Locksmith FAB uses"). No more crops.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src="/foxpit/locksmith/locksmith_badge.png" alt="" className="h-9 w-9 rounded-full object-cover" />
+          )}
+        </button>
+      )}
 
-      {/* Panel */}
+      {/* Panel — her at her desk (§3a: reuse locksmith_desk.png) sits at the TOP. */}
       {open && (
-        <div className="fixed bottom-[8.5rem] right-4 z-40 flex h-[24rem] w-[min(92vw,22rem)] flex-col overflow-hidden rounded-xl border border-border bg-surface-card shadow-2xl">
-          <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-            <span className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full bg-[rgba(59,139,255,0.15)] text-sm">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/foxpit/locksmith/locksmith_badge.png" alt="" className="h-full w-full rounded-full object-cover" />
-            </span>
-            <div className="leading-tight">
-              <p className="text-sm font-semibold">Locksmith</p>
-              <p className="text-xs text-muted">Your fox guide to the win</p>
+        <div className="fixed bottom-[8.5rem] right-4 z-40 flex h-[26rem] w-[min(92vw,22rem)] flex-col overflow-hidden rounded-xl border border-border bg-surface-card shadow-2xl">
+          <div className="relative">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/foxpit/locksmith/locksmith_desk.png"
+              alt="The Locksmith at her desk"
+              className="h-24 w-full object-cover"
+            />
+            <div className="absolute inset-x-0 bottom-0 flex items-center gap-2 bg-gradient-to-t from-black/70 to-transparent px-4 pb-2 pt-6">
+              <p className="text-sm font-semibold text-white">Locksmith</p>
+              <p className="text-xs text-white/70">Your fox guide to the win</p>
+              {/* §4 — permanent "How to play", contextual to the mode you're standing in. */}
+              <button
+                type="button"
+                onClick={() => {
+                  const slot = TUTORIALS[pathnameToMode(pathname)];
+                  const body = slot.steps.length ? slot.steps.join("\n\n") : TUTORIAL_PLACEHOLDER;
+                  setMessages((prev) => [
+                    ...prev,
+                    { role: "assistant", content: `How to play — ${slot.modeLabel}\n\n${body}` },
+                  ]);
+                }}
+                className="ml-auto rounded-full border border-white/30 px-2.5 py-1 text-[11px] font-medium text-white"
+              >
+                How to play
+              </button>
             </div>
           </div>
 
@@ -155,6 +261,29 @@ export function ChatAssistant() {
               placeholder="Ask anything…"
               className="h-9 flex-1 rounded border border-border bg-surface px-3 text-sm text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(59,139,255,0.4)]"
             />
+            {/* §3c — speech-to-text mic. Enabled only when the platform exposes Web Speech; otherwise
+                shipped DISABLED with an honest tooltip (this WebView has no native STT plugin). */}
+            <button
+              type="button"
+              onClick={toggleMic}
+              disabled={!sttAvailable}
+              aria-label={
+                !sttAvailable
+                  ? "Voice input unavailable in this app"
+                  : listening
+                    ? "Stop voice input"
+                    : "Start voice input"
+              }
+              title={sttAvailable ? "Voice input" : "Voice input isn't available in this app yet"}
+              className={
+                "flex h-9 w-9 items-center justify-center rounded border text-sm transition-colors disabled:opacity-40 " +
+                (listening
+                  ? "border-loss/50 bg-loss/15 text-loss"
+                  : "border-[rgba(59,139,255,0.4)] bg-[rgba(59,139,255,0.15)] text-ai")
+              }
+            >
+              <span aria-hidden>{listening ? "◉" : "🎤"}</span>
+            </button>
             <button
               type="submit"
               disabled={pending || !input.trim()}

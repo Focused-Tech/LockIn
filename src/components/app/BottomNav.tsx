@@ -2,59 +2,68 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { NAV_ICONS } from "./navIcons";
 
 /**
- * Persistent bottom tab bar — the app's primary navigation (design: prototype
- * `.bot-nav`). "Creators" is a placeholder destination for the APK test that
- * reuses existing data (the pick-package marketplace); the dedicated screen is
- * built later. (The "Rush" tab was removed — Card Rush surfaces are hidden — but
- * the /app/rush route is intentionally kept in place, just unlinked.)
+ * Bottom tab bar (Addendum 2). PURE BLACK bar (#000) — no panel, no gradient, no card — with a 1px
+ * top hairline (#1B222C) and env(safe-area-inset-bottom) reserved. THREE SLOTS with the label below
+ * the glyph: THE FLOOR · BOARD · LOCKSMITH. Icons come from the single NAV_ICONS constant (inline
+ * SVG / masked badge — no emoji, no icon library). Label 10.5px/600, letter-spacing .03em;
+ * inactive #7A8496, active brand orange.
+ *
+ * The Floor is the feed in EVERY journey (§2a): same route (/app), active on /app and /app/beginner.
+ * Locksmith opens the app's Locksmith help (ChatAssistant), reused via the `locksmith:open` event.
  */
+const ACTIVE = "var(--brand-orange)";
+const INACTIVE = "#7A8496";
+
 const TABS = [
-  { href: "/app", label: "The Floor", icon: "◎", match: (p: string) => p === "/app" },
-  {
-    href: "/app/leaderboard",
-    label: "Board",
-    icon: "🏅",
-    match: (p: string) => p.startsWith("/app/leaderboard"),
-  },
-  {
-    href: "/app/packages",
-    label: "Creators",
-    icon: "★",
-    match: (p: string) => p.startsWith("/app/packages"),
-  },
+  { key: "floor" as const, href: "/app", label: "The Floor", match: (p: string) => p === "/app" || p.startsWith("/app/beginner") },
+  { key: "board" as const, href: "/app/leaderboard", label: "Board", match: (p: string) => p.startsWith("/app/leaderboard") },
 ];
+
+const slotClass = "flex flex-1 flex-col items-center justify-center gap-1 pb-2 pt-2.5";
+const labelStyle = (active: boolean): React.CSSProperties => ({
+  fontSize: "10.5px",
+  fontWeight: 600,
+  letterSpacing: ".03em",
+  color: active ? ACTIVE : INACTIVE,
+});
 
 export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    // Safe-area: the tab bar background extends into the Android gesture/nav-bar inset so the labels
-    // sit ABOVE the phone's system bar (viewport-fit=cover makes env() resolve on-device).
     <nav
-      className="flex shrink-0 border-t border-border bg-surface"
-      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      data-nav-bar
+      className="flex shrink-0"
+      style={{
+        background: "#000",
+        borderTop: "1px solid #1B222C",
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+      }}
     >
       {TABS.map((t) => {
         const active = t.match(pathname);
         return (
-          <Link
-            key={t.href}
-            href={t.href}
-            aria-current={active ? "page" : undefined}
-            className={
-              "flex flex-1 flex-col items-center gap-0.5 pb-3 pt-2 text-[9px] font-medium transition-colors " +
-              (active ? "text-accent" : "text-muted hover:text-foreground")
-            }
-          >
-            <span className="text-lg leading-none" aria-hidden>
-              {t.icon}
-            </span>
-            {t.label}
+          <Link key={t.key} href={t.href} aria-current={active ? "page" : undefined} className={slotClass}>
+            <span style={{ color: active ? ACTIVE : INACTIVE }}>{NAV_ICONS[t.key](active)}</span>
+            <span style={labelStyle(active)}>{t.label}</span>
           </Link>
         );
       })}
+
+      {/* LOCKSMITH — her masked badge; opens the reused Locksmith help. Never a "current" route. */}
+      <button
+        type="button"
+        aria-label="Locksmith — help & guide"
+        onClick={() => window.dispatchEvent(new Event("locksmith:open"))}
+        className={slotClass}
+        style={{ background: "transparent", border: "none", cursor: "pointer" }}
+      >
+        <span style={{ color: INACTIVE }}>{NAV_ICONS.locksmith(false)}</span>
+        <span style={labelStyle(false)}>Locksmith</span>
+      </button>
     </nav>
   );
 }

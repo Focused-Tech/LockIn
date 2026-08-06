@@ -7,7 +7,7 @@
  */
 
 .lk-acct {
-  --orange: #FF5A1F;
+  --orange: var(--brand-orange);
   --cash: #2fb98a;
   --coin: #f0c463;
   --creator: #7c5cf5;

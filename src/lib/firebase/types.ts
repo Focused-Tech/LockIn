@@ -65,7 +65,17 @@ export const COLLECTIONS = {
   practiceEntries: "practiceEntries",
   /** Creator agreement signatures (append-only audit trail): users/{uid}/creatorSignatures/{version_section}. */
   creatorSignatures: "creatorSignatures", // subcollection of users/{uid}
+  /** Tutorial seen-records, one per mode: users/{uid}/tutorials/{mode}. */
+  tutorials: "tutorials", // subcollection of users/{uid}
 } as const;
+
+/** Per-user, per-mode tutorial record — users/{uid}/tutorials/{mode}. A version bump re-offers it. */
+export interface TutorialDoc {
+  mode: string;
+  version: string;
+  seen: boolean;
+  seenAt: unknown; // serverTimestamp()
+}
 
 /** Which Explore lane a user has chosen (set at onboarding, switchable later). */
 export type JourneyLane = "beginner" | "advanced";

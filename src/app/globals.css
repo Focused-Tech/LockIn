@@ -42,6 +42,11 @@
 :root {
   color-scheme: dark;
 
+  /* BRAND ORANGE — the ONE token (§6). Value #FC3E01, defined HERE and only here; every other
+   * per-file redefinition and hardcoded orange routes through var(--brand-orange). The Fox Pit
+   * tower files are out of scope and already correct, so they are not touched. */
+  --brand-orange: #FC3E01;
+
   /* Accent-fill (translucent cayenne) — default = variant B (warm/brighter, reads
    * clearly orange, not brown). Overridden per [data-accent] below; switch via
    * ACCENT_VARIANT in src/lib/theme.ts. Always translucent (brand rule). */
