@@ -6,6 +6,7 @@ import { doc, onSnapshot } from "firebase/firestore";
 import { getDb } from "@/lib/firebase/client";
 import { COLLECTIONS } from "@/lib/firebase/types";
 import { formatCents } from "@/lib/utils";
+import { MaskedAmount } from "@/components/MaskedAmount";
 import { REFERRAL_SIGNUP_COINS } from "@/lib/constants";
 import type { Transaction } from "@/lib/wallet";
 import { DepositSheet } from "./DepositSheet";
@@ -60,7 +61,7 @@ export function WalletView({
           <div className="lb">Coin balance <i></i></div>
           <div className="hero">
             <div className="k">Your score in beginner mode</div>
-            <div className="v coin">{coins.toLocaleString()}</div>
+            <MaskedAmount className="v coin" value={coins.toLocaleString()} />
             <div className="sub">Coins are score — they buy nothing and never convert to cash</div>
           </div>
           <div className="btns">
@@ -99,7 +100,7 @@ export function WalletView({
         <div className="lb">Cash balance <i></i></div>
         <div className="hero">
           <div className="k">Available to play or withdraw</div>
-          <div className="v cash">{formatCents(cash)}</div>
+          <MaskedAmount className="v cash" value={formatCents(cash)} />
           <div className="sub">Entry fees leave your balance when a contest locks, not when you pick</div>
         </div>
         <div className="btns">

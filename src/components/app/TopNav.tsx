@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Pill } from "@/components/ui";
-import { formatCents } from "@/lib/utils";
 import { HeaderBack } from "./HeaderBack";
 import { AccountMenu } from "./AccountMenu";
 
@@ -26,9 +25,11 @@ export function TopNav({
       <HeaderBack />
 
       <div className="flex items-center gap-2.5">
+        {/* Header carries the COIN balance only — it's the user's score, not sensitive. The CASH
+            balance is removed from the header (no room to mask it here); cash is masked-by-default
+            in the Wallet + Profile instead. */}
         <Link href="/app/wallet" className="flex items-center gap-1.5">
           <Pill tone="accent">🪙 {coinBalance}</Pill>
-          <Pill tone="win">{formatCents(cashBalanceCents)}</Pill>
         </Link>
 
         <AccountMenu username={username} />

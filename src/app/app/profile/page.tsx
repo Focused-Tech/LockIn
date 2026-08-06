@@ -5,6 +5,7 @@ import { getCurrentUserProfile } from "@/lib/firebase/session";
 import { fetchUserChatContext } from "@/server/data/userStats";
 import { rankForCoins } from "@/lib/practice/tiers";
 import { formatCents } from "@/lib/utils";
+import { MaskedAmount } from "@/components/MaskedAmount";
 import { SignOutButton } from "../SignOutButton";
 import "../lk-panels.css";
 
@@ -58,9 +59,10 @@ export default async function ProfilePage() {
         <div className="wal">
           <div className="l">
             <div className="k">{advanced ? "Cash balance" : "Coin balance"}</div>
-            <div className={"v " + (advanced ? "cash" : "coin")}>
-              {advanced ? formatCents(profile.cashBalanceCents) : profile.coinBalance.toLocaleString()}
-            </div>
+            <MaskedAmount
+              className={"v " + (advanced ? "cash" : "coin")}
+              value={advanced ? formatCents(profile.cashBalanceCents) : profile.coinBalance.toLocaleString()}
+            />
           </div>
           <Link className="go" href={advanced ? "/app/wallet" : "/app/beginner"}>
             {advanced ? "Deposit" : "Earn more"}
