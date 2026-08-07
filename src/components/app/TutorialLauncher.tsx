@@ -212,7 +212,7 @@ export function TutorialLauncher({
         <img
           src="/foxpit/locksmith/locksmith_desk_clean.png"
           alt="The Locksmith at her desk"
-          className="mx-auto h-24 w-auto object-contain"
+          className="mx-auto h-40 w-auto object-contain"
         />
       </div>
 
