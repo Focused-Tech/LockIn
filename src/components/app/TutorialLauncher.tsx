@@ -185,7 +185,7 @@ export function TutorialLauncher({
           portal door over her shoulder starts play. */}
       <div
         className="relative shrink-0 overflow-hidden"
-        style={{ height: collapsed ? `calc(${topInset} + 6rem)` : "52vh" }}
+        style={{ height: collapsed ? `calc(${topInset} + 7rem)` : "52vh" }}
       >
         {!collapsed && (
           <>
@@ -230,7 +230,8 @@ export function TutorialLauncher({
           <div className="mt-0.5 flex items-start justify-between">
             <div className="flex flex-col items-start">
               <p className="whitespace-nowrap text-xl font-semibold leading-none text-white">The Locksmith</p>
-              {/* Brand-orange chevron — collapses/expands the whole hero (image + Start Playing + door). */}
+              {/* Brand-orange chevron — collapses/expands the hero backdrop + door. The "Start Playing"
+                  link stays put in both states; the collapsed bar keeps a safe area below the chevron. */}
               <button
                 type="button"
                 onClick={() => setCollapsed((c) => !c)}
@@ -248,19 +249,20 @@ export function TutorialLauncher({
               </button>
             </div>
 
-            {!collapsed && (
-              <div className="flex flex-col items-center">
-                {/* "Start Playing" — a clickable link (as well as the door). */}
-                <button
-                  type="button"
-                  onClick={finish}
-                  className="text-center text-[13px] font-bold uppercase leading-[1.05] tracking-[0.06em] text-[color:var(--brand-orange)] underline-offset-2 hover:underline"
-                >
-                  Start
-                  <br />
-                  Playing
-                </button>
-                {/* the portal door — ~20px below "Playing", 10% bigger, no bounce. Also clickable. */}
+            <div className="flex flex-col items-center">
+              {/* "Start Playing" — a clickable link, ALWAYS visible (even collapsed) so the start-play
+                  hook never disappears; the door below is the expanded-only graphic. */}
+              <button
+                type="button"
+                onClick={finish}
+                className="text-center text-[13px] font-bold uppercase leading-[1.05] tracking-[0.06em] text-[color:var(--brand-orange)] underline-offset-2 hover:underline"
+              >
+                Start
+                <br />
+                Playing
+              </button>
+              {!collapsed && (
+                /* the portal door — ~20px below "Playing", 10% bigger, no bounce. Also clickable. */
                 <button
                   type="button"
                   onClick={finish}
@@ -289,14 +291,24 @@ export function TutorialLauncher({
                     }}
                   />
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Thread — her walkthrough + your questions. min-h-0 lets a flex-1 column actually SCROLL. */}
-      <div ref={scrollRef} className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto border-t border-border px-5 py-4">
+      {/* Thread — her walkthrough + your questions. min-h-0 lets a flex-1 column actually SCROLL.
+          When collapsed the hero is gone, so the chat becomes an overlaid bordered panel (rounded
+          frame, inset from the edges) that sits below the safe landing area for the chevron. */}
+      <div
+        ref={scrollRef}
+        className={
+          "flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-5 py-4 " +
+          (collapsed
+            ? "mx-3 mt-1 mb-2 rounded-2xl border border-border bg-surface"
+            : "border-t border-border")
+        }
+      >
         {messages.map((m, i) => (
           <div key={i} className={m.role === "user" ? "self-end" : "self-start"}>
             <div
