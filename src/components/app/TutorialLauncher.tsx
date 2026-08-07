@@ -178,7 +178,7 @@ export function TutorialLauncher({
           src="/foxpit/locksmith/locksmith_desk_clean.png"
           alt="The Locksmith at her desk"
           className="h-full w-full object-contain object-bottom"
-          style={{ paddingTop: `calc(${topInset} + 5rem)` }}
+          style={{ paddingTop: `calc(${topInset} + 5.75rem)` }}
         />
 
         {/* Skip — small, top-right corner, above the title row (never overlaps Start playing). */}
@@ -191,61 +191,55 @@ export function TutorialLauncher({
           Skip
         </button>
 
-        {/* Hero row: title (left) · "Start playing" (right, same row as the hero font). */}
-        <div
-          className="absolute inset-x-0 z-20 flex items-end justify-between px-5"
-          style={{ top: `calc(${topInset} + 2.55rem)` }}
-        >
-          <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-white/70">
-              {slot.modeLabel} · How to play
-            </p>
+        {/* Eyebrow + hero row: title (left) · "Start / Playing" stacked (right, "Start" on the hero
+            font's row), then the portal DOOR directly below "Playing" (~10px gap). The whole
+            right-hand group is one tap target → start play. */}
+        <div className="absolute inset-x-0 z-20 px-5" style={{ top: `calc(${topInset} + 1.85rem)` }}>
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-white/70">
+            {slot.modeLabel} · How to play
+          </p>
+          <div className="mt-0.5 flex items-start justify-between">
             <p className="whitespace-nowrap text-xl font-semibold leading-none text-white">The Locksmith</p>
+            <button
+              type="button"
+              onClick={finish}
+              aria-label="Start playing — step through the door"
+              className="flex flex-col items-end"
+            >
+              <span className="text-right text-[13px] font-bold uppercase leading-[1.05] tracking-[0.06em] text-[color:var(--brand-orange)]">
+                Start
+                <br />
+                Playing&nbsp;▸
+              </span>
+              {/* the portal door — ~10px below "Playing" */}
+              <span
+                className="tut-door relative mt-[10px] block"
+                style={{
+                  width: 34,
+                  height: 50,
+                  borderRadius: "8px 8px 3px 3px",
+                  background: "linear-gradient(180deg, var(--brand-orange), rgba(252,62,1,.45))",
+                  border: "2px solid var(--brand-orange)",
+                  boxShadow: "0 0 16px rgba(252,62,1,.85), 0 6px 14px rgba(0,0,0,.6)",
+                  opacity: 0.95,
+                }}
+              >
+                <span
+                  style={{
+                    position: "absolute",
+                    right: 5,
+                    top: "50%",
+                    width: 4,
+                    height: 4,
+                    borderRadius: "50%",
+                    background: "rgba(255,255,255,.9)",
+                    transform: "translateY(-50%)",
+                  }}
+                />
+              </span>
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={finish}
-            className="shrink-0 whitespace-nowrap pb-0.5 text-[11px] font-bold uppercase tracking-[0.06em] text-[color:var(--brand-orange)]"
-          >
-            Start playing ▸
-          </button>
         </div>
-
-        {/* The DOOR — the Fox Pit lobby mini-door, small + distant, over her (screen-right) shoulder.
-            Tapping it steps through and starts play. */}
-        <button
-          type="button"
-          onClick={finish}
-          aria-label="Start playing — step through the door"
-          className="tut-door absolute z-10"
-          style={{ right: "9%", top: "52%" }}
-        >
-          <div
-            style={{
-              width: 38,
-              height: 56,
-              borderRadius: "8px 8px 3px 3px",
-              background: "linear-gradient(180deg, var(--brand-orange), rgba(252,62,1,.45))",
-              border: "2px solid var(--brand-orange)",
-              boxShadow: "0 0 18px rgba(252,62,1,.85), 0 8px 16px rgba(0,0,0,.6)",
-              position: "relative",
-              opacity: 0.92,
-            }}
-          >
-            <div
-              style={{
-                position: "absolute",
-                right: 6,
-                top: "50%",
-                width: 4,
-                height: 4,
-                borderRadius: "50%",
-                background: "rgba(255,255,255,.9)",
-                transform: "translateY(-50%)",
-              }}
-            />
-          </div>
-        </button>
       </div>
 
       {/* Thread — her walkthrough + your questions. min-h-0 lets a flex-1 column actually SCROLL. */}
