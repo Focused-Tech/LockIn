@@ -184,7 +184,7 @@ export function TutorialLauncher({
       {/* HERO — she's dropped DOWN (object-bottom + top padding) so the title clears her head; the
           portal door over her shoulder starts play. */}
       <div
-        className="relative shrink-0 overflow-hidden"
+        className="relative z-10 shrink-0 overflow-hidden"
         style={{ height: collapsed ? `calc(${topInset} + 7rem)` : "52vh" }}
       >
         {!collapsed && (
@@ -298,16 +298,12 @@ export function TutorialLauncher({
       </div>
 
       {/* Thread — her walkthrough + your questions. min-h-0 lets a flex-1 column actually SCROLL.
-          When collapsed the hero is gone, so the chat becomes an overlaid bordered panel (rounded
-          frame, inset from the edges) that sits below the safe landing area for the chevron. */}
+          Always an inset, rounded, low-opacity-bordered panel so the chat is cleanly framed off the
+          image in every state — the image (hero, z-10) sits above it, the frame's soft border sits
+          just below. Same treatment holds when the input focus shrinks the layout, and when collapsed. */}
       <div
         ref={scrollRef}
-        className={
-          "flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-5 py-4 " +
-          (collapsed
-            ? "mx-3 mt-1 mb-2 rounded-2xl border border-border bg-surface"
-            : "border-t border-border")
-        }
+        className="z-0 mx-3 mt-1 mb-2 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto rounded-2xl border border-white/10 bg-surface px-5 py-4"
       >
         {messages.map((m, i) => (
           <div key={i} className={m.role === "user" ? "self-end" : "self-start"}>
