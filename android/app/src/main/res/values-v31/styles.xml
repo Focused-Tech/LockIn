@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 12+ system splash. The OS shows a centered icon by default (the app launcher icon);
+         we replace it with a TRANSPARENT icon so the launcher icon does NOT appear in the splash
+         sequence, and match the background to the brand so the transition to the Capacitor splash
+         (splash.png) is seamless. This is the "app icon in the splash" fix. -->
+    <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
+        <item name="android:windowSplashScreenBackground">#0A0D12</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_no_icon</item>
+        <item name="android:background">@drawable/splash</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
+    </style>
+</resources>

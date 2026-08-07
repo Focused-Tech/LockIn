@@ -45,4 +45,11 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- RECORD_AUDIO: powers the Locksmith microphone (speech-to-text) so a player can ask the
+         guide a question by voice instead of typing. Requested at the moment the user taps the mic;
+         never recorded or stored beyond the live transcription. NOTE: the in-WebView Web Speech API
+         is currently disabled (no native STT bridge yet) — this permission is declared ahead of that
+         wiring. If STT does not ship, remove this line to avoid an unused-permission review flag. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 </manifest>

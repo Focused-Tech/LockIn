@@ -1,5 +1,20 @@
 apply plugin: 'com.android.application'
 
+// ── RELEASE SIGNING (credentials read from an UNTRACKED source; never committed) ──────────────
+// The architect creates the keystore and `keystore.properties` (both git-ignored). This file only
+// WIRES the read. Precedence: keystore.properties (local) → environment variables (CI). If neither
+// is present, `assembleRelease` stays unsigned and only `assembleDebug` is usable — the signed AAB
+// (`bundleRelease`) requires the credentials to exist. See README "Release build".
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+def resolveSigning = { String propKey, String envKey ->
+    keystoreProperties.containsKey(propKey) ? keystoreProperties[propKey] : System.getenv(envKey)
+}
+def hasReleaseSigning = keystorePropertiesFile.exists() || System.getenv('LOCKIN_KEYSTORE_FILE') != null
+
 android {
     namespace = "gg.lockin.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +22,8 @@ android {
         applicationId "gg.lockin.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 178
-        versionName "2.5.1"
+        versionCode 179
+        versionName "2.5.2"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,8 +31,23 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (hasReleaseSigning) {
+                storeFile file(resolveSigning('storeFile', 'LOCKIN_KEYSTORE_FILE'))
+                storePassword resolveSigning('storePassword', 'LOCKIN_KEYSTORE_PASSWORD')
+                keyAlias resolveSigning('keyAlias', 'LOCKIN_KEY_ALIAS')
+                keyPassword resolveSigning('keyPassword', 'LOCKIN_KEY_PASSWORD')
+            }
+        }
+    }
     buildTypes {
         release {
+            // Signed only when release credentials are present (keystore.properties or env); the
+            // Play AAB (`bundleRelease`) needs this. Without them, release stays unsigned.
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

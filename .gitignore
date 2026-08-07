@@ -51,3 +51,9 @@ android/app/google-services.json
 
 # design sandbox deps (never ship)
 design-preview/**/node_modules/
+
+# Release signing — NEVER commit these (created by the architect)
+keystore.properties
+android/keystore.properties
+*.jks
+*.keystore
