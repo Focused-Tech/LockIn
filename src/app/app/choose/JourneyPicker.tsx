@@ -79,18 +79,23 @@ export function JourneyPicker({
       </p>
 
       <div className="flex flex-col gap-3">
-        {/* Beginner */}
+        {/* CANON ORDER (from the Fox Pit): Creator · Advanced · Beginner · Fox Pit. Do not reorder. */}
+
+        {/* Creator — a role, not a lane */}
         <JourneyCard
-          title="Beginner — simple & guided"
-          body="Creator picks, plain-language calls, coins not odds. We teach you up to the full game, step by step."
-          tag="Coins"
+          title="Creator — host contests"
+          body={
+            creatorVerified
+              ? "Build prediction slates with AI-drafted questions, sell pick packages, and earn."
+              : "Apply to host prediction contests for your audience and earn."
+          }
+          tag="Cash"
           color="creator"
-          active={currentLane === "beginner"}
-          busy={busy === "beginner"}
+          active={false}
+          busy={busy === "creator"}
           disabled={pending}
           delayMs={140}
-          onClick={() => pickLane("beginner")}
-          onResume={resume}
+          onClick={goCreator}
         />
 
         {/* Advanced */}
@@ -107,21 +112,18 @@ export function JourneyPicker({
           onResume={resume}
         />
 
-        {/* Creator — a role, not a lane */}
+        {/* Beginner */}
         <JourneyCard
-          title="Creator — host contests"
-          body={
-            creatorVerified
-              ? "Build prediction slates with AI-drafted questions, sell pick packages, and earn."
-              : "Apply to host prediction contests for your audience and earn."
-          }
-          tag="Cash"
+          title="Beginner — simple & guided"
+          body="Creator picks, plain-language calls, coins not odds. We teach you up to the full game, step by step."
+          tag="Coins"
           color="creator"
-          active={false}
-          busy={busy === "creator"}
+          active={currentLane === "beginner"}
+          busy={busy === "beginner"}
           disabled={pending}
           delayMs={240}
-          onClick={goCreator}
+          onClick={() => pickLane("beginner")}
+          onResume={resume}
         />
 
         {/* The Fox Pit — painted practice journey (lobby → tower → rooms) */}

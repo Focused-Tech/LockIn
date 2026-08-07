@@ -35,12 +35,13 @@ interface Journey {
   href: string;
   mode: TutorialMode;
 }
+// CANON ORDER (from the Fox Pit): Creator · Advanced · Beginner · Fox Pit. Do not reorder.
 const JOURNEYS: Journey[] = [
   {
-    key: "beginner",
-    title: "Beginner — simple & guided",
-    body: "Creator picks, plain-language calls, coins not odds. We teach you up to the full game, step by step.",
-    color: "creator", tag: "Coins", lane: "beginner", href: "/app/beginner", mode: "beginner",
+    key: "creator",
+    title: "Creator — host contests",
+    body: "Build prediction slates with AI-drafted questions, sell pick packages, and earn.",
+    color: "creator", tag: "Cash", lane: null, href: "/app/creator", mode: "creator",
   },
   {
     key: "advanced",
@@ -49,10 +50,10 @@ const JOURNEYS: Journey[] = [
     color: "orange", tag: "Cash", lane: "advanced", href: "/app", mode: "advanced",
   },
   {
-    key: "creator",
-    title: "Creator — host contests",
-    body: "Build prediction slates with AI-drafted questions, sell pick packages, and earn.",
-    color: "creator", tag: "Cash", lane: null, href: "/app/creator", mode: "creator",
+    key: "beginner",
+    title: "Beginner — simple & guided",
+    body: "Creator picks, plain-language calls, coins not odds. We teach you up to the full game, step by step.",
+    color: "creator", tag: "Coins", lane: "beginner", href: "/app/beginner", mode: "beginner",
   },
   {
     key: "foxpit",
