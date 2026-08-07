@@ -200,9 +200,9 @@ export function ChatAssistant() {
           <div className="relative">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/foxpit/locksmith/locksmith_desk.png"
+              src="/foxpit/locksmith/locksmith_desk_clean.png"
               alt="The Locksmith at her desk"
-              className="h-24 w-full object-cover"
+              className="h-24 w-full object-cover object-top"
             />
             <div className="absolute inset-x-0 bottom-0 flex items-center gap-2 bg-gradient-to-t from-black/70 to-transparent px-4 pb-2 pt-6">
               <p className="text-sm font-semibold text-white">Locksmith</p>
