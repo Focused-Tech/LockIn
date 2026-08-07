@@ -132,7 +132,7 @@ export function TutorialLauncher({
           src="/foxpit/locksmith/locksmith_desk_clean.png"
           alt="The Locksmith at her desk"
           className="h-full w-full object-contain object-bottom"
-          style={{ paddingTop: `calc(${topInset} + 5.25rem)` }}
+          style={{ paddingTop: `calc(${topInset} + 7rem)` }}
         />
 
         {/* Skip — small, top-right corner, above the title row (never overlaps Start playing). */}
@@ -150,16 +150,16 @@ export function TutorialLauncher({
           className="absolute inset-x-0 z-20 flex items-end justify-between px-5"
           style={{ top: `calc(${topInset} + 2.55rem)` }}
         >
-          <div>
+          <div className="min-w-0">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-white/70">
               {slot.modeLabel} · How to play
             </p>
-            <p className="text-2xl font-semibold leading-none text-white">The Locksmith</p>
+            <p className="whitespace-nowrap text-xl font-semibold leading-none text-white">The Locksmith</p>
           </div>
           <button
             type="button"
             onClick={finish}
-            className="pb-0.5 text-sm font-bold uppercase tracking-wide text-[color:var(--brand-orange)]"
+            className="shrink-0 whitespace-nowrap pb-0.5 text-[13px] font-bold uppercase tracking-wide text-[color:var(--brand-orange)]"
           >
             Start playing ▸
           </button>
