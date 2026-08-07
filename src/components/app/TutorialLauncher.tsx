@@ -7,14 +7,14 @@ import { markTutorialSeen } from "@/app/app/tutorial/actions";
 import { startStt, sttSupported, type SttHandle } from "@/lib/speech";
 import { stripMarkdown } from "@/lib/ai/chat";
 
-/** Mic glyph — inline SVG, 1.75 stroke, currentColor. Strike when off/unavailable. */
-function MicIcon({ on }: { on: boolean }) {
+/** Mic glyph — inline SVG, 1.75 stroke, currentColor. A plain mic; the button's disabled state
+ *  (dimmed) signals unavailable, and the listening state colours it — no misleading strike. */
+function MicIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <rect x="9" y="3" width="6" height="11" rx="3" />
       <path d="M5 11a7 7 0 0 0 14 0" />
       <path d="M12 18v3" />
-      {!on && <path d="M4 4l16 16" />}
     </svg>
   );
 }
@@ -287,7 +287,7 @@ export function TutorialLauncher({
             (listening ? "border-loss/50 bg-loss/15 text-loss" : "border-border text-muted")
           }
         >
-          <MicIcon on={listening} />
+          <MicIcon />
         </button>
         <button
           type="submit"
