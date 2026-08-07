@@ -5,6 +5,10 @@ import { useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { Button, Card, Input } from "@/components/ui";
 import { EXCLUDED_STATES } from "@/lib/constants";
+import type { JourneyLane } from "@/lib/firebase/types";
+import { setJourneyLane } from "@/app/app/beginner/actions";
+import { TutorialLauncher } from "@/components/app/TutorialLauncher";
+import { laneToTutorialMode } from "@/lib/tutorial/tutorials";
 import {
   saveCategories,
   skipKyc,
@@ -17,7 +21,7 @@ interface Category {
   icon: string;
 }
 
-const STEPS = ["Interests", "Verify"] as const;
+const STEPS = ["Interests", "Verify", "Journey"] as const;
 
 export function OnboardingFlow({
   categories,
@@ -26,6 +30,18 @@ export function OnboardingFlow({
 }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
+  // The journey pick is the FINAL onboarding step; once chosen, the tutorial fires right here (for
+  // the chosen mode) before the user ever reaches the app.
+  const [pickedLane, setPickedLane] = useState<JourneyLane | null>(null);
+  const [saving, startSaving] = useTransition();
+
+  const laneHome = (lane: JourneyLane) => (lane === "beginner" ? "/app/beginner" : "/app");
+
+  const pickJourney = (lane: JourneyLane) =>
+    startSaving(async () => {
+      await setJourneyLane(lane);
+      setPickedLane(lane); // reveals the tutorial for this mode
+    });
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-lg flex-col gap-6 p-6">
@@ -40,10 +56,21 @@ export function OnboardingFlow({
           onDone={() => setStep(1)}
         />
       )}
-      {/* Finish onboarding -> /app, which routes lane-less accounts to the
-          choose-your-journey picker (/app/choose). The first pick now happens
-          in-context inside the chosen journey, not in a cold onboarding step. */}
-      {step === 1 && <KycStep onDone={() => router.push("/app")} />}
+      {/* Verify (or skip) → the journey pick, now the final onboarding step. */}
+      {step === 1 && <KycStep onDone={() => setStep(2)} />}
+      {step === 2 && !pickedLane && (
+        <JourneyStep onPick={pickJourney} busy={saving} />
+      )}
+
+      {/* The tutorial fires HERE, inside onboarding, for the chosen mode — then advances into the
+          app. (The app layout still offers it as a fallback for accounts that never saw it.) */}
+      {step === 2 && pickedLane && (
+        <TutorialLauncher
+          mode={laneToTutorialMode(pickedLane)}
+          initialSeen={false}
+          onDone={() => router.replace(laneHome(pickedLane))}
+        />
+      )}
     </main>
   );
 }
@@ -65,6 +92,71 @@ function ProgressDots({ count, active }: { count: number; active: number }) {
         />
       ))}
     </div>
+  );
+}
+
+// ── Step 3: choose your journey (the lane) — the final onboarding step ────────
+function JourneyStep({
+  onPick,
+  busy,
+}: {
+  onPick: (lane: JourneyLane) => void;
+  busy: boolean;
+}) {
+  return (
+    <section className="flex flex-1 flex-col gap-4">
+      <div className="text-center">
+        <h1 className="text-2xl font-semibold">Choose your journey</h1>
+        <p className="mt-1 text-sm text-muted">
+          You can switch anytime from The Fox Pit.
+        </p>
+      </div>
+
+      {/* Beginner — creator-purple left edge */}
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => onPick("beginner")}
+        className="flex flex-col gap-1 p-5 text-left transition active:scale-[0.99] disabled:opacity-60"
+        style={{
+          borderRadius: 15,
+          background: "linear-gradient(180deg,#161c25,#10151c)",
+          border: "1px solid #232b37",
+          borderLeft: "4px solid #7C5CF5",
+          boxShadow:
+            "inset 6px 0 14px -10px #7C5CF5, inset 0 1px 0 rgba(255,255,255,.05), 0 8px 20px rgba(0,0,0,.55)",
+        }}
+      >
+        <span className="text-base font-bold text-foreground">Beginner — simple &amp; guided</span>
+        <span className="text-sm text-muted">
+          Creator picks, plain-language calls, coins not odds. We teach you up to the full game, step
+          by step.
+        </span>
+      </button>
+
+      {/* Advanced — brand-orange left edge */}
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => onPick("advanced")}
+        className="flex flex-col gap-1 p-5 text-left transition active:scale-[0.99] disabled:opacity-60"
+        style={{
+          borderRadius: 15,
+          background: "linear-gradient(180deg,#161c25,#10151c)",
+          border: "1px solid #232b37",
+          borderLeft: "4px solid var(--brand-orange)",
+          boxShadow:
+            "inset 6px 0 14px -10px rgba(252,62,1,.6), inset 0 1px 0 rgba(255,255,255,.05), 0 8px 20px rgba(0,0,0,.55)",
+        }}
+      >
+        <span className="text-base font-bold text-foreground">Advanced — full market</span>
+        <span className="text-sm text-muted">
+          Every contest, every category, real payouts. Lock In to win.
+        </span>
+      </button>
+
+      {busy && <p className="text-center text-sm text-muted">Setting up your journey…</p>}
+    </section>
   );
 }
 

@@ -245,7 +245,7 @@ export function CreatorBuilder({ dashboard, creator }: { dashboard?: ReactNode; 
           <p className="hint">She reads your slate while you write it and never says &quot;invalid&quot; — every tip she hands you is a <b style={{ color: "#fff" }}>lockpick</b>: the fix, named.</p>
           <div className="blk creator" id="lsHero">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img id="lsImg" src="/foxpit/locksmith/locksmith_desk.png" alt="The Locksmith at her desk" />
+            <img id="lsImg" src="/foxpit/locksmith/locksmith_desk_clean.png" alt="The Locksmith at her desk" />
           </div>
           <div className="blk creator">
             <div id="thread">

@@ -18,9 +18,14 @@ import { markTutorialSeen } from "@/app/app/tutorial/actions";
 export function TutorialLauncher({
   mode,
   initialSeen,
+  onDone,
 }: {
   mode: TutorialMode;
   initialSeen: boolean;
+  /** When set (onboarding), advance into the app after the tutorial instead of just dismissing.
+   *  We wait for the seen-record write (capped at 2s) before advancing so the app layout doesn't
+   *  re-offer the same tutorial. When absent (app-layout use), the overlay just dismisses. */
+  onDone?: () => void;
 }) {
   const slot = TUTORIALS[mode];
   const [dismissed, setDismissed] = useState(initialSeen);
@@ -28,12 +33,16 @@ export function TutorialLauncher({
 
   if (dismissed) return null;
 
-  // Dismiss IMMEDIATELY on tap — never trap the user behind a pending/failed server write. The
-  // seen-record is written best-effort in the background; if it fails the tutorial simply re-offers
-  // next time, which is harmless. (Fixes: Skip/Continue could hang if markTutorialSeen rejected.)
+  // Never trap the user behind a pending/failed server write. In the app, dismiss immediately and
+  // persist in the background. In onboarding, keep the screen up (no flash back to onboarding) and
+  // advance once the write settles or 2s elapses.
   function finish() {
-    setDismissed(true);
-    void markTutorialSeen(mode).catch(() => {});
+    const persist = markTutorialSeen(mode).catch(() => {});
+    if (onDone) {
+      void Promise.race([persist, new Promise((r) => setTimeout(r, 2000))]).then(() => onDone());
+    } else {
+      setDismissed(true);
+    }
   }
 
   const hasCopy = slot.steps.length > 0;
