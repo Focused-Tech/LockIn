@@ -24,15 +24,16 @@ export function TutorialLauncher({
 }) {
   const slot = TUTORIALS[mode];
   const [dismissed, setDismissed] = useState(initialSeen);
-  const [busy, setBusy] = useState(false);
   const [step, setStep] = useState(0);
 
   if (dismissed) return null;
 
-  async function finish() {
-    setBusy(true);
-    await markTutorialSeen(mode);
+  // Dismiss IMMEDIATELY on tap — never trap the user behind a pending/failed server write. The
+  // seen-record is written best-effort in the background; if it fails the tutorial simply re-offers
+  // next time, which is harmless. (Fixes: Skip/Continue could hang if markTutorialSeen rejected.)
+  function finish() {
     setDismissed(true);
+    void markTutorialSeen(mode).catch(() => {});
   }
 
   const hasCopy = slot.steps.length > 0;
@@ -65,23 +66,26 @@ export function TutorialLauncher({
           )}
         </div>
 
-        <div className="flex items-center gap-2 border-t border-border p-4">
+        {/* Safe-area: the action row clears the Android gesture/nav bar so Skip/Continue are always
+            tappable (they were being covered by the system bar → the user couldn't move forward). */}
+        <div
+          className="flex items-center gap-2 border-t border-border px-4 pt-4"
+          style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 0px))" }}
+        >
           <button
             type="button"
             onClick={finish}
-            disabled={busy}
-            className="rounded border border-border px-4 py-3 text-sm font-medium text-muted transition-colors hover:text-foreground disabled:opacity-60"
+            className="rounded border border-border px-4 py-3 text-sm font-medium text-muted transition-colors hover:text-foreground"
           >
             Skip
           </button>
           <button
             type="button"
-            disabled={busy}
             onClick={() => {
-              if (atEnd) void finish();
+              if (atEnd) finish();
               else setStep((s) => s + 1);
             }}
-            className="flex-1 rounded border border-accent-border bg-accent-soft px-4 py-3 text-sm font-semibold text-accent transition-colors disabled:opacity-60"
+            className="flex-1 rounded border border-accent-border bg-accent-soft px-4 py-3 text-sm font-semibold text-accent transition-colors"
           >
             {atEnd ? "Got it — start playing" : "Next"}
           </button>
