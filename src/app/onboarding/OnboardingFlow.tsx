@@ -8,7 +8,7 @@ import { EXCLUDED_STATES } from "@/lib/constants";
 import type { JourneyLane } from "@/lib/firebase/types";
 import { setJourneyLane } from "@/app/app/beginner/actions";
 import { TutorialLauncher } from "@/components/app/TutorialLauncher";
-import { laneToTutorialMode } from "@/lib/tutorial/tutorials";
+import type { TutorialMode } from "@/lib/tutorial/tutorials";
 import {
   saveCategories,
   skipKyc,
@@ -23,6 +23,45 @@ interface Category {
 
 const STEPS = ["Interests", "Verify", "Journey"] as const;
 
+/** The four journeys — same set as the /app/choose picker. Beginner/Advanced set a feed LANE;
+ *  Creator and the Fox Pit are entry points (no lane). Each fires its own tutorial, then routes. */
+interface Journey {
+  key: string;
+  title: string;
+  body: string;
+  color: "creator" | "orange";
+  tag: string;
+  lane: JourneyLane | null;
+  href: string;
+  mode: TutorialMode;
+}
+const JOURNEYS: Journey[] = [
+  {
+    key: "beginner",
+    title: "Beginner — simple & guided",
+    body: "Creator picks, plain-language calls, coins not odds. We teach you up to the full game, step by step.",
+    color: "creator", tag: "Coins", lane: "beginner", href: "/app/beginner", mode: "beginner",
+  },
+  {
+    key: "advanced",
+    title: "Advanced — full market",
+    body: "Every contest, every category, real payouts. Lock In to win.",
+    color: "orange", tag: "Cash", lane: "advanced", href: "/app", mode: "advanced",
+  },
+  {
+    key: "creator",
+    title: "Creator — host contests",
+    body: "Build prediction slates with AI-drafted questions, sell pick packages, and earn.",
+    color: "creator", tag: "Cash", lane: null, href: "/app/creator", mode: "creator",
+  },
+  {
+    key: "foxpit",
+    title: "The Fox Pit — practice journey",
+    body: "Walk into the Pit. Choose the floor, face the boss, run it back.",
+    color: "orange", tag: "Coins", lane: null, href: "/app/foxpit", mode: "lone_fox",
+  },
+];
+
 export function OnboardingFlow({
   categories,
 }: {
@@ -32,15 +71,13 @@ export function OnboardingFlow({
   const [step, setStep] = useState(0);
   // The journey pick is the FINAL onboarding step; once chosen, the tutorial fires right here (for
   // the chosen mode) before the user ever reaches the app.
-  const [pickedLane, setPickedLane] = useState<JourneyLane | null>(null);
+  const [picked, setPicked] = useState<{ mode: TutorialMode; href: string } | null>(null);
   const [saving, startSaving] = useTransition();
 
-  const laneHome = (lane: JourneyLane) => (lane === "beginner" ? "/app/beginner" : "/app");
-
-  const pickJourney = (lane: JourneyLane) =>
+  const pickJourney = (j: Journey) =>
     startSaving(async () => {
-      await setJourneyLane(lane);
-      setPickedLane(lane); // reveals the tutorial for this mode
+      if (j.lane) await setJourneyLane(j.lane); // Creator / Fox Pit are entry points, not lanes
+      setPicked({ mode: j.mode, href: j.href }); // reveals the tutorial for this mode
     });
 
   return (
@@ -58,17 +95,17 @@ export function OnboardingFlow({
       )}
       {/* Verify (or skip) → the journey pick, now the final onboarding step. */}
       {step === 1 && <KycStep onDone={() => setStep(2)} />}
-      {step === 2 && !pickedLane && (
+      {step === 2 && !picked && (
         <JourneyStep onPick={pickJourney} busy={saving} />
       )}
 
       {/* The tutorial fires HERE, inside onboarding, for the chosen mode — then advances into the
           app. (The app layout still offers it as a fallback for accounts that never saw it.) */}
-      {step === 2 && pickedLane && (
+      {step === 2 && picked && (
         <TutorialLauncher
-          mode={laneToTutorialMode(pickedLane)}
+          mode={picked.mode}
           initialSeen={false}
-          onDone={() => router.replace(laneHome(pickedLane))}
+          onDone={() => router.replace(picked.href)}
         />
       )}
     </main>
@@ -95,16 +132,21 @@ function ProgressDots({ count, active }: { count: number; active: number }) {
   );
 }
 
-// ── Step 3: choose your journey (the lane) — the final onboarding step ────────
+// ── Step 3: choose your journey — the final onboarding step (same four as /app/choose) ────────
+const JOURNEY_EDGE = {
+  creator: { edge: "#7C5CF5", glow: "inset 6px 0 14px -10px #7C5CF5" },
+  orange: { edge: "var(--brand-orange)", glow: "inset 6px 0 14px -10px rgba(252,62,1,.6)" },
+} as const;
+
 function JourneyStep({
   onPick,
   busy,
 }: {
-  onPick: (lane: JourneyLane) => void;
+  onPick: (j: Journey) => void;
   busy: boolean;
 }) {
   return (
-    <section className="flex flex-1 flex-col gap-4">
+    <section className="flex flex-1 flex-col gap-3.5">
       <div className="text-center">
         <h1 className="text-2xl font-semibold">Choose your journey</h1>
         <p className="mt-1 text-sm text-muted">
@@ -112,48 +154,36 @@ function JourneyStep({
         </p>
       </div>
 
-      {/* Beginner — creator-purple left edge */}
-      <button
-        type="button"
-        disabled={busy}
-        onClick={() => onPick("beginner")}
-        className="flex flex-col gap-1 p-5 text-left transition active:scale-[0.99] disabled:opacity-60"
-        style={{
-          borderRadius: 15,
-          background: "linear-gradient(180deg,#161c25,#10151c)",
-          border: "1px solid #232b37",
-          borderLeft: "4px solid #7C5CF5",
-          boxShadow:
-            "inset 6px 0 14px -10px #7C5CF5, inset 0 1px 0 rgba(255,255,255,.05), 0 8px 20px rgba(0,0,0,.55)",
-        }}
-      >
-        <span className="text-base font-bold text-foreground">Beginner — simple &amp; guided</span>
-        <span className="text-sm text-muted">
-          Creator picks, plain-language calls, coins not odds. We teach you up to the full game, step
-          by step.
-        </span>
-      </button>
-
-      {/* Advanced — brand-orange left edge */}
-      <button
-        type="button"
-        disabled={busy}
-        onClick={() => onPick("advanced")}
-        className="flex flex-col gap-1 p-5 text-left transition active:scale-[0.99] disabled:opacity-60"
-        style={{
-          borderRadius: 15,
-          background: "linear-gradient(180deg,#161c25,#10151c)",
-          border: "1px solid #232b37",
-          borderLeft: "4px solid var(--brand-orange)",
-          boxShadow:
-            "inset 6px 0 14px -10px rgba(252,62,1,.6), inset 0 1px 0 rgba(255,255,255,.05), 0 8px 20px rgba(0,0,0,.55)",
-        }}
-      >
-        <span className="text-base font-bold text-foreground">Advanced — full market</span>
-        <span className="text-sm text-muted">
-          Every contest, every category, real payouts. Lock In to win.
-        </span>
-      </button>
+      {JOURNEYS.map((j) => {
+        const c = JOURNEY_EDGE[j.color];
+        return (
+          <button
+            key={j.key}
+            type="button"
+            disabled={busy}
+            onClick={() => onPick(j)}
+            className="flex flex-col gap-1 p-4 text-left transition active:scale-[0.99] disabled:opacity-60"
+            style={{
+              borderRadius: 15,
+              background: "linear-gradient(180deg,#161c25,#10151c)",
+              border: "1px solid #232b37",
+              borderLeft: `4px solid ${c.edge}`,
+              boxShadow: `${c.glow}, inset 0 1px 0 rgba(255,255,255,.05), 0 8px 20px rgba(0,0,0,.55)`,
+            }}
+          >
+            <span className="flex items-center gap-2">
+              <span className="flex-1 text-base font-bold text-foreground">{j.title}</span>
+              <span
+                className="rounded-full border px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-wide"
+                style={{ color: c.edge, borderColor: c.edge }}
+              >
+                {j.tag}
+              </span>
+            </span>
+            <span className="text-[13px] text-muted">{j.body}</span>
+          </button>
+        );
+      })}
 
       {busy && <p className="text-center text-sm text-muted">Setting up your journey…</p>}
     </section>
