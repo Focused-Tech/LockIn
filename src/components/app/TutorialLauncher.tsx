@@ -4,6 +4,19 @@ import { useEffect, useRef, useState } from "react";
 import type { ChatMessage } from "@/lib/ai/chat";
 import { TUTORIALS, type TutorialMode } from "@/lib/tutorial/tutorials";
 import { markTutorialSeen } from "@/app/app/tutorial/actions";
+import { startStt, sttSupported, type SttHandle } from "@/lib/speech";
+
+/** Mic glyph — inline SVG, 1.75 stroke, currentColor. Strike when off/unavailable. */
+function MicIcon({ on }: { on: boolean }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x="9" y="3" width="6" height="11" rx="3" />
+      <path d="M5 11a7 7 0 0 0 14 0" />
+      <path d="M12 18v3" />
+      {!on && <path d="M4 4l16 16" />}
+    </svg>
+  );
+}
 
 /**
  * TUTORIAL — the Locksmith WALKS YOU THROUGH your chosen journey. On open she streams a guided
@@ -31,6 +44,38 @@ export function TutorialLauncher({
   const [finishing, setFinishing] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const started = useRef(false);
+
+  // Speech-to-text (native plugin, web fallback). Availability is detected at runtime.
+  const [sttOk, setSttOk] = useState(false);
+  const [listening, setListening] = useState(false);
+  const sttRef = useRef<SttHandle | null>(null);
+  useEffect(() => {
+    let live = true;
+    void sttSupported().then((ok) => live && setSttOk(ok));
+    return () => {
+      live = false;
+      sttRef.current?.stop();
+    };
+  }, []);
+
+  async function toggleMic() {
+    if (listening) {
+      sttRef.current?.stop();
+      sttRef.current = null;
+      setListening(false);
+      return;
+    }
+    setListening(true);
+    const handle = await startStt(
+      (t) => setInput(t),
+      () => {
+        setListening(false);
+        sttRef.current = null;
+      },
+    );
+    if (handle) sttRef.current = handle;
+    else setListening(false);
+  }
 
   // Auto-start the guided walkthrough once (seed = the mode's intro prompt; she answers live).
   useEffect(() => {
@@ -126,13 +171,13 @@ export function TutorialLauncher({
     <div className="fixed inset-0 z-[60] flex flex-col bg-surface-card">
       {/* HERO — she's dropped DOWN (object-bottom + top padding) so the title clears her head; the
           portal door over her shoulder starts play. */}
-      <div className="relative shrink-0" style={{ height: "42vh" }}>
+      <div className="relative shrink-0" style={{ height: "52vh" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/foxpit/locksmith/locksmith_desk_clean.png"
           alt="The Locksmith at her desk"
           className="h-full w-full object-contain object-bottom"
-          style={{ paddingTop: `calc(${topInset} + 7rem)` }}
+          style={{ paddingTop: `calc(${topInset} + 5rem)` }}
         />
 
         {/* Skip — small, top-right corner, above the title row (never overlaps Start playing). */}
@@ -159,7 +204,7 @@ export function TutorialLauncher({
           <button
             type="button"
             onClick={finish}
-            className="shrink-0 whitespace-nowrap pb-0.5 text-[13px] font-bold uppercase tracking-wide text-[color:var(--brand-orange)]"
+            className="shrink-0 whitespace-nowrap pb-0.5 text-[11px] font-bold uppercase tracking-[0.06em] text-[color:var(--brand-orange)]"
           >
             Start playing ▸
           </button>
@@ -172,7 +217,7 @@ export function TutorialLauncher({
           onClick={finish}
           aria-label="Start playing — step through the door"
           className="tut-door absolute z-10"
-          style={{ right: "11%", top: "40%" }}
+          style={{ right: "9%", top: "52%" }}
         >
           <div
             style={{
@@ -220,14 +265,14 @@ export function TutorialLauncher({
         ))}
       </div>
 
-      {/* Ask her anything — input + Send (fits the row; the STT mic is removed: this WebView has no
-          native speech plugin, so it never worked and it pushed Send off-screen). */}
+      {/* Ask her anything — input · mic (STT) · Send. The mic uses the native speech plugin (web
+          fallback); the compact row keeps Send on-screen. */}
       <form
         onSubmit={(e) => {
           e.preventDefault();
           send();
         }}
-        className="flex shrink-0 items-center gap-2 border-t border-border px-4 pt-3"
+        className="flex shrink-0 items-center gap-1.5 border-t border-border px-3 pt-3"
         style={{ paddingBottom: `calc(0.75rem + env(safe-area-inset-bottom, 0px))` }}
       >
         <input
@@ -237,9 +282,22 @@ export function TutorialLauncher({
           className="h-10 min-w-0 flex-1 rounded-full border border-border bg-surface px-4 text-sm text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-border"
         />
         <button
+          type="button"
+          onClick={toggleMic}
+          disabled={!sttOk}
+          aria-label={!sttOk ? "Voice input unavailable" : listening ? "Stop voice input" : "Start voice input"}
+          title={sttOk ? "Voice input" : "Install the latest app build to use voice input"}
+          className={
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-full border disabled:opacity-40 " +
+            (listening ? "border-loss/50 bg-loss/15 text-loss" : "border-border text-muted")
+          }
+        >
+          <MicIcon on={listening} />
+        </button>
+        <button
           type="submit"
           disabled={pending || !input.trim()}
-          className="h-10 shrink-0 rounded-full border border-accent-border bg-accent-soft px-5 text-sm font-semibold text-accent disabled:opacity-40"
+          className="h-10 shrink-0 rounded-full border border-accent-border bg-accent-soft px-4 text-sm font-semibold text-accent disabled:opacity-40"
         >
           Send
         </button>

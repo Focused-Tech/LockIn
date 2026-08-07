@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
+    "@capacitor-community/speech-recognition": "^7.0.1",
     "@capacitor-firebase/authentication": "^8.3.0",
     "@capacitor/android": "^8.4.0",
     "@capacitor/app": "^8.1.0",
