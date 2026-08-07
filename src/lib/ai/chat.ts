@@ -14,6 +14,21 @@ export interface ChatMessage {
   content: string;
 }
 
+/**
+ * Belt-and-suspenders for her plain-text rule: strip the Markdown the model occasionally emits so the
+ * chat never shows literal **, ##, ---, or backticks. (The system prompt asks for none; this catches
+ * the slips.)
+ */
+export function stripMarkdown(s: string): string {
+  return s
+    .replace(/\*\*(.*?)\*\*/g, "$1") // **bold** → bold
+    .replace(/(^|\s)\*(?=\S)(.*?)\*/g, "$1$2") // *italic* → italic
+    .replace(/^#{1,6}\s+/gm, "") // # headings
+    .replace(/^\s*[-*]\s+/gm, "• ") // - / * bullets → •
+    .replace(/^\s*---\s*$/gm, "") // --- dividers
+    .replace(/`([^`]*)`/g, "$1"); // `code` → code
+}
+
 /** A player's settled-contest performance within one prediction category. */
 export interface CategoryStat {
   category: string;

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import type { ChatMessage } from "@/lib/ai/chat";
+import { stripMarkdown, type ChatMessage } from "@/lib/ai/chat";
 import { TUTORIALS, type TutorialMode } from "@/lib/tutorial/tutorials";
 
 /** Best-effort mode for the screen the user is standing on (for contextual "How to play"). */
@@ -233,7 +233,7 @@ export function ChatAssistant() {
                       : "border border-[rgba(59,139,255,0.25)] bg-[rgba(59,139,255,0.08)] text-foreground")
                   }
                 >
-                  {m.content || (pending ? "…" : "")}
+                  {(m.role === "assistant" ? stripMarkdown(m.content) : m.content) || (pending ? "…" : "")}
                 </div>
               </div>
             ))}

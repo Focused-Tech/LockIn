@@ -5,6 +5,7 @@ import type { ChatMessage } from "@/lib/ai/chat";
 import { TUTORIALS, type TutorialMode } from "@/lib/tutorial/tutorials";
 import { markTutorialSeen } from "@/app/app/tutorial/actions";
 import { startStt, sttSupported, type SttHandle } from "@/lib/speech";
+import { stripMarkdown } from "@/lib/ai/chat";
 
 /** Mic glyph — inline SVG, 1.75 stroke, currentColor. Strike when off/unavailable. */
 function MicIcon({ on }: { on: boolean }) {
@@ -259,7 +260,7 @@ export function TutorialLauncher({
                   : "border border-border bg-surface text-foreground")
               }
             >
-              {m.content || (pending ? "…" : "")}
+              {(m.role === "assistant" ? stripMarkdown(m.content) : m.content) || (pending ? "…" : "")}
             </div>
           </div>
         ))}
