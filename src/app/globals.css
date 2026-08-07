@@ -433,3 +433,14 @@
     transition: opacity 0.2s ease !important;
   }
 }
+
+/* Tutorial "Start Playing" door — a small distant portal over the Locksmith's shoulder that floats
+   gently and pulses its glow (reuses the Fox Pit lobby mini-door look). */
+@keyframes tut-door-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+.tut-door { animation: tut-door-bob 2.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .tut-door { animation: none; }
+}
