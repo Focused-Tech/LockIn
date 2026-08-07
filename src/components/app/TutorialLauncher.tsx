@@ -187,37 +187,37 @@ export function TutorialLauncher({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-[60] flex flex-col bg-surface-card"
-      style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
-    >
-      {/* Header — her at her desk (clean, de-greened) */}
-      <div className="relative shrink-0">
+    <div className="fixed inset-0 z-[60] flex flex-col bg-surface-card">
+      {/* Header — title BELOW the status bar, then her at her desk (no overlap, de-greened) */}
+      <div
+        className="flex shrink-0 items-start justify-between px-5 pb-1"
+        style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.9rem)" }}
+      >
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-white/70">
+            {slot.modeLabel} · How to play
+          </p>
+          <p className="text-lg font-semibold text-white">The Locksmith</p>
+        </div>
+        <button
+          type="button"
+          onClick={finish}
+          className="rounded-full border border-white/25 px-3 py-1 text-xs font-medium text-white/80"
+        >
+          Skip
+        </button>
+      </div>
+      <div className="shrink-0">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/foxpit/locksmith/locksmith_desk_clean.png"
           alt="The Locksmith at her desk"
-          className="mx-auto h-32 w-auto object-contain"
+          className="mx-auto h-24 w-auto object-contain"
         />
-        <div className="absolute inset-x-0 top-0 flex items-start justify-between px-5 pt-4">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-white/70">
-              {slot.modeLabel} · How to play
-            </p>
-            <p className="text-lg font-semibold text-white">The Locksmith</p>
-          </div>
-          <button
-            type="button"
-            onClick={finish}
-            className="rounded-full border border-white/25 px-3 py-1 text-xs font-medium text-white/80"
-          >
-            Skip
-          </button>
-        </div>
       </div>
 
-      {/* Thread — her walkthrough + your questions */}
-      <div ref={scrollRef} className="flex flex-1 flex-col gap-3 overflow-y-auto border-t border-border px-5 py-4">
+      {/* Thread — her walkthrough + your questions. min-h-0 lets a flex-1 column actually SCROLL. */}
+      <div ref={scrollRef} className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto border-t border-border px-5 py-4">
         {messages.map((m, i) => (
           <div key={i} className={m.role === "user" ? "self-end" : "self-start"}>
             <div
