@@ -50,15 +50,33 @@ stays unsigned and only the debug APK is usable.
 
 ## iOS
 
-**Not yet buildable.** The `ios/` folder is a stub — there is no Xcode project, workspace, Podfile, or
-`Info.plist`. To create it (on a Mac):
+The Xcode project now **exists** (`ios/App/App.xcodeproj`). Capacitor 8 uses **Swift Package Manager**,
+not CocoaPods — there is no Podfile. Already wired (cross-platform):
+
+- bundle id `gg.lockin.app`, deployment target **iOS 15.0**, marketing version **2.5.2**
+- `NSMicrophoneUsageDescription` for the Locksmith mic; portrait-locked to match Android
+- branded app icon + splash generated from `assets/` (`LaunchScreen` shows the **splash**, not the icon)
+
+Everything below **requires a Mac with Xcode + an Apple Developer Program membership** — none of it can
+run on Windows, and Apple does not allow sideloading (TestFlight is the only tester path).
+
+### Build & push to TestFlight (on a Mac)
 
 ```bash
-npx cap add ios
-npx cap sync ios
-npx cap open ios     # opens Xcode; set the team + signing there
+npx cap sync ios         # copy web assets + resolve the SPM plugins
+npx cap open ios         # opens App.xcodeproj in Xcode
 ```
 
-The intended bundle id is `gg.lockin.app`. iOS distribution requires an Apple Developer account and
-goes through **TestFlight** (Apple does not allow sideloading). When the project exists, add
-`NSMicrophoneUsageDescription` to `Info.plist` for the Locksmith microphone.
+Then, in Xcode:
+1. **Signing & Capabilities** → pick your **Team**; let Xcode auto-manage signing for `gg.lockin.app`.
+2. Register the App ID `gg.lockin.app` in the Apple Developer portal and create the app record in
+   **App Store Connect**.
+3. If push ships: add the **Push Notifications** capability + **Background Modes → Remote notifications**,
+   and upload the APNs key/`GoogleService-Info.plist` for FCM. (Otherwise omit — an unused entitlement
+   is a rejection risk.)
+4. Bump the build number (`CURRENT_PROJECT_VERSION`) — must increase on every upload.
+5. **Product → Archive → Distribute App → TestFlight & App Store Connect → Upload**.
+6. In App Store Connect → **TestFlight**, add internal/external testers.
+
+Because the shell loads the live site, once a tester is on any TestFlight build they receive every
+**web** change automatically; a new TestFlight build is only needed for **native** changes.
