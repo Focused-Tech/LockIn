@@ -43,8 +43,18 @@ export function TutorialLauncher({
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
   const [finishing, setFinishing] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const taRef = useRef<HTMLTextAreaElement>(null);
   const started = useRef(false);
+
+  // Auto-grow the message box so long sentences aren't clipped (dynamic height, capped).
+  function autoGrow() {
+    const el = taRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 120) + "px";
+  }
 
   // Speech-to-text (native plugin, web fallback). Availability is detected at runtime.
   const [sttOk, setSttOk] = useState(false);
@@ -143,6 +153,7 @@ export function TutorialLauncher({
     const text = input.trim();
     if (!text || pending) return;
     setInput("");
+    if (taRef.current) taRef.current.style.height = "auto"; // collapse back to one line
     const visible = messages.filter((m) => m.content);
     const apiHistory: ChatMessage[] = [
       { role: "user", content: slot.intro },
@@ -172,16 +183,36 @@ export function TutorialLauncher({
     <div className="fixed inset-0 z-[60] flex flex-col bg-surface-card">
       {/* HERO — she's dropped DOWN (object-bottom + top padding) so the title clears her head; the
           portal door over her shoulder starts play. */}
-      <div className="relative shrink-0" style={{ height: "52vh" }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/foxpit/locksmith/locksmith_desk_clean.png"
-          alt="The Locksmith at her desk"
-          className="h-full w-full object-contain object-bottom"
-          style={{ paddingTop: `calc(${topInset} + 5.75rem)` }}
-        />
+      <div
+        className="relative shrink-0 overflow-hidden"
+        style={{ height: collapsed ? `calc(${topInset} + 6rem)` : "52vh" }}
+      >
+        {!collapsed && (
+          <>
+            {/* Elevator-corridor backdrop — she sits at her hostess desk in front of it (like walking
+                into a restaurant). object-cover fills; positioned so the brass archway sits behind
+                her head and the marble floor runs in front of the desk. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/foxpit/lounge/elevator_corridor.png"
+              alt=""
+              aria-hidden
+              className="absolute inset-0 h-full w-full object-cover"
+              style={{ objectPosition: "center 18%" }}
+            />
+            {/* The Locksmith at her desk — foreground, a touch smaller so the corridor reads as depth
+                behind her (proportion of a host stand a few steps into the room). */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/foxpit/locksmith/locksmith_desk_clean.png"
+              alt="The Locksmith at her desk"
+              className="absolute bottom-0 left-1/2 h-full w-[90%] -translate-x-1/2 object-contain object-bottom"
+              style={{ paddingTop: `calc(${topInset} + 6.5rem)` }}
+            />
+          </>
+        )}
 
-        {/* Skip — small, top-right corner, above the title row (never overlaps Start playing). */}
+        {/* Skip — small, top-right corner. */}
         <button
           type="button"
           onClick={finish}
@@ -191,53 +222,75 @@ export function TutorialLauncher({
           Skip
         </button>
 
-        {/* Eyebrow + hero row: title (left) · "Start / Playing" stacked (right, "Start" on the hero
-            font's row), then the portal DOOR directly below "Playing" (~10px gap). The whole
-            right-hand group is one tap target → start play. */}
+        {/* Eyebrow + title + collapse chevron (left) · "Start / Playing" link + portal door (right). */}
         <div className="absolute inset-x-0 z-20 px-5" style={{ top: `calc(${topInset} + 1.85rem)` }}>
           <p className="text-[11px] font-semibold uppercase tracking-wide text-white/70">
             {slot.modeLabel} · How to play
           </p>
           <div className="mt-0.5 flex items-start justify-between">
-            <p className="whitespace-nowrap text-xl font-semibold leading-none text-white">The Locksmith</p>
-            <button
-              type="button"
-              onClick={finish}
-              aria-label="Start playing — step through the door"
-              className="flex flex-col items-end"
-            >
-              <span className="text-right text-[13px] font-bold uppercase leading-[1.05] tracking-[0.06em] text-[color:var(--brand-orange)]">
-                Start
-                <br />
-                Playing&nbsp;▸
-              </span>
-              {/* the portal door — ~10px below "Playing" */}
-              <span
-                className="tut-door relative mt-[10px] block"
-                style={{
-                  width: 34,
-                  height: 50,
-                  borderRadius: "8px 8px 3px 3px",
-                  background: "linear-gradient(180deg, var(--brand-orange), rgba(252,62,1,.45))",
-                  border: "2px solid var(--brand-orange)",
-                  boxShadow: "0 0 16px rgba(252,62,1,.85), 0 6px 14px rgba(0,0,0,.6)",
-                  opacity: 0.95,
-                }}
+            <div className="flex flex-col items-start">
+              <p className="whitespace-nowrap text-xl font-semibold leading-none text-white">The Locksmith</p>
+              {/* Brand-orange chevron — collapses/expands the whole hero (image + Start Playing + door). */}
+              <button
+                type="button"
+                onClick={() => setCollapsed((c) => !c)}
+                aria-label={collapsed ? "Show the Locksmith" : "Hide the Locksmith"}
+                aria-expanded={!collapsed}
+                className="mt-1.5 text-[color:var(--brand-orange)]"
               >
-                <span
+                <svg
+                  width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round"
+                  style={{ transform: collapsed ? "rotate(180deg)" : "none", transition: "transform .15s ease" }}
+                  aria-hidden
+                >
+                  <path d="M6 15l6-6 6 6" />
+                </svg>
+              </button>
+            </div>
+
+            {!collapsed && (
+              <div className="flex flex-col items-center">
+                {/* "Start Playing" — a clickable link (as well as the door). */}
+                <button
+                  type="button"
+                  onClick={finish}
+                  className="text-center text-[13px] font-bold uppercase leading-[1.05] tracking-[0.06em] text-[color:var(--brand-orange)] underline-offset-2 hover:underline"
+                >
+                  Start
+                  <br />
+                  Playing
+                </button>
+                {/* the portal door — ~20px below "Playing", 10% bigger, no bounce. Also clickable. */}
+                <button
+                  type="button"
+                  onClick={finish}
+                  aria-label="Start playing — step through the door"
+                  className="relative mt-[20px] block"
                   style={{
-                    position: "absolute",
-                    right: 5,
-                    top: "50%",
-                    width: 4,
-                    height: 4,
-                    borderRadius: "50%",
-                    background: "rgba(255,255,255,.9)",
-                    transform: "translateY(-50%)",
+                    width: 37,
+                    height: 55,
+                    borderRadius: "9px 9px 3px 3px",
+                    background: "linear-gradient(180deg, var(--brand-orange), rgba(252,62,1,.45))",
+                    border: "2px solid var(--brand-orange)",
+                    boxShadow: "0 0 16px rgba(252,62,1,.85), 0 6px 14px rgba(0,0,0,.6)",
+                    opacity: 0.95,
                   }}
-                />
-              </span>
-            </button>
+                >
+                  <span
+                    style={{
+                      position: "absolute",
+                      right: 6,
+                      top: "50%",
+                      width: 4,
+                      height: 4,
+                      borderRadius: "50%",
+                      background: "rgba(255,255,255,.9)",
+                      transform: "translateY(-50%)",
+                    }}
+                  />
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -267,14 +320,25 @@ export function TutorialLauncher({
           e.preventDefault();
           send();
         }}
-        className="flex shrink-0 items-center gap-1.5 border-t border-border px-3 pt-3"
+        className="flex shrink-0 items-end gap-1.5 border-t border-border px-3 pt-3"
         style={{ paddingBottom: `calc(0.75rem + env(safe-area-inset-bottom, 0px))` }}
       >
-        <input
+        <textarea
+          ref={taRef}
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          rows={1}
+          onChange={(e) => {
+            setInput(e.target.value);
+            autoGrow();
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              send();
+            }
+          }}
           placeholder="Ask the Locksmith…"
-          className="h-10 min-w-0 flex-1 rounded-full border border-border bg-surface px-4 text-sm text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-border"
+          className="max-h-[120px] min-h-[40px] min-w-0 flex-1 resize-none self-end rounded-2xl border border-border bg-surface px-4 py-2 text-sm leading-snug text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-border"
         />
         <button
           type="button"
