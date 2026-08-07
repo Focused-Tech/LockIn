@@ -3,11 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import type { ChatMessage } from "@/lib/ai/chat";
-import {
-  TUTORIALS,
-  TUTORIAL_PLACEHOLDER,
-  type TutorialMode,
-} from "@/lib/tutorial/tutorials";
+import { TUTORIALS, type TutorialMode } from "@/lib/tutorial/tutorials";
 
 /** Best-effort mode for the screen the user is standing on (for contextual "How to play"). */
 function pathnameToMode(pathname: string): TutorialMode {
@@ -111,10 +107,10 @@ export function ChatAssistant() {
     rec.start();
   }
 
-  async function send() {
-    const text = input.trim();
+  async function send(overrideText?: string) {
+    const text = (overrideText ?? input).trim();
     if (!text || pending) return;
-    setInput("");
+    if (!overrideText) setInput("");
 
     const history = [...messages, { role: "user" as const, content: text }];
     // Show the user turn + an empty assistant turn we stream into.
@@ -207,18 +203,13 @@ export function ChatAssistant() {
             <div className="absolute inset-x-0 bottom-0 flex items-center gap-2 bg-gradient-to-t from-black/70 to-transparent px-4 pb-2 pt-6">
               <p className="text-sm font-semibold text-white">Locksmith</p>
               <p className="text-xs text-white/70">Your fox guide to the win</p>
-              {/* §4 — permanent "How to play", contextual to the mode you're standing in. */}
+              {/* §4 — permanent "How to play", contextual to the mode you're standing in. Triggers a
+                  real, live walkthrough (same seed the tutorial uses), not a static blurb. */}
               <button
                 type="button"
-                onClick={() => {
-                  const slot = TUTORIALS[pathnameToMode(pathname)];
-                  const body = slot.steps.length ? slot.steps.join("\n\n") : TUTORIAL_PLACEHOLDER;
-                  setMessages((prev) => [
-                    ...prev,
-                    { role: "assistant", content: `How to play — ${slot.modeLabel}\n\n${body}` },
-                  ]);
-                }}
-                className="ml-auto rounded-full border border-white/30 px-2.5 py-1 text-[11px] font-medium text-white"
+                disabled={pending}
+                onClick={() => void send(TUTORIALS[pathnameToMode(pathname)].intro)}
+                className="ml-auto rounded-full border border-white/30 px-2.5 py-1 text-[11px] font-medium text-white disabled:opacity-50"
               >
                 How to play
               </button>

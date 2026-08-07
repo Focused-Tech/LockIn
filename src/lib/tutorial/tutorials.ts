@@ -27,6 +27,10 @@ export interface TutorialSlot {
   modeLabel: string;
   /** Ordered walkthrough steps. EMPTY until copy arrives. */
   steps: string[];
+  /** SEED prompt (versioned data) the Locksmith opens the walkthrough with — she answers it live
+   *  from her knowledge base, then the user asks follow-ups. The actual rules are AI-generated (not
+   *  hardcoded here), so a wording change stays a data change. */
+  intro: string;
 }
 
 /** Shown in any empty slot — honest, not invented rules. */
@@ -34,11 +38,42 @@ export const TUTORIAL_PLACEHOLDER =
   "The Locksmith's walkthrough for this mode is on its way. For now, she's here — ask her anything about how it works.";
 
 export const TUTORIALS: Record<TutorialMode, TutorialSlot> = {
-  advanced: { mode: "advanced", modeLabel: "Advanced", steps: [] },
-  beginner: { mode: "beginner", modeLabel: "Beginner", steps: [] },
-  creator: { mode: "creator", modeLabel: "Creator", steps: [] },
-  lone_fox: { mode: "lone_fox", modeLabel: "Lone Fox (practice)", steps: [] },
-  tower_boss: { mode: "tower_boss", modeLabel: "Fox Pit tower — boss journey", steps: [] },
+  advanced: {
+    mode: "advanced", modeLabel: "Advanced", steps: [],
+    intro:
+      "I just chose the Advanced journey on LockIn and I'm brand new. Walk me through how it works, " +
+      "step by step and in plain language: how to read a slate, how making picks works, how the prize " +
+      "pool and entry fee work, and how I actually win. Keep it warm and concise, then invite me to ask " +
+      "you anything before I start playing.",
+  },
+  beginner: {
+    mode: "beginner", modeLabel: "Beginner", steps: [],
+    intro:
+      "I just chose the Beginner journey on LockIn and I'm brand new. Walk me through it simply, step by " +
+      "step: that it's coins not cash, how I make my picks in plain language, and how I climb and get " +
+      "better. Keep it friendly and short, then invite me to ask you anything before I start playing.",
+  },
+  creator: {
+    mode: "creator", modeLabel: "Creator", steps: [],
+    intro:
+      "I just chose the Creator journey on LockIn and I'm new to hosting. Walk me through it step by step: " +
+      "building a slate, the AI-drafted questions, selling pick packages, and how I earn. Keep it clear and " +
+      "concise, then invite me to ask you anything before I start.",
+  },
+  lone_fox: {
+    mode: "lone_fox", modeLabel: "Lone Fox (practice)", steps: [],
+    intro:
+      "I just entered the Fox Pit practice journey on LockIn and I'm new. Walk me through the Lone Fox run " +
+      "step by step: choosing a floor, facing the boss, that it runs on coins, and how I win. Keep it fun " +
+      "and short, then invite me to ask you anything before I start playing.",
+  },
+  tower_boss: {
+    mode: "tower_boss", modeLabel: "Fox Pit tower — boss journey", steps: [],
+    intro:
+      "I just entered the Fox Pit tower boss journey on LockIn and I'm new. Walk me through it step by step: " +
+      "climbing the floors, beating each boss to win their key, and how the run works. Keep it exciting and " +
+      "concise, then invite me to ask you anything before I start.",
+  },
 };
 
 /** Map the persisted journey lane to a tutorial mode (advanced is the default lane). */
