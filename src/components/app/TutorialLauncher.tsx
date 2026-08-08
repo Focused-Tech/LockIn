@@ -1,11 +1,19 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import type { ChatMessage } from "@/lib/ai/chat";
 import { TUTORIALS, type TutorialMode } from "@/lib/tutorial/tutorials";
 import { markTutorialSeen } from "@/app/app/tutorial/actions";
 import { startStt, sttSupported, type SttHandle } from "@/lib/speech";
 import { stripMarkdown } from "@/lib/ai/chat";
+import { SendIcon } from "./navIcons";
+import { ChipDock } from "./ChipDock";
+import { championshipChipsForMode, chipAnswer, type ChampionshipChip } from "@/lib/championship/copy";
+import { autosizeTextarea } from "@/lib/dom/autosize";
+
+/** A transcript message; `href` renders a follow link under the bubble (championship chip answers). */
+type UiMessage = ChatMessage & { href?: string };
 
 /** Mic glyph — inline SVG, 1.75 stroke, currentColor. A plain mic; the button's disabled state
  *  (dimmed) signals unavailable, and the listening state colours it — no misleading strike. */
@@ -38,8 +46,9 @@ export function TutorialLauncher({
   onDone?: () => void;
 }) {
   const slot = TUTORIALS[mode];
+  const chips = championshipChipsForMode(mode);
   const [dismissed, setDismissed] = useState(initialSeen);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<UiMessage[]>([]);
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
   const [finishing, setFinishing] = useState(false);
@@ -48,13 +57,30 @@ export function TutorialLauncher({
   const taRef = useRef<HTMLTextAreaElement>(null);
   const started = useRef(false);
 
-  // Auto-grow the message box so long sentences aren't clipped (dynamic height, capped).
+  // Auto-grow the message box: one line → max 4 lines → then scroll internally (no visible
+  // scrollbar). Geometry is the pure autosizeTextarea(); we set overflow-y so the tail is REACHABLE
+  // and scroll to the end so it's never clipped. Run on EVERY value change (typing, STT, chips).
   function autoGrow() {
     const el = taRef.current;
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = Math.min(el.scrollHeight, 120) + "px";
+    const cs = window.getComputedStyle(el);
+    const lineHeightPx = parseFloat(cs.lineHeight) || 20;
+    const paddingYPx = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
+    const { heightPx, overflowY } = autosizeTextarea({
+      scrollHeight: el.scrollHeight,
+      lineHeightPx,
+      paddingYPx,
+      maxLines: 4,
+    });
+    el.style.height = `${heightPx}px`;
+    el.style.overflowY = overflowY;
+    el.scrollTop = el.scrollHeight;
   }
+  useEffect(() => {
+    autoGrow();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [input]);
 
   // Speech-to-text (native plugin, web fallback). Availability is detected at runtime.
   const [sttOk, setSttOk] = useState(false);
@@ -164,6 +190,17 @@ export function TutorialLauncher({
     void stream(apiHistory);
   }
 
+  // A dock chip sends its question as the user's message. Championship answers are DATA (deterministic,
+  // no unset numbers) and link to the rules page — the Locksmith never states a value that isn't set.
+  function onPickChip(chip: ChampionshipChip) {
+    if (pending) return;
+    setMessages((prev) => [
+      ...prev,
+      { role: "user", content: chip.q },
+      { role: "assistant", content: chipAnswer(chip), href: "/app/championship" },
+    ]);
+  }
+
   // START PLAYING / SKIP both end the tutorial after she's walked you through. Never trap: persist in
   // the background; in onboarding advance after the write (2s cap) so the app layout won't re-offer.
   function finish() {
@@ -249,53 +286,24 @@ export function TutorialLauncher({
               </button>
             </div>
 
-            <div className="flex flex-col items-center">
-              {/* "Start Playing" — a clickable link, ALWAYS visible (even collapsed) so the start-play
-                  hook never disappears; the door below is the expanded-only graphic. */}
-              <button
-                type="button"
-                onClick={finish}
-                className="text-center text-[13px] font-bold uppercase leading-[1.05] tracking-[0.06em] text-[color:var(--brand-orange)] underline-offset-2 hover:underline"
-              >
-                Start
-                <br />
-                Playing
-              </button>
-              {!collapsed && (
-                /* the portal door — ~20px below "Playing", 10% bigger, no bounce. Also clickable. */
-                <button
-                  type="button"
-                  onClick={finish}
-                  aria-label="Start playing — step through the door"
-                  className="relative mt-[20px] block"
-                  style={{
-                    width: 37,
-                    height: 55,
-                    borderRadius: "9px 9px 3px 3px",
-                    background: "linear-gradient(180deg, var(--brand-orange), rgba(252,62,1,.45))",
-                    border: "2px solid var(--brand-orange)",
-                    boxShadow: "0 0 16px rgba(252,62,1,.85), 0 6px 14px rgba(0,0,0,.6)",
-                    opacity: 0.95,
-                  }}
-                >
-                  <span
-                    style={{
-                      position: "absolute",
-                      right: 6,
-                      top: "50%",
-                      width: 4,
-                      height: 4,
-                      borderRadius: "50%",
-                      background: "rgba(255,255,255,.9)",
-                      transform: "translateY(-50%)",
-                    }}
-                  />
-                </button>
-              )}
-            </div>
+            {/* "Start Playing" — the SOLE start CTA (the floating portal door was removed). Always
+                visible (even collapsed) so the start-play hook never disappears; same function. */}
+            <button
+              type="button"
+              onClick={finish}
+              className="text-center text-[13px] font-bold uppercase leading-[1.05] tracking-[0.06em] text-[color:var(--brand-orange)] underline-offset-2 hover:underline"
+            >
+              Start
+              <br />
+              Playing
+            </button>
           </div>
         </div>
       </div>
+
+      {/* CHIP DOCK — docked at the bottom edge of the desk image (below the image, above the
+          transcript). Always rendered, so it stays visible when the desk image is minimized. */}
+      <ChipDock chips={chips} onPick={onPickChip} />
 
       {/* Thread — her walkthrough + your questions. min-h-0 lets a flex-1 column actually SCROLL.
           Always an inset, rounded, low-opacity-bordered panel so the chat is cleanly framed off the
@@ -316,6 +324,14 @@ export function TutorialLauncher({
               }
             >
               {(m.role === "assistant" ? stripMarkdown(m.content) : m.content) || (pending ? "…" : "")}
+              {m.href && (
+                <Link
+                  href={m.href}
+                  className="mt-1.5 block text-[13px] font-semibold text-[color:var(--brand-orange)] underline-offset-2 hover:underline"
+                >
+                  Open the Championship ›
+                </Link>
+              )}
             </div>
           </div>
         ))}
@@ -346,7 +362,7 @@ export function TutorialLauncher({
             }
           }}
           placeholder="Ask the Locksmith…"
-          className="max-h-[120px] min-h-[40px] min-w-0 flex-1 resize-none self-end rounded-2xl border border-border bg-surface px-4 py-2 text-sm leading-snug text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-border"
+          className="min-h-[40px] min-w-0 flex-1 resize-none self-end overflow-y-hidden rounded-2xl border border-border bg-surface px-4 py-2 text-sm leading-[1.4] text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-border"
         />
         <button
           type="button"
@@ -364,9 +380,10 @@ export function TutorialLauncher({
         <button
           type="submit"
           disabled={pending || !input.trim()}
-          className="h-10 shrink-0 rounded-full border border-accent-border bg-accent-soft px-4 text-sm font-semibold text-accent disabled:opacity-40"
+          aria-label="Send"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-accent-border bg-accent-soft text-accent disabled:opacity-40"
         >
-          Send
+          <SendIcon />
         </button>
       </form>
     </div>

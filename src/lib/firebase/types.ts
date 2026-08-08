@@ -43,6 +43,10 @@ export const COLLECTIONS = {
   usernames: "usernames",
   /** Referral records: referrals/{referredUid}. */
   referrals: "referrals",
+  /** Keyholder attribution index (first-touch, immutable): keyholderReferrals/{referredUid}. */
+  keyholderReferrals: "keyholderReferrals",
+  /** Append-only keyholder qualifying-event ledger: keyholderEvents/{eventId}. NO money moves. */
+  keyholderEvents: "keyholderEvents",
   /** Creator applications: creatorApplications/{userId}. */
   creatorApplications: "creatorApplications",
   /** Cross-slate parlays: crossParlays/{parlayId}. */
@@ -67,6 +71,8 @@ export const COLLECTIONS = {
   creatorSignatures: "creatorSignatures", // subcollection of users/{uid}
   /** Tutorial seen-records, one per mode: users/{uid}/tutorials/{mode}. */
   tutorials: "tutorials", // subcollection of users/{uid}
+  /** Championship trigger-card seen-records (once-only): users/{uid}/championshipCards/{cardId}. */
+  championshipCards: "championshipCards", // subcollection of users/{uid}
 } as const;
 
 /** Per-user, per-mode tutorial record — users/{uid}/tutorials/{mode}. A version bump re-offers it. */
@@ -120,6 +126,25 @@ export interface UserDoc {
   stripeCustomerId: string | null;
   /** Platform owner/admin. Gates the web admin dashboard (/admin). */
   isAdmin?: boolean;
+  /**
+   * KEYHOLDER PORTAL roles — ADMIN-SET ONLY (no self-serve path; never in the client update
+   * whitelist in firestore.rules). `keyholder` gates the /app/keyholder portal. `keymaster` is a
+   * keyholder's upline (a keymaster is also a keyholder). `keymasterUid` is the keyholder's upline.
+   */
+  keyholder?: boolean;
+  keymaster?: boolean;
+  keymasterUid?: string | null;
+  /**
+   * FIRST-TOUCH, IMMUTABLE keyholder attribution — the uid of the keyholder whose code this account
+   * signed up under. Stamped ONCE at signup (only when the referrer is a keyholder); never edited,
+   * never re-assignable. null when this account was not referred by a keyholder.
+   */
+  keyholderUid?: string | null;
+  /**
+   * Admin / social-connect VERIFIED follower count for a creator. null = no social connect yet —
+   * participation_pct renders as "—" (never 0) everywhere it's shown.
+   */
+  verifiedFollowers?: number | null;
   isCreator: boolean;
   creatorVerified: boolean;
   creatorTier: CreatorTier;
@@ -452,6 +477,51 @@ export interface ReferralDoc {
   rewardCents: number;
   signupAt: FsTimestamp;
   convertedAt: FsTimestamp | null;
+}
+
+// ── keyholderReferrals/{referredUid} ───────────────────────────────────────────
+/** What a referred account BECOMES — a referred account is typed by its qualifying event. */
+export type KeyholderReferralType = "creator" | "player";
+
+/**
+ * The keyholder attribution index — one doc per account referred by a keyholder, id = referredUid.
+ * Written ONCE at signup (first-touch); `type` is set the first time the account qualifies as a
+ * creator or a player. Never re-assigned to a different keyholder.
+ */
+export interface KeyholderReferralDoc {
+  keyholderUid: string;
+  keymasterUid: string | null;
+  referredUid: string;
+  referredUsername: string;
+  /** null until the account qualifies (then "creator" or "player"). */
+  type: KeyholderReferralType | null;
+  createdAt: FsTimestamp;
+  typedAt: FsTimestamp | null;
+}
+
+// ── keyholderEvents/{eventId} ──────────────────────────────────────────────────
+export type KeyholderEventType =
+  | "creator_activated"
+  | "creator_event_settled"
+  | "player_qualified";
+
+/**
+ * APPEND-ONLY qualifying-event ledger. NO money moves here — these are tracking records the portal
+ * projects earnings from. Deterministic doc ids keep re-settlement idempotent; docs are created via
+ * `.create()` (create-once) and never updated. `participationPct` is null when the creator has no
+ * social connect (rendered "—", never 0). `grossHostFeesCents` is stored for server-side projection
+ * only and is NEVER surfaced to a keyholder (privacy line).
+ */
+export interface KeyholderEventDoc {
+  type: KeyholderEventType;
+  keyholderUid: string;
+  keymasterUid: string | null;
+  referredUid: string;
+  slateId: string | null;
+  entries: number | null;
+  grossHostFeesCents: number | null;
+  participationPct: number | null;
+  createdAt: FsTimestamp;
 }
 
 // ── creatorApplications/{userId} ───────────────────────────────────────────────

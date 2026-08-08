@@ -57,3 +57,7 @@ keystore.properties
 android/keystore.properties
 *.jks
 *.keystore
+
+# Local slice backups (reported, not committed)
+*.bak-keyholder
+*.bak-champ

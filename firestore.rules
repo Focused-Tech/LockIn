@@ -121,6 +121,24 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // keyholderReferrals — the keyholder (or their upline keymaster) reads their own attribution
+    // records; stamped server-side at signup, first-touch + immutable (no client write ever).
+    match /keyholderReferrals/{referredUid} {
+      allow read: if isSignedIn()
+        && (resource.data.keyholderUid == request.auth.uid
+            || resource.data.keymasterUid == request.auth.uid);
+      allow write: if false;
+    }
+
+    // keyholderEvents — APPEND-ONLY qualifying-event ledger (no money moves). Readable by the
+    // owning keyholder or their keymaster; written by the Admin SDK at settlement only.
+    match /keyholderEvents/{eventId} {
+      allow read: if isSignedIn()
+        && (resource.data.keyholderUid == request.auth.uid
+            || resource.data.keymasterUid == request.auth.uid);
+      allow write: if false;
+    }
+
     // creatorApplications — applicants read their own; submission + review are
     // server-side (Admin SDK). Admin reads also go through the Admin SDK.
     match /creatorApplications/{userId} {

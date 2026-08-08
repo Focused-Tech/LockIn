@@ -2,7 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
 import { SESSION_COOKIE, SESSION_MAX_AGE_MS } from "@/lib/firebase/config";
-import { COLLECTIONS } from "@/lib/firebase/types";
+import { COLLECTIONS, type UserDoc } from "@/lib/firebase/types";
+import { keyholderStampFor, type KeyholderStamp } from "@/lib/keyholder/attribution";
 import {
   DEPOSIT_LIMITS,
   REFERRAL_SIGNUP_COINS,
@@ -76,6 +77,15 @@ export async function POST(request: NextRequest) {
   }
   const welcomeCoins = referrerUid ? REFERRED_WELCOME_COINS : 0;
 
+  // KEYHOLDER FIRST-TOUCH ATTRIBUTION — if the resolved referrer is a keyholder, compute the
+  // (immutable) stamp now. Written ONCE inside the create below; never editable thereafter.
+  let keyStamp: KeyholderStamp | null = null;
+  if (referrerUid) {
+    const rSnap = await db.collection(COLLECTIONS.users).doc(referrerUid).get();
+    const r = rSnap.data() as UserDoc | undefined;
+    keyStamp = keyholderStampFor(r ? { uid: referrerUid, keyholder: r.keyholder, keymasterUid: r.keymasterUid } : null);
+  }
+
   try {
     await db.runTransaction(async (tx) => {
       const [nameSnap, userSnap] = await Promise.all([
@@ -118,8 +128,24 @@ export async function POST(request: NextRequest) {
         referralRewarded: false,
         referralCount: 0,
         referralEarningsCents: 0,
+        // First-touch keyholder attribution (null unless referred by a keyholder). Immutable.
+        keyholderUid: keyStamp?.keyholderUid ?? null,
         createdAt: FieldValue.serverTimestamp(),
       });
+
+      // Keyholder attribution index — one doc per referred account, typed later by its first
+      // qualifying event. Created once, alongside the account.
+      if (keyStamp) {
+        tx.set(db.collection(COLLECTIONS.keyholderReferrals).doc(uid), {
+          keyholderUid: keyStamp.keyholderUid,
+          keymasterUid: keyStamp.keymasterUid,
+          referredUid: uid,
+          referredUsername: username,
+          type: null,
+          createdAt: FieldValue.serverTimestamp(),
+          typedAt: null,
+        });
+      }
 
       // Reward the referrer (coins now; cash on the referred user's first deposit).
       if (referrerUid) {

@@ -3,6 +3,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
 import { SESSION_COOKIE, SESSION_MAX_AGE_MS } from "@/lib/firebase/config";
 import { COLLECTIONS, type UserDoc } from "@/lib/firebase/types";
+import { keyholderStampFor, type KeyholderStamp } from "@/lib/keyholder/attribution";
 import {
   DEPOSIT_LIMITS,
   REFERRAL_SIGNUP_COINS,
@@ -91,6 +92,14 @@ export async function POST(req: NextRequest) {
       if (refUid && refUid !== uid) referrerUid = refUid;
     }
     const welcomeCoins = referrerUid ? REFERRED_WELCOME_COINS : 0;
+
+    // KEYHOLDER FIRST-TOUCH ATTRIBUTION — immutable stamp when the referrer is a keyholder.
+    let keyStamp: KeyholderStamp | null = null;
+    if (referrerUid) {
+      const rSnap = await db.collection(COLLECTIONS.users).doc(referrerUid).get();
+      const r = rSnap.data() as UserDoc | undefined;
+      keyStamp = keyholderStampFor(r ? { uid: referrerUid, keyholder: r.keyholder, keymasterUid: r.keymasterUid } : null);
+    }
     const seed = usernameSeed(displayName || email.split("@")[0] || "player");
 
     let created = false;
@@ -145,8 +154,22 @@ export async function POST(req: NextRequest) {
             referralRewarded: false,
             referralCount: 0,
             referralEarningsCents: 0,
+            // First-touch keyholder attribution (null unless referred by a keyholder). Immutable.
+            keyholderUid: keyStamp?.keyholderUid ?? null,
             createdAt: FieldValue.serverTimestamp(),
           });
+
+          if (keyStamp) {
+            tx.set(db.collection(COLLECTIONS.keyholderReferrals).doc(uid), {
+              keyholderUid: keyStamp.keyholderUid,
+              keymasterUid: keyStamp.keymasterUid,
+              referredUid: uid,
+              referredUsername: candidate,
+              type: null,
+              createdAt: FieldValue.serverTimestamp(),
+              typedAt: null,
+            });
+          }
 
           if (referrerUid) {
             tx.set(db.collection(COLLECTIONS.referrals).doc(uid), {

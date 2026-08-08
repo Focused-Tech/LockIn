@@ -6,7 +6,10 @@ import {
   type EntryDoc,
   type PredictionDoc,
   type SlateDoc,
+  type UserDoc,
 } from "@/lib/firebase/types";
+import { recordCreatorSettlement, maybeQualifyPlayer } from "@/server/keyholder/events";
+import { PLAYER_QUALIFY_ENTRIES_CENTS } from "@/lib/contest/architectSet";
 import { settleEntries, type SettlementEntryInput } from "@/lib/contest";
 import { firstBannedLeg } from "@/lib/contest/questionEngine";
 import { verifyPrediction } from "@/lib/ai/verification/verifier";
@@ -339,6 +342,42 @@ export async function settleSlate(slateId: string): Promise<SettleResult> {
       { merge: true },
     );
     await earningsBatch.commit();
+  }
+
+  // 4c. KEYHOLDER referral tracking — append-only qualifying-event ledger, NO money moves. If this
+  // slate's creator was referred by a keyholder, record the creator activation / settled-event.
+  if (slate?.creatorId) {
+    const creatorSnap = await db.collection(COLLECTIONS.users).doc(slate.creatorId).get();
+    const creator = creatorSnap.data() as UserDoc | undefined;
+    if (creator?.keyholderUid) {
+      const paidEntries = inputs.filter(
+        (e) => e.isPaid && !refundedKeys.has(`paid:${e.entryTier}`),
+      ).length;
+      await recordCreatorSettlement(db, {
+        slateId,
+        creatorUid: slate.creatorId,
+        keyholderUid: creator.keyholderUid,
+        keymasterUid: creator.keymasterUid ?? null,
+        verifiedFollowers: creator.verifiedFollowers ?? null,
+        paidEntries,
+        grossHostFeesCents: hostingGrossCents,
+      }).catch(() => {});
+    }
+  }
+
+  // 4d. KEYHOLDER player qualification — only when the threshold is armed (else zero extra reads;
+  // the model ships inert until the architect fills PLAYER_QUALIFY_ENTRIES_CENTS).
+  if (PLAYER_QUALIFY_ENTRIES_CENTS != null) {
+    const seen = new Set<string>();
+    for (const e of inputs) {
+      if (seen.has(e.userId)) continue;
+      seen.add(e.userId);
+      const uSnap = await db.collection(COLLECTIONS.users).doc(e.userId).get();
+      const u = uSnap.data() as UserDoc | undefined;
+      if (u?.keyholderUid) {
+        await maybeQualifyPlayer(db, e.userId, u.keyholderUid, u.keymasterUid ?? null).catch(() => {});
+      }
+    }
   }
 
   // 5. Finalize.

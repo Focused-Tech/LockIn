@@ -65,6 +65,44 @@ export const SUB_10K_RAKE_BANDS: { belowCents: number; rate: number }[] = [];
 // resolveArchetype (contest/archetypes.ts) — no weighting formula, no placeholder to fill.
 export type ScoringSport = "basketball" | "football" | "baseball" | "hockey" | "soccer";
 
+/* ── KEYHOLDER PORTAL (referral-tracking rails — slice: Keyholder) ─────────────── */
+// Every rate/cap/threshold in the keyholder system lives here. NULL / [] means "unset placeholder":
+// the portal shows event tallies and "—" for every dollar figure until the architect fills these.
+// NEVER inline a number at a call site — import from here.
+
+// ARCHITECT-SET: awaiting value — participation% → keyholder rate. Sorted-desc lookup; [] = unarmed.
+export const KEYHOLDER_TRIGGER_BANDS: { minParticipationPct: number; rate: number }[] = [];
+// ARCHITECT-SET: awaiting value — annual payout cap per keyholder (cents).
+export const KEYHOLDER_ANNUAL_CAP_CENTS: number | null = null;
+// ARCHITECT-SET: awaiting value — keymaster override rate on their downline keyholders' earnings.
+export const KEYMASTER_OVERRIDE_RATE: number | null = null;
+// ARCHITECT-SET: awaiting value — annual payout cap per keymaster (cents).
+export const KEYMASTER_ANNUAL_CAP_CENTS: number | null = null;
+// ARCHITECT-SET: awaiting value — settled-entry $ a referred player must reach to qualify (cents).
+export const PLAYER_QUALIFY_ENTRIES_CENTS: number | null = null;
+// ARCHITECT-SET: awaiting value — flat bounty per qualified referred player (cents).
+export const PLAYER_REFERRAL_BOUNTY_CENTS: number | null = null;
+// ARCHITECT-SET: awaiting value — fraction of the field paid out (projection input, 0–1).
+export const FIELD_PCT_PAID: number | null = null;
+
+/* ── CHAMPIONSHIP (surfaces slice) ────────────────────────────────────────────── */
+/** The four Championship divisions by entry tier — architect-given ($5/$10/$25/$50). */
+export const CHAMPIONSHIP_DIVISIONS = [
+  { tier: 5, label: "$5" },
+  { tier: 10, label: "$10" },
+  { tier: 25, label: "$25" },
+  { tier: 50, label: "$50" },
+] as const;
+export type ChampionshipTier = (typeof CHAMPIONSHIP_DIVISIONS)[number]["tier"];
+
+// ARCHITECT-SET: awaiting value — the win-rate % that qualifies a player for the Championship.
+// While null the Board strip shows division + win rate and "—" for the line (never a placeholder #).
+export const QUALIFICATION_LINE: number | null = null;
+
+// ARCHITECT-SET: awaiting value — the season-milestone date (ISO 8601). The milestone trigger card
+// stays DISARMED (never fires) while this is null.
+export const CHAMPIONSHIP_SEASON_MILESTONE: string | null = null;
+
 /* ── Per-state placeholders (moved here from eligibility/states.ts per slice 6.4) ── */
 // ARCHITECT-SET: awaiting value — per-state minimum-age overrides (default 18).
 export const STATE_MIN_AGE: Record<string, number> = {};

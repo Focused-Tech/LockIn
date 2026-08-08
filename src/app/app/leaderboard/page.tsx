@@ -10,6 +10,12 @@ import {
 import { PAID_LINE } from "@/lib/beginner/payoutModel";
 import { formatCents } from "@/lib/utils";
 import Link from "next/link";
+import {
+  fetchChampionshipStrip,
+  fetchChampionshipTriggerState,
+} from "@/server/data/championship";
+import { ChampionshipStrip } from "@/app/app/championship/ChampionshipStrip";
+import { ChampionshipTriggers } from "@/app/app/championship/ChampionshipTriggers";
 import "../lk-panels.css";
 
 const TABS: { key: LeaderboardWindow; label: string }[] = [
@@ -38,6 +44,11 @@ export default async function LeaderboardPage({
     sp.window === "today" || sp.window === "week" ? sp.window : "all";
 
   const data = await fetchLeaderboard(adminDb(), window, profile.id);
+
+  // CHAMPIONSHIP surfaces — ADVANCED board only (beginner board untouched). The strip shows
+  // division + win rate + line ("—" while the line is unset); trigger cards fire once per user.
+  const champStrip = advanced ? await fetchChampionshipStrip(adminDb(), profile.id) : null;
+  const champTrigger = advanced ? await fetchChampionshipTriggerState(adminDb(), profile.id) : null;
 
   // ADVANCED: cash-won order straight from fetchLeaderboard (ranked by totalWonCents).
   // BEGINNER: re-rank by score (wins), renumber, and never show cash.
@@ -69,6 +80,11 @@ export default async function LeaderboardPage({
 
   return (
     <div className="lk-acct flex flex-col gap-4 p-4 pb-24">
+      {champStrip && <ChampionshipStrip data={champStrip} />}
+      {champTrigger?.card && (
+        <ChampionshipTriggers card={champTrigger.card} currentDivision={champTrigger.currentDivision} />
+      )}
+
       {me ? (
         <div className="blk act">
           <div className="lb">Your standing <i></i></div>

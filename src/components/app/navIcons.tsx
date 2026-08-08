@@ -35,6 +35,17 @@ function BoardIcon() {
   );
 }
 
+/** send — PAPER PLANE. Same set/style as the mic + nav glyphs (inline SVG, currentColor, round
+ *  caps/joins) so the Locksmith input controls never mix icon sets. Rendered at the mic's size. */
+export function SendIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M4.4 11.9 20 4.5 13 20.2l-2.6-6.1-6-2.2Z" />
+      <path d="M10.4 14.1 20 4.5" />
+    </svg>
+  );
+}
+
 /** THE KEY — the ONLY Locksmith fallback (never a fox). */
 function KeyIcon() {
   return (
