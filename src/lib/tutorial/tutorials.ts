@@ -37,14 +37,45 @@ export interface TutorialSlot {
 export const TUTORIAL_PLACEHOLDER =
   "The Locksmith's walkthrough for this mode is on its way. For now, she's here — ask her anything about how it works.";
 
+/**
+ * ADVANCED walkthrough — APPROVED, PINNED steps (published verbatim from
+ * ADVANCED_TUTORIAL_COPY_v1_2026-08-08.md). Pinning ends the "odds / over-under / prediction
+ * community" drift: the Locksmith renders THESE beats instead of improvising from the seed. Step ids
+ * are stable (never renumber): welcome · what_is_a_slate · reading_a_leg · locking_in · entry_and_pool
+ * · how_you_get_paid · the_board · playing_it_straight · closing.
+ */
+export const ADVANCED_STEPS: string[] = [
+  "**Welcome to Advanced.**\n\nThis is the real-money side of LockIn. Everything here is a **skill contest** — you're not playing against the house, you're playing against everyone else who entered, and the best cards win the pool.\n\nI'm the Locksmith. I'll walk you through it once. You can skip any time, and you can ask me anything afterward.",
+  "**A slate is a set of legs.**\n\nA creator builds a slate — usually five or six **legs**. Each leg is one question about how players will perform, drawn from different games on the night.\n\nYou answer every leg. Get them all right and you have a **perfect card**.",
+  "**Read the leg, read the room.**\n\nEvery leg gives you two or more choices — which player shows out, who leads the field, who gets there first. Under each choice you'll see real context: season averages, recent form, the matchup. That context is free, and it's there so you can actually think.\n\nThe percentages beside each choice show how the room is leaning — how many players have picked that side so far. A choice the room is split on is where the sharp calls live.",
+  "**Being right gets you paid. Being fast decides how much.**\n\nWhen your card is set, you **lock in**. Your lock-in time is recorded to the second.\n\nAmong everyone with a perfect card, the earliest locks rank highest. That's the whole edge of this game: a lot of people can be right, but the ones who committed early take the top places. Sit on a card too long and you'll watch someone with the same answers finish above you.\n\nYou can change your answers until you lock. After you lock, the card is yours.",
+  "**Two charges, one pot.**\n\nYour **entry stake** goes into the prize pool — that pool is the money everyone plays for. On top of it, the creator charges a small **hosting fee** for running the contest. Two separate things: one funds the prizes, one pays the creator.\n\nThe pool grows as more players enter. What it's paying is shown as a projection while the slate is open, and it becomes a fixed figure the moment the slate closes — before the games start. What you see at close is what's real.",
+  "**A lot of people win here.**\n\nPrizes run deep into the field — far deeper than you're used to. Top places take the biggest shares, and it steps down from there through hundreds of places.\n\nTwo things decide where you land: a perfect card gets you into the paid field, and your lock-in time decides how high you place inside it.",
+  "**The Board is where you stand.**\n\nYour record lives on the Board — how often you take a slate, and where you rank against everyone else playing at your level. It also carries your **Championship** standing: every slate you win all season builds toward a seat at the finale.\n\nTap the Championship strip any time to read how that works.",
+  "**Before you play with money.**\n\nContests are open to eligible players 18 or older, in places where paid skill contests are legal — we check, and we'll tell you plainly if your area isn't covered.\n\nSet your own limits and stick to them. Everything you need is under Responsible Play, and you can set limits before you ever enter a contest.",
+  "**That's the whole game.**\n\nRead the legs. Make the calls you actually believe. Lock in early.\n\nI'm on every screen where a decision gets made — tap me for a hint on a leg, or ask me anything about how the app works. Good luck.",
+];
+
+/** APPROVED seed prompt (verbatim) — governs the Locksmith's Q&A after the advanced walkthrough. */
+export const ADVANCED_SEED =
+  "You are the Locksmith, LockIn's in-app guide. You help players understand LockIn's " +
+  "skill-based contests, how slates and legs work, how locking in affects placement, how the " +
+  "prize pool and the paid field work, account and balance questions, and how to find things in " +
+  "the app.\n\n" +
+  "VOCABULARY — never use these words: odds, over/under, line, spread, bet, wager, betting, " +
+  "bookmaker, sportsbook, parlay, prediction market, gambling. LockIn runs skill contests. Say " +
+  "contest, slate, leg, card, lock in, pool, prize, place, entry.\n\n" +
+  "NEVER: state LockIn's rake or any house margin · invent a number, a prize figure, a date, or " +
+  "a rule that isn't in the app · give advice on which side of a leg to choose in a live " +
+  "contest · discuss another platform · claim a contest is available where it isn't.\n\n" +
+  "When you don't know something, say so and point to where it lives in the app. Keep answers " +
+  "short — two or three sentences unless asked for more. Never write in Markdown; plain " +
+  "sentences only.";
+
 export const TUTORIALS: Record<TutorialMode, TutorialSlot> = {
   advanced: {
-    mode: "advanced", modeLabel: "Advanced", steps: [],
-    intro:
-      "I just chose the Advanced journey on LockIn and I'm brand new. Walk me through how it works, " +
-      "step by step and in plain language: how to read a slate, how making picks works, how the prize " +
-      "pool and entry fee work, and how I actually win. Keep it warm and concise, then invite me to ask " +
-      "you anything before I start playing.",
+    mode: "advanced", modeLabel: "Advanced", steps: ADVANCED_STEPS,
+    intro: ADVANCED_SEED,
   },
   beginner: {
     mode: "beginner", modeLabel: "Beginner", steps: [],

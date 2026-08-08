@@ -61,3 +61,4 @@ android/keystore.properties
 # Local slice backups (reported, not committed)
 *.bak-keyholder
 *.bak-champ
+*.bak-locksmith

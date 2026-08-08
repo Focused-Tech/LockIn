@@ -23,8 +23,13 @@ import {
   standingLabel,
 } from "@/lib/championship/strip";
 import { evaluateTrigger, milestoneReached, type TriggerState } from "@/lib/championship/triggers";
-import { championshipChipsForMode, chipAnswer, CHAMPIONSHIP_CHIPS } from "@/lib/championship/copy";
+import { championshipChipsForMode, chipAnswer, CHAMPIONSHIP_CHIPS, CHAMPIONSHIP_SECTIONS } from "@/lib/championship/copy";
 import { QUALIFICATION_LINE, CHAMPIONSHIP_SEASON_MILESTONE } from "@/lib/contest/architectSet";
+import { ADVANCED_STEPS } from "@/lib/tutorial/tutorials";
+import { LOCKSMITH_GREETING } from "@/lib/locksmith/copy";
+
+/** Clear betting terms the approved copy bans from Locksmith/tutorial speech. */
+const BANNED = /\b(odds|over\/under|over-under|parlays?|sportsbook|bookmaker|wagers?|bet|betting)\b/i;
 
 const read = (p: string) => readFileSync(resolve(process.cwd(), p), "utf8");
 
@@ -48,9 +53,9 @@ describe("input autosize + tail-visibility", () => {
     expect(r.capped).toBe(true);
     expect(r.overflowY).toBe("auto");
   });
-  it("the component measures on EVERY value change and scrolls to the tail", () => {
-    const src = read("src/components/app/TutorialLauncher.tsx");
-    expect(src).toContain("useEffect(() => {\n    autoGrow();"); // runs for typing, STT, chips
+  it("the canonical component measures on EVERY value change and scrolls to the tail", () => {
+    const src = read("src/components/app/LocksmithChat.tsx");
+    expect(src).toContain("autoGrow();"); // effect runs for typing, STT, chips
     expect(src).toContain("el.scrollTop = el.scrollHeight"); // tail scrolled into view
     expect(src).toContain("autosizeTextarea(");
     expect(src).toContain("maxLines: 4");
@@ -100,11 +105,10 @@ describe("chip dock copy is DATA, per mode, and never wraps", () => {
     expect(adv).not.toContain("creator_playoffs");
     expect(championshipChipsForMode("creator").map((c) => c.id)).toContain("creator_playoffs");
   });
-  it("a pending answer omits numbers and points at the rules page", () => {
-    const chip = CHAMPIONSHIP_CHIPS[0]!;
-    expect(chip.answer).toBe(""); // pending
-    expect(chipAnswer(chip)).toContain("Championship page");
-    expect(/\d/.test(chipAnswer(chip))).toBe(false); // no unset numbers stated
+  it("chip answers are PUBLISHED verbatim (not pending) and echo the store", () => {
+    const chip = CHAMPIONSHIP_CHIPS.find((c) => c.id === "what")!;
+    expect(chip.answer.length).toBeGreaterThan(0);
+    expect(chipAnswer(chip)).toBe(chip.answer);
   });
   it("the dock frame is single-row: nowrap + horizontal scroll, no second row", () => {
     const dock = read("src/components/app/ChipDock.tsx");
@@ -114,7 +118,7 @@ describe("chip dock copy is DATA, per mode, and never wraps", () => {
     expect(dock).toContain("shrink-0");
   });
   it("the dock is rendered OUTSIDE the collapsed conditional (persists through minimize)", () => {
-    const src = read("src/components/app/TutorialLauncher.tsx");
+    const src = read("src/components/app/LocksmithChat.tsx");
     // The dock sits between the hero and the transcript, unconditional on `collapsed`.
     expect(src).toContain("<ChipDock chips={chips} onPick={onPickChip} />");
     expect(src).toContain("championshipChipsForMode(mode)");
@@ -164,5 +168,67 @@ describe("floating door removed; START PLAYING remains", () => {
     // its onClick is finish (the CTA still works)
     const idx = src.search(/Start\s*<br\s*\/>\s*Playing/);
     expect(src.lastIndexOf("onClick={finish}", idx)).toBeGreaterThan(-1);
+  });
+});
+
+describe("ONE Locksmith component across both entry points (ruling L)", () => {
+  it("the tutorial screen and the FAB both render the canonical LocksmithChat", () => {
+    const tut = read("src/components/app/TutorialLauncher.tsx");
+    const fab = read("src/components/ChatAssistant.tsx");
+    expect(tut).toContain("<LocksmithChat");
+    expect(fab).toContain("<LocksmithChat");
+    expect(tut).toContain('from "./LocksmithChat"');
+    expect(fab).toContain('from "@/components/app/LocksmithChat"');
+  });
+  it("the FAB's bespoke chat is GONE — no emoji mic, no 'Send' text button, no cover-background desk", () => {
+    const fab = read("src/components/ChatAssistant.tsx");
+    expect(fab.includes("🎤")).toBe(false);
+    expect(fab.includes("object-cover object-top")).toBe(false);
+    expect(/>\s*Send\s*</.test(fab)).toBe(false);
+    expect(fab.includes("<input")).toBe(false); // uses the canonical autosize textarea instead
+  });
+  it("the canonical component uses the NAV_ICONS mic + paper-plane, not an emoji", () => {
+    const chat = read("src/components/app/LocksmithChat.tsx");
+    expect(chat).toContain("MicIcon");
+    expect(chat).toContain("SendIcon");
+    expect(chat.includes("🎤")).toBe(false);
+    expect(chat).toContain("object-contain"); // contained hero, never background-cover
+  });
+});
+
+describe("greeting sourced from the store, not a literal", () => {
+  it("the FAB imports LOCKSMITH_GREETING from the store and hardcodes no greeting", () => {
+    const fab = read("src/components/ChatAssistant.tsx");
+    expect(fab).toContain("LOCKSMITH_GREETING");
+    expect(fab).toContain('from "@/lib/locksmith/copy"');
+    expect(fab.includes("odds, parlays, or payouts")).toBe(false); // the old hardcoded greeting is gone
+  });
+  it("the stored greeting carries no banned vocabulary", () => {
+    expect(BANNED.test(LOCKSMITH_GREETING)).toBe(false);
+  });
+});
+
+describe("no banned vocabulary in tutorial or Locksmith copy (Part M)", () => {
+  it("the published advanced steps use only skill-contest vocabulary", () => {
+    for (const step of ADVANCED_STEPS) expect(BANNED.test(step), step.slice(0, 40)).toBe(false);
+  });
+  it("the published championship chip answers carry no banned vocabulary", () => {
+    for (const c of CHAMPIONSHIP_CHIPS) expect(BANNED.test(c.answer), c.id).toBe(false);
+  });
+  it("the published championship sections carry no banned vocabulary", () => {
+    for (const s of CHAMPIONSHIP_SECTIONS) expect(BANNED.test(s.copy), s.id).toBe(false);
+  });
+  it("the Locksmith system prompt no longer tells her to read odds or build parlays", () => {
+    const chat = read("src/lib/ai/chat.ts");
+    expect(chat.includes("reading odds")).toBe(false);
+    expect(chat.includes("structuring a parlay")).toBe(false);
+    expect(chat.includes("explain parlays")).toBe(false);
+  });
+});
+
+describe("published copy renders as data on the rules page", () => {
+  it("advanced steps are pinned (non-empty) and the seed prompt bans the vocab", () => {
+    expect(ADVANCED_STEPS.length).toBe(9); // stable ids, nine beats
+    expect(CHAMPIONSHIP_SECTIONS.every((s) => s.copy.trim().length > 0)).toBe(true); // all published
   });
 });
