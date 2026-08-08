@@ -122,9 +122,18 @@ export function TutorialLauncher({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Scroll so a NEW message is shown from ITS TOP (you read the walkthrough from the start), and do
+  // NOT yank to the bottom while a message is still streaming. Only fires when a turn is added.
+  const prevCount = useRef(0);
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
-  }, [messages, pending]);
+    const el = scrollRef.current;
+    if (!el) return;
+    if (messages.length > prevCount.current) {
+      const last = el.lastElementChild as HTMLElement | null;
+      el.scrollTop = last ? Math.max(0, last.offsetTop - 8) : 0;
+    }
+    prevCount.current = messages.length;
+  }, [messages]);
 
   if (dismissed) return null;
 

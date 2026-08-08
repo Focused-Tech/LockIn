@@ -18,14 +18,18 @@ export function ChipDock({
 }) {
   if (chips.length === 0) return null;
   return (
-    <div className="z-10 shrink-0 border-b border-white/10 bg-surface-card px-3 py-2">
-      <div className="flex flex-nowrap gap-2 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+    <div className="z-10 shrink-0 bg-surface-card px-3 py-2">
+      {/* Visible FRAME around the row (rounded, bordered) so the dock reads as its own strip. */}
+      <div
+        className="flex flex-nowrap gap-2 overflow-x-auto rounded-2xl border border-white/12 bg-black/25 p-2"
+        style={{ scrollbarWidth: "none" }}
+      >
         {chips.map((c) => (
           <button
             key={c.id}
             type="button"
             onClick={() => onPick(c)}
-            className="shrink-0 whitespace-nowrap rounded-full border border-border bg-surface px-3.5 py-1.5 text-[13px] font-medium text-foreground active:opacity-70"
+            className="shrink-0 whitespace-nowrap rounded-full border border-white/25 bg-white/[0.08] px-3.5 py-1.5 text-[13px] font-medium text-foreground shadow-sm active:opacity-70"
           >
             {c.q}
           </button>
