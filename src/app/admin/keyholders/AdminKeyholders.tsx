@@ -65,7 +65,7 @@ export function AdminKeyholders({ initialKeymasters }: { initialKeymasters: Admi
             }}
             placeholder="username"
             className="c"
-            style={{ letterSpacing: "normal", fontSize: 16, textAlign: "left" }}
+            style={{ letterSpacing: "normal", fontSize: 16, textAlign: "left", minWidth: 0 }}
           />
           <button type="button" className="btn" style={{ flex: "none", padding: "13px 15px" }} disabled={busy} onClick={() => void runSearch()}>
             Search
