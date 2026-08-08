@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { searchUsers, listKeymasters, type AdminUserRow } from "./search";
 import { setKeyholder, setKeymaster } from "./actions";
 
@@ -99,6 +100,15 @@ export function AdminKeyholders({ initialKeymasters }: { initialKeymasters: Admi
                 <button type="button" className="btn" disabled={busy} onClick={() => void act(() => setKeymaster(r.uid, !r.keymaster))}>
                   {r.keymaster ? "Revoke keymaster" : "Make keymaster"}
                 </button>
+              </div>
+              {/* Forwards (Features 2 + 3) — performance view and the user's profile. */}
+              <div className="btns" style={{ marginTop: 8 }}>
+                <Link href={`/admin/keyholders/${r.uid}`} className="btn" style={{ textAlign: "center", textDecoration: "none" }}>
+                  View performance
+                </Link>
+                <Link href={`/admin/users/${r.uid}`} className="btn" style={{ textAlign: "center", textDecoration: "none" }}>
+                  Profile
+                </Link>
               </div>
               {/* Upline picker — limited to keymasters; only meaningful for a keyholder. */}
               <div className="btns" style={{ marginTop: 8 }}>
