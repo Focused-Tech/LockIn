@@ -145,6 +145,11 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // downlineRequests — keyholder→keymaster placement requests; all reads/writes via the Admin SDK.
+    match /downlineRequests/{keyholderUid} {
+      allow read, write: if false;
+    }
+
     // creatorApplications — applicants read their own; submission + review are
     // server-side (Admin SDK). Admin reads also go through the Admin SDK.
     match /creatorApplications/{userId} {

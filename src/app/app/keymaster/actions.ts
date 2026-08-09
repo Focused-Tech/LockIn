@@ -4,7 +4,7 @@ import { randomBytes } from "node:crypto";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUserId } from "@/lib/firebase/session";
-import { COLLECTIONS, type UserDoc, type EnrolmentKeyDoc } from "@/lib/firebase/types";
+import { COLLECTIONS, type UserDoc, type EnrolmentKeyDoc, type DownlineRequestDoc } from "@/lib/firebase/types";
 
 /**
  * KEYMASTER ENROLMENT (architect ruling F) — a keymaster may enrol people into THEIR OWN tree, and
@@ -177,5 +177,62 @@ export async function revokeEnrolmentKey(keyId: string): Promise<EnrolResult> {
   if (k.keymasterUid !== km) return { ok: false, error: "Not your key" };
   if (k.status !== "unused") return { ok: false, error: "Only an unused key can be revoked" };
   await ref.set({ status: "revoked" }, { merge: true });
+  return { ok: true };
+}
+
+/* ── DOWNLINE PLACEMENT REQUESTS (keyholders ask; the keymaster approves) ──────────────────── */
+
+export interface DownlineRequestRow {
+  id: string;
+  keyholderUid: string;
+  keyholderUsername: string;
+}
+
+/** Pending requests addressed to the calling keymaster. */
+export async function listDownlineRequests(): Promise<DownlineRequestRow[]> {
+  const km = await requireKeymaster();
+  if (!km) return [];
+  const snap = await adminDb()
+    .collection(COLLECTIONS.downlineRequests)
+    .where("keymasterUid", "==", km)
+    .where("status", "==", "pending")
+    .get();
+  return snap.docs.map((d) => {
+    const r = d.data() as DownlineRequestDoc;
+    return { id: d.id, keyholderUid: r.keyholderUid, keyholderUsername: r.keyholderUsername };
+  });
+}
+
+/** Approve a request → enrol that keyholder into MY tree (keyholder role only, never poach). */
+export async function approveDownlineRequest(keyholderUid: string): Promise<EnrolResult> {
+  const km = await requireKeymaster();
+  if (!km) return { ok: false, error: "Not authorized" };
+  const db = adminDb();
+  const reqRef = db.collection(COLLECTIONS.downlineRequests).doc(keyholderUid);
+  const reqSnap = await reqRef.get();
+  const req = reqSnap.data() as DownlineRequestDoc | undefined;
+  if (!req || req.status !== "pending" || req.keymasterUid !== km) return { ok: false, error: "Request not found" };
+
+  const userRef = db.collection(COLLECTIONS.users).doc(keyholderUid);
+  const uSnap = await userRef.get();
+  const u = uSnap.data() as UserDoc | undefined;
+  if (!u) return { ok: false, error: "User not found" };
+  if (u.isAdmin || u.keymaster) return { ok: false, error: "Cannot place that account" };
+  if (u.keymasterUid && u.keymasterUid !== km) return { ok: false, error: "Already in another keymaster's tree" };
+
+  await userRef.set({ keyholder: true, keymasterUid: km }, { merge: true });
+  await reqRef.set({ status: "approved", resolvedAt: FieldValue.serverTimestamp() }, { merge: true });
+  return { ok: true };
+}
+
+/** Decline a request addressed to me. */
+export async function declineDownlineRequest(keyholderUid: string): Promise<EnrolResult> {
+  const km = await requireKeymaster();
+  if (!km) return { ok: false, error: "Not authorized" };
+  const reqRef = adminDb().collection(COLLECTIONS.downlineRequests).doc(keyholderUid);
+  const reqSnap = await reqRef.get();
+  const req = reqSnap.data() as DownlineRequestDoc | undefined;
+  if (!req || req.keymasterUid !== km) return { ok: false, error: "Request not found" };
+  await reqRef.set({ status: "declined", resolvedAt: FieldValue.serverTimestamp() }, { merge: true });
   return { ok: true };
 }

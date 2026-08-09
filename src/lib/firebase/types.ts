@@ -49,6 +49,8 @@ export const COLLECTIONS = {
   keyholderEvents: "keyholderEvents",
   /** Single-use enrolment KEYS issued by a keymaster: enrolmentKeys/{keyId}. A credential. */
   enrolmentKeys: "enrolmentKeys",
+  /** A keyholder's request to join a keymaster's downline: downlineRequests/{keyholderUid}. */
+  downlineRequests: "downlineRequests",
   /** Creator applications: creatorApplications/{userId}. */
   creatorApplications: "creatorApplications",
   /** Cross-slate parlays: crossParlays/{parlayId}. */
@@ -544,6 +546,24 @@ export interface EnrolmentKeyDoc {
   redeemedByUsername: string | null;
   redeemedAt: FsTimestamp | null;
   createdAt: FsTimestamp;
+}
+
+// ── downlineRequests/{keyholderUid} ────────────────────────────────────────────
+export type DownlineRequestStatus = "pending" | "approved" | "declined";
+
+/**
+ * A KEYHOLDER's request to be placed in a keymaster's downline. Keyholders cannot enrol themselves or
+ * make keys — a request is their only path into a tree; the target keymaster approves it. One doc per
+ * keyholder (id = keyholderUid), so a new request replaces any prior one.
+ */
+export interface DownlineRequestDoc {
+  keyholderUid: string;
+  keyholderUsername: string;
+  keymasterUid: string;
+  keymasterUsername: string;
+  status: DownlineRequestStatus;
+  createdAt: FsTimestamp;
+  resolvedAt: FsTimestamp | null;
 }
 
 // ── creatorApplications/{userId} ───────────────────────────────────────────────

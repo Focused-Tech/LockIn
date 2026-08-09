@@ -10,8 +10,12 @@ import {
   generateEnrolmentKey,
   listEnrolmentKeys,
   revokeEnrolmentKey,
+  listDownlineRequests,
+  approveDownlineRequest,
+  declineDownlineRequest,
   type KmSearchRow,
   type EnrolmentKeyRow,
+  type DownlineRequestRow,
 } from "./actions";
 
 /**
@@ -38,9 +42,26 @@ export function KeymasterPortal({
   const [keyLabel, setKeyLabel] = useState("");
   const [keyExpiry, setKeyExpiry] = useState("");
   const [newCode, setNewCode] = useState<string | null>(null);
+  const [requests, setRequests] = useState<DownlineRequestRow[]>([]);
   useEffect(() => {
     void listEnrolmentKeys().then(setKeys);
+    void listDownlineRequests().then(setRequests);
   }, []);
+
+  async function resolveRequest(uid: string, username: string, approve: boolean) {
+    setBusy(true);
+    setNote(null);
+    try {
+      const res = approve ? await approveDownlineRequest(uid) : await declineDownlineRequest(uid);
+      if (!res.ok) setNote(res.error);
+      else {
+        setRequests((prev) => prev.filter((r) => r.keyholderUid !== uid));
+        if (approve) setRows((prev) => [{ uid, username, creators: 0, players: 0, totalEntries: 0, totalProjectedCents: null }, ...prev]);
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function makeKey() {
     setBusy(true);
@@ -139,6 +160,26 @@ export function KeymasterPortal({
           <span className="val cash">{money(rollup.totalProjectedCents)}</span>
         </div>
       </div>
+
+      {/* Pending placement requests from keyholders */}
+      {requests.length > 0 && (
+        <div className="blk">
+          <div className="lb">Requests to join <i></i></div>
+          {requests.map((r) => (
+            <div key={r.keyholderUid} className="row static">
+              <span className="n"><b>@{r.keyholderUsername}</b><span>Wants to join your downline</span></span>
+              <div className="flex shrink-0 gap-1.5">
+                <button type="button" className="btn pri" style={{ flex: "none", padding: "8px 12px" }} disabled={busy} onClick={() => void resolveRequest(r.keyholderUid, r.keyholderUsername, true)}>
+                  Approve
+                </button>
+                <button type="button" className="btn" style={{ flex: "none", padding: "8px 12px" }} disabled={busy} onClick={() => void resolveRequest(r.keyholderUid, r.keyholderUsername, false)}>
+                  Decline
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Enrol */}
       <div className="blk act">

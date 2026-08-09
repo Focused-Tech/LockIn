@@ -3,6 +3,8 @@ import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUserProfile } from "@/lib/firebase/session";
 import { fetchKeyholderPortal } from "@/server/data/keyholder";
 import { KeyholderPortal } from "./KeyholderPortal";
+import { RequestPlacementCard } from "./RequestPlacementCard";
+import { myPlacementRequest } from "./actions";
 import "../lk-panels.css";
 
 /**
@@ -16,5 +18,21 @@ export default async function KeyholderPage() {
   if (!profile.keyholder) notFound();
 
   const data = await fetchKeyholderPortal(adminDb(), profile.id);
-  return <KeyholderPortal data={data} />;
+
+  // A keyholder with NO upline can request placement in a keymaster's downline (their only tree
+  // action). Placed keyholders don't see it (placement is once).
+  const needsPlacement = !profile.keymasterUid;
+  const request = needsPlacement ? await myPlacementRequest() : null;
+
+  return (
+    <>
+      {needsPlacement && (
+        <div className="lk-acct px-4 pt-4">
+          <RequestPlacementCard initial={request} />
+        </div>
+      )}
+      <KeyholderPortal data={data} />
+    </>
+  );
 }
+
