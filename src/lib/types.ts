@@ -27,13 +27,8 @@ export interface Prediction {
 /** Money is always cents (integer). This brand documents intent. */
 export type Cents = number;
 
-/** Result of resolving the rake for a pool. */
-export interface RakeResult {
-  tier: EntryTier;
-  rateApplied: number;
-  rakeCents: Cents;
-  prizePoolCents: Cents;
-}
+// RakeResult (tier-based) retired with computeRake — the pool-size path uses PoolRakeResult
+// (contest/poolRake.ts). See the Jul 28 one-economy ruling.
 
 /** A computed payout for a single finishing rank. */
 export interface RankPayout {

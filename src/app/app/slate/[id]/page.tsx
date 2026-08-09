@@ -32,7 +32,7 @@ export default async function SlatePage({
   const demoSlate = getDemoSlate(id);
   if (demoSlate) {
     return (
-      <div className="flex flex-col gap-5 p-6">
+      <div className="flex flex-col gap-5 px-6 pb-6 pt-8">
         <Link
           href="/app"
           className="flex items-center gap-1 self-start text-sm font-semibold text-muted"
@@ -98,7 +98,7 @@ export default async function SlatePage({
   }
 
   return (
-    <div className="flex flex-col gap-5 p-6">
+    <div className="flex flex-col gap-5 px-6 pb-6 pt-8">
       <Link
         href="/app"
         className="flex items-center gap-1 self-start text-sm font-semibold text-muted"

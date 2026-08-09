@@ -66,3 +66,4 @@ android/keystore.properties
 *.bak-fixpass
 *.bak-twocode
 *.bak-epic
+*.bak-rake

@@ -14,18 +14,9 @@ export const ENTRY_TIERS = [5, 10, 25] as const;
 export type EntryTier = (typeof ENTRY_TIERS)[number];
 
 // ── Rake ────────────────────────────────────────────────────
-/** Entry fee (dollars) → rake fraction taken from the pool. */
-export const RAKE_TIERS: Record<EntryTier, number> = {
-  5: 0.15,
-  10: 0.2,
-  25: 0.3,
-};
-
-/** Rake fraction applied once a pool exceeds {@link MEGA_RAKE_THRESHOLD_CENTS}. */
-export const MEGA_RAKE = 0.35;
-
-/** Pool size (cents) above which {@link MEGA_RAKE} applies. $250,000. */
-export const MEGA_RAKE_THRESHOLD_CENTS = 250_000_00;
+// RETIRED (Jul 28): the discrete tier table (RAKE_TIERS) and the $250K MEGA_RAKE override are gone —
+// rake is now the ONE pool-size curve in contest/poolRake.ts (bands in architectSet.SUB_10K_RAKE_BANDS).
+// MEGA_RAKE is retired, not repurposed; it is not canon.
 
 // ── Payout cap ──────────────────────────────────────────────
 /** Max any single winner receives = this × their total entry cost. Overflow → LockIn. */

@@ -54,10 +54,15 @@ export const BIG_STAKE_UNLOCK: { mode: "pot_size" | "division" | null; threshold
   threshold: null,
 };
 
-/* ── Sub-$10K rake bands (slice 6.4) — mockup pool-size model ONLY, NOT the live rake ── */
-// ARCHITECT-SET: awaiting value — thresholds for the sub-$10K rake bands IF the pool-size rake
-// model is adopted. The live rake (contest/rake.ts) is tier-based and untouched.
-export const SUB_10K_RAKE_BANDS: { belowCents: number; rate: number }[] = [];
+/* ── Sub-$10K rake bands — RULED (Jul 28): the base bands under the pool-size rake curve ── */
+// The pool-size rake model is the ONE economy (poolRake.ts). These are the ruled base bands under
+// $10K (15/20/30); at/above $10K the curve is 40% + 6.75% per 10×, hard cap 65% (championship 78%).
+// Ordered ascending — the rate for a pool is the FIRST band whose `belowCents` exceeds the pool.
+export const SUB_10K_RAKE_BANDS: { belowCents: number; rate: number }[] = [
+  { belowCents: 1_000_00, rate: 0.15 },
+  { belowCents: 5_000_00, rate: 0.2 },
+  { belowCents: 10_000_00, rate: 0.3 },
+];
 
 /* ── Sport key (used by the stats provider + creator games) ──────────────────── */
 // The composite scoring WEIGHTS that used to live here were Claude's invention, not the architect's,
