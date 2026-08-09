@@ -67,3 +67,4 @@ android/keystore.properties
 *.bak-twocode
 *.bak-epic
 *.bak-rake
+*.bak-fab

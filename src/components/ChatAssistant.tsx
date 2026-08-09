@@ -16,67 +16,35 @@ function pathnameToMode(pathname: string): TutorialMode {
 }
 
 /**
- * The Locksmith is contextual (§3d): the FAB auto-appears only where a DECISION is being made — slate
- * detail, the creator builder, practice, and tower play. It never auto-shows on profile, wallet,
- * settings, etc. The nav Locksmith slot can still open her from anywhere (locksmith:open).
- *
- * Architect ruling L: the FAB opens the SAME canonical {@link LocksmithChat} the tutorial uses — the
- * old bespoke popover chat (emoji mic, "Send" text, cover-background desk, hardcoded greeting) is
- * GONE. This component owns only the FAB button, the sheet container, and its dismissal.
+ * The Locksmith help chat. The floating FAB was REMOVED — she's now a permanent slot in the bottom
+ * nav (BottomNav → dispatches `locksmith:open`), so a second floating launcher was redundant. This
+ * component only listens for that event and renders the SAME full-screen {@link LocksmithChat} the
+ * tutorial uses; nothing floats on the screen when it's closed.
  */
-const DECISION_PREFIXES = ["/app/slate/", "/app/create", "/app/creator", "/app/practice", "/app/foxpit"];
-const DECISION_DENY = ["/app/creator/agreement"];
-function isDecisionScreen(pathname: string): boolean {
-  if (DECISION_DENY.some((p) => pathname.startsWith(p))) return false;
-  return DECISION_PREFIXES.some((p) => pathname.startsWith(p));
-}
-
 export function ChatAssistant() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const mode = pathnameToMode(pathname);
 
-  // §3b — the nav Locksmith slot (and any help entry) opens THIS same Locksmith.
+  // The nav Locksmith slot (and any help entry) opens THIS Locksmith.
   useEffect(() => {
     const openIt = () => setOpen(true);
     window.addEventListener("locksmith:open", openIt);
     return () => window.removeEventListener("locksmith:open", openIt);
   }, []);
 
-  const showFab = isDecisionScreen(pathname);
-  if (!showFab && !open) return null;
+  if (!open) return null;
 
+  // FULL-SCREEN — the same surface every entry point opens; greeting from the shared store.
   return (
-    <>
-      {(showFab || open) && (
-        <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          aria-label={open ? "Close Locksmith" : "Open Locksmith — your AI guide"}
-          className="fixed bottom-[4.5rem] right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full border border-[rgba(59,139,255,0.4)] bg-[rgba(59,139,255,0.15)] text-lg text-ai shadow-lg backdrop-blur transition-colors hover:bg-[rgba(59,139,255,0.25)]"
-        >
-          {open ? (
-            "✕"
-          ) : (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src="/foxpit/locksmith/locksmith_badge.png" alt="" className="h-9 w-9 rounded-full object-cover" />
-          )}
-        </button>
-      )}
-
-      {/* FULL-SCREEN (ruling A) — the FAB opens the SAME full-screen Locksmith surface as every other
-          entry point; there is no smaller drawer variant. Greeting comes from the shared store. */}
-      {open && (
-        <div className="fixed inset-0 z-[55]">
-          <LocksmithChat
-            mode={mode}
-            seed={TUTORIALS[mode].intro}
-            greeting={LOCKSMITH_GREETING}
-            onDismiss={() => setOpen(false)}
-            dismissLabel="Close"
-          />
-        </div>
-      )}
-    </>
+    <div className="fixed inset-0 z-[55]">
+      <LocksmithChat
+        mode={mode}
+        seed={TUTORIALS[mode].intro}
+        greeting={LOCKSMITH_GREETING}
+        onDismiss={() => setOpen(false)}
+        dismissLabel="Close"
+      />
+    </div>
   );
 }
