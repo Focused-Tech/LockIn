@@ -132,10 +132,10 @@ describe("null-follower — participation is '—', never 0, and no dollar figur
     expect(p.totalProjectedCents).toBeNull();
   });
 
-  it("the portal view maps null → '—' for both participation and dollars", () => {
+  it("the portal view maps null → '—' for participation and for projected dollars", () => {
     const view = read("src/app/app/keyholder/KeyholderPortal.tsx");
-    expect(view).toContain('pct == null ? "—"');
-    expect(view).toContain('armed && cents != null ? formatCents(cents) : "—"');
+    expect(view).toContain('p == null ? "—"'); // pctLabel
+    expect(view).toContain('b.projectedCents == null ? "—"'); // earnings by band
     expect(view).toContain("PROJECTED — rates pending final approval");
     // no payout CTA anywhere in the portal — no Payout / Withdraw / Cash-out button label
     expect(view.includes("Payout")).toBe(false);

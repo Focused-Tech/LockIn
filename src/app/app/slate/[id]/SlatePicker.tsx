@@ -251,10 +251,10 @@ export function SlatePicker({
             <small>{formatMultiple(metrics.firstPlaceMultiple)}</small>
           </span>
         </div>
-        <div className="rt">
-          {entryCount.toLocaleString()}
-          <b>in</b>
-        </div>
+      </div>
+      {/* Entry count on its OWN line so nothing on the prize row clips at 360px (L). */}
+      <div className="sd-players">
+        <b>{entryCount.toLocaleString()}</b> players in
       </div>
     </div>
   );

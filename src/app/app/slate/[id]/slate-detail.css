@@ -27,11 +27,23 @@
   background: linear-gradient(180deg, var(--sc, #2fb98a) 0%, var(--scd, #166b4f) 100%);
 }
 
-/* prize row */
+/* prize row — two big stats only; the player count moves to its own line below (no 360px clip). */
 .sd-prow {
   display: flex;
   align-items: baseline;
-  gap: 18px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+/* player count line (below the prize row) */
+.sd-players {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #6e7787;
+}
+.sd-players b {
+  color: #fff;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 .sd-prow .k {
   font-weight: 700;

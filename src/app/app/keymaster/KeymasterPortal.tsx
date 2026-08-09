@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { formatCents } from "@/lib/utils";
 import type { KeymasterRow } from "@/server/data/keyholder";
 import {
@@ -277,7 +278,10 @@ export function KeymasterPortal({
         ) : (
           rows.map((k) => (
             <div key={k.uid} className="row static">
-              <span className="n"><b>@{k.username}</b><span>{k.creators} creators · {k.players} players · {k.totalEntries} entries</span></span>
+              <Link href={`/app/keymaster/${k.uid}`} className="n" style={{ textDecoration: "none" }}>
+                <b>@{k.username} ›</b>
+                <span>{k.creators} creators · {k.players} players · {k.totalEntries} entries — tap for their pipeline</span>
+              </Link>
               <button type="button" className="btn" style={{ flex: "none", padding: "8px 12px" }} disabled={busy} onClick={() => void revoke(k.uid)}>
                 Revoke
               </button>

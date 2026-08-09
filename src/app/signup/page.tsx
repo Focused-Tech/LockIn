@@ -9,14 +9,14 @@ import { SignupForm } from "./SignupForm";
 export default async function SignupPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ref?: string }>;
+  searchParams: Promise<{ ref?: string; as?: string }>;
 }) {
   // Verified bounce for already-signed-in users (real check, not cookie
   // presence — avoids the /login<->/app loop on a present-but-invalid cookie).
   // Land in the journey hub (front door), not straight into Explore.
   if (await getCurrentUser()) redirect("/app/choose");
 
-  const { ref } = await searchParams;
+  const { ref, as } = await searchParams;
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-6 p-6">
@@ -39,7 +39,7 @@ export default async function SignupPage({
 
       <SocialAuthButtons referralCode={ref} />
 
-      <SignupForm referralCode={ref} />
+      <SignupForm referralCode={ref} asCreator={as === "creator"} />
 
       <SkillGameDisclaimer variant="block" />
 

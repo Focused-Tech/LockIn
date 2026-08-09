@@ -14,7 +14,7 @@ function maskDob(input: string): string {
   return `${d.slice(0, 2)}/${d.slice(2, 4)}/${d.slice(4)}`;
 }
 
-export function SignupForm({ referralCode }: { referralCode?: string }) {
+export function SignupForm({ referralCode, asCreator = false }: { referralCode?: string; asCreator?: boolean }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -57,7 +57,8 @@ export function SignupForm({ referralCode }: { referralCode?: string }) {
         dateOfBirth: parsed.data.dateOfBirth,
         ref: referralCode,
       });
-      router.push("/onboarding");
+      // A creator invite lands on creator onboarding; a player invite runs the normal flow.
+      router.push(asCreator ? "/app/apply" : "/onboarding");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create account");
       setPending(false);

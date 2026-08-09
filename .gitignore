@@ -65,3 +65,4 @@ android/keystore.properties
 *.bak-trap
 *.bak-fixpass
 *.bak-twocode
+*.bak-epic

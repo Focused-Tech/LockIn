@@ -3,7 +3,7 @@ import Link from "next/link";
 import { adminDb } from "@/lib/firebase/admin";
 import { isCurrentUserAdmin } from "@/lib/firebase/session";
 import { COLLECTIONS, type UserDoc } from "@/lib/firebase/types";
-import { fetchKeyholderPortal } from "@/server/data/keyholder";
+import { fetchKeyholderPipeline } from "@/server/data/keyholderPipeline";
 import { KeyholderPortal } from "@/app/app/keyholder/KeyholderPortal";
 import "../../../app/lk-panels.css";
 
@@ -16,9 +16,9 @@ export default async function AdminKeyholderPerformance({ params }: { params: Pr
   if (!(await isCurrentUserAdmin())) notFound();
   const { uid } = await params;
 
-  const [userSnap, data] = await Promise.all([
+  const [userSnap, pipeline] = await Promise.all([
     adminDb().collection(COLLECTIONS.users).doc(uid).get(),
-    fetchKeyholderPortal(adminDb(), uid),
+    fetchKeyholderPipeline(adminDb(), uid),
   ]);
   if (!userSnap.exists) notFound();
   const user = userSnap.data() as UserDoc;
@@ -38,7 +38,7 @@ export default async function AdminKeyholderPerformance({ params }: { params: Pr
           </div>
         </div>
       </div>
-      <KeyholderPortal data={data} hideHeader />
+      <KeyholderPortal pipeline={pipeline} hideHeader bannerName={user.username} />
     </div>
   );
 }

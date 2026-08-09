@@ -1,166 +1,187 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { formatCents } from "@/lib/utils";
-import type { KeyholderPortalData } from "@/server/data/keyholder";
+import QRCode from "qrcode";
+import type { KeyholderPipeline, CreatorPipelineRow } from "@/server/data/keyholderPipeline";
 
 /**
- * KEYHOLDER PORTAL view — Dashboard · My creators · Earnings (+ a keymaster tree). Panel language
- * from lk-panels.css. Every dollar figure is PROJECTED and labelled "rates pending final approval";
- * while the architect's rates are unset each amount renders "—". There is NO payout button anywhere.
- * Privacy: nothing here exposes pool rake, the creator-cut split, or LockIn's fee net.
+ * KEYHOLDER PORTAL — a WORK SURFACE (Parts 4–5). Tabs: My Key (two links off one code + QR + share),
+ * My Creators (pipeline stages with time-stuck; "—" where a stage's data doesn't exist), My Players,
+ * My Earnings (projected, by trigger band), My Keymaster. Reused read-only for the keymaster/admin
+ * drill-in (hideHeader + bannerName names whose data it is). No payout control anywhere.
  */
+type Tab = "key" | "creators" | "players" | "earnings" | "keymaster";
 
-type Tab = "dashboard" | "creators" | "earnings";
+const PROJECTED = "PROJECTED — rates pending final approval";
 
-const PROJECTED_LABEL = "PROJECTED — rates pending final approval";
-
-function pctLabel(pct: number | null): string {
-  return pct == null ? "—" : `${(pct * 100).toFixed(2)}%`;
+function stuckLabel(ms: number | null): string {
+  if (ms == null) return "—";
+  const d = Math.floor(ms / 86_400_000);
+  if (d >= 1) return `${d}d`;
+  const h = Math.floor(ms / 3_600_000);
+  if (h >= 1) return `${h}h`;
+  return "just now";
 }
-/** A projected dollar figure, or "—" when unarmed / null. */
-function money(cents: number | null, armed: boolean): string {
-  return armed && cents != null ? formatCents(cents) : "—";
+function pctLabel(p: number | null): string {
+  return p == null ? "—" : `${(p * 100).toFixed(2)}%`;
 }
 
-export function KeyholderPortal({ data, hideHeader = false }: { data: KeyholderPortalData; hideHeader?: boolean }) {
-  const [tab, setTab] = useState<Tab>("dashboard");
+export function KeyholderPortal({
+  pipeline,
+  hideHeader = false,
+  bannerName,
+}: {
+  pipeline: KeyholderPipeline;
+  hideHeader?: boolean;
+  bannerName?: string;
+}) {
+  const [tab, setTab] = useState<Tab>("key");
   const [origin, setOrigin] = useState("");
-  const [copied, setCopied] = useState(false);
+  const [qr, setQr] = useState<string | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
 
   useEffect(() => setOrigin(window.location.origin), []);
-  const link = origin ? `${origin}/signup?ref=${encodeURIComponent(data.code)}` : "";
+  const code = pipeline.code;
+  const playerLink = origin ? `${origin}/signup?ref=${encodeURIComponent(code)}` : "";
+  const creatorLink = origin ? `${origin}/signup?ref=${encodeURIComponent(code)}&as=creator` : "";
 
-  async function copy() {
+  useEffect(() => {
+    if (playerLink) QRCode.toDataURL(playerLink, { margin: 1, width: 176 }).then(setQr).catch(() => setQr(null));
+  }, [playerLink]);
+
+  async function copy(text: string, which: string) {
     try {
-      await navigator.clipboard.writeText(link || data.code);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      await navigator.clipboard.writeText(text);
+      setCopied(which);
+      setTimeout(() => setCopied(null), 1400);
     } catch {
-      /* clipboard blocked */
+      /* blocked */
     }
   }
-
-  const { earnings } = data;
+  async function share(url: string) {
+    const nav = navigator as Navigator & { share?: (d: { title: string; url: string }) => Promise<void> };
+    if (nav.share) await nav.share({ title: "Lock In", url }).catch(() => {});
+    else void copy(url, "share");
+  }
 
   return (
     <div className="lk-acct flex flex-col gap-4 p-4 pb-24">
-      {/* Header — suppressed when embedded in the admin performance view (it supplies its own). */}
+      {bannerName && (
+        <div className="blk act">
+          <p className="hint" style={{ color: "#fff" }}>Read-only — viewing @{bannerName}&apos;s data.</p>
+        </div>
+      )}
       {!hideHeader && (
         <div className="phd">
           <div className="n">
             <b>Keyholder portal</b>
-            <span>{data.isKeymaster ? "Keymaster · your keyholders + your referrals" : "Your referrals and projected earnings"}</span>
+            <span>Your key, your pipeline, your projected earnings.</span>
           </div>
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="tabs">
-        <button type="button" className={"tab" + (tab === "dashboard" ? " on" : "")} onClick={() => setTab("dashboard")}>Dashboard</button>
-        <button type="button" className={"tab" + (tab === "creators" ? " on" : "")} onClick={() => setTab("creators")}>My creators</button>
-        <button type="button" className={"tab" + (tab === "earnings" ? " on" : "")} onClick={() => setTab("earnings")}>Earnings</button>
+      <div className="tabs" style={{ flexWrap: "wrap" }}>
+        {(["key", "creators", "players", "earnings", "keymaster"] as Tab[]).map((t) => (
+          <button key={t} type="button" className={"tab" + (tab === t ? " on" : "")} onClick={() => setTab(t)}>
+            {t === "key" ? "My key" : t === "creators" ? "Creators" : t === "players" ? "Players" : t === "earnings" ? "Earnings" : "Keymaster"}
+          </button>
+        ))}
       </div>
 
-      {tab === "dashboard" && (
+      {tab === "key" && (
         <>
-          {/* Code + link */}
           <div className="blk act">
             <div className="lb">Your code <i></i></div>
-            <div className="code">
-              <div className="c">{data.code.toUpperCase()}</div>
-              <button type="button" className="btn" style={{ flex: "none", padding: "13px 15px" }} onClick={copy}>
-                {copied ? "Copied" : "Copy link"}
-              </button>
-            </div>
-            <p className="hint" style={{ marginTop: 10, wordBreak: "break-all" }}>{link || "…"}</p>
+            <div className="code"><div className="c">{code.toUpperCase()}</div></div>
+            {qr && (
+              <div className="mt-3 flex justify-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={qr} alt="Invite QR" width={176} height={176} style={{ borderRadius: 12, background: "#fff", padding: 6 }} />
+              </div>
+            )}
           </div>
 
-          {/* Referral counts, split creator / player */}
           <div className="blk">
-            <div className="lb">Referrals <i></i></div>
+            <div className="lb">Two links, one code <i></i></div>
             <div className="row static">
-              <span className="n"><b>Creators</b><span>Referred accounts now hosting</span></span>
-              <span className="val">{data.counts.creators}</span>
+              <span className="n"><b>Player invite</b><span>Lands on normal signup</span></span>
+              <div className="flex shrink-0 gap-1.5">
+                <button type="button" className="btn" style={{ flex: "none", padding: "8px 12px" }} onClick={() => void copy(playerLink, "player")}>{copied === "player" ? "Copied" : "Copy"}</button>
+                <button type="button" className="btn pri" style={{ flex: "none", padding: "8px 12px" }} onClick={() => void share(playerLink)}>Share</button>
+              </div>
             </div>
             <div className="row static">
-              <span className="n"><b>Players</b><span>Referred accounts that qualified</span></span>
-              <span className="val">{data.counts.players}</span>
+              <span className="n"><b>Creator invite</b><span>Lands on creator onboarding</span></span>
+              <div className="flex shrink-0 gap-1.5">
+                <button type="button" className="btn" style={{ flex: "none", padding: "8px 12px" }} onClick={() => void copy(creatorLink, "creator")}>{copied === "creator" ? "Copied" : "Copy"}</button>
+                <button type="button" className="btn pri" style={{ flex: "none", padding: "8px 12px" }} onClick={() => void share(creatorLink)}>Share</button>
+              </div>
             </div>
-            <div className="row static">
-              <span className="n"><b>Pending</b><span>Signed up, not yet qualified</span></span>
-              <span className="val muted">{data.counts.pending}</span>
-            </div>
+            <p className="hint" style={{ marginTop: 10 }}>Same attribution, different destination — both credit your code.</p>
           </div>
         </>
       )}
 
       {tab === "creators" && (
         <div className="blk">
-          <div className="lb">My creators <i></i></div>
-          {data.creators.length === 0 ? (
-            <p className="hint">No referred creators have settled a paid contest yet.</p>
+          <div className="lb">My creators — pipeline <i></i></div>
+          {pipeline.creators.length === 0 ? (
+            <p className="hint">No referred creators yet.</p>
           ) : (
-            data.creators.map((c) => (
+            pipeline.creators.map((c: CreatorPipelineRow) => (
               <div key={c.uid} className="row static">
                 <span className="n">
-                  <b>@{c.username} <span className="badge rank" style={{ marginLeft: 6 }}>{c.division}</span></b>
-                  <span>
-                    {c.eventsSettled} event{c.eventsSettled === 1 ? "" : "s"} · {c.totalEntries} entries · participation {pctLabel(c.latestParticipationPct)}
-                  </span>
+                  <b>@{c.username}</b>
+                  <span>{c.stageLabel} · stuck {stuckLabel(c.stuckMs)} · participation {pctLabel(c.participationPct)}</span>
                 </span>
-                <span className="val muted">{c.bandStatus}</span>
+                <span className="val muted">{c.stage === "participating" ? "live" : c.stageLabel.split(" ")[0]}</span>
               </div>
             ))
           )}
+          <p className="hint" style={{ marginTop: 10 }}>Pay triggers on participation — watch who&apos;s stuck before &ldquo;settled&rdquo;. A stage with no data shows &ldquo;—&rdquo;.</p>
+        </div>
+      )}
+
+      {tab === "players" && (
+        <div className="blk">
+          <div className="lb">My players <i></i></div>
+          <div className="row static"><span className="n"><b>Referred</b></span><span className="val">{pipeline.players.referred}</span></div>
+          <div className="row static"><span className="n"><b>Deposited</b></span><span className="val">{pipeline.players.deposited == null ? "—" : pipeline.players.deposited}</span></div>
+          <div className="row static"><span className="n"><b>Qualified</b></span><span className="val">{pipeline.players.qualified}</span></div>
+          <div className="row static"><span className="n"><b>Pending</b><span>Signed up, not yet qualified</span></span><span className="val muted">{pipeline.players.pending}</span></div>
         </div>
       )}
 
       {tab === "earnings" && (
         <>
           <div className="blk money">
-            <div className="lb">Projected earnings <i></i></div>
-            <div className="row static">
-              <span className="n"><b>From creators</b><span>Across settled events</span></span>
-              <span className="val cash">{money(earnings.creatorProjectedCents, earnings.armed)}</span>
-            </div>
-            <div className="row static">
-              <span className="n"><b>From players</b><span>{earnings.qualifiedPlayers} qualified</span></span>
-              <span className="val cash">{money(earnings.playerProjectedCents, earnings.armed)}</span>
-            </div>
-            <div className="row static">
-              <span className="n"><b>Total</b></span>
-              <span className="val cash">{money(earnings.totalProjectedCents, earnings.armed)}</span>
-            </div>
+            <div className="lb">Projected earnings — by band <i></i></div>
+            {pipeline.earningsByBand.length === 0 ? (
+              <p className="hint">No creator activity yet.</p>
+            ) : (
+              pipeline.earningsByBand.map((b) => (
+                <div key={b.band} className="row static">
+                  <span className="n"><b>{b.band}</b><span>{b.creators} creator{b.creators === 1 ? "" : "s"}</span></span>
+                  <span className="val cash">{b.projectedCents == null ? "—" : b.projectedCents}</span>
+                </div>
+              ))
+            )}
           </div>
-          <p className="hint">{PROJECTED_LABEL}. Event tallies are live; dollar amounts appear once rates are approved.</p>
+          <p className="hint">{PROJECTED}. A 2% creator and a 10% creator read differently; dollars appear once rates are approved.</p>
         </>
       )}
 
-      {/* KEYMASTER tree — downline keyholders + roll-up. Shown on every tab for a keymaster. */}
-      {data.keymaster && (
+      {tab === "keymaster" && (
         <div className="blk">
-          <div className="lb">Your keyholders <i></i></div>
-          {data.keymaster.keyholders.length === 0 ? (
-            <p className="hint">No keyholders are assigned under you yet.</p>
-          ) : (
+          <div className="lb">My keymaster <i></i></div>
+          {pipeline.keymasterUsername ? (
             <>
-              {data.keymaster.keyholders.map((k) => (
-                <div key={k.uid} className="row static">
-                  <span className="n">
-                    <b>@{k.username}</b>
-                    <span>{k.creators} creators · {k.players} players · {k.totalEntries} entries</span>
-                  </span>
-                  <span className="val cash">{money(k.totalProjectedCents, earnings.armed)}</span>
-                </div>
-              ))}
-              <div className="row static">
-                <span className="n"><b>Roll-up</b><span>{data.keymaster.rollup.creators} creators · {data.keymaster.rollup.players} players · {data.keymaster.rollup.totalEntries} entries</span></span>
-                <span className="val cash">{money(data.keymaster.rollup.totalProjectedCents, earnings.armed)}</span>
-              </div>
+              <div className="row static"><span className="n"><b>@{pipeline.keymasterUsername}</b><span>Your upline</span></span></div>
+              <p className="hint" style={{ marginTop: 10 }}>Reach them with their code: {pipeline.keymasterUsername.toUpperCase()}.</p>
             </>
+          ) : (
+            <p className="hint">You&apos;re not in a keymaster&apos;s downline yet.</p>
           )}
-          <p className="hint" style={{ marginTop: 10 }}>{PROJECTED_LABEL}.</p>
         </div>
       )}
     </div>
