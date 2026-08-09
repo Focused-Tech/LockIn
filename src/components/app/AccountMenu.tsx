@@ -19,10 +19,25 @@ const ITEMS: { href: string; label: string }[] = [
   { href: "/app/settings", label: "Settings" },
 ];
 
-export function AccountMenu({ username }: { username: string }) {
+export function AccountMenu({
+  username,
+  isKeyholder = false,
+  isAdmin = false,
+}: {
+  username: string;
+  isKeyholder?: boolean;
+  isAdmin?: boolean;
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+
+  // Role destinations — shown ONLY when the flag is set. The portal/admin are REACHED here, never
+  // by being redirected on load. Nothing here for a user without the flags.
+  const roleItems: { href: string; label: string }[] = [
+    ...(isKeyholder ? [{ href: "/app/keyholder", label: "Keyholder portal" }] : []),
+    ...(isAdmin ? [{ href: "/admin/keyholders", label: "Admin" }] : []),
+  ];
 
   async function signOut() {
     setSigningOut(true);
@@ -61,7 +76,7 @@ export function AccountMenu({ username }: { username: string }) {
               <p className="text-xs uppercase tracking-wide text-muted">Signed in as</p>
               <p className="truncate text-sm font-semibold text-foreground">@{username}</p>
             </div>
-            {ITEMS.map((it) => (
+            {[...ITEMS, ...roleItems].map((it) => (
               <Link
                 key={it.href}
                 href={it.href}

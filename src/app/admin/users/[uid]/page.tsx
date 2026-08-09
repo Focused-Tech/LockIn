@@ -37,10 +37,7 @@ export default async function AdminUserProfile({ params }: { params: Promise<{ u
   );
 
   return (
-    <div
-      className="lk-acct flex flex-col gap-4 px-4 pb-24"
-      style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.5rem)" }}
-    >
+    <div className="lk-acct flex flex-col gap-4 p-4 pb-24">
       <div className="phd">
         <div className="n">
           <b>@{u.username}</b>

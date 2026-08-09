@@ -24,8 +24,8 @@ export default async function AdminKeyholderPerformance({ params }: { params: Pr
   const user = userSnap.data() as UserDoc;
 
   return (
-    <div style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 1.5rem)" }}>
-      <div className="lk-acct px-4">
+    <div>
+      <div className="lk-acct px-4 pt-4">
         <div className="phd" style={{ marginBottom: 4 }}>
           <div className="n">
             <b>Performance · @{user.username}</b>

@@ -27,12 +27,16 @@ export function AppFrame({
   username,
   coinBalance,
   cashBalanceCents,
+  isKeyholder = false,
+  isAdmin = false,
 }: {
   children: React.ReactNode;
   overlays?: React.ReactNode;
   username: string;
   coinBalance: number;
   cashBalanceCents: number;
+  isKeyholder?: boolean;
+  isAdmin?: boolean;
 }) {
   return (
     <div className="flex min-h-[100dvh] w-full justify-center bg-[#08090c] min-[480px]:items-center">
@@ -46,6 +50,8 @@ export function AppFrame({
           username={username}
           coinBalance={coinBalance}
           cashBalanceCents={cashBalanceCents}
+          isKeyholder={isKeyholder}
+          isAdmin={isAdmin}
         />
         <ScrollReset />
         <main id="app-scroll" className="flex-1 overflow-y-auto overflow-x-hidden">

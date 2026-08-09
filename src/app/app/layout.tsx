@@ -46,6 +46,8 @@ export default async function AppLayout({
         username={profile.username}
         coinBalance={profile.coinBalance}
         cashBalanceCents={profile.cashBalanceCents}
+        isKeyholder={profile.keyholder === true}
+        isAdmin={profile.isAdmin === true}
         overlays={
           <>
             {/* COMPLIANCE — the Cross-Parlay Builder FAB is removed: "parlay" is a gambling term and

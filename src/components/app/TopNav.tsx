@@ -15,10 +15,14 @@ export function TopNav({
   username,
   coinBalance,
   cashBalanceCents,
+  isKeyholder = false,
+  isAdmin = false,
 }: {
   username: string;
   coinBalance: number;
   cashBalanceCents: number;
+  isKeyholder?: boolean;
+  isAdmin?: boolean;
 }) {
   return (
     <header className="flex shrink-0 items-center justify-between bg-surface px-4 pb-2 pt-[calc(env(safe-area-inset-top)_+_0.75rem)]">
@@ -32,7 +36,7 @@ export function TopNav({
           <Pill tone="accent">🪙 {coinBalance}</Pill>
         </Link>
 
-        <AccountMenu username={username} />
+        <AccountMenu username={username} isKeyholder={isKeyholder} isAdmin={isAdmin} />
       </div>
     </header>
   );
