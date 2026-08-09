@@ -6,6 +6,20 @@ import { COLLECTIONS, type UserDoc } from "@/lib/firebase/types";
 import { formatCents } from "@/lib/utils";
 import "../../../app/lk-panels.css";
 
+/** Distinct colour per role so the badges aren't four identical purple pills (ruling E). */
+function roleBadgeStyle(role: string): { bg: string; border: string; color: string } {
+  switch (role) {
+    case "Admin":
+      return { bg: "rgba(224,67,44,.18)", border: "rgba(224,67,44,.55)", color: "#f3a99b" };
+    case "Keymaster":
+      return { bg: "rgba(240,196,99,.16)", border: "rgba(240,196,99,.55)", color: "#f5d89a" };
+    case "Keyholder":
+      return { bg: "rgba(124,92,245,.2)", border: "rgba(124,92,245,.6)", color: "#c9bcff" };
+    default: // Verified creator / Creator
+      return { bg: "rgba(47,185,138,.18)", border: "rgba(47,185,138,.55)", color: "#7fe3c0" };
+  }
+}
+
 /**
  * ADMIN — read-only user PROFILE (Feature 3). The arbitrary-user profile page that didn't exist
  * before: basic identity, roles, balances, and referral stats for any uid. Hard 404 for non-admins.
@@ -40,11 +54,12 @@ export default async function AdminUserProfile({ params }: { params: Promise<{ u
     <div className="lk-acct flex flex-col gap-4 p-4 pb-24">
       <div className="phd">
         <div className="n">
-          <b>@{u.username}</b>
+          <b>Profile</b>
           <span>
-            Admin profile. <Link href="/admin/keyholders" style={{ color: "var(--brand-orange)" }}>← Roles</Link>
-            {" · "}
+            @{u.username} — identity, roles &amp; balances.{" "}
             <Link href={`/admin/keyholders/${uid}`} style={{ color: "var(--brand-orange)" }}>Performance ›</Link>
+            {" · "}
+            <Link href="/admin/keyholders" style={{ color: "var(--brand-orange)" }}>Roles</Link>
           </span>
         </div>
       </div>
@@ -62,7 +77,14 @@ export default async function AdminUserProfile({ params }: { params: Promise<{ u
         <div className="lb">Roles <i></i></div>
         {roles.length ? (
           <div className="badges" style={{ marginTop: 0 }}>
-            {roles.map((r) => <span key={r} className="badge rank">{r}</span>)}
+            {roles.map((r) => {
+              const s = roleBadgeStyle(r);
+              return (
+                <span key={r} className="badge" style={{ background: s.bg, border: `1px solid ${s.border}`, color: s.color }}>
+                  {r}
+                </span>
+              );
+            })}
           </div>
         ) : (
           <p className="hint">No special roles.</p>

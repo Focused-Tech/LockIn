@@ -18,18 +18,16 @@ export function ChipDock({
 }) {
   if (chips.length === 0) return null;
   return (
-    <div className="z-10 shrink-0 bg-surface-card px-3 py-2">
-      {/* Visible FRAME around the row (rounded, bordered) so the dock reads as its own strip. */}
-      <div
-        className="flex flex-nowrap gap-2 overflow-x-auto rounded-2xl border border-white/12 bg-black/25 p-2"
-        style={{ scrollbarWidth: "none" }}
-      >
+    // FRAME RECEDES — panel-toned background, a single hairline (edge token) under the row, no bright
+    // outline. The PILLS carry the definition: clear border, bold label, a generous tap target.
+    <div className="z-10 shrink-0 border-b border-border bg-surface-card px-3 pb-2 pt-1.5">
+      <div className="flex flex-nowrap gap-2 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
         {chips.map((c) => (
           <button
             key={c.id}
             type="button"
             onClick={() => onPick(c)}
-            className="shrink-0 whitespace-nowrap rounded-full border border-white/25 bg-white/[0.08] px-3.5 py-1.5 text-[13px] font-medium text-foreground shadow-sm active:opacity-70"
+            className="shrink-0 whitespace-nowrap rounded-full border border-[#2c3847] bg-surface px-4 py-2 text-[13px] font-semibold text-foreground active:bg-[#1a212b]"
           >
             {c.q}
           </button>

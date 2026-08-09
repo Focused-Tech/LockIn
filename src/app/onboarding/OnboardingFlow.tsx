@@ -52,7 +52,7 @@ const JOURNEYS: Journey[] = [
   {
     key: "beginner",
     title: "Beginner — simple & guided",
-    body: "Creator picks, plain-language calls, coins not odds. We teach you up to the full game, step by step.",
+    body: "Creator picks, plain-language calls, all in coins. We teach you up to the full game, step by step.",
     color: "creator", tag: "Coins", lane: "beginner", href: "/app/beginner", mode: "beginner",
   },
   {

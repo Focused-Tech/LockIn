@@ -23,7 +23,7 @@ function money(cents: number | null, armed: boolean): string {
   return armed && cents != null ? formatCents(cents) : "—";
 }
 
-export function KeyholderPortal({ data }: { data: KeyholderPortalData }) {
+export function KeyholderPortal({ data, hideHeader = false }: { data: KeyholderPortalData; hideHeader?: boolean }) {
   const [tab, setTab] = useState<Tab>("dashboard");
   const [origin, setOrigin] = useState("");
   const [copied, setCopied] = useState(false);
@@ -45,13 +45,15 @@ export function KeyholderPortal({ data }: { data: KeyholderPortalData }) {
 
   return (
     <div className="lk-acct flex flex-col gap-4 p-4 pb-24">
-      {/* Header */}
-      <div className="phd">
-        <div className="n">
-          <b>Keyholder portal</b>
-          <span>{data.isKeymaster ? "Keymaster · your keyholders + your referrals" : "Your referrals and projected earnings"}</span>
+      {/* Header — suppressed when embedded in the admin performance view (it supplies its own). */}
+      {!hideHeader && (
+        <div className="phd">
+          <div className="n">
+            <b>Keyholder portal</b>
+            <span>{data.isKeymaster ? "Keymaster · your keyholders + your referrals" : "Your referrals and projected earnings"}</span>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Tabs */}
       <div className="tabs">

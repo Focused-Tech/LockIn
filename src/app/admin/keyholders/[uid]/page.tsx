@@ -28,16 +28,17 @@ export default async function AdminKeyholderPerformance({ params }: { params: Pr
       <div className="lk-acct px-4 pt-4">
         <div className="phd" style={{ marginBottom: 4 }}>
           <div className="n">
-            <b>Performance · @{user.username}</b>
+            <b>Performance</b>
             <span>
-              Admin read-only view. <Link href="/admin/keyholders" style={{ color: "var(--brand-orange)" }}>← Roles</Link>
-              {" · "}
+              @{user.username} — referrals &amp; projected earnings.{" "}
               <Link href={`/admin/users/${uid}`} style={{ color: "var(--brand-orange)" }}>Profile ›</Link>
+              {" · "}
+              <Link href="/admin/keyholders" style={{ color: "var(--brand-orange)" }}>Roles</Link>
             </span>
           </div>
         </div>
       </div>
-      <KeyholderPortal data={data} />
+      <KeyholderPortal data={data} hideHeader />
     </div>
   );
 }

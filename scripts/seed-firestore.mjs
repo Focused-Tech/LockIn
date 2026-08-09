@@ -198,6 +198,53 @@ const SLATES = [
       },
     ],
   },
+  // ── Compliant cross-game / culture slates so BOTH feeds carry LIVE contests across MANY
+  //    categories (the demo slates stay separately, labelled DEMO). All binary, no banned framing.
+  {
+    id: "seed-nba-duel",
+    title: "NBA — Backcourt Duel",
+    category: "NBA",
+    status: "live",
+    entryCount: 2890,
+    lockInDays: 1,
+    predictions: [
+      { id: "p1", question: "Who finishes with more assists tonight?", optionA: "The home playmaker", optionB: "The visiting playmaker", optionAProbability: 53, optionBProbability: 47, predictionType: "binary", overUnderLine: null },
+      { id: "p2", question: "Which wing grabs more rebounds?", optionA: "The home wing", optionB: "The visiting wing", optionAProbability: 49, optionBProbability: 51, predictionType: "binary", overUnderLine: null },
+    ],
+  },
+  {
+    id: "seed-nfl-duel",
+    title: "NFL — Sunday Showcase",
+    category: "NFL",
+    status: "live",
+    entryCount: 6100,
+    lockInDays: 3,
+    predictions: [
+      { id: "p1", question: "Which back racks up more yards on the ground?", optionA: "The home back", optionB: "The visiting back", optionAProbability: 52, optionBProbability: 48, predictionType: "binary", overUnderLine: null },
+    ],
+  },
+  {
+    id: "seed-hiphop-chart",
+    title: "Hip-Hop — Friday Chart Watch",
+    category: "Hip Hop",
+    status: "live",
+    entryCount: 1740,
+    lockInDays: 2,
+    predictions: [
+      { id: "p1", question: "Which album debuts higher this Friday?", optionA: "The veteran's project", optionB: "The newcomer's drop", optionAProbability: 55, optionBProbability: 45, predictionType: "binary", overUnderLine: null },
+    ],
+  },
+  {
+    id: "seed-reality-buzz",
+    title: "Reality TV — Weekend Buzz",
+    category: "Reality TV",
+    status: "live",
+    entryCount: 980,
+    lockInDays: 2,
+    predictions: [
+      { id: "p1", question: "Which premiere trends first this weekend?", optionA: "The returning hit", optionB: "The new series", optionAProbability: 54, optionBProbability: 46, predictionType: "binary", overUnderLine: null },
+    ],
+  },
 ];
 
 /** Old seed ids to clear so the feed isn't cluttered with expired slates from earlier seeds. */

@@ -44,9 +44,8 @@ export default async function AppLayout({
     <CrossParlayProvider>
       <AppFrame
         username={profile.username}
-        coinBalance={profile.coinBalance}
-        cashBalanceCents={profile.cashBalanceCents}
         isKeyholder={profile.keyholder === true}
+        isKeymaster={profile.keymaster === true}
         isAdmin={profile.isAdmin === true}
         overlays={
           <>

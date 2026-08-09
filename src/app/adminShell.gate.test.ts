@@ -69,10 +69,13 @@ describe("B/C — portal + admin routes render inside AppFrame with a way out", 
 });
 
 describe("D — drawer role entries are flag-gated", () => {
-  it("the entries are conditioned on the flags with the right labels", () => {
+  it("the entries are conditioned on the flags with the right labels (keymaster home ≠ keyholder)", () => {
     const menu = read("src/components/app/AccountMenu.tsx");
-    expect(menu).toContain('isKeyholder ? [{ href: "/app/keyholder", label: "Keyholder portal" }] : []');
-    expect(menu).toContain('isAdmin ? [{ href: "/admin/keyholders", label: "Admin" }] : []');
+    expect(menu).toContain('href: "/app/keymaster", label: "Keymaster portal"');
+    expect(menu).toContain('href: "/app/keyholder", label: "Keyholder portal"');
+    expect(menu).toContain('href: "/admin/keyholders", label: "Admin"');
+    // keymaster is checked BEFORE keyholder, so a keymaster's home is the keymaster portal.
+    expect(menu.indexOf("isKeymaster")).toBeLessThan(menu.indexOf('label: "Keyholder portal"'));
   });
 });
 

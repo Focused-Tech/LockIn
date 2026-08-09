@@ -64,15 +64,14 @@ export function ChatAssistant() {
         </button>
       )}
 
-      {/* SHEET — differs from the tutorial only in SIZE and dismissal (ruling L). A tall bottom sheet
-          that renders the SAME LocksmithChat, compact hero, greeting from the shared store. */}
+      {/* FULL-SCREEN (ruling A) — the FAB opens the SAME full-screen Locksmith surface as every other
+          entry point; there is no smaller drawer variant. Greeting comes from the shared store. */}
       {open && (
-        <div className="fixed inset-x-0 bottom-0 top-14 z-[55] overflow-hidden rounded-t-2xl border-t border-border shadow-2xl">
+        <div className="fixed inset-0 z-[55]">
           <LocksmithChat
             mode={mode}
             seed={TUTORIALS[mode].intro}
             greeting={LOCKSMITH_GREETING}
-            compact
             onDismiss={() => setOpen(false)}
             dismissLabel="Close"
           />

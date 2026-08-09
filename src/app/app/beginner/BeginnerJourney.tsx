@@ -139,7 +139,7 @@ export function BeginnerJourney({
     // header count and wrapped to two lines).
     <div>
       <h1 className="text-xl font-semibold">Beginner</h1>
-      <p className="text-sm text-muted">Simple &amp; guided — coins, not odds.</p>
+      <p className="text-sm text-muted">Simple &amp; guided — play in coins.</p>
     </div>
   );
 
@@ -242,7 +242,14 @@ function ExploreScreen({
             boxShadow: "inset 0 1px 0 rgba(255,255,255,.05), 0 8px 20px rgba(0,0,0,.55)",
           }}
         >
-          No live contests right now. Check back soon — new picks drop daily.
+          <p>No live contests in your lane yet — but you can still play right now.</p>
+          <Link
+            href="/app/slate/demo-nba"
+            className="mt-3 inline-block rounded-full px-4 py-2 text-xs font-bold text-white"
+            style={{ background: "var(--brand-orange)" }}
+          >
+            Try a free demo →
+          </Link>
         </div>
       )}
 
@@ -342,7 +349,9 @@ function ExploreScreen({
         </div>
         );
       })}
-      <p className="text-center text-xs text-[#3A4A5C]">Tap a pick to try it →</p>
+      {feed.cards.length > 0 && (
+        <p className="text-center text-xs text-[#3A4A5C]">Tap a pick to try it →</p>
+      )}
     </div>
   );
 }

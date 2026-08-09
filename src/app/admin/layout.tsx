@@ -15,9 +15,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <AppFrame
       username={profile.username}
-      coinBalance={profile.coinBalance}
-      cashBalanceCents={profile.cashBalanceCents}
       isKeyholder={profile.keyholder === true}
+      isKeymaster={profile.keymaster === true}
       isAdmin={profile.isAdmin === true}
     >
       {children}

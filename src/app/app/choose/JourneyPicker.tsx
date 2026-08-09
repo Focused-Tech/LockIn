@@ -115,7 +115,7 @@ export function JourneyPicker({
         {/* Beginner */}
         <JourneyCard
           title="Beginner — simple & guided"
-          body="Creator picks, plain-language calls, coins not odds. We teach you up to the full game, step by step."
+          body="Creator picks, plain-language calls, all in coins. We teach you up to the full game, step by step."
           tag="Coins"
           color="creator"
           active={currentLane === "beginner"}

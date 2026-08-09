@@ -19,13 +19,10 @@ export function SkillGameDisclaimer({
           className,
         )}
       >
-        LockIn is a skill-based prediction contest platform. Winners are
-        determined by the accuracy of their predictions, not by chance. Entry
-        fees fund a shared prize pool — LockIn never bets against you and has no
-        stake in any outcome.{" "}
-        <span className="text-foreground">
-          This is not gambling and not sports betting.
-        </span>{" "}
+        LockIn runs skill contests. Winners are decided by the accuracy of their
+        picks and their lock-in speed — knowledge and judgment, not chance. Entry
+        fees fund a shared prize pool that LockIn has no stake in.{" "}
+        <span className="text-foreground">The best cards win the pool.</span>{" "}
         You must be 18 or older to participate. Paid contests are unavailable in
         WA, AZ, IA, LA, MT, and SC.
       </div>
@@ -34,8 +31,7 @@ export function SkillGameDisclaimer({
 
   return (
     <p className={cn("text-center text-xs text-muted", className)}>
-      Skill-based prediction contest platform. Not gambling. Not sports betting.
-      18+.
+      A skill contest — knowledge and lock-in speed decide the winners. 18+.
     </p>
   );
 }

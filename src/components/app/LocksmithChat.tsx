@@ -5,7 +5,7 @@ import Link from "next/link";
 import { stripMarkdown, type ChatMessage } from "@/lib/ai/chat";
 import { type TutorialMode } from "@/lib/tutorial/tutorials";
 import { startStt, sttSupported, type SttHandle } from "@/lib/speech";
-import { MicIcon, SendIcon } from "./navIcons";
+import { MicIcon, SendIcon, LOCKSMITH_BADGE_SRC } from "./navIcons";
 import { ChipDock } from "./ChipDock";
 import { championshipChipsForMode, chipAnswer, type ChampionshipChip } from "@/lib/championship/copy";
 import { autosizeTextarea } from "@/lib/dom/autosize";
@@ -14,13 +14,11 @@ import { autosizeTextarea } from "@/lib/dom/autosize";
 type UiMessage = ChatMessage & { href?: string };
 
 /**
- * THE LOCKSMITH CHAT — ONE canonical component, rendered on the full-screen Locksmith screen AND
- * inside the FAB sheet (architect ruling L). Same contained hero (never a background-cover), same
- * ChipDock, same autosize textarea, same MicIcon + paper-plane SendIcon pair, same greeting source.
- *
- * The container (full-screen vs sheet) and dismissal live in the PARENT. Everything inside — the
- * chat, its hero, its chips, its input — is this component. `compact` is the single size prop the
- * ruling allows for the sheet; `headerCta` is the tutorial's START PLAYING slot (absent in the FAB).
+ * THE LOCKSMITH CHAT — ONE canonical FULL-SCREEN surface, rendered on the tutorial screen AND the FAB
+ * (architect ruling A: no smaller drawer variant). Solid HEADER BAND (title/chevron/CTA/close live
+ * here, never on the artwork — D); a CONTAINED hero image below it; the ChipDock; a conversation
+ * transcript with speaker bubbles (Locksmith left + avatar badge, user right — C); the input row.
+ * The chevron minimizes the hero image (the collapsed state), not the chat.
  */
 export function LocksmithChat({
   mode,
@@ -28,21 +26,15 @@ export function LocksmithChat({
   steps,
   greeting,
   autoWalkthrough = false,
-  compact = false,
   headerCta,
   onDismiss,
   dismissLabel = "Close",
 }: {
   mode: TutorialMode;
-  /** Seed prompt that governs follow-up Q&A (prepended as the first user turn). */
   seed: string;
-  /** Pinned walkthrough beats (advanced). When present they ARE the walkthrough — no model improv. */
   steps?: string[];
-  /** Initial assistant bubble when there's no pinned walkthrough / auto-walkthrough (the FAB). */
   greeting?: string;
-  /** Stream a live walkthrough from `seed` on open (tutorial modes without pinned steps). */
   autoWalkthrough?: boolean;
-  compact?: boolean;
   headerCta?: ReactNode;
   onDismiss?: () => void;
   dismissLabel?: string;
@@ -186,8 +178,6 @@ export function LocksmithChat({
     void stream(apiHistory);
   }
 
-  // A dock chip sends its question. Championship answers are DATA (deterministic, no unset numbers)
-  // and link to the rules page — the Locksmith never states a value that isn't set.
   function onPickChip(chip: ChampionshipChip) {
     if (pending) return;
     setMessages((prev) => [
@@ -198,79 +188,87 @@ export function LocksmithChat({
   }
 
   const topInset = "env(safe-area-inset-top, 0px)";
-  const heroExpanded = compact ? "30vh" : "52vh";
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-surface-card">
-      {/* HERO — CONTAINED (object-contain), never a background-cover. Corridor backdrop behind her. */}
+      {/* HEADER BAND (D) — solid; nothing readable sits on the artwork. */}
       <div
-        className="relative z-10 shrink-0 overflow-hidden"
-        style={{ height: collapsed ? `calc(${topInset} + 7rem)` : heroExpanded }}
+        className="z-20 flex shrink-0 items-start justify-between gap-3 bg-surface-card px-5 pb-2"
+        style={{ paddingTop: `calc(${topInset} + 0.9rem)` }}
       >
-        {!collapsed && (
-          <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/foxpit/lounge/elevator_corridor.png" alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: "center 18%" }} />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/foxpit/locksmith/locksmith_desk_clean.png"
-              alt="The Locksmith at her desk"
-              className="absolute bottom-0 left-1/2 h-full w-[90%] -translate-x-1/2 object-contain object-bottom"
-              style={{ paddingTop: `calc(${topInset} + ${compact ? "3.5rem" : "6.5rem"})` }}
-            />
-          </>
-        )}
-
-        {onDismiss && (
-          <button
-            type="button"
-            onClick={onDismiss}
-            className="absolute right-4 z-20 rounded-full border border-white/25 px-3 py-1 text-xs font-medium text-white/80"
-            style={{ top: `calc(${topInset} + 0.55rem)` }}
-          >
-            {dismissLabel}
-          </button>
-        )}
-
-        <div className="absolute inset-x-0 z-20 px-5" style={{ top: `calc(${topInset} + 1.85rem)` }}>
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-white/70">The Locksmith</p>
-          <div className="mt-0.5 flex items-start justify-between">
-            <div className="flex flex-col items-start">
-              <p className="whitespace-nowrap text-xl font-semibold leading-none text-white">Your fox guide</p>
-              <button
-                type="button"
-                onClick={() => setCollapsed((c) => !c)}
-                aria-label={collapsed ? "Show the Locksmith" : "Hide the Locksmith"}
-                aria-expanded={!collapsed}
-                className="mt-1.5 text-[color:var(--brand-orange)]"
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" style={{ transform: collapsed ? "rotate(180deg)" : "none", transition: "transform .15s ease" }} aria-hidden>
-                  <path d="M6 15l6-6 6 6" />
-                </svg>
-              </button>
-            </div>
-            {headerCta}
+        <div className="flex flex-col items-start">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted">The Locksmith</p>
+          <div className="flex items-center gap-2">
+            <p className="whitespace-nowrap text-xl font-semibold leading-none text-foreground">Your fox guide</p>
+            <button
+              type="button"
+              onClick={() => setCollapsed((c) => !c)}
+              aria-label={collapsed ? "Show the Locksmith" : "Hide the Locksmith"}
+              aria-expanded={!collapsed}
+              className="text-[color:var(--brand-orange)]"
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" style={{ transform: collapsed ? "rotate(180deg)" : "none", transition: "transform .15s ease" }} aria-hidden>
+                <path d="M6 15l6-6 6 6" />
+              </svg>
+            </button>
           </div>
         </div>
+        <div className="flex items-center gap-3 pt-0.5">
+          {headerCta}
+          {onDismiss && (
+            <button type="button" onClick={onDismiss} className="rounded-full border border-border px-3 py-1 text-xs font-medium text-muted">
+              {dismissLabel}
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* HERO IMAGE — CONTAINED (object-contain), no text on it; collapses to nothing when minimized. */}
+      {!collapsed && (
+        <div className="relative z-10 shrink-0 overflow-hidden" style={{ height: "42vh" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/foxpit/lounge/elevator_corridor.png" alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: "center 18%" }} />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/foxpit/locksmith/locksmith_desk_clean.png" alt="The Locksmith at her desk" className="absolute bottom-0 left-1/2 h-full w-[92%] -translate-x-1/2 object-contain object-bottom" />
+        </div>
+      )}
 
       {/* CHIP DOCK — docked under the hero, above the transcript; persists through minimize. */}
       <ChipDock chips={chips} onPick={onPickChip} />
 
-      {/* Transcript — framed low-opacity panel, image layered above. */}
-      <div ref={scrollRef} className="z-0 mx-3 mt-1 mb-2 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto rounded-2xl border border-white/10 bg-surface px-5 py-4">
-        {messages.map((m, i) => (
-          <div key={i} className={m.role === "user" ? "self-end" : "self-start"}>
-            <div className={"max-w-[17.5rem] whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-[14px] leading-relaxed " + (m.role === "user" ? "bg-accent-soft text-foreground" : "border border-border bg-surface text-foreground")}>
-              {(m.role === "assistant" ? stripMarkdown(m.content) : m.content) || (pending ? "…" : "")}
-              {m.href && (
-                <Link href={m.href} className="mt-1.5 block text-[13px] font-semibold text-[color:var(--brand-orange)] underline-offset-2 hover:underline">
-                  Open the Championship ›
-                </Link>
-              )}
+      {/* TRANSCRIPT — speaker bubbles (C): Locksmith left + avatar badge, user right, no avatar. */}
+      <div ref={scrollRef} className="z-0 mx-3 mt-1 mb-2 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto rounded-2xl border border-white/10 bg-surface px-3 py-4">
+        {messages.map((m, i) => {
+          const sameAsPrev = i > 0 && messages[i - 1]!.role === m.role;
+          if (m.role === "user") {
+            return (
+              <div key={i} className="flex justify-end">
+                <div className="max-w-[80%] whitespace-pre-wrap rounded-2xl rounded-br-sm bg-accent-soft px-3.5 py-2.5 text-[14px] leading-relaxed text-foreground">
+                  {m.content}
+                </div>
+              </div>
+            );
+          }
+          return (
+            <div key={i} className={"flex items-end gap-2 " + (sameAsPrev ? "mt-[-2px]" : "")}>
+              {/* avatar badge (the bottom-nav asset) — reserved space keeps grouped bubbles aligned. */}
+              <div className="h-7 w-7 shrink-0 overflow-hidden rounded-full border border-border" style={{ visibility: sameAsPrev ? "hidden" : "visible" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={LOCKSMITH_BADGE_SRC} alt="Locksmith" className="h-full w-full object-cover" />
+              </div>
+              <div className="max-w-[80%]">
+                <div className="whitespace-pre-wrap rounded-2xl rounded-bl-sm border border-border bg-surface-card px-3.5 py-2.5 text-[14px] leading-relaxed text-foreground">
+                  {stripMarkdown(m.content) || (pending ? "…" : "")}
+                </div>
+                {m.href && (
+                  <Link href={m.href} className="mt-1.5 block text-[13px] font-semibold text-[color:var(--brand-orange)] underline-offset-2 hover:underline">
+                    Open the Championship ›
+                  </Link>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Input · mic (MicIcon) · paper-plane send. */}

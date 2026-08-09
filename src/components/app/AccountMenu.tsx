@@ -22,20 +22,27 @@ const ITEMS: { href: string; label: string }[] = [
 export function AccountMenu({
   username,
   isKeyholder = false,
+  isKeymaster = false,
   isAdmin = false,
 }: {
   username: string;
   isKeyholder?: boolean;
+  isKeymaster?: boolean;
   isAdmin?: boolean;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
-  // Role destinations — shown ONLY when the flag is set. The portal/admin are REACHED here, never
-  // by being redirected on load. Nothing here for a user without the flags.
+  // Role destinations — shown ONLY when the flag is set; reached HERE, never by a load redirect. A
+  // KEYMASTER's home is the keymaster portal (NOT the keyholder portal); a plain keyholder gets the
+  // keyholder portal. Nothing here for a user without the flags.
   const roleItems: { href: string; label: string }[] = [
-    ...(isKeyholder ? [{ href: "/app/keyholder", label: "Keyholder portal" }] : []),
+    ...(isKeymaster
+      ? [{ href: "/app/keymaster", label: "Keymaster portal" }]
+      : isKeyholder
+        ? [{ href: "/app/keyholder", label: "Keyholder portal" }]
+        : []),
     ...(isAdmin ? [{ href: "/admin/keyholders", label: "Admin" }] : []),
   ];
 

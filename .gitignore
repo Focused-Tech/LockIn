@@ -63,3 +63,4 @@ android/keystore.properties
 *.bak-champ
 *.bak-locksmith
 *.bak-trap
+*.bak-fixpass

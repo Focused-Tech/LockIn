@@ -22,7 +22,7 @@ import { AccountMenu } from "./AccountMenu";
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-function openMenu(props: { username: string; isKeyholder?: boolean; isAdmin?: boolean }) {
+function openMenu(props: { username: string; isKeyholder?: boolean; isKeymaster?: boolean; isAdmin?: boolean }) {
   const host = document.createElement("div");
   document.body.appendChild(host);
   const root = createRoot(host);
@@ -55,6 +55,12 @@ describe("account drawer role entries", () => {
   it("admin → 'Admin' only", () => {
     const { labels, cleanup } = openMenu({ username: "u", isAdmin: true });
     expect(labels.some((l) => /^Admin/.test(l))).toBe(true);
+    expect(labels.some((l) => /Keyholder portal/.test(l))).toBe(false);
+    cleanup();
+  });
+  it("keymaster → 'Keymaster portal' as home, NOT the keyholder portal", () => {
+    const { labels, cleanup } = openMenu({ username: "u", isKeyholder: true, isKeymaster: true });
+    expect(labels.some((l) => /Keymaster portal/.test(l))).toBe(true);
     expect(labels.some((l) => /Keyholder portal/.test(l))).toBe(false);
     cleanup();
   });

@@ -65,8 +65,7 @@ export function AdminKeyholders({ initialKeymasters }: { initialKeymasters: Admi
               if (e.key === "Enter") void runSearch();
             }}
             placeholder="username"
-            className="c"
-            style={{ letterSpacing: "normal", fontSize: 16, textAlign: "left", minWidth: 0 }}
+            className="min-w-0 flex-1 rounded-xl border border-border bg-surface px-4 py-3 text-base text-foreground placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-border"
           />
           <button type="button" className="btn" style={{ flex: "none", padding: "13px 15px" }} disabled={busy} onClick={() => void runSearch()}>
             Search

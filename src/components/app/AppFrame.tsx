@@ -25,17 +25,15 @@ export function AppFrame({
   children,
   overlays,
   username,
-  coinBalance,
-  cashBalanceCents,
   isKeyholder = false,
+  isKeymaster = false,
   isAdmin = false,
 }: {
   children: React.ReactNode;
   overlays?: React.ReactNode;
   username: string;
-  coinBalance: number;
-  cashBalanceCents: number;
   isKeyholder?: boolean;
+  isKeymaster?: boolean;
   isAdmin?: boolean;
 }) {
   return (
@@ -46,13 +44,7 @@ export function AppFrame({
           frameClasses
         }
       >
-        <TopNav
-          username={username}
-          coinBalance={coinBalance}
-          cashBalanceCents={cashBalanceCents}
-          isKeyholder={isKeyholder}
-          isAdmin={isAdmin}
-        />
+        <TopNav username={username} isKeyholder={isKeyholder} isKeymaster={isKeymaster} isAdmin={isAdmin} />
         <ScrollReset />
         <main id="app-scroll" className="flex-1 overflow-y-auto overflow-x-hidden">
           {children}
