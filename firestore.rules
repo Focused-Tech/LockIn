@@ -139,6 +139,12 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // enrolmentKeys — single-use CREDENTIALS. The `code` is a secret; the client SDK must never read
+    // or write these (issue/list/revoke/redeem all go through the Admin SDK). Fully server-only.
+    match /enrolmentKeys/{keyId} {
+      allow read, write: if false;
+    }
+
     // creatorApplications — applicants read their own; submission + review are
     // server-side (Admin SDK). Admin reads also go through the Admin SDK.
     match /creatorApplications/{userId} {

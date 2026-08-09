@@ -35,6 +35,11 @@ export default async function LoginPage() {
       </p>
 
       <SkillGameDisclaimer className="pt-2" />
+
+      {/* Discreet enrolment-key entry — labelled only "Key". */}
+      <p className="text-center text-xs">
+        <Link href="/key" className="text-muted hover:text-foreground">Key</Link>
+      </p>
     </main>
   );
 }

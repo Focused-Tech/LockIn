@@ -47,6 +47,8 @@ export const COLLECTIONS = {
   keyholderReferrals: "keyholderReferrals",
   /** Append-only keyholder qualifying-event ledger: keyholderEvents/{eventId}. NO money moves. */
   keyholderEvents: "keyholderEvents",
+  /** Single-use enrolment KEYS issued by a keymaster: enrolmentKeys/{keyId}. A credential. */
+  enrolmentKeys: "enrolmentKeys",
   /** Creator applications: creatorApplications/{userId}. */
   creatorApplications: "creatorApplications",
   /** Cross-slate parlays: crossParlays/{parlayId}. */
@@ -521,6 +523,26 @@ export interface KeyholderEventDoc {
   entries: number | null;
   grossHostFeesCents: number | null;
   participationPct: number | null;
+  createdAt: FsTimestamp;
+}
+
+// ── enrolmentKeys/{keyId} ──────────────────────────────────────────────────────
+export type EnrolmentKeyStatus = "unused" | "redeemed" | "revoked";
+
+/**
+ * A single-use ENROLMENT KEY (a credential) issued by a keymaster. Redeeming it turns a person INTO a
+ * keyholder inside THAT keymaster's tree. Distinct from the REFERRAL CODE (= username), which is
+ * public, permanent, and grants nothing. `code` is the redeemable secret; server verifies + burns it.
+ */
+export interface EnrolmentKeyDoc {
+  code: string;
+  keymasterUid: string; // tree binding — never changes who a redeemed key attributes to
+  label: string | null; // optional "who it's for"
+  status: EnrolmentKeyStatus;
+  expiresAt: FsTimestamp | null;
+  redeemedByUid: string | null;
+  redeemedByUsername: string | null;
+  redeemedAt: FsTimestamp | null;
   createdAt: FsTimestamp;
 }
 

@@ -58,10 +58,10 @@ describe("account drawer role entries", () => {
     expect(labels.some((l) => /Keyholder portal/.test(l))).toBe(false);
     cleanup();
   });
-  it("keymaster → 'Keymaster portal' as home, NOT the keyholder portal", () => {
+  it("a keymaster (also a keyholder) sees BOTH portals", () => {
     const { labels, cleanup } = openMenu({ username: "u", isKeyholder: true, isKeymaster: true });
     expect(labels.some((l) => /Keymaster portal/.test(l))).toBe(true);
-    expect(labels.some((l) => /Keyholder portal/.test(l))).toBe(false);
+    expect(labels.some((l) => /Keyholder portal/.test(l))).toBe(true);
     cleanup();
   });
   it("both flags → both entries", () => {

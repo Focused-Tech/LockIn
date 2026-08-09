@@ -35,14 +35,12 @@ export function AccountMenu({
   const [signingOut, setSigningOut] = useState(false);
 
   // Role destinations — shown ONLY when the flag is set; reached HERE, never by a load redirect. A
-  // KEYMASTER's home is the keymaster portal (NOT the keyholder portal); a plain keyholder gets the
-  // keyholder portal. Nothing here for a user without the flags.
+  // holder sees EVERY portal they hold (a keymaster is also a keyholder, so both appear); Admins
+  // additionally get the console, where they can view any keyholder's performance. Nothing here for a
+  // user without the flags.
   const roleItems: { href: string; label: string }[] = [
-    ...(isKeymaster
-      ? [{ href: "/app/keymaster", label: "Keymaster portal" }]
-      : isKeyholder
-        ? [{ href: "/app/keyholder", label: "Keyholder portal" }]
-        : []),
+    ...(isKeyholder ? [{ href: "/app/keyholder", label: "Keyholder portal" }] : []),
+    ...(isKeymaster ? [{ href: "/app/keymaster", label: "Keymaster portal" }] : []),
     ...(isAdmin ? [{ href: "/admin/keyholders", label: "Admin" }] : []),
   ];
 
