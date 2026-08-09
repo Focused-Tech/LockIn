@@ -64,7 +64,7 @@ export function KeymasterPortal({
   }
 
   return (
-    <div className="lk-acct flex flex-col gap-4 p-4 pb-24">
+    <div className="lk-acct flex flex-col gap-4 px-4 pb-24 pt-6">
       <div className="phd">
         <div className="n">
           <b>Keymaster portal</b>

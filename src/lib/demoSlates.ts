@@ -18,8 +18,9 @@ const TIERS = [
   { tier: 25 as const, hostingFeeCents: 300 },
 ];
 
-export const DEMO_START_LEGS = 2;
-export const DEMO_MAX_LEGS = 5;
+// Canon slate length is five or six legs — demos open at five.
+export const DEMO_START_LEGS = 5;
+export const DEMO_MAX_LEGS = 6;
 
 export interface DemoQuestion {
   id: string;
@@ -35,52 +36,39 @@ export interface DemoQuestion {
  * The question bank, ordered in ROUNDS (one per subcategory) so filtering by a demo's subcategories
  * yields an interleaved mix. Phrasing is generic — no claims about real people or real records.
  */
+/**
+ * COMPLIANT demo questions — NO scores, player props, spreads, or over/unders (banned shapes). Sports
+ * legs NAME the event / matchup / storyline; entertainment legs name the show, artist, or cast. Every
+ * question's context matches its OWN subcategory (no baseball line on a basketball card). Generic
+ * phrasing — no claims about real people or real records. These pass the same validator the seed uses.
+ */
 const POOL: DemoQuestion[] = [
-  // ── round 1 ──
-  { id: "nba-1", sub: "NBA", question: "Who scores more tonight?", a: "The visiting guard · 31.4 avg · 34 last out", b: "The home big man · 27.1 avg · 29 last out", probA: 55, gameLine: "West vs East · 9:30 PM tip" },
-  { id: "nfl-1", sub: "NFL", question: "Who throws for more yards?", a: "The home QB · 268 avg", b: "The visiting QB · 244 avg", probA: 51, gameLine: "Sunday · 1:00 PM" },
-  { id: "mlb-1", sub: "MLB", question: "Which team scores first?", a: "The home side", b: "The visitors", probA: 51, gameLine: "First pitch 7:05 PM" },
-  { id: "hh-1", sub: "hip hop", question: "Which single tops the Hip-Hop chart this week?", a: "The streaming favorite · #2 last week", b: "The radio pick · climbing fast", probA: 57 },
-  { id: "rb-1", sub: "R&B", question: "Which R&B single climbs higher this week?", a: "The slow jam", b: "The uptempo cut", probA: 54 },
-  { id: "rt-1", sub: "reality TV", question: "Which reality premiere pulls the bigger audience?", a: "The returning hit", b: "The new series", probA: 55 },
-  { id: "brt-1", sub: "Black reality TV", question: "Which cast reunion trends first this weekend?", a: "The veteran cast", b: "The new cast", probA: 53 },
+  // ── NBA (event / storyline naming — never scores or props) ──
+  { id: "nba-1", sub: "NBA", question: "Which NBA matchup is tonight's marquee?", a: "The West Coast rivalry", b: "The East Coast showdown", probA: 55, gameLine: "NBA · tonight" },
+  { id: "nba-2", sub: "NBA", question: "Which storyline leads NBA coverage tonight?", a: "The star's return from injury", b: "The rookie phenom's showcase", probA: 52, gameLine: "NBA · tonight" },
+  { id: "nba-3", sub: "NBA", question: "Which broadcast game draws the bigger audience?", a: "The primetime doubleheader opener", b: "The late West Coast game", probA: 51, gameLine: "NBA · national TV" },
+  { id: "nba-4", sub: "NBA", question: "Which road trip is the week's NBA headline?", a: "The contender's five-game gauntlet", b: "The upstart's statement swing", probA: 53, gameLine: "NBA · this week" },
+  { id: "nba-5", sub: "NBA", question: "Which subplot gets more airtime tonight?", a: "The MVP race", b: "The playoff-seeding chase", probA: 50, gameLine: "NBA · tonight" },
+  { id: "nba-6", sub: "NBA", question: "Which debut is the talk of the league this week?", a: "The trade-deadline arrival", b: "The two-way call-up", probA: 49, gameLine: "NBA · this week" },
 
-  // ── round 2 ──
-  { id: "nba-2", sub: "NBA", question: "Does the home favorite cover the spread?", a: "Covers the number", b: "Doesn't cover", probA: 52, gameLine: "Home favored by 5.5" },
-  { id: "nfl-2", sub: "NFL", question: "Does the favorite cover the spread?", a: "Covers", b: "Doesn't cover", probA: 50, gameLine: "Favorite −3.5" },
-  { id: "mlb-2", sub: "MLB", question: "Over or under 8.5 total runs?", a: "Over 8.5", b: "Under 8.5", probA: 50, gameLine: "O/U 8.5" },
-  { id: "hh-2", sub: "hip hop", question: "Which album debuts higher on Friday?", a: "The veteran's project", b: "The newcomer's drop", probA: 52 },
-  { id: "rb-2", sub: "R&B", question: "Which vocalist tops the R&B chart?", a: "The veteran", b: "The rising star", probA: 51 },
-  { id: "rt-2", sub: "reality TV", question: "Which show trends #1 this weekend?", a: "The competition show", b: "The dating show", probA: 50 },
-  { id: "brt-2", sub: "Black reality TV", question: "Which returning series wins the ratings night?", a: "The franchise flagship", b: "The spinoff", probA: 52 },
-
-  // ── round 3 ──
-  { id: "nba-3", sub: "NBA", question: "Combined points — over or under 224.5?", a: "Over 224.5", b: "Under 224.5", probA: 50, gameLine: "O/U 224.5" },
-  { id: "nfl-3", sub: "NFL", question: "Which team scores first?", a: "The home side", b: "The visitors", probA: 52 },
-  { id: "mlb-3", sub: "MLB", question: "Does the starter record 6+ strikeouts?", a: "6 or more", b: "5 or fewer", probA: 47 },
-  { id: "hh-3", sub: "hip hop", question: "Which verse racks up more streams this week?", a: "The opener", b: "The closer", probA: 50 },
-  { id: "rb-3", sub: "R&B", question: "Which ballad trends first this weekend?", a: "The lead single", b: "The deep cut", probA: 50 },
-  { id: "rt-3", sub: "reality TV", question: "Which finale draws more viewers?", a: "The competition finale", b: "The drama finale", probA: 51 },
-  { id: "brt-3", sub: "Black reality TV", question: "Which premiere dominates social buzz?", a: "The flagship premiere", b: "The new spinoff", probA: 50 },
-
-  // ── round 4 ──
-  { id: "nba-4", sub: "NBA", question: "Which side leads at halftime?", a: "The home team", b: "The visitors", probA: 53 },
-  { id: "nfl-4", sub: "NFL", question: "Total points — over or under 44.5?", a: "Over 44.5", b: "Under 44.5", probA: 49, gameLine: "O/U 44.5" },
-  { id: "mlb-4", sub: "MLB", question: "Which side hits the first home run?", a: "The home side", b: "The visitors", probA: 50 },
-  { id: "hh-4", sub: "hip hop", question: "Who drops the next surprise project?", a: "The headliner", b: "The rookie", probA: 48 },
-  { id: "rb-4", sub: "R&B", question: "Which duet gets more spins this week?", a: "The classic pairing", b: "The new collab", probA: 49 },
-
-  // ── round 5 ──
-  { id: "nba-5", sub: "NBA", question: "Does the game reach overtime?", a: "Yes — overtime", b: "No overtime", probA: 22 },
-  { id: "nfl-5", sub: "NFL", question: "Does the game go to overtime?", a: "Yes", b: "No", probA: 20 },
-  { id: "mlb-5", sub: "MLB", question: "Extra innings?", a: "Yes", b: "No", probA: 18 },
-
-  // ── round 6 ──
-  { id: "nba-6", sub: "NBA", question: "Who logs a double-double first?", a: "The point guard", b: "The center", probA: 46 },
+  // ── hip hop ──
+  { id: "hh-1", sub: "hip hop", question: "Which release is the bigger drop this Friday?", a: "The veteran's album", b: "The newcomer's mixtape", probA: 55, gameLine: "New music Friday" },
+  { id: "hh-2", sub: "hip hop", question: "Which single climbs the Hip-Hop chart higher this week?", a: "The streaming favorite", b: "The radio pick", probA: 52, gameLine: "Hip-Hop chart · this week" },
+  // ── R&B ──
+  { id: "rb-1", sub: "R&B", question: "Which R&B act headlines the week's playlist?", a: "The veteran vocalist", b: "The rising star", probA: 54, gameLine: "R&B · this week" },
+  { id: "rb-2", sub: "R&B", question: "Which duet gets more spins this week?", a: "The classic pairing", b: "The new collab", probA: 51, gameLine: "R&B · this week" },
+  // ── reality TV ──
+  { id: "rt-1", sub: "reality TV", question: "Which reality premiere is the talk of the week?", a: "The returning franchise flagship", b: "The buzzy new series", probA: 55, gameLine: "Reality TV · premiere week" },
+  { id: "rt-2", sub: "reality TV", question: "Which cast member drives this week's drama?", a: "The veteran instigator", b: "The newcomer stirring the pot", probA: 50, gameLine: "Reality TV · this week" },
+  { id: "rt-3", sub: "reality TV", question: "Which cliffhanger gets more buzz this weekend?", a: "The competition finale", b: "The dating-show twist", probA: 51, gameLine: "Reality TV · weekend" },
+  // ── Black reality TV ──
+  { id: "brt-1", sub: "Black reality TV", question: "Which premiere dominates social this weekend?", a: "The franchise flagship", b: "The new spinoff", probA: 53, gameLine: "Reality TV · weekend" },
+  { id: "brt-2", sub: "Black reality TV", question: "Which cast storyline leads the week?", a: "The longtime-friends fallout", b: "The new alliance", probA: 50, gameLine: "Reality TV · this week" },
 ];
 
 const DEMO_SUBS: Record<string, string[]> = {
-  "demo-nba": ["NBA", "NFL", "MLB"],
+  // Pure NBA (no cross-sport context mismatch); entertainment demo interleaves its subcategories.
+  "demo-nba": ["NBA"],
   "demo-bet": ["hip hop", "R&B", "reality TV", "Black reality TV"],
 };
 

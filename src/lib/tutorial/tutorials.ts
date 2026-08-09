@@ -45,7 +45,7 @@ export const TUTORIAL_PLACEHOLDER =
  * · how_you_get_paid · the_board · playing_it_straight · closing.
  */
 export const ADVANCED_STEPS: string[] = [
-  "**Welcome to Advanced.**\n\nThis is the real-money side of LockIn. Everything here is a **skill contest** — you're not playing against the house, you're playing against everyone else who entered, and the best cards win the pool.\n\nI'm the Locksmith. I'll walk you through it once. You can skip any time, and you can ask me anything afterward.",
+  "**Welcome to Advanced.**\n\nThis is the real-money side of Lock In. Everything here is a **skill contest** — you're not playing against the house, you're playing against everyone else who entered, and the best cards win the pool.\n\nI'm the Locksmith. I'll walk you through it once. You can skip any time, and you can ask me anything afterward.",
   "**A slate is a set of legs.**\n\nA creator builds a slate — usually five or six **legs**. Each leg is one question about how players will perform, drawn from different games on the night.\n\nYou answer every leg. Get them all right and you have a **perfect card**.",
   "**Read the leg, read the room.**\n\nEvery leg gives you two or more choices — which player shows out, who leads the field, who gets there first. Under each choice you'll see real context: season averages, recent form, the matchup. That context is free, and it's there so you can actually think.\n\nThe percentages beside each choice show how the room is leaning — how many players have picked that side so far. A choice the room is split on is where the sharp calls live.",
   "**Being right gets you paid. Being fast decides how much.**\n\nWhen your card is set, you **lock in**. Your lock-in time is recorded to the second.\n\nAmong everyone with a perfect card, the earliest locks rank highest. That's the whole edge of this game: a lot of people can be right, but the ones who committed early take the top places. Sit on a card too long and you'll watch someone with the same answers finish above you.\n\nYou can change your answers until you lock. After you lock, the card is yours.",
@@ -58,14 +58,14 @@ export const ADVANCED_STEPS: string[] = [
 
 /** APPROVED seed prompt (verbatim) — governs the Locksmith's Q&A after the advanced walkthrough. */
 export const ADVANCED_SEED =
-  "You are the Locksmith, LockIn's in-app guide. You help players understand LockIn's " +
+  "You are the Locksmith, Lock In's in-app guide. You help players understand Lock In's " +
   "skill-based contests, how slates and legs work, how locking in affects placement, how the " +
   "prize pool and the paid field work, account and balance questions, and how to find things in " +
   "the app.\n\n" +
   "VOCABULARY — never use these words: odds, over/under, line, spread, bet, wager, betting, " +
-  "bookmaker, sportsbook, parlay, prediction market, gambling. LockIn runs skill contests. Say " +
+  "bookmaker, sportsbook, parlay, prediction market, gambling. Lock In runs skill contests. Say " +
   "contest, slate, leg, card, lock in, pool, prize, place, entry.\n\n" +
-  "NEVER: state LockIn's rake or any house margin · invent a number, a prize figure, a date, or " +
+  "NEVER: state Lock In's rake or any house margin · invent a number, a prize figure, a date, or " +
   "a rule that isn't in the app · give advice on which side of a leg to choose in a live " +
   "contest · discuss another platform · claim a contest is available where it isn't.\n\n" +
   "When you don't know something, say so and point to where it lives in the app. Keep answers " +
@@ -80,28 +80,28 @@ export const TUTORIALS: Record<TutorialMode, TutorialSlot> = {
   beginner: {
     mode: "beginner", modeLabel: "Beginner", steps: [],
     intro:
-      "I just chose the Beginner journey on LockIn and I'm brand new. Walk me through it simply, step by " +
+      "I just chose the Beginner journey on Lock In and I'm brand new. Walk me through it simply, step by " +
       "step: that it's coins not cash, how I make my picks in plain language, and how I climb and get " +
       "better. Keep it friendly and short, then invite me to ask you anything before I start playing.",
   },
   creator: {
     mode: "creator", modeLabel: "Creator", steps: [],
     intro:
-      "I just chose the Creator journey on LockIn and I'm new to hosting. Walk me through it step by step: " +
+      "I just chose the Creator journey on Lock In and I'm new to hosting. Walk me through it step by step: " +
       "building a slate, the AI-drafted questions, selling pick packages, and how I earn. Keep it clear and " +
       "concise, then invite me to ask you anything before I start.",
   },
   lone_fox: {
     mode: "lone_fox", modeLabel: "Lone Fox (practice)", steps: [],
     intro:
-      "I just entered the Fox Pit practice journey on LockIn and I'm new. Walk me through the Lone Fox run " +
+      "I just entered the Fox Pit practice journey on Lock In and I'm new. Walk me through the Lone Fox run " +
       "step by step: choosing a floor, facing the boss, that it runs on coins, and how I win. Keep it fun " +
       "and short, then invite me to ask you anything before I start playing.",
   },
   tower_boss: {
     mode: "tower_boss", modeLabel: "Fox Pit tower — boss journey", steps: [],
     intro:
-      "I just entered the Fox Pit tower boss journey on LockIn and I'm new. Walk me through it step by step: " +
+      "I just entered the Fox Pit tower boss journey on Lock In and I'm new. Walk me through it step by step: " +
       "climbing the floors, beating each boss to win their key, and how the run works. Keep it exciting and " +
       "concise, then invite me to ask you anything before I start.",
   },

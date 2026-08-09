@@ -63,6 +63,11 @@ export function BeginnerJourney({
 
   // ── flow helpers ───────────────────────────────────────────────────────────
   function startPick(c: BeginnerCard, choice: "a" | "b", pick: BeginnerPick = c.headline) {
+    // DEMO cards run the free local flow on the demo slate page — never the inline coin lock.
+    if (c.isDemo) {
+      window.location.href = `/app/slate/${c.headline.slateId}`;
+      return;
+    }
     setCard(c);
     setLegs([{ pick, choice }]);
     setStake(DEFAULT_STAKE);
@@ -275,12 +280,19 @@ function ExploreScreen({
         >
           <div className="flex items-center justify-between gap-2">
             <CreatorRow card={c} />
-            <span
-              className="shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold"
-              style={{ backgroundColor: t.soft, borderColor: t.border, color: t.color }}
-            >
-              {c.headline.category}
-            </span>
+            <div className="flex shrink-0 items-center gap-1.5">
+              {c.isDemo && (
+                <span className="rounded-full border border-[color:var(--brand-orange)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[color:var(--brand-orange)]">
+                  Demo
+                </span>
+              )}
+              <span
+                className="rounded-full border px-2 py-0.5 text-[10px] font-semibold"
+                style={{ backgroundColor: t.soft, borderColor: t.border, color: t.color }}
+              >
+                {c.headline.category}
+              </span>
+            </div>
           </div>
           <p className="my-3 text-base font-bold leading-snug">
             {c.headline.question}

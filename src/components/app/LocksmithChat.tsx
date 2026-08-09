@@ -111,12 +111,15 @@ export function LocksmithChat({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Show a NEW message from ITS TOP; never yank to the bottom while a message streams.
-  const prevCount = useRef(0);
+  // OPEN at the START of the first message (N) — the seeded walkthrough/greeting must not scroll to
+  // the last step. After mount, a genuinely NEW message shows from ITS top; streaming never yanks down.
+  const prevCount = useRef<number | null>(null);
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
-    if (messages.length > prevCount.current) {
+    if (prevCount.current === null) {
+      el.scrollTop = 0;
+    } else if (messages.length > prevCount.current) {
       const last = el.lastElementChild as HTMLElement | null;
       el.scrollTop = last ? Math.max(0, last.offsetTop - 8) : 0;
     }
@@ -198,20 +201,7 @@ export function LocksmithChat({
       >
         <div className="flex flex-col items-start">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-muted">The Locksmith</p>
-          <div className="flex items-center gap-2">
-            <p className="whitespace-nowrap text-xl font-semibold leading-none text-foreground">Your fox guide</p>
-            <button
-              type="button"
-              onClick={() => setCollapsed((c) => !c)}
-              aria-label={collapsed ? "Show the Locksmith" : "Hide the Locksmith"}
-              aria-expanded={!collapsed}
-              className="text-[color:var(--brand-orange)]"
-            >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" style={{ transform: collapsed ? "rotate(180deg)" : "none", transition: "transform .15s ease" }} aria-hidden>
-                <path d="M6 15l6-6 6 6" />
-              </svg>
-            </button>
-          </div>
+          <p className="whitespace-nowrap text-xl font-semibold leading-none text-foreground">Your fox guide</p>
         </div>
         <div className="flex items-center gap-3 pt-0.5">
           {headerCta}
@@ -233,6 +223,26 @@ export function LocksmithChat({
         </div>
       )}
 
+      {/* PULL-TAB (K) — the collapse handle lives on the SEAM between the artwork and the chip dock,
+          centred, not on the title row. 44px tap target; rotates for collapsed/expanded; stays
+          reachable when the image is collapsed (it's outside the image conditional). */}
+      <div className="relative z-20 flex shrink-0 justify-center" style={{ marginTop: collapsed ? 0 : "-16px" }}>
+        <button
+          type="button"
+          onClick={() => setCollapsed((c) => !c)}
+          aria-label={collapsed ? "Show the Locksmith" : "Hide the Locksmith"}
+          aria-expanded={!collapsed}
+          className="flex items-center justify-center"
+          style={{ height: 44, width: 96 }}
+        >
+          <span className="flex h-[22px] w-[68px] items-center justify-center rounded-full border border-border bg-surface-card shadow-md">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--brand-orange)" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" style={{ transform: collapsed ? "rotate(180deg)" : "none", transition: "transform .15s ease" }} aria-hidden>
+              <path d="M6 15l6-6 6 6" />
+            </svg>
+          </span>
+        </button>
+      </div>
+
       {/* CHIP DOCK — docked under the hero, above the transcript; persists through minimize. */}
       <ChipDock chips={chips} onPick={onPickChip} />
 
@@ -250,7 +260,7 @@ export function LocksmithChat({
             );
           }
           return (
-            <div key={i} className={"flex items-end gap-2 " + (sameAsPrev ? "mt-[-2px]" : "")}>
+            <div key={i} className={"flex items-start gap-2 " + (sameAsPrev ? "mt-[-2px]" : "")}>
               {/* avatar badge (the bottom-nav asset) — reserved space keeps grouped bubbles aligned. */}
               <div className="h-7 w-7 shrink-0 overflow-hidden rounded-full border border-border" style={{ visibility: sameAsPrev ? "hidden" : "visible" }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}

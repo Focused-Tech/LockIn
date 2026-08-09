@@ -33,7 +33,7 @@ export const CHAMPIONSHIP_SECTIONS: ChampionshipSection[] = [
     title: "What it is",
     copy:
       "**One season. One seat. One champion per division.**\n\n" +
-      "The Championship is LockIn's biggest stage. All year, every slate you win builds your record. Play well enough, long enough, and you earn a seat at the finale — where Boss Fox himself sets the final slate and the best player in each division takes the crown.\n\n" +
+      "The Championship is Lock In's biggest stage. All year, every slate you win builds your record. Play well enough, long enough, and you earn a seat at the finale — where Boss Fox himself sets the final slate and the best player in each division takes the crown.\n\n" +
       "You can't buy your way in. Seats are earned by skill, all season long.",
   },
   {
@@ -49,7 +49,7 @@ export const CHAMPIONSHIP_SECTIONS: ChampionshipSection[] = [
     copy:
       "**Your win rate is your ticket.**\n\n" +
       "Every settled slate counts toward your season win rate. The players with the strongest records in each division qualify for that division's finale. There is no qualifying fee and no shortcut — the seat is earned, never sold.\n\n" +
-      "When more players qualify than there are seats, **lock-in speed breaks the tie**: the earlier you've locked your winning cards all season, the higher you're seeded. Speed matters here the way it matters everywhere on LockIn — being right is the entry, being fast is the edge.\n\n" +
+      "When more players qualify than there are seats, **lock-in speed breaks the tie**: the earlier you've locked your winning cards all season, the higher you're seeded. Speed matters here the way it matters everywhere on Lock In — being right is the entry, being fast is the edge.\n\n" +
       "Your standing lives on your Board: your division, your win rate, and where you sit against the line.",
   },
   {
@@ -84,7 +84,7 @@ export const CHAMPIONSHIP_SECTIONS: ChampionshipSection[] = [
     pendingReview: true,
     copy:
       "**The fine print that isn't small.**\n\n" +
-      "- The LockIn Championship is a **skill-based contest**. Outcomes are determined by players' knowledge, judgment, and lock-in speed.\n" +
+      "- The Lock In Championship is a **skill-based contest**. Outcomes are determined by players' knowledge, judgment, and lock-in speed.\n" +
       "- Open to eligible players **18+** (21+ where required by law), physically located in eligible states/regions at time of entry. Eligibility is verified; play where it's legal, coins-only everywhere else.\n" +
       "- **Apple and Google are not sponsors** of, and are not involved in, this contest in any way.\n" +
       "- Full official rules, eligibility terms, and the free-entry method are published here and in the Contest Rules accepted at signup.",

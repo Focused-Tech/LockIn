@@ -5,4 +5,4 @@
  * sportsbook / parlay / prediction market / gambling — skill contests only.
  */
 export const LOCKSMITH_GREETING =
-  "I'm the Locksmith — your guide to LockIn's skill contests. Ask me how slates, legs, and locking in work, about your balance or deposits, or anything else in the app.";
+  "I'm the Locksmith — your guide to Lock In's skill contests. Ask me how slates, legs, and locking in work, about your balance or deposits, or anything else in the app.";

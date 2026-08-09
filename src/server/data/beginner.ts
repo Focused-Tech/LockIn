@@ -2,6 +2,7 @@ import "server-only";
 import type { Firestore } from "firebase-admin/firestore";
 import { COLLECTIONS, type UserDoc } from "@/lib/firebase/types";
 import { fetchFeedSlates } from "@/server/data/slates";
+import { DEMO_SLATES } from "@/lib/demoSlates";
 import {
   initialsFor,
   type BeginnerCard,
@@ -111,5 +112,26 @@ export async function fetchBeginnerFeed(
     return a.headline.lockTimeMs - b.headline.lockTimeMs;
   });
 
-  return { cards };
+  // DEMO cards (labelled) sit on TOP so a tester always has something to play — even when the live
+  // feed lapses. They route to the demo slate page (no inline coin lock). Subcategories preserved.
+  const demoCards: BeginnerCard[] = DEMO_SLATES.map((s) => {
+    const picks = s.predictions.map((p) =>
+      toPick(s.id, s.lockTimeMs, s.category, {
+        id: p.id, question: p.question, optionA: p.optionA, optionB: p.optionB, probA: p.probA, probB: p.probB,
+      }),
+    );
+    return {
+      creatorId: null,
+      creatorName: "Lock In",
+      initials: "LK",
+      hitRate: null,
+      isHouse: true,
+      isFollowed: false,
+      isDemo: true,
+      headline: picks[0]!,
+      morePicks: picks.slice(1, MAX_MORE_PICKS),
+    };
+  });
+
+  return { cards: [...demoCards, ...cards] };
 }

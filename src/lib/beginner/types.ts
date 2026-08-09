@@ -43,6 +43,8 @@ export interface BeginnerCard {
   headline: BeginnerPick;
   /** This creator's other open picks — the pool for building a combo. */
   morePicks: BeginnerPick[];
+  /** DEMO card (free tester contest). Taps route to the demo slate page — no inline coin lock. */
+  isDemo?: boolean;
 }
 
 export interface BeginnerFeed {
