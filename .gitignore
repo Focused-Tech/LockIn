@@ -68,3 +68,12 @@ android/keystore.properties
 *.bak-epic
 *.bak-rake
 *.bak-fab
+
+# Stripped from git history (store-readiness git pass, 2026-08-09) — kept on disk, untracked.
+# Design sources/references + asset packages are NOT served (the tower serves only from public/foxpit/).
+/*.zip
+design/**/*.png
+design/**/*.zip
+design-preview/**/*.png
+design-preview/**/*.zip
+/assets/*.png
