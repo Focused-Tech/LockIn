@@ -23,13 +23,6 @@ import { ELEVATOR_STOP_BY_ID } from "@/lib/foxpit/rules";
 import { StairClimber } from "./StairClimber";
 
 /**
- * Walking-avatar render switch (architect ruling). OFF until the traced staircase is approved — the
- * figure comes off the map and PAW PRINTS mark the route instead (paw art pending, architect to
- * supply). The StairClimber rig + its waypoint math stay in the tree; flip this to true to restore it.
- */
-const SHOW_CLIMBER = false;
-
-/**
  * Fox Pit TOWER MAP (a stack of full-canvas 1620x4500 plates from map/tower_layers, composited at
  * offset 0,0: z0 map_REDO < z10 stairway < z20 elevator_band < z50 avatar < z60 front rail) — a
  * tall vertical climb with
@@ -230,13 +223,10 @@ export function FoxPitMap({ lone = false }: { lone?: boolean }) {
           style={{ position: "relative", zIndex: 0, width: "100%", height: "auto", display: "block" }}
         />
 
-        {/* AVATAR — RENDER DISABLED (architect ruling: the traced staircase isn't approved, so the
-            walking figure comes off the map until it is). The rig + waypoint code (StairClimber, the
-            route/stops) are DELIBERATELY KEPT — flip SHOW_CLIMBER back to true to restore it once the
-            trace lands. It is replaced by PAW PRINTS marking the route; that render is pending art —
-            NO fox-paw-print asset exists in the tree yet (architect to supply). When it arrives, place
-            the paw prints here along the same waypoints StairClimber already computes. */}
-        {SHOW_CLIMBER && <StairClimber />}
+        {/* AVATAR (live rig) — StairClimber renders it at z50, BETWEEN the base (z0) and the stair
+            overlay (z60): the overlay's front rails cross in front of its legs while its torso + head
+            read above — the slot. Position/scale unchanged from before; only its z sits between the plates. */}
+        <StairClimber />
 
         {/* STAIR OVERLAY — front of the slot, full-canvas at (0,0), z60: above the avatar (z50), below
             the room plaques (z70) + HUD (z61) so the labels stay readable over the stairs. */}

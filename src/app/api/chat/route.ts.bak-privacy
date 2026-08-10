@@ -4,6 +4,7 @@ import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUser } from "@/lib/firebase/session";
 import { getAnthropic, CHAT_MODEL } from "@/lib/ai/client";
 import { buildSystemPrompt, MAX_CHAT_HISTORY, type ChatMessage } from "@/lib/ai/chat";
+import { fetchUserChatContext } from "@/server/data/userStats";
 import { evaluateLocksmithText, type GuardCategory } from "@/lib/locksmith/guard";
 import {
   LOCKSMITH_FALLBACK_RESTRICTED,
@@ -99,9 +100,8 @@ export async function POST(req: NextRequest) {
     return reply(LOCKSMITH_FALLBACK_RESTRICTED);
   }
 
-  // PRIVACY RULING — the prompt carries NO player data. She gives game tips; account questions are
-  // redirected to the Wallet / Board (baked into the system prompt). No per-user fetch, no PII.
-  const system = buildSystemPrompt();
+  const context = await fetchUserChatContext(adminDb(), user.uid);
+  const system = buildSystemPrompt(context);
 
   // ── MODEL (buffered) ─────────────────────────────────────────────────────────
   // Buffer the whole reply. Streaming deltas would let restricted text reach the player before the

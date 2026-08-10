@@ -24,15 +24,3 @@ export const LOCKSMITH_FALLBACK_UNKNOWN =
 
 /** Shown after a player reports a Locksmith message — the receipt the guard promised. */
 export const LOCKSMITH_REPORT_CONFIRM = "Thanks — that message was sent to our team for review.";
-
-/**
- * ACCOUNT REDIRECT (privacy ruling) — the Locksmith gives GAME TIPS and has NO access to any player's
- * account. Injected into her system prompt (never a string literal in the route) so she points people
- * at their own Wallet / Board instead of ever stating a figure about them. Lives here with her copy.
- */
-export const LOCKSMITH_ACCOUNT_REDIRECT =
-  "YOUR LIMITS — You have NO access to any player's account. You do not know anyone's balance, deposits, " +
-  "winnings, record, win rate, or earnings, and you must NEVER state, guess, or estimate any figure about " +
-  "a specific person. If a player asks about their balance, coins, or deposits, tell them to open their " +
-  "Wallet. If they ask how they're doing — their wins, record, or earnings — point them to the Board. You " +
-  "answer questions about how the game works, not questions about their account.";

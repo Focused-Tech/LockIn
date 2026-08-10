@@ -3,6 +3,7 @@ import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUserProfile } from "@/lib/firebase/session";
 import { getAnthropic, ADVISOR_MODEL } from "@/lib/ai/client";
 import { buildAdvisorSystemPrompt } from "@/lib/ai/advisor";
+import { fetchUserChatContext } from "@/server/data/userStats";
 import { fetchSlate } from "@/server/data/slates";
 
 export const runtime = "nodejs";
@@ -32,9 +33,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Slate not found" }, { status: 404 });
   }
 
-  // PRIVACY RULING — no player data in the prompt; advice is grounded only in the slate's own AI
-  // probabilities. No per-user fetch.
+  const context = await fetchUserChatContext(adminDb(), profile.id, {
+    includeCategoryStats: true,
+  });
   const system = buildAdvisorSystemPrompt(
+    context,
     slate.title,
     slate.category,
     slate.predictions.map((p) => ({
