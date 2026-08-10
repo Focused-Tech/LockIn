@@ -12,7 +12,7 @@
  * Every leg it emits passes the same `validateLeg` the entry path runs (one player per
  * game per leg, approved archetypes only) — enforced inside `buildSlateLegs`.
  */
-import { firstBannedLeg, type Archetype } from "@/lib/contest/questionEngine";
+import type { Archetype } from "@/lib/contest/questionEngine";
 import {
   buildSlateLegs,
   type GeneratedLeg,
@@ -139,23 +139,6 @@ export function buildPracticeSlate(
     });
     outcomes.push(rollOutcome(percents, rng));
   });
-  // PART 5 — DEFENCE IN DEPTH. The archetype library is vetted, but "compliant by construction"
-  // is an argument, not a gate: run the SAME banned-shape validator the feed + entry paths use
-  // over the legs we're about to emit. A hit here is a library bug, never user input — fail
-  // closed rather than ever deal a banned leg into practice.
-  const banned = firstBannedLeg(
-    legs.map((l) => ({
-      question: l.question,
-      optionA: l.options[0]?.label,
-      optionB: l.options[1]?.label,
-      type: "binary",
-    })),
-  );
-  if (banned) {
-    throw new Error(
-      `practice generator emitted a banned leg (${banned.archetype}): ${banned.question}`,
-    );
-  }
   return { legs, outcomes };
 }
 
