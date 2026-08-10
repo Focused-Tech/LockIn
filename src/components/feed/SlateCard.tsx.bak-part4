@@ -6,7 +6,7 @@ import { computeSlateMetrics } from "@/lib/contest";
 import { categoryTint } from "@/lib/practice/tints";
 import type { EntryTier } from "@/lib/constants";
 import type { FeedSlate } from "@/lib/feed";
-import { formatCents, formatCentsShort, formatCoinsShort, formatMultiple } from "@/lib/utils";
+import { formatCents, formatCentsShort, formatMultiple } from "@/lib/utils";
 
 /** Resolve which tier config to display: the selected tier, else the lowest. */
 function tierConfig(slate: FeedSlate, selected: EntryTier) {
@@ -28,9 +28,6 @@ export function SlateCard({
   reason?: string | null;
 }) {
   const config = tierConfig(slate, tier);
-  // DEMO cards render coins, never $ — a demo can't pay cash (Part 4). Live slates unaffected.
-  const demo = slate.isDemo === true;
-  const poolFmt = demo ? formatCoinsShort : formatCentsShort;
   const locked = slate.status === "locked";
   const prediction = slate.predictions[0];
   const tint = categoryTint(slate.category);
@@ -106,7 +103,7 @@ export function SlateCard({
       {locked || !metrics ? (
         <p className="text-sm text-muted">
           Locked — results pending.{" "}
-          {metrics ? `Final pool ${poolFmt(metrics.prizePoolCents)}.` : ""}
+          {metrics ? `Final pool ${formatCentsShort(metrics.prizePoolCents)}.` : ""}
         </p>
       ) : (
         <>
@@ -114,13 +111,13 @@ export function SlateCard({
             <div className="min-w-0">
               <p className="text-xs text-muted">Prize pool</p>
               <p className="text-lg font-semibold text-win">
-                {poolFmt(metrics.prizePoolCents)}
+                {formatCentsShort(metrics.prizePoolCents)}
               </p>
             </div>
             <div className="min-w-0 text-right">
               <p className="text-xs text-muted">1st place</p>
               <p className="text-lg font-semibold">
-                {poolFmt(metrics.firstPlaceCents)}
+                {formatCentsShort(metrics.firstPlaceCents)}
                 <span className="ml-1 text-sm text-muted">
                   {formatMultiple(metrics.firstPlaceMultiple)}
                 </span>
@@ -144,7 +141,7 @@ export function SlateCard({
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted">Pool grows as more enter</span>
             <span className="font-medium text-foreground">
-              {free || demo
+              {free
                 ? "Free entry · coins"
                 : `Enter ${formatCents(metrics.entryCostCents)}`}
             </span>

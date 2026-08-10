@@ -15,7 +15,7 @@ import { EXCLUDED_STATES, type EntryTier } from "@/lib/constants";
 import type { FeedSlate, FeedPrediction } from "@/lib/feed";
 import type { ShadowEarnings } from "@/server/data/shadowEarnings";
 import { AddToParlay } from "@/components/cross-parlay/AddToParlay";
-import { formatCents, formatCentsShort, formatCoinsShort, formatMultiple } from "@/lib/utils";
+import { formatCents, formatCentsShort, formatMultiple } from "@/lib/utils";
 import { submitEntry } from "./actions";
 import "./slate-detail.css";
 
@@ -242,13 +242,12 @@ export function SlatePicker({
       <div className="sd-prow">
         <div>
           <span className="k">Prize pool</span>
-          {/* DEMO shows coins, never $ — a demo can't win cash (Part 4). Live slates keep dollars. */}
-          <span className="v">{isDemo ? formatCoinsShort(metrics.prizePoolCents) : formatCentsShort(metrics.prizePoolCents)}</span>
+          <span className="v">{formatCentsShort(metrics.prizePoolCents)}</span>
         </div>
         <div>
           <span className="k">1st place</span>
           <span className="v w">
-            {isDemo ? formatCoinsShort(metrics.firstPlaceCents) : formatCentsShort(metrics.firstPlaceCents)}
+            {formatCentsShort(metrics.firstPlaceCents)}
             <small>{formatMultiple(metrics.firstPlaceMultiple)}</small>
           </span>
         </div>

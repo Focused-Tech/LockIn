@@ -31,19 +31,6 @@ export function formatCentsShort(cents: number): string {
   return formatCents(cents);
 }
 
-/**
- * DEMO surfaces show GOLD COINS, never cash — a demo can't win money, so a $ figure would misrepresent
- * it. 1,000 coins == $1 (COIN_REDEMPTION: 5,000 coins → $5), so cents × 10 → coins. Compacted and
- * prefixed with the same 🪙 token used across the coin economy. Live slates keep formatCentsShort.
- */
-export function formatCoinsShort(cents: number): string {
-  const coins = cents * 10;
-  const abs = Math.abs(coins);
-  if (abs >= 1_000_000) return `🪙 ${oneDecimal(coins / 1_000_000)}M`;
-  if (abs >= 1_000) return `🪙 ${oneDecimal(coins / 1_000)}k`;
-  return `🪙 ${coins.toLocaleString("en-US")}`;
-}
-
 /** Compact a plain count the same way: 5240 → "5.2k", 1_200_000 → "1.2M"; under 1000 stays exact. */
 export function formatCountShort(n: number): string {
   const abs = Math.abs(n);
