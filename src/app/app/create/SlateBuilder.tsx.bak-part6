@@ -414,7 +414,7 @@ export function SlateBuilder({ categories }: { categories: Category[] }) {
                 disabled={pending || !p.question}
                 onClick={() => getOdds(p)}
               >
-                AI estimate
+                AI odds
               </Button>
             </div>
           </Card>

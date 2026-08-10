@@ -104,7 +104,7 @@ export function EmbedWidget({
         <div className="flex flex-col gap-2">
           {view.accuracyPct !== null && (
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted">AI estimate hit rate</span>
+              <span className="text-muted">AI odds hit rate</span>
               <span className="font-medium">{view.accuracyPct}%</span>
             </div>
           )}

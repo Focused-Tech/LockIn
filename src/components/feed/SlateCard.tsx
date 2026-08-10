@@ -132,7 +132,7 @@ export function SlateCard({
             <div>
               <div className="mb-2 flex items-center justify-between">
                 <p className="text-sm font-medium">{prediction.question}</p>
-                <Pill tone="ai">AI odds</Pill>
+                <Pill tone="ai">AI estimate</Pill>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <OptionPill label={prediction.optionA} prob={prediction.probA} />
