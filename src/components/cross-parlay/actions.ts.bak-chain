@@ -148,7 +148,7 @@ export async function submitCrossParlay(
   } catch (err) {
     const m = err instanceof Error ? err.message : "";
     if (m === "FUNDS") return { ok: false, error: "Insufficient balance" };
-    return { ok: false, error: "Could not submit chain" };
+    return { ok: false, error: "Could not submit parlay" };
   }
 
   return { ok: true, parlayId: parlayRef.id };

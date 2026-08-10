@@ -25,6 +25,23 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async redirects() {
+    // "Parlay" → "Chain" rename (compliance: "parlay" is sportsbook vocabulary). Old paths
+    // 301 to the new routes so any bookmark / deep link / cached URL keeps working.
+    return [
+      { source: "/app/parlays", destination: "/app/chains", permanent: true },
+      {
+        source: "/app/practice/arena/parlay",
+        destination: "/app/practice/arena/chain",
+        permanent: true,
+      },
+      {
+        source: "/api/admin/settle-parlays",
+        destination: "/api/admin/settle-chains",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

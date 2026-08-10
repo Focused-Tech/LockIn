@@ -36,7 +36,7 @@ export default async function ParlaysPage() {
   return (
     <div className="flex flex-col gap-5 p-6">
       <div>
-        <h1 className="text-xl font-semibold">Your parlays</h1>
+        <h1 className="text-xl font-semibold">Your chains</h1>
         <p className="text-sm text-muted">
           Cross-slate entries settle once every included contest is final.
         </p>
@@ -44,9 +44,9 @@ export default async function ParlaysPage() {
 
       {parlays.length === 0 ? (
         <Card className="flex flex-col items-center gap-3 py-10 text-center">
-          <p className="text-sm text-muted">No parlays yet.</p>
+          <p className="text-sm text-muted">No chains yet.</p>
           <p className="text-xs text-muted">
-            Open a contest, tap &ldquo;add to parlay&rdquo; on questions across
+            Open a contest, tap &ldquo;add to chain&rdquo; on questions across
             events, then submit from the ⚡ button.
           </p>
         </Card>

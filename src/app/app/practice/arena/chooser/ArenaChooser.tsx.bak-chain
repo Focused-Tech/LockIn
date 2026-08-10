@@ -54,7 +54,7 @@ const MODES: Mode[] = [
   {
     key: "multiplayer",
     tag: "Solo · Stacked",
-    title: "Chain",
+    title: "Parlay",
     desc: "Queue several slates and play them back-to-back vs AI creators.",
     meta: ["Multiple slates", "Back-to-back", "vs AI creators"],
     cta: "Stack slates →",
@@ -64,7 +64,7 @@ const MODES: Mode[] = [
     fill: "linear-gradient(90deg, #050117 0%, #07042b 50%, #000539 100%)",
     fillMask: MASK_STD,
     bg: "/arena/arena-parlay.png",
-    route: "/app/practice/arena/chain",
+    route: "/app/practice/arena/parlay",
   },
   {
     key: "compete",

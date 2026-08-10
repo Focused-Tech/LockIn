@@ -318,7 +318,7 @@ export function CreatorMode({
       {/* 3 · The pot */}
       <div style={card}>
         <h2 style={h2}>3 · The pot</h2>
-        <PotRow label="Entry sizes you allow">
+        <PotRow label="Stakes you allow">
           <span style={{ display: "flex", gap: 5, flexWrap: "wrap", flex: 1 }}>
             {ALL_STAKES.map((v) => (
               <button key={v} onClick={() => toggleStake(v)} style={chip(stakes.includes(v))}>${v}</button>
@@ -377,11 +377,11 @@ export function CreatorMode({
           </tbody>
         </table>
 
-        <Sect>How entries pay</Sect>
+        <Sect>How wagers pay</Sect>
         <table style={tableStyle}>
-          <thead><tr><Th>Entry</Th><Th r>Weight in the pot</Th></tr></thead>
+          <thead><tr><Th>Wager</Th><Th r>Weight in the pot</Th></tr></thead>
           <tbody>
-            {stakes.length === 0 && <tr><Td>—</Td><Td r color={C.dim}>Allow at least one entry size.</Td></tr>}
+            {stakes.length === 0 && <tr><Td>—</Td><Td r color={C.dim}>Allow at least one stake.</Td></tr>}
             {stakes.map((w) => (
               <tr key={w}><Td>${w}</Td><Td r>{(avg ? w / avg : 0).toFixed(2)}× the average entry</Td></tr>
             ))}
@@ -389,7 +389,7 @@ export function CreatorMode({
         </table>
 
         <div style={{ fontSize: 11, color: C.dim, lineHeight: 1.5, marginTop: 8 }}>
-          One pot per slate. Players enter what they want; <b style={{ color: C.warn }}>payout scales with what you put up</b> and whether you were right.
+          One pot per slate. Players wager what they want; <b style={{ color: C.warn }}>payout scales with what you put up</b> and whether you were right.
           The pot converts on the house economy — you can&apos;t change it, only post it. The one number that&apos;s yours is the <b style={{ color: C.warn }}>host fee</b>.
           Your cut of it slides as the pot grows, capped at ${CREATOR_CUT_CAP_DOLLARS.toLocaleString()} a slate. Cut-slide points and host-fee tiers are <b style={{ color: C.warn }}>architect-set</b> placeholders.
         </div>
@@ -412,7 +412,7 @@ export function CreatorMode({
         {publishing ? "Publishing…" : "Publish slate"}
       </button>
       <div style={{ fontSize: 11, color: C.dim, textAlign: "center" }}>
-        {canPublish ? (stakes.length ? "Every leg spans two games. Ready." : "Allow at least one entry size to publish.") : "Fix the flagged questions to publish."}
+        {canPublish ? (stakes.length ? "Every leg spans two games. Ready." : "Allow at least one stake to publish.") : "Fix the flagged questions to publish."}
       </div>
     </div>
   );

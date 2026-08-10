@@ -56,7 +56,7 @@ export function ArenaColiseumStub() {
 
       <p className="text-center text-xs text-muted">
         Want to play now? Try{" "}
-        <span className="text-foreground">Chain</span> or the{" "}
+        <span className="text-foreground">Parlay</span> or the{" "}
         <span className="text-foreground">Practice Dojo</span> from the chooser.
       </p>
     </div>

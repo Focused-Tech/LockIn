@@ -74,7 +74,7 @@ export function CrossParlayBuilder() {
           setDone(false);
           setOpen(true);
         }}
-        aria-label="Open your chain"
+        aria-label="Open your parlay"
         className="fixed bottom-[4.5rem] left-4 z-40 flex h-12 w-12 items-center justify-center rounded-full border border-[rgba(59,139,255,0.4)] bg-[rgba(59,139,255,0.15)] text-ai shadow-lg backdrop-blur transition-colors hover:bg-[rgba(59,139,255,0.25)]"
       >
         <span className="text-lg">⚡</span>
@@ -95,14 +95,14 @@ export function CrossParlayBuilder() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold">Cross-slate chain</h2>
+              <h2 className="text-base font-semibold">Cross-slate parlay</h2>
               <div className="flex items-center gap-3">
                 <Link
-                  href="/app/chains"
+                  href="/app/parlays"
                   onClick={() => setOpen(false)}
                   className="text-sm text-ai hover:opacity-80"
                 >
-                  Your chains
+                  Your parlays
                 </Link>
                 <button
                   type="button"
@@ -116,7 +116,7 @@ export function CrossParlayBuilder() {
 
             {done ? (
               <div className="flex flex-col gap-3 py-6 text-center">
-                <p className="text-sm font-semibold text-win">Chain submitted!</p>
+                <p className="text-sm font-semibold text-win">Parlay submitted!</p>
                 <p className="text-sm text-muted">
                   It settles once every included contest is final.
                 </p>

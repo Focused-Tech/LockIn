@@ -128,10 +128,10 @@ export async function notifyParlaySettled(
   parlay: CrossParlayDoc,
 ): Promise<void> {
   await sendToUsers(db, [parlay.userId], {
-    title: parlay.refunded ? "Chain refunded" : "Chain settled",
+    title: parlay.refunded ? "Parlay refunded" : "Parlay settled",
     body: parlay.refunded
-      ? "A contest was cancelled — your chain entry was refunded."
-      : "Your cross-slate chain has been graded.",
-    link: `/app/chains`,
+      ? "A contest was cancelled — your parlay entry was refunded."
+      : "Your cross-slate parlay has been graded.",
+    link: `/app/parlays`,
   });
 }

@@ -40,7 +40,7 @@ const proSlateSchema = z.object({
   title: z.string().trim().min(3).max(120),
   gameIds: z.array(z.string()).min(2, "Pick at least two games"),
   legs: z.array(legSchema).min(1, "Add at least one question"),
-  stakes: z.array(z.number().int().positive()).min(1, "Allow at least one entry size"),
+  stakes: z.array(z.number().int().positive()).min(1, "Allow at least one stake"),
   division: z.enum(["hawk", "wolf", "shark", "boss"]),
   targetPotCents: z.number().int().min(0),
   hostFeeCents: z.number().int().min(0).max(1000),

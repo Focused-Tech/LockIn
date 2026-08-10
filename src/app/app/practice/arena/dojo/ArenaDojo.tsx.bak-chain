@@ -80,7 +80,7 @@ export function ArenaDojo() {
 
       <button
         type="button"
-        onClick={() => router.push("/app/practice/arena/chain")}
+        onClick={() => router.push("/app/practice/arena/parlay")}
         className="rounded-xl border border-dashed border-[rgba(55,138,221,0.6)] p-3 text-sm font-semibold text-[#378add] transition active:scale-[0.98]"
       >
         + Add another slate — play Parlay →

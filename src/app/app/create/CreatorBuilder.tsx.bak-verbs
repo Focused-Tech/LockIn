@@ -203,7 +203,7 @@ export function CreatorBuilder({ dashboard, creator }: { dashboard?: ReactNode; 
           </div>
           <div className="blk">
             <div className="lb">The pot <i></i></div>
-            <div className="rule"><span className="m yes">✓</span><span><b>One pot per slate.</b> Players enter what they want; what they collect follows their entry and how much they got right.</span></div>
+            <div className="rule"><span className="m yes">✓</span><span><b>One pot per slate.</b> Players wager what they want; what they collect follows their stake and how much they got right.</span></div>
             <div className="rule"><span className="m yes">✓</span><span>Payouts are projected while the slate is open and <b>become fixed the moment it closes</b> — which happens before the event starts.</span></div>
           </div>
           <button className="gobig home2" onClick={enterBuilder}>
@@ -465,14 +465,14 @@ export function CreatorBuilder({ dashboard, creator }: { dashboard?: ReactNode; 
         {/* ══ STEP 4 ══ */}
         <div className={`pane${paneOn("p4") ? " on" : ""}`} id="p4">
           <h2>Set the prize</h2>
-          <p className="hint">Players enter what they want into one pot. Your host fee is the only number you control.</p>
+          <p className="hint">Players wager what they want into one pot. Your host fee is the only number you control.</p>
           <div className="blk">
             <div className="lb">Target pot <i></i></div>
             <input type="text" id="target" defaultValue="$25,000" />
             <p className="hint" style={{ marginTop: 8 }}>A goal, not a guarantee. The meter keeps climbing past it.</p>
           </div>
           <div className="blk">
-            <div className="lb">Entry sizes you allow <i></i></div>
+            <div className="lb">Entry stakes you allow <i></i></div>
             <div className="chips" id="stakes">
               {["$5", "$10", "$25", "$50"].map((s) => (
                 <button key={s} className={`chip orange${stakes[s] ? " on" : ""}`} onClick={() => setStakes((p) => ({ ...p, [s]: !p[s] }))}>{s}</button>
