@@ -11,6 +11,7 @@ import {
   type ShadowEarnings,
 } from "@/server/data/shadowEarnings";
 import { EmbedSnippet } from "@/components/EmbedSnippet";
+import { ReportContentButton } from "@/components/slate/ReportContentButton";
 import { ShareCardPanel } from "@/components/ShareCardPanel";
 import { FollowButton } from "@/components/feed/FollowButton";
 import { getDemoSlate } from "@/lib/demoSlates";
@@ -164,6 +165,9 @@ export default async function SlatePage({
           />
         </>
       )}
+
+      {/* Report control (Part 3e) — a player can flag this creator's content for review. */}
+      {slate.creatorId !== profile.id && <ReportContentButton targetId={id} />}
 
       <SkillGameDisclaimer className="mt-auto pt-4" />
     </div>

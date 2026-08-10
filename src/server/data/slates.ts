@@ -17,10 +17,11 @@ import { firstBannedLeg } from "@/lib/contest/questionEngine";
  * predictions are stripped (no banned text reaches the client) and it renders in a visible "under
  * review" state instead of as a normal contest. Applied to every feed + single-slate fetch.
  */
-function applyWithhold(slate: FeedSlate): FeedSlate {
+function applyWithhold(slate: FeedSlate, moderationHidden = false): FeedSlate {
   const banned = firstBannedLeg(slate.predictions);
-  if (!banned) return slate;
-  console.warn(`[compliance] withholding slate ${slate.id} — banned leg "${banned.question}" (${banned.archetype})`);
+  if (!banned && !moderationHidden) return slate;
+  const why = moderationHidden ? "moderation unpublish" : `banned leg "${banned?.question}" (${banned?.archetype})`;
+  console.warn(`[compliance] withholding slate ${slate.id} — ${why}`);
   return { ...slate, predictions: [], withheld: true };
 }
 
@@ -96,7 +97,7 @@ export async function fetchFeedSlates(db: Firestore): Promise<FeedSlate[]> {
         creatorName: slate.creatorId ? creators.get(slate.creatorId)?.name ?? null : null,
         creatorTrackRecord: slate.creatorId ? creators.get(slate.creatorId)?.track ?? null : null,
       };
-      return applyWithhold(feedSlate);
+      return applyWithhold(feedSlate, slate.moderationHidden === true);
     }),
   );
 
@@ -193,5 +194,5 @@ export async function fetchSlate(
     maxEntries: slate.maxEntries ?? null,
     lockTimeMs: slate.lockTime.toMillis(),
     predictions,
-  });
+  }, slate.moderationHidden === true);
 }

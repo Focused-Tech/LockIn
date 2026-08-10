@@ -10,6 +10,7 @@ import { canCreatorHostCash, blockedStateMessage } from "@/lib/eligibility";
 import { suggestOddsMock, type OddsSuggestion } from "@/lib/ai/probability";
 import { notifyFollowersNewSlate } from "@/lib/notifications/send";
 import { detectBannedArchetype } from "@/lib/contest/questionEngine";
+import { moderateCreatorFields, firstModerationError } from "@/lib/moderation/creatorContent";
 
 /** Mock AI odds — swapped for real data-driven estimation later. */
 export async function suggestOdds(input: {
@@ -98,6 +99,22 @@ export async function createSlate(
     if (p.type === "over_under" || detectBannedArchetype(p.question, [p.optionA, p.optionB])) {
       return { ok: false, error: "That question isn't allowed — no team outcomes, spreads, or over/unders. Use an approved cross-game question." };
     }
+  }
+
+  // ABUSE MODERATION (Part 3) — runs AFTER the compliance-shape check above, BEFORE any write.
+  // "Allowed shape?" (validateLeg/detectBannedArchetype) and "acceptable content?" (this) are
+  // different gates; BOTH must pass. Failure names the field + is never a silent rewrite.
+  const moderation = await moderateCreatorFields([
+    { label: "Title", value: input.title },
+    ...(input.description ? [{ label: "Description", value: input.description }] : []),
+    ...input.predictions.flatMap((p, i) => [
+      { label: `Question ${i + 1}`, value: p.question },
+      { label: `Question ${i + 1} · Option A`, value: p.optionA },
+      { label: `Question ${i + 1} · Option B`, value: p.optionB },
+    ]),
+  ]);
+  if (!moderation.ok) {
+    return { ok: false, error: firstModerationError(moderation) ?? "That content isn't allowed." };
   }
 
   if (input.cardRush && !input.rushMultiplier) {

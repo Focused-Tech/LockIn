@@ -150,6 +150,17 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // locksmithReports — append-only Locksmith moderation ledger (auto-guard blocks + player reports).
+    // Contains flagged message text; the client SDK must never read or write it (all writes via Admin SDK).
+    match /locksmithReports/{reportId} {
+      allow read, write: if false;
+    }
+
+    // contentReports — append-only creator-content abuse reports; written + reviewed via the Admin SDK.
+    match /contentReports/{reportId} {
+      allow read, write: if false;
+    }
+
     // creatorApplications — applicants read their own; submission + review are
     // server-side (Admin SDK). Admin reads also go through the Admin SDK.
     match /creatorApplications/{userId} {

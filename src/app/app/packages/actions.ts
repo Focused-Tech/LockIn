@@ -10,6 +10,7 @@ import {
   type SlateDoc,
   type UserDoc,
 } from "@/lib/firebase/types";
+import { moderateCreatorFields, firstModerationError } from "@/lib/moderation/creatorContent";
 import {
   PACKAGE_MAX_PRICE_CENTS,
   PACKAGE_MIN_PRICE_CENTS,
@@ -81,6 +82,13 @@ export async function createPackage(
       return { ok: false, error: "Early-bird price must be lower" };
     if (!input.earlyBirdUntilMs || input.earlyBirdUntilMs <= Date.now())
       return { ok: false, error: "Early-bird deadline must be in the future" };
+  }
+
+  // ABUSE MODERATION (Part 3) — the package name is creator free text that reaches buyers; screen it
+  // before the write (this path has no shape check, so moderation is the only content gate here).
+  const moderation = await moderateCreatorFields([{ label: "Package name", value: input.name }]);
+  if (!moderation.ok) {
+    return { ok: false, error: firstModerationError(moderation) ?? "That name isn't allowed." };
   }
 
   const ref = db.collection(COLLECTIONS.pickPackages).doc();

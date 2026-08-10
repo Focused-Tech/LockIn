@@ -11,6 +11,7 @@ import { buildCreatorLeg, ARCHETYPE_CHOICES, type CreatorPlayer, type GeneratedL
 import { enginePlayersFor, earliestStartMs } from "@/lib/contest/games";
 import { getTodaysCreatorGames, getPlayerContext, type PlayerContext } from "@/server/feeds/creatorGames";
 import { notifyFollowersNewSlate } from "@/lib/notifications/send";
+import { moderateCreatorFields, firstModerationError } from "@/lib/moderation/creatorContent";
 
 /** §1.2 — season average + last-out form for a leg's players, from the live feed (a batch, on
  *  demand when the creator picks players — never per keystroke). */
@@ -85,6 +86,22 @@ export async function publishProSlate(raw: ProSlateInput): Promise<ProSlateResul
   if (!canPublish) {
     const firstBad = legVerdicts.find((v) => !v.ok);
     return { ok: false, error: firstBad?.message ?? "A question failed Lockpick — fix it and retry." };
+  }
+
+  // ABUSE MODERATION (Part 3) — runs AFTER Lockpick (shape) passes, BEFORE any write. Screens the
+  // creator's free text: title, each leg question, and the three per-leg context prose lines. Option
+  // labels are server-derived player names (not free text), so they're out of scope. Both gates must pass.
+  const moderation = await moderateCreatorFields([
+    { label: "Title", value: input.title },
+    ...input.legs.flatMap((l, i) => [
+      { label: `Leg ${i + 1} question`, value: l.question },
+      { label: `Leg ${i + 1} · season average`, value: l.context?.seasonAverage ?? "" },
+      { label: `Leg ${i + 1} · recent form`, value: l.context?.last3Form ?? "" },
+      { label: `Leg ${i + 1} · matchup note`, value: l.context?.matchupNote ?? "" },
+    ]),
+  ]);
+  if (!moderation.ok) {
+    return { ok: false, error: firstModerationError(moderation) ?? "That content isn't allowed." };
   }
 
   // §1.1/§4 — build each leg through the SHARED archetype library (the SAME builder the feed uses, one

@@ -77,6 +77,16 @@ export const COLLECTIONS = {
   tutorials: "tutorials", // subcollection of users/{uid}
   /** Championship trigger-card seen-records (once-only): users/{uid}/championshipCards/{cardId}. */
   championshipCards: "championshipCards", // subcollection of users/{uid}
+  /**
+   * Append-only Locksmith moderation ledger: locksmithReports/{id}. Server-write only. Holds both
+   * auto-guard blocks (input/output) and player-filed reports of a Locksmith message. NO money moves.
+   */
+  locksmithReports: "locksmithReports",
+  /**
+   * Append-only creator-content abuse reports: contentReports/{id}. Server-write only. A player flags
+   * a published slate/package; server-side moderation acts on it (may unpublish). NO money moves.
+   */
+  contentReports: "contentReports",
 } as const;
 
 /** Per-user, per-mode tutorial record — users/{uid}/tutorials/{mode}. A version bump re-offers it. */
@@ -330,6 +340,8 @@ export interface SlateDoc {
   settledAt: FsTimestamp | null;
   cancelledAt: FsTimestamp | null;
   creatorBonusCents: number;
+  /** Moderation unpublish (Part 3): server sets this true to withhold a live slate from every render. */
+  moderationHidden?: boolean;
   createdAt: FsTimestamp;
   /** Data-feed origin: "espn" | "oddsapi" for real games (settled from final scores), else absent. */
   source?: string;
@@ -525,6 +537,45 @@ export interface KeyholderEventDoc {
   entries: number | null;
   grossHostFeesCents: number | null;
   participationPct: number | null;
+  createdAt: FsTimestamp;
+}
+
+// ── locksmithReports/{id} — append-only moderation ledger (Part 2) ──────────────
+/** auto_block = the guard stopped the model in/out; user_report = a player flagged a message. */
+export type LocksmithReportKind = "auto_block" | "user_report";
+
+/**
+ * One Locksmith moderation record. Server-write only, append-only, never surfaced to players.
+ * `context` is the surrounding transcript (trimmed) so a reviewer can see what led to it.
+ */
+export interface LocksmithReportDoc {
+  kind: LocksmithReportKind;
+  /** For auto_block: which side tripped. For user_report: "output" (they flag her messages). */
+  direction: "input" | "output";
+  /** Guard category (auto_block) or null (user_report). Internal only. */
+  category: string | null;
+  /** The offending / reported message text. */
+  message: string;
+  /** Trimmed surrounding conversation for review context. */
+  context: { role: "user" | "assistant"; content: string }[];
+  /** Optional free-text reason a reporting player gave. */
+  reason: string | null;
+  userId: string;
+  createdAt: FsTimestamp;
+}
+
+// ── contentReports/{id} — append-only creator-abuse reports (Part 3) ─────────────
+/**
+ * A player's report of published creator content (slate/package). Server-write only, append-only.
+ * Moderation may act on it (e.g. set the slate `withheld`). NO money moves.
+ */
+export interface ContentReportDoc {
+  targetType: "slate" | "package";
+  targetId: string;
+  /** The creator who authored the reported content (for reviewer context). */
+  creatorId: string | null;
+  reason: string | null;
+  reporterId: string;
   createdAt: FsTimestamp;
 }
 

@@ -8,6 +8,7 @@ import { startStt, sttSupported, type SttHandle } from "@/lib/speech";
 import { MicIcon, SendIcon, LOCKSMITH_BADGE_SRC } from "./navIcons";
 import { ChipDock } from "./ChipDock";
 import { championshipChipsForMode, chipAnswer, type ChampionshipChip } from "@/lib/championship/copy";
+import { LOCKSMITH_REPORT_CONFIRM } from "@/lib/locksmith/copy";
 import { autosizeTextarea } from "@/lib/dom/autosize";
 
 /** A transcript message; `href` renders a follow link under the bubble (championship chip answers). */
@@ -50,6 +51,28 @@ export function LocksmithChat({
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  // REPORT (Part 2c) — indices already flagged, so each shows its receipt and can't double-fire.
+  const [reported, setReported] = useState<Set<number>>(() => new Set());
+
+  /** Flag one of her messages for review — append-only, server-side; confirm receipt to the player. */
+  async function reportMessage(index: number) {
+    if (reported.has(index)) return;
+    setReported((prev) => new Set(prev).add(index));
+    try {
+      await fetch("/api/locksmith/report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: messages[index]?.content ?? "",
+          context: messages
+            .slice(Math.max(0, index - 4), index + 1)
+            .map((m) => ({ role: m.role, content: m.content })),
+        }),
+      });
+    } catch {
+      /* the receipt already showed; a network miss shouldn't nag the player */
+    }
+  }
   const scrollRef = useRef<HTMLDivElement>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const started = useRef(false);
@@ -274,6 +297,19 @@ export function LocksmithChat({
                   <Link href={m.href} className="mt-1.5 block text-[13px] font-semibold text-[color:var(--brand-orange)] underline-offset-2 hover:underline">
                     Open the Championship ›
                   </Link>
+                )}
+                {/* REPORT control (Part 2c) — on every Locksmith message; receipt replaces it once filed. */}
+                {reported.has(i) ? (
+                  <p className="mt-1 text-[11px] text-muted">{LOCKSMITH_REPORT_CONFIRM}</p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => reportMessage(i)}
+                    className="mt-1 text-[11px] text-muted underline-offset-2 hover:underline"
+                    aria-label="Report this message"
+                  >
+                    Report
+                  </button>
                 )}
               </div>
             </div>
