@@ -37,6 +37,10 @@ export interface Pool {
   category: string;
   stats: string[]; // statLabels available across the pool
   games: PoolGame[];
+  /** which voice to fill stems with. "sports" (default) shows numbers on bars; "entertainment" shows
+   *  none on an individual and reads with show nouns. The subject "unit" is a game for sports, the
+   *  subject themself for entertainment — one-per-unit holds for both. */
+  domain?: QuestionDomain;
 }
 
 // ── Generated leg (feeds BOTH the app render AND the settlement meta) ────────────────────────────
@@ -75,33 +79,80 @@ const STAT_BARS: Record<string, { milestone: number; race: number }> = {
 };
 const barFor = (stat: string) => STAT_BARS[stat] ?? { milestone: 1, race: 1 };
 
-// ── Stems (§2.6 — ≥6 per archetype, matching the H2H_STEMS tone) ─────────────────────────────────
+// ── Stems (§2.6 — ≥6 per archetype) ──────────────────────────────────────────────────────────────
+// APPROVED VOICE (D): narrower and conversational. The SUBCATEGORY carries the specificity via {stat}
+// (a noun from the subcategory's stat vocabulary — "assists", "receiving yards", "screen time",
+// "camera time"); the stem stays short and readable. Never "who wins"; no over/under/spread/total.
+// Two voices, ONE archetype set: SPORTS fills {stat} with a box-score stat and (for milestone/race)
+// {bar} with a number; ENTERTAINMENT fills {stat} with a show noun and shows NO number on an
+// individual (buckets/races only). Both still pass the same validateLeg — the compliance is
+// structural (approved archetype + one subject per unit + context), not lexical.
+export type QuestionDomain = "sports" | "entertainment";
+
 export const ARCHETYPE_STEMS: Record<Archetype, string[]> = {
   cross_game_h2h: [
-    "More {stat} tonight?", "Who racks up more {stat}?", "Bigger {stat} night?",
-    "Who shows out — most {stat}?", "Who takes the {stat} edge?", "Who piles up more {stat}?",
+    "Who finishes with more {stat} tonight?", "Who racks up more {stat}?", "Who shows out more in {stat}?",
+    "Bigger {stat} night — who?", "Who takes the {stat} edge?", "Who piles up more {stat}?",
   ],
   field_leader: [
-    "Who leads the floor for {stat} tonight?", "Who tops the {stat} board?", "Best {stat} night of the bunch?",
-    "Who paces the field in {stat}?", "Top dog for {stat} tonight?", "Who's the {stat} leader of the night?",
+    "Who leads the field in {stat} tonight?", "Who tops the {stat} board tonight?", "Best {stat} night of the bunch?",
+    "Who paces the field in {stat}?", "Who leads all comers in {stat}?", "Top of the {stat} board — who?",
   ],
   biggest_night: [
-    "Who has the biggest {stat} night?", "Whose {stat} night is it?", "Who goes off for {stat}?",
-    "{stat} player of the night — who?", "Who steals the show in {stat}?", "Who has the loudest {stat} night?",
+    "Whose night reads loudest?", "Who has the biggest {stat} night?", "Who goes off for {stat}?",
+    "Who steals the show in {stat}?", "Whose {stat} night is it?", "Who has the loudest {stat} night?",
   ],
   split_squad_duos: [
     "Which duo racks up more {stat}?", "Whose pair goes bigger in {stat}?", "Which two combine for more {stat}?",
     "Better {stat} duo tonight?", "Which tandem shows out in {stat}?", "Whose two-man crew wins the {stat} night?",
   ],
+  // No "{bar}+ {stat}" here — a bucketed COUNT must not read like a single-athlete over/under ("10+
+  // assists" trips the banned free-text detector). Bar is a clean number the count clears.
   milestone_count: [
-    "How many clear {bar} {stat}?", "How many of them hit {bar}+ {stat}?", "How many get to {bar} {stat} tonight?",
-    "How many crack {bar} {stat}?", "How many reach {bar} {stat}?", "How many post {bar}+ {stat}?",
+    "How many clear {bar} {stat} tonight?", "How many get to {bar} {stat}?", "How many reach {bar} {stat}?",
+    "How many crack {bar} {stat}?", "How many hit {bar} {stat}?", "How many post {bar} {stat}?",
   ],
   first_to_n: [
-    "Who gets to {bar} {stat} first?", "First to {bar} {stat} tonight?", "Who hits {bar} {stat} first?",
-    "Race to {bar} {stat} — who gets there?", "Who reaches {bar} {stat} first?", "First one to {bar} {stat}?",
+    "Which of these gets to {bar} {stat} first?", "Who gets to {bar} {stat} first?", "First to {bar} {stat} tonight?",
+    "Who hits {bar} {stat} first?", "Race to {bar} {stat} — who gets there?", "Who reaches {bar} {stat} first?",
   ],
 };
+
+// ENTERTAINMENT voice — same six archetypes, but {stat} is a show noun (screen time, mentions,
+// confessionals, camera time, drama) and NO number ever attaches to one subject. The "unit" a subject
+// occupies is the subject themself (a cast member / judge / host), so a within-episode comparison of
+// two subjects satisfies one-subject-per-unit exactly as one-player-per-game does for sports.
+export const ENTERTAINMENT_STEMS: Record<Archetype, string[]> = {
+  cross_game_h2h: [
+    "Who racks up more {stat} tonight?", "Who brings more {stat}?", "Bigger {stat} night — who?",
+    "Who shows out more in {stat}?", "Who takes the {stat} edge?", "Who's got more {stat} this episode?",
+  ],
+  field_leader: [
+    "Who leads the cast in {stat} tonight?", "Who tops the cast for {stat}?", "Who brings the most {stat}?",
+    "Who paces the cast in {stat}?", "Most {stat} of the night — who?", "Who's the {stat} lead this episode?",
+  ],
+  biggest_night: [
+    "Whose episode reads loudest?", "Who steals the episode in {stat}?", "Who has the biggest {stat} night?",
+    "Who goes off for {stat}?", "Whose {stat} night is it?", "Who has the loudest {stat} night?",
+  ],
+  split_squad_duos: [
+    "Which pair brings more {stat}?", "Whose duo goes bigger in {stat}?", "Which two combine for more {stat}?",
+    "Better {stat} duo this episode?", "Which tandem shows out in {stat}?", "Whose two-some wins the {stat} night?",
+  ],
+  milestone_count: [
+    "How many bring big {stat} tonight?", "How many post a loud {stat} night?", "How many of them show big {stat}?",
+    "How many turn up the {stat}?", "How many bring the {stat}?", "How many light up the {stat}?",
+  ],
+  first_to_n: [
+    "Who brings the {stat} first?", "Who's first to big {stat}?", "Who turns up the {stat} first?",
+    "First to real {stat} tonight?", "Who gets to the {stat} first?", "Who lights up the {stat} first?",
+  ],
+};
+
+/** The stem set for a domain (defaults to the sports voice). One source both consumers read. */
+export function stemsForDomain(domain: QuestionDomain, archetype: Archetype): string[] {
+  return (domain === "entertainment" ? ENTERTAINMENT_STEMS : ARCHETYPE_STEMS)[archetype];
+}
 
 // ── Shared helpers ───────────────────────────────────────────────────────────────────────────────
 const ordinalName = (n: number) => ["None", "One", "Two", "Three", "Four", "Five"][n] ?? String(n);
@@ -117,9 +168,11 @@ function threeBuckets(n: number): { range: [number, number]; label: string }[] {
 /** a pool player with its game line attached (the .cx line "Team A at Team B"). */
 type PP = PoolPlayer & { line: string };
 const withLine = (p: PoolPlayer, line: string): PP => ({ ...p, line });
-/** §2 standing rule — every option carries game line + season average + last-out form (present ones). */
+/** §2 standing rule — every option carries game line + season average + last-out form (present ones).
+ *  The season line is dropped when the value is unknown (≤0): the feed always has a real season value;
+ *  creator/entertainment legs carry 0 and pull context live at read time — never a fake "0 (season)". */
 const optionContext = (p: PP): string[] =>
-  [p.line, `${p.seasonVal} ${p.stat} (season)`, p.lastOut ? `${p.lastOut} last out` : ""].filter(Boolean) as string[];
+  [p.line, p.seasonVal > 0 ? `${p.seasonVal} ${p.stat} (season)` : "", p.lastOut ? `${p.lastOut} last out` : ""].filter(Boolean) as string[];
 
 function toEngine(players: PoolPlayer[]): EnginePlayer[] {
   return players.map((p) => ({ name: p.name, gameId: p.gameId, team: p.team }));
@@ -249,6 +302,7 @@ export function buildSlateLegs(pool: Pool, opts: { maxLegs?: number } = {}): Sla
   const usedCombo = new Set<string>(); // `${archetype}|${stem}` — §3.2
   let statIdx = 0;
   let prevGameIds = new Set<string>();
+  const domain: QuestionDomain = pool.domain ?? "sports";
 
   for (const id of DIVERSE_ORDER) {
     if (plans.length >= maxLegs) break;
@@ -256,7 +310,8 @@ export function buildSlateLegs(pool: Pool, opts: { maxLegs?: number } = {}): Sla
     const stat = stats[statIdx % stats.length]!;
     const games = allocateGames(pool, def.minGames, def.maxGames, stat, prevGameIds);
     if (!games) continue;
-    const stem = def.stems.find((s) => !usedCombo.has(`${id}|${s}`)) ?? null;
+    // D — pick the stem in the pool's voice (sports vs entertainment), still no repeat per §3.2.
+    const stem = stemsForDomain(domain, id).find((s) => !usedCombo.has(`${id}|${s}`)) ?? null;
     if (!stem) continue;
     const leg = def.build(games, stat, stem, pool.category);
     if (!leg || !generatedLegOk(leg, pool.games.map((g) => g.gameId))) continue;
