@@ -12,6 +12,9 @@ import {
 } from "@/server/data/shadowEarnings";
 import { EmbedSnippet } from "@/components/EmbedSnippet";
 import { ReportContentButton } from "@/components/slate/ReportContentButton";
+import { SuggestQuestion } from "@/components/slate/SuggestQuestion";
+import { SuggestionQueue } from "@/components/slate/SuggestionQueue";
+import { fetchSuggestionQueue } from "@/server/data/suggestions";
 import { ShareCardPanel } from "@/components/ShareCardPanel";
 import { FollowButton } from "@/components/feed/FollowButton";
 import { getDemoSlate } from "@/lib/demoSlates";
@@ -63,6 +66,10 @@ export default async function SlatePage({
 
   const slate = await fetchSlate(adminDb(), id);
   if (!slate) notFound();
+
+  const isOwner = slate.creatorId === profile.id;
+  // E — the creator's reconstructed follower-suggestion queue (owner only).
+  const suggestionQueue = isOwner ? await fetchSuggestionQueue(id, profile.id) : [];
 
   // The user's existing entry for this slate (entry doc id = uid).
   const entrySnap = await adminDb()
@@ -164,6 +171,16 @@ export default async function SlatePage({
             shadowEarnings={shadowEarnings}
           />
         </>
+      )}
+
+      {/* E — creator's queue of reconstructed fan suggestions (owner only). */}
+      {isOwner && slate.status !== "settled" && (
+        <SuggestionQueue slateId={id} items={suggestionQueue} />
+      )}
+
+      {/* E — a follower on a creator's live slate can suggest a question (Locksmith reconstructs it). */}
+      {slate.creatorId && !isOwner && slate.status === "live" && !slate.withheld && (
+        <SuggestQuestion slateId={id} />
       )}
 
       {/* Report control (Part 3e) — a player can flag this creator's content for review. */}
