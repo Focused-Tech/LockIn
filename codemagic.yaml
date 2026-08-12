@@ -30,11 +30,17 @@ workflows:
         script: |
           cd $CM_BUILD_DIR/ios/App
           agvtool new-version -all $(($BUILD_NUMBER + 1))
+      - name: Resolve Swift packages (diagnostic)
+        script: |
+          cd ios/App
+          xcodebuild -resolvePackageDependencies -project App.xcodeproj -scheme App -verbose || true
+          xcodebuild -project App.xcodeproj -scheme App -showBuildSettings || true
       - name: Build ipa for distribution
         script: |
           xcode-project build-ipa \
             --project "$XCODE_PROJECT" \
-            --scheme "$XCODE_SCHEME"
+            --scheme "$XCODE_SCHEME" \
+            -v
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
