@@ -5,6 +5,10 @@ workflows:
     instance_type: mac_mini_m2
     integrations:
       app_store_connect: lockin_asc_integration
+    cache:
+      cache_paths:
+        - $HOME/Library/Developer/Xcode/DerivedData/**/SourcePackages
+        - $HOME/Library/Caches/org.swift.swiftpm
     environment:
       ios_signing:
         distribution_type: app_store
@@ -30,11 +34,14 @@ workflows:
         script: |
           cd $CM_BUILD_DIR/ios/App
           agvtool new-version -all $(($BUILD_NUMBER + 1))
-      - name: Resolve Swift packages (diagnostic)
+      - name: Resolve Swift packages
         script: |
           cd ios/App
-          xcodebuild -resolvePackageDependencies -project App.xcodeproj -scheme App -verbose || true
-          xcodebuild -project App.xcodeproj -scheme App -showBuildSettings || true
+          for i in 1 2 3; do
+            xcodebuild -resolvePackageDependencies -project App.xcodeproj -scheme App && break
+            echo "Package resolution attempt $i failed, retrying in 20s..."
+            sleep 20
+          done
       - name: Build ipa for distribution
         script: |
           xcode-project build-ipa \
