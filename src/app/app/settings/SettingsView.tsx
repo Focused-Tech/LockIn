@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { isSfxOn, setSfxOn } from "@/lib/practice/sound";
 import { isMusicOn, setMusicOn, startMusic } from "@/lib/practice/music";
+import { DownloadMyDataRow, DeleteAccountRow } from "./AccountDataRows";
 
 /** A local (device) preference toggle backed by localStorage. Honest local prefs —
  *  notifications/privacy have no server yet, so they persist on-device only. */
@@ -188,7 +189,7 @@ export function SettingsView({
         <div className="lb">Privacy <i></i></div>
         <TgRow title="Show my handle on the board" hint="Off means you appear as Anonymous" on={pName} onFlip={() => setPName(!pName)} />
         <TgRow title="Let others follow me" on={pFol} onFlip={() => setPFol(!pFol)} />
-        <LinkRow title="Download my data" />
+        <DownloadMyDataRow />
       </div>
 
       <div className="blk">
@@ -200,7 +201,7 @@ export function SettingsView({
 
       <div className="blk warn">
         <div className="lb">Danger zone <i></i></div>
-        <LinkRow title="Delete account" hint="Permanent. Open contests play out first." />
+        <DeleteAccountRow />
       </div>
 
       <p className="legal">
