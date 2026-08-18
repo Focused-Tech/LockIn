@@ -4,19 +4,13 @@ import { z } from "zod";
 import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUserProfile } from "@/lib/firebase/session";
-import {
-  COLLECTIONS,
-  type CreatorApplicationDoc,
-} from "@/lib/firebase/types";
+import { COLLECTIONS, type CreatorApplicationDoc } from "@/lib/firebase/types";
 import { CATEGORIES } from "@/lib/categories";
 
 const schema = z.object({
   audienceUrl: z.string().trim().url("Add a valid channel link").max(300),
   audienceSize: z.number().int().min(0).max(1_000_000_000),
-  categories: z
-    .array(z.string())
-    .min(1, "Pick at least one category")
-    .max(20),
+  categories: z.array(z.string()).min(1, "Pick at least one category").max(20),
   pitch: z
     .string()
     .trim()
@@ -27,7 +21,6 @@ const schema = z.object({
 export type ApplyInput = z.infer<typeof schema>;
 export type ApplyResult = { ok: true } | { ok: false; error: string };
 
-/** Submit (or resubmit after rejection) a creator application. */
 export async function submitCreatorApplication(
   raw: ApplyInput,
 ): Promise<ApplyResult> {
