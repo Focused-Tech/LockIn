@@ -1,9 +1,11 @@
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { SkillGameDisclaimer } from "@/components/SkillGameDisclaimer";
 import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUserProfile } from "@/lib/firebase/session";
-import { fetchFeedSlatesCached } from "@/server/data/slates";
+import { fetchFeedSlatesCached, filterForClient } from "@/server/data/slates";
 import { fetchRecSignals } from "@/server/data/recommendations";
+import { isMobileClientUA } from "@/lib/mobileClient";
 import { ExploreFeed } from "./ExploreFeed";
 
 export default async function ExplorePage() {
@@ -17,10 +19,12 @@ export default async function ExplorePage() {
   if (!profile.journeyLane) redirect("/app/choose");
   if (profile.journeyLane === "beginner") redirect("/app/beginner");
 
-  const [slates, signals] = await Promise.all([
+  const isMobile = isMobileClientUA((await headers()).get("user-agent"));
+  const [allSlates, signals] = await Promise.all([
     fetchFeedSlatesCached(),
     fetchRecSignals(adminDb(), profile.id, profile.followedCreators ?? []),
   ]);
+  const slates = filterForClient(allSlates, { blockCashEntertainment: isMobile });
 
   return (
     <div className="flex flex-col gap-5 p-6">

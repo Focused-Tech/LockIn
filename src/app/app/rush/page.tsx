@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { SkillGameDisclaimer } from "@/components/SkillGameDisclaimer";
 import { SlateCard } from "@/components/feed/SlateCard";
 import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUserProfile } from "@/lib/firebase/session";
 import { fetchFeedSlates } from "@/server/data/slates";
+import { isMobileClientUA } from "@/lib/mobileClient";
 
 /**
  * Rush tab — a placeholder destination for the bottom nav while the dedicated
@@ -17,7 +19,8 @@ export default async function RushPage() {
   const profile = await getCurrentUserProfile();
   if (!profile) redirect("/login");
 
-  const slates = (await fetchFeedSlates(adminDb())).filter((s) => s.isCardRush);
+  const isMobile = isMobileClientUA((await headers()).get("user-agent"));
+  const slates = (await fetchFeedSlates(adminDb(), { blockCashEntertainment: isMobile })).filter((s) => s.isCardRush);
 
   return (
     <div className="flex flex-col gap-5 p-6">

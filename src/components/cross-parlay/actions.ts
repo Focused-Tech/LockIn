@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUserProfile } from "@/lib/firebase/session";
@@ -20,6 +21,8 @@ import {
 } from "@/lib/constants";
 import { parlayMultiplier } from "@/lib/contest/crossParlay";
 import { isSelfExcluded } from "@/server/data/responsiblePlay";
+import { isSportsCategory } from "@/lib/categories";
+import { isMobileClientUA } from "@/lib/mobileClient";
 
 export interface SubmitParlayInput {
   picks: { slateId: string; predictionId: string; pickValue: "a" | "b" }[];
@@ -59,6 +62,7 @@ export async function submitCrossParlay(
 
   const db = adminDb();
   const now = Date.now();
+  const isMobile = isMobileClientUA((await headers()).get("user-agent"));
 
   // Validate each pick against live, unlocked slates; capture lock times.
   const resolved: CrossParlayPick[] = [];
@@ -69,6 +73,11 @@ export async function submitCrossParlay(
     const lockMs = slate.lockTime?.toMillis?.() ?? 0;
     if (slate.status !== "live" || lockMs <= now) {
       return { ok: false, error: "A selected contest is no longer open" };
+    }
+    // STORE COMPLIANCE STRIP — same rule as the single-slate entry (submitEntry): the native app must
+    // not accept a CASH leg on a non-sports slate. Checked per-leg since a chain spans multiple slates.
+    if (!input.free && !isSportsCategory(slate.category) && isMobile) {
+      return { ok: false, error: "This contest isn't offered in the app." };
     }
     const predSnap = await slateSnap.ref
       .collection(COLLECTIONS.predictions)

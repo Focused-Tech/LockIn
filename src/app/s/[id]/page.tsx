@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { adminDb } from "@/lib/firebase/admin";
 import { fetchSlate } from "@/server/data/slates";
@@ -7,6 +8,7 @@ import { buildEmbedView } from "@/lib/embed";
 import { EmbedWidget } from "@/components/embed/EmbedWidget";
 import { SkillGameDisclaimer } from "@/components/SkillGameDisclaimer";
 import { formatCents } from "@/lib/utils";
+import { isMobileClientUA } from "@/lib/mobileClient";
 
 export const runtime = "nodejs";
 
@@ -43,7 +45,8 @@ export default async function SharePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const slate = await fetchSlate(adminDb(), id);
+  const isMobile = isMobileClientUA((await headers()).get("user-agent"));
+  const slate = await fetchSlate(adminDb(), id, { blockCashEntertainment: isMobile });
   if (!slate) notFound();
 
   const view = buildEmbedView(slate);

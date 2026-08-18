@@ -18,6 +18,8 @@ import {
 } from "@/lib/constants";
 import { verifyForCash, PERJURY_ATTESTATION_TEXT, PERJURY_ATTESTATION_VERSION } from "@/lib/eligibility";
 import { isSelfExcluded } from "@/server/data/responsiblePlay";
+import { isSportsCategory } from "@/lib/categories";
+import { isMobileClientUA } from "@/lib/mobileClient";
 
 /**
  * §2 — record the player's penalty-of-perjury RESIDENCE ATTESTATION (the cash-entry gate). This is
@@ -107,6 +109,13 @@ export async function submitEntry(
   );
   if (bannedLeg)
     return { ok: false, error: "This contest is under review and can't be entered." };
+
+  // STORE COMPLIANCE STRIP — the native app must not accept a CASH entry in a non-sports category.
+  // Cash sports and coin entries (any category) are unaffected. Defense in depth: fetchSlate /
+  // fetchFeedSlates already keep these slates off the app's screens (src/server/data/slates.ts); this
+  // rejects the payload directly too, since a route being hidden isn't the same as it being refused.
+  if (!input.free && !isSportsCategory(slate.category) && isMobileClientUA((await headers()).get("user-agent")))
+    return { ok: false, error: "This contest isn't offered in the app." };
 
   // §2.3 — re-enforce ONE-PLAYER-PER-GAME at ENTRY (not only at publish). Any archetype leg that
   // violates validateLeg (questionEngine.ts:75) rejects the whole entry.

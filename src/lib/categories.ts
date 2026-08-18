@@ -29,3 +29,27 @@ export const CATEGORIES: readonly Category[] = [
   { name: "Weather", icon: "🌪️" },
   { name: "Viral", icon: "🔥" },
 ];
+
+/**
+ * STORE COMPLIANCE STRIP — the sports/non-sports line. Sports has a licence category and a Google
+ * acceptance path (daily-fantasy-sports framework); nothing else does. Cash entries in any category
+ * NOT in this set are blocked on the mobile app (see src/server/data/slates.ts,
+ * src/app/app/slate/[id]/actions.ts). Coin play is unaffected everywhere.
+ */
+export const SPORTS_CATEGORIES: ReadonlySet<string> = new Set([
+  "NASCAR",
+  "Esports",
+  "UFC",
+  "Boxing",
+  "Tennis",
+  "Golf",
+  "Soccer",
+  "NFL",
+  "NBA",
+  "MLB",
+  "NHL",
+]);
+
+export function isSportsCategory(category: string): boolean {
+  return SPORTS_CATEGORIES.has(category);
+}

@@ -1,16 +1,18 @@
 "use server";
 
 import { z } from "zod";
+import { headers } from "next/headers";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUserProfile } from "@/lib/firebase/session";
 import { COLLECTIONS } from "@/lib/firebase/types";
-import { CATEGORIES } from "@/lib/categories";
+import { CATEGORIES, isSportsCategory } from "@/lib/categories";
 import { canCreatorHostCash, blockedStateMessage } from "@/lib/eligibility";
 import { suggestOddsMock, type OddsSuggestion } from "@/lib/ai/probability";
 import { notifyFollowersNewSlate } from "@/lib/notifications/send";
 import { detectBannedArchetype } from "@/lib/contest/questionEngine";
 import { moderateCreatorFields, firstModerationError } from "@/lib/moderation/creatorContent";
+import { isMobileClientUA } from "@/lib/mobileClient";
 
 /** Mock AI odds — swapped for real data-driven estimation later. */
 export async function suggestOdds(input: {
@@ -92,6 +94,13 @@ export async function createSlate(
   const tierKeys = new Set(input.tiers.map((t) => t.tier));
   if (tierKeys.size !== input.tiers.length) {
     return { ok: false, error: "Duplicate entry tier" };
+  }
+
+  // STORE COMPLIANCE STRIP — every slate created here carries at least one paid tier (the schema
+  // requires it), so hosting IS cash hosting. The native app must not let a creator publish a
+  // non-sports cash slate — that slate would then be live and reachable by other mobile users too.
+  if (!isSportsCategory(input.category) && isMobileClientUA((await headers()).get("user-agent"))) {
+    return { ok: false, error: "This category isn't available to host from the app." };
   }
   // COMPLIANCE — reject any banned archetype before publish: team/game outcome, spread, combined
   // total, over/under, or a single-athlete numeric threshold. Over/under is banned outright.

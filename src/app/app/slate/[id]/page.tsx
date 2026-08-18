@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { SkillGameDisclaimer } from "@/components/SkillGameDisclaimer";
 import { Card, Pill } from "@/components/ui";
@@ -6,6 +7,7 @@ import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUserProfile } from "@/lib/firebase/session";
 import { COLLECTIONS, type EntryDoc } from "@/lib/firebase/types";
 import { fetchSlate } from "@/server/data/slates";
+import { isMobileClientUA } from "@/lib/mobileClient";
 import {
   computeShadowEarnings,
   type ShadowEarnings,
@@ -61,7 +63,8 @@ export default async function SlatePage({
     );
   }
 
-  const slate = await fetchSlate(adminDb(), id);
+  const isMobile = isMobileClientUA((await headers()).get("user-agent"));
+  const slate = await fetchSlate(adminDb(), id, { blockCashEntertainment: isMobile });
   if (!slate) notFound();
 
   // The user's existing entry for this slate (entry doc id = uid).

@@ -17,6 +17,10 @@ const config: CapacitorConfig = {
     url: process.env.CAP_SERVER_URL ?? "https://lockin-three-zeta.vercel.app",
     androidScheme: "https",
   },
+  // STORE COMPLIANCE STRIP — the app and the website share an origin (server.url above), so this is
+  // the only signal the server has to tell the native app's WebView apart from a browser. Must match
+  // MOBILE_APP_UA_MARKER in src/lib/mobileClient.ts.
+  appendUserAgent: "LockInNativeApp",
   plugins: {
     FirebaseAuthentication: {
       // We hold the session in the JS SDK (signInWithCredential), so the plugin

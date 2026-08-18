@@ -11,6 +11,7 @@ import {
 import { FEED_STATUSES, type FeedPrediction, type FeedSlate } from "@/lib/feed";
 import { getPlayerContext } from "@/server/feeds/creatorGames";
 import { firstBannedLeg } from "@/lib/contest/questionEngine";
+import { isSportsCategory } from "@/lib/categories";
 
 /**
  * COMPLIANCE gate on the DISPLAY path: if any leg is a banned archetype, the slate is WITHHELD — its
@@ -23,6 +24,28 @@ function applyWithhold(slate: FeedSlate, moderationHidden = false): FeedSlate {
   const why = moderationHidden ? "moderation unpublish" : `banned leg "${banned?.question}" (${banned?.archetype})`;
   console.warn(`[compliance] withholding slate ${slate.id} — ${why}`);
   return { ...slate, predictions: [], withheld: true };
+}
+
+export interface SlateFetchOptions {
+  /**
+   * STORE COMPLIANCE STRIP — true when the request is from the native app (see
+   * src/lib/mobileClient.ts). Every cash slate in a non-sports category is blocked outright: filtered
+   * from feed lists, and a direct fetch returns null (the caller's existing `notFound()` handles it).
+   * Coin play and cash sports are unaffected. A slate always carries at least one paid entry tier
+   * (createSlate requires it), so "has entryTiers" == "is a cash slate" on this data model.
+   */
+  blockCashEntertainment?: boolean;
+}
+
+function isCashEntertainmentSlate(slate: Pick<FeedSlate, "category" | "entryTiers">): boolean {
+  return slate.entryTiers.length > 0 && !isSportsCategory(slate.category);
+}
+
+/** Exported so callers of the globally-cached {@link fetchFeedSlatesCached} (one shared cache entry
+ *  for every platform) can apply the mobile filter after the cache read, without a second cache key. */
+export function filterForClient(slates: FeedSlate[], opts?: SlateFetchOptions): FeedSlate[] {
+  if (!opts?.blockCashEntertainment) return slates;
+  return slates.filter((s) => !isCashEntertainmentSlate(s));
 }
 
 /**
@@ -46,7 +69,7 @@ async function loadCreators(db: Firestore, ids: string[]): Promise<Map<string, {
   return map;
 }
 
-export async function fetchFeedSlates(db: Firestore): Promise<FeedSlate[]> {
+export async function fetchFeedSlates(db: Firestore, opts?: SlateFetchOptions): Promise<FeedSlate[]> {
   const slatesSnap = await db
     .collection(COLLECTIONS.slates)
     .where("status", "in", FEED_STATUSES)
@@ -101,7 +124,7 @@ export async function fetchFeedSlates(db: Firestore): Promise<FeedSlate[]> {
     }),
   );
 
-  return slates.sort((a, b) => a.lockTimeMs - b.lockTimeMs);
+  return filterForClient(slates.sort((a, b) => a.lockTimeMs - b.lockTimeMs), opts);
 }
 
 /**
@@ -122,6 +145,7 @@ export const fetchFeedSlatesCached = unstable_cache(
 export async function fetchSlate(
   db: Firestore,
   slateId: string,
+  opts?: SlateFetchOptions,
 ): Promise<FeedSlate | null> {
   const slateDoc = await db
     .collection(COLLECTIONS.slates)
@@ -181,7 +205,7 @@ export async function fetchSlate(
     }),
   );
 
-  return applyWithhold({
+  const result = applyWithhold({
     id: slateDoc.id,
     title: slate.title,
     category: slate.category,
@@ -195,4 +219,7 @@ export async function fetchSlate(
     lockTimeMs: slate.lockTime.toMillis(),
     predictions,
   }, slate.moderationHidden === true);
+
+  if (opts?.blockCashEntertainment && isCashEntertainmentSlate(result)) return null;
+  return result;
 }

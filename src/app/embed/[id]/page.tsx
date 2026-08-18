@@ -1,9 +1,11 @@
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { adminDb } from "@/lib/firebase/admin";
 import { fetchSlate } from "@/server/data/slates";
 import { buildEmbedView } from "@/lib/embed";
 import { EmbedWidget } from "@/components/embed/EmbedWidget";
 import { EmbedAutoRefresh } from "@/components/embed/EmbedAutoRefresh";
+import { isMobileClientUA } from "@/lib/mobileClient";
 
 /** firebase-admin needs the Node.js runtime. */
 export const runtime = "nodejs";
@@ -19,7 +21,8 @@ export default async function EmbedPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const slate = await fetchSlate(adminDb(), id);
+  const isMobile = isMobileClientUA((await headers()).get("user-agent"));
+  const slate = await fetchSlate(adminDb(), id, { blockCashEntertainment: isMobile });
   if (!slate) notFound();
 
   const view = buildEmbedView(slate);
