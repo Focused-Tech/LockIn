@@ -11,6 +11,7 @@ import {
 import { FEED_STATUSES, type FeedPrediction, type FeedSlate } from "@/lib/feed";
 import { getPlayerContext } from "@/server/feeds/creatorGames";
 import { firstBannedLeg } from "@/lib/contest/questionEngine";
+import { CURRENT_SURFACE, surfaceOmissionReason, type Surface } from "@/lib/surface";
 
 /**
  * COMPLIANCE gate on the DISPLAY path: if any leg is a banned archetype, the slate is WITHHELD — its
@@ -23,6 +24,23 @@ function applyWithhold(slate: FeedSlate, moderationHidden = false): FeedSlate {
   const why = moderationHidden ? "moderation unpublish" : `banned leg "${banned?.question}" (${banned?.archetype})`;
   console.warn(`[compliance] withholding slate ${slate.id} — ${why}`);
   return { ...slate, predictions: [], withheld: true };
+}
+
+/**
+ * SURFACE gate (Part A). Unlike {@link applyWithhold}, which returns a stripped slate the client
+ * renders as "under review", this one OMITS the slate from the payload entirely — a mobile client
+ * asking for a cash entertainment slate is not told it exists. Enforced here, at the only two
+ * functions that serve slate data, so every consumer (feed, slate page, embed, share landing, OG
+ * image, share-card API, advisor API, tRPC router, beginner feed) inherits it.
+ */
+function servesOnSurface(
+  slate: { id: string; category: string; entryTiers: { tier: number }[] },
+  surface: Surface,
+): boolean {
+  const reason = surfaceOmissionReason(slate, surface);
+  if (reason === null) return true;
+  console.warn(`[surface] omitting slate ${slate.id} — ${reason}`);
+  return false;
 }
 
 /**
@@ -46,19 +64,31 @@ async function loadCreators(db: Firestore, ids: string[]): Promise<Map<string, {
   return map;
 }
 
-export async function fetchFeedSlates(db: Firestore): Promise<FeedSlate[]> {
+export async function fetchFeedSlates(
+  db: Firestore,
+  surface: Surface = CURRENT_SURFACE,
+): Promise<FeedSlate[]> {
   const slatesSnap = await db
     .collection(COLLECTIONS.slates)
     .where("status", "in", FEED_STATUSES)
     .get();
 
+  // Gate BEFORE reading predictions: an omitted slate's questions are never fetched, let alone sent.
+  const servable = slatesSnap.docs.filter((d) => {
+    const s = d.data() as SlateDoc;
+    return servesOnSurface(
+      { id: d.id, category: s.category, entryTiers: s.entryTiers ?? [] },
+      surface,
+    );
+  });
+
   const creators = await loadCreators(
     db,
-    slatesSnap.docs.map((d) => (d.data() as SlateDoc).creatorId).filter((c): c is string => !!c),
+    servable.map((d) => (d.data() as SlateDoc).creatorId).filter((c): c is string => !!c),
   );
 
   const slates = await Promise.all(
-    slatesSnap.docs.map(async (slateDoc) => {
+    servable.map(async (slateDoc) => {
       const slate = slateDoc.data() as SlateDoc;
 
       const predsSnap = await slateDoc.ref
@@ -114,7 +144,10 @@ export async function fetchFeedSlates(db: Firestore): Promise<FeedSlate[]> {
  */
 export const fetchFeedSlatesCached = unstable_cache(
   async (): Promise<FeedSlate[]> => fetchFeedSlates(adminDb()),
-  ["explore-feed-slates"],
+  // The surface is part of the key. It is a build-time constant, so today the two surfaces are
+  // separate deployments with separate caches anyway — but a shared cache that could hand a mobile
+  // request a web-built feed is exactly the failure this gate exists to prevent, so it is keyed.
+  ["explore-feed-slates", CURRENT_SURFACE],
   { revalidate: 15, tags: ["feed-slates"] },
 );
 
@@ -122,6 +155,7 @@ export const fetchFeedSlatesCached = unstable_cache(
 export async function fetchSlate(
   db: Firestore,
   slateId: string,
+  surface: Surface = CURRENT_SURFACE,
 ): Promise<FeedSlate | null> {
   const slateDoc = await db
     .collection(COLLECTIONS.slates)
@@ -129,6 +163,17 @@ export async function fetchSlate(
     .get();
   if (!slateDoc.exists) return null;
   const slate = slateDoc.data() as SlateDoc;
+
+  // Same gate as the feed, and for the same reason: a direct link to a cash entertainment slate on
+  // the mobile surface must be indistinguishable from a slate that does not exist.
+  if (
+    !servesOnSurface(
+      { id: slateDoc.id, category: slate.category, entryTiers: slate.entryTiers ?? [] },
+      surface,
+    )
+  ) {
+    return null;
+  }
 
   const predsSnap = await slateDoc.ref
     .collection(COLLECTIONS.predictions)
