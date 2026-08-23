@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Shell } from "@/components/web/Shell";
 import { getCurrentUserProfile } from "@/lib/firebase/session";
 import { CATEGORIES } from "@/lib/categories";
 import { visibleLanes, type LaneRoles, type JourneyLaneDef } from "@/lib/journey/lanes";
@@ -60,7 +61,7 @@ export default async function StartPage() {
 
   return (
     <>
-      <section className="lk-web-shell lk-web-hero">
+      <Shell as="section" className="lk-web-hero">
         {/* HERO: wordmark, tagline, two buttons. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className="lk-web-hero-mark" src="/wordmark-lockin.png" alt="Lock In" />
@@ -76,9 +77,9 @@ export default async function StartPage() {
             How it works
           </Link>
         </div>
-      </section>
+      </Shell>
 
-      <section className="lk-web-shell lk-web-sec" aria-labelledby="lanes-h">
+      <Shell as="section" className="lk-web-sec" aria-labelledby="lanes-h">
         <h2 id="lanes-h" className="lk-web-sech">
           Choose your lane
         </h2>
@@ -99,9 +100,9 @@ export default async function StartPage() {
             </Link>
           ))}
         </div>
-      </section>
+      </Shell>
 
-      <section className="lk-web-shell lk-web-sec" id="how" aria-labelledby="how-h">
+      <Shell as="section" className="lk-web-sec" id="how" aria-labelledby="how-h">
         <h2 id="how-h" className="lk-web-sech">
           How it works
         </h2>
@@ -114,9 +115,9 @@ export default async function StartPage() {
             </div>
           ))}
         </div>
-      </section>
+      </Shell>
 
-      <section className="lk-web-shell lk-web-sec" id="categories" aria-labelledby="cat-h">
+      <Shell as="section" className="lk-web-sec" id="categories" aria-labelledby="cat-h">
         <h2 id="cat-h" className="lk-web-sech">
           Categories
         </h2>
@@ -127,7 +128,7 @@ export default async function StartPage() {
             </span>
           ))}
         </div>
-      </section>
+      </Shell>
     </>
   );
 }

@@ -330,8 +330,10 @@ describe("/start is a web page, not the app shell", () => {
     }
   });
 
-  it("uses a 1280px content grid, not a 430px phone column", () => {
-    expect(css).toContain("max-width: 1280px");
+  it("uses ONE shared container, not a 430px phone column", () => {
+    // The width lives in exactly one class, used by header AND body via <Shell>.
+    expect(css).toMatch(/\.lk-web-shell \{[^}]*max-width: 13\d\dpx/);
+    expect((css.match(/max-width: 13\d\dpx/g) || []).length).toBe(1);
     // The RULE, not the comment that explains why the phone column is not used here.
     expect(css).not.toMatch(/max-width:\s*430px/);
   });
@@ -394,5 +396,39 @@ describe("beginner conversion hand-off reuses the existing mirroring", () => {
   it("renders on web only, so no mobile screen changes", () => {
     expect(handoff).toContain("if (!isWeb()) return null;");
     expect(read("src/components/web/BackToStart.tsx")).toContain("if (!isWeb()) return null;");
+  });
+});
+
+/* ══ 6. Front-door layout defects (LI-WEB-LAYOUT-05) ════════════════════════════════════════════ */
+
+describe("front door: one width system, opaque header", () => {
+  const css = read("src/app/start/start.css");
+  const layout = read("src/app/start/layout.tsx");
+  const page = read("src/app/start/page.tsx");
+  const shell = read("src/components/web/Shell.tsx");
+
+  it("header and body go through the SAME container component", () => {
+    expect(shell).toContain("lk-web-shell");
+    // Neither file hand-writes the container class; both use <Shell>.
+    expect(layout).toContain("<Shell");
+    expect(page).toContain("<Shell");
+    expect(layout).not.toMatch(/className="lk-web-shell/);
+    expect(page).not.toMatch(/className="lk-web-shell/);
+  });
+
+  it("the width is defined exactly once", () => {
+    expect((css.match(/max-width: 13\d\dpx/g) || []).length).toBe(1);
+  });
+
+  it("the sticky header is OPAQUE — content cannot scroll through it", () => {
+    const block = css.slice(css.indexOf(".lk-web-header {"), css.indexOf("}", css.indexOf(".lk-web-header {")));
+    expect(block).toContain("position: sticky");
+    expect(block).not.toMatch(/rgba\([^)]*0\.\d+\s*\)/); // no translucent background
+    expect(block).toContain("background: var(--web-bg)");
+  });
+
+  it("gutters are symmetric by construction (margin-inline auto, padding-inline)", () => {
+    expect(css).toContain("margin-inline: auto");
+    expect(css).toContain("padding-inline: 32px");
   });
 });
