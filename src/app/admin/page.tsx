@@ -106,6 +106,11 @@ export default async function AdminHome() {
           >
             Settlements
           </Link>
+          {/* Presentation demo — owner-only. The route 404s for non-admins regardless of this
+              link, so the link is a convenience, never the gate. */}
+          <Link href="/admin/demo" className="text-muted hover:text-foreground">
+            Demo
+          </Link>
           <Link href="/app" className="text-muted hover:text-foreground">
             ← App
           </Link>
