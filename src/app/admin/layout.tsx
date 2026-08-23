@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { AppFrame } from "@/components/app/AppFrame";
 import { getCurrentUserProfile } from "@/lib/firebase/session";
 import { isWeb } from "@/lib/surface";
+import { Shell } from "@/components/web/Shell";
 import "../start/start.css";
 
 /**
@@ -25,7 +26,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     return (
       <div className="lk-web">
         <header className="lk-web-header">
-          <div className="lk-web-shell lk-web-headrow">
+          <Shell className="lk-web-headrow">
             <Link href="/" className="lk-web-brand" aria-label="Lock In — home">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/wordmark-lockin.png" alt="Lock In" height={26} />
@@ -49,7 +50,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                 ← Lock In
               </Link>
             </div>
-          </div>
+          </Shell>
         </header>
         <main className="lk-web-main">{children}</main>
       </div>
