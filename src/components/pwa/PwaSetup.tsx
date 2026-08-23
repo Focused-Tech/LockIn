@@ -53,7 +53,10 @@ export function PwaSetup() {
   }
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 flex justify-center p-3">
+    // NEVER at >=900px: the install banner is a phone affordance, and the web front door is a
+    // website, not the app. Hidden by WIDTH rather than by surface so it cannot leak onto a
+    // desktop browser on either deployment.
+    <div className="fixed inset-x-0 bottom-0 z-50 hidden justify-center p-3 max-[899px]:flex">
       <div className="flex w-full max-w-md items-center gap-3 rounded-xl border border-border bg-surface-card p-3 shadow-2xl">
         <LockGlyph size={26} />
         <div className="min-w-0 flex-1">

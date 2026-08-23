@@ -1,0 +1,26 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+  body{background:#0A0D12;color:#E8ECF2;font:14px system-ui;margin:0;padding:24px;display:flex;gap:24px}
+  .frame{width:430px;border:1px solid #1E2A38;border-radius:12px;padding:16px}
+  h3{font:600 13px system-ui;color:#6B7A8E;margin:0 0 10px}
+  .card{display:flex;flex-direction:column;gap:12px}
+  /* EXACT classes from src/components/feed/SlateCard.tsx:133-136 */
+  .row{margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+  .q{font-size:14px;font-weight:500}
+  .pill{font-size:12px;padding:4px 10px;border-radius:999px;border:1px solid #3B8BFF55;color:#3B8BFF;background:#3B8BFF14}
+  /* THE FIX */
+  .fixed .q{min-width:0;flex:1 1 auto}
+  .fixed .pill{flex:0 0 auto}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .opt{border:1px solid #1E2A38;border-radius:8px;padding:10px;font-size:13px}
+</style></head><body>
+  <div class="frame"><h3>BEFORE — as shipped</h3>
+    <div class="card"><div>
+      <div class="row"><p class="q">Who owns the ground across the early window this weekend</p><span class="pill">AI estimate</span></div>
+      <div class="grid"><div class="opt">Option A</div><div class="opt">Option B</div></div>
+    </div></div></div>
+  <div class="frame fixed"><h3>AFTER — min-width:0 + flex-1 on the text, shrink-0 on the pill</h3>
+    <div class="card"><div>
+      <div class="row"><p class="q">Who owns the ground across the early window this weekend</p><span class="pill">AI estimate</span></div>
+      <div class="grid"><div class="opt">Option A</div><div class="opt">Option B</div></div>
+    </div></div></div>
+</body></html>

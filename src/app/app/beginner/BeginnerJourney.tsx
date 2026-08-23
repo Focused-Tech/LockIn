@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui";
 import { LockGlyph } from "@/components/practice/LockGlyph";
+import { CashHandoff } from "@/components/web/CashHandoff";
 import { toggleFollowCreator } from "@/components/feed/followActions";
 import {
   closesLabel,
@@ -207,6 +208,7 @@ export function BeginnerJourney({
           balanceAfter={balance}
           onLanded={setLanded}
           creatorName={card?.creatorName ?? "this creator"}
+          liveSlateId={legs[0]?.pick.slateId ?? null}
           canFollow={!!card && !card.isHouse}
           onFollow={follow}
         />
@@ -760,6 +762,7 @@ function ResultScreen({
   balanceAfter,
   onLanded,
   creatorName,
+  liveSlateId,
   canFollow,
   onFollow,
 }: {
@@ -769,6 +772,8 @@ function ResultScreen({
   balanceAfter: number;
   onLanded: (n: number) => void;
   creatorName: string;
+  /** LIVE slate this practice card mirrored — drives the cash hand-off. */
+  liveSlateId: string | null;
   canFollow: boolean;
   onFollow: () => void;
 }) {
@@ -842,6 +847,10 @@ function ResultScreen({
       ) : (
         <PrimaryButton onClick={onFollow}>Continue</PrimaryButton>
       )}
+
+      {/* CONVERSION MOMENT: the same LIVE slate this practice card mirrored, now for real.
+          Web surface only — CashHandoff returns null on mobile, so no app screen changes. */}
+      <CashHandoff slateId={liveSlateId} creatorName={creatorName} />
     </div>
   );
 }
@@ -886,8 +895,11 @@ function FollowScreen({
               key={p.predictionId}
               className="flex items-center justify-between rounded-xl border border-border bg-surface-card px-3.5 py-3"
             >
-              <span className="text-[13px] font-semibold">{p.question}</span>
-              <span className="text-xs text-muted">{p.agreeA}% yes</span>
+              {/* min-w-0 + flex-1: a flex child defaults to min-width:auto, so without this the
+                  question cannot shrink past its longest word and collapses into a one-word
+                  column beside the figure. shrink-0 keeps the figure from being squeezed instead. */}
+              <span className="min-w-0 flex-1 text-[13px] font-semibold">{p.question}</span>
+              <span className="shrink-0 text-xs text-muted">{p.agreeA}% yes</span>
             </div>
           ))}
         </>

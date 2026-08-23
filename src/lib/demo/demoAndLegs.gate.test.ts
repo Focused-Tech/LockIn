@@ -29,7 +29,7 @@ import {
 import { detectBannedArchetype } from "@/lib/contest/questionEngine";
 import { DEMO_SCRIPT, DEMO_HOSTS, DEMO_CHAPTERS, DEMO_SHAPE } from "./presentation";
 import { DEMO_BOSSES, DEMO_CONTENDERS, DEMO_NAME_ALLOWLIST } from "./cast";
-import { JOURNEY_LANES, lanesForSurface, webFrontDoor } from "@/lib/journey/lanes";
+import { LANES, PUBLIC_LANES, ROLE_LANES, visibleLanes, hasAnyStaffRole } from "@/lib/journey/lanes";
 
 const read = (p: string) => readFileSync(resolve(process.cwd(), p), "utf8");
 
@@ -250,44 +250,149 @@ describe("public-facing cast is the Fox Pit tower's own", () => {
   });
 });
 
-/* ══ 5. Web front door drops every coin lane ════════════════════════════════════════════════════ */
+/* ══ 5. /start — the six lanes and their gating ═════════════════════════════════════════════════ */
 
-describe("web journey selector", () => {
-  it("web shows only cash lanes; mobile keeps everything", () => {
-    const web = lanesForSurface("web").map((l) => l.id);
-    const mobile = lanesForSurface("mobile").map((l) => l.id);
-    expect(web).toEqual(["creator", "advanced"]);
-    expect(mobile).toEqual(["creator", "advanced", "beginner", "foxpit"]);
-  });
-
-  it("NEGATIVE CONTROL — the coin lanes exist, so excluding them means something", () => {
-    expect(JOURNEY_LANES.filter((l) => l.currency === "coins").map((l) => l.id)).toEqual([
-      "beginner",
-      "foxpit",
-    ]);
-  });
-
-  it("filters on currency, so a coin lane added later is excluded automatically", () => {
-    const withNewCoinLane = [
-      ...JOURNEY_LANES,
-      { id: "new", title: "t", body: "b", currency: "coins" as const, color: "fox" as const, href: "/x", isLane: false },
-    ];
-    expect(withNewCoinLane.filter((l) => l.currency === "cash").map((l) => l.id)).toEqual([
+describe("/start lanes", () => {
+  it("carries exactly the ruled six", () => {
+    expect(LANES.map((l) => l.id)).toEqual([
       "creator",
       "advanced",
+      "beginner",
+      "admin",
+      "keymaster",
+      "keyholder",
     ]);
   });
 
-  it("the front door includes leaderboards and contests", () => {
-    const ids = webFrontDoor().map((l) => l.id);
-    expect(ids).toContain("leaderboard");
-    expect(ids).toContain("contests");
-    expect(ids).not.toContain("beginner");
-    expect(ids).not.toContain("foxpit");
+  it("Fox Pit practice is NOT a lane here", () => {
+    expect(LANES.map((l) => l.id)).not.toContain("foxpit");
   });
 
-  it("no front-door copy uses wagering vocabulary", () => {
-    const copy = webFrontDoor().map((l) => `${l.title} ${l.body}`).join(" ");
-    expect(copy).not.toMatch(/\b(bet|wager|odds|rake|gambl)/i);
+  it("an anonymous visitor sees the three public lanes and nothing else", () => {
+    expect(visibleLanes(null).map((l) => l.id)).toEqual(["creator", "advanced", "beginner"]);
+  });
+
+  it("NEGATIVE CONTROL — the staff lanes exist, so their absence means something", () => {
+    expect(ROLE_LANES.map((l) => l.id)).toEqual(["admin", "keymaster", "keyholder"]);
+    expect(PUBLIC_LANES).toHaveLength(3);
+  });
+
+  it("a signed-in user with no staff flag still sees only the three", () => {
+    expect(visibleLanes({}).map((l) => l.id)).toEqual(["creator", "advanced", "beginner"]);
+    expect(
+      visibleLanes({ admin: false, keymaster: false, keyholder: false }).map((l) => l.id),
+    ).toEqual(["creator", "advanced", "beginner"]);
+  });
+
+  it("each staff flag adds exactly its own lane", () => {
+    expect(visibleLanes({ admin: true }).map((l) => l.id)).toEqual([
+      "creator", "advanced", "beginner", "admin",
+    ]);
+    expect(visibleLanes({ keyholder: true }).map((l) => l.id)).toEqual([
+      "creator", "advanced", "beginner", "keyholder",
+    ]);
+  });
+
+  it("roles are ADDITIVE — several flags show several lanes (matches the drawer)", () => {
+    const all = visibleLanes({ admin: true, keymaster: true, keyholder: true });
+    expect(all).toHaveLength(6);
+    expect(hasAnyStaffRole({ keymaster: true })).toBe(true);
+    expect(hasAnyStaffRole(null)).toBe(false);
+    expect(hasAnyStaffRole({})).toBe(false);
+  });
+
+  it("every lane routes somewhere real", () => {
+    for (const l of LANES) {
+      expect(l.href.startsWith("/")).toBe(true);
+      expect(l.href.length).toBeGreaterThan(3);
+    }
+    expect(LANES.find((l) => l.id === "admin")!.href).toBe("/admin");
+    expect(LANES.find((l) => l.id === "keymaster")!.href).toBe("/app/keymaster");
+    expect(LANES.find((l) => l.id === "keyholder")!.href).toBe("/app/keyholder");
+  });
+
+  it("no lane copy uses banned vocabulary", () => {
+    const copy = LANES.map((l) => `${l.title} ${l.body}`).join(" ");
+    expect(copy).not.toMatch(/\b(bet|wager|odds|rake|gambl|prediction|parlay)/i);
+  });
+});
+
+describe("/start is a web page, not the app shell", () => {
+  const layout = read("src/app/start/layout.tsx");
+  const page = read("src/app/start/page.tsx");
+  const css = read("src/app/start/start.css");
+
+  it("does not import the phone shell", () => {
+    // Match IMPORTS, not prose — both files mention AppFrame in a comment explaining what they
+    // deliberately do not use.
+    for (const src of [layout, page]) {
+      expect(src).not.toMatch(/^\s*import[^;]*(AppFrame|BottomNav|TopNav)/m);
+    }
+  });
+
+  it("uses a 1280px content grid, not a 430px phone column", () => {
+    expect(css).toContain("max-width: 1280px");
+    // The RULE, not the comment that explains why the phone column is not used here.
+    expect(css).not.toMatch(/max-width:\s*430px/);
+  });
+
+  it("has a real site header and a policy footer", () => {
+    expect(layout).toContain("How it works");
+    expect(layout).toContain("Championship");
+    expect(layout).toContain("Sign in");
+    expect(layout).toContain("Responsible play");
+  });
+
+  it("gates roles SERVER-side, off the user doc", () => {
+    expect(page).toContain("getCurrentUserProfile()");
+    expect(page).toContain("visibleLanes(roles)");
+    expect(page).toContain("profile.isAdmin === true");
+  });
+
+  it("the PWA install banner is suppressed at >=900px", () => {
+    expect(read("src/components/pwa/PwaSetup.tsx")).toContain("max-[899px]:flex");
+  });
+});
+
+describe("collapsed question column — root cause fixed, not papered over", () => {
+  const beginner = read("src/app/app/beginner/BeginnerJourney.tsx");
+  const feedCard = read("src/components/feed/SlateCard.tsx");
+
+  it("the question is a shrinkable flex child at both sites", () => {
+    expect(beginner).toContain('className="min-w-0 flex-1 text-[13px] font-semibold">{p.question}');
+    expect(feedCard).toContain('className="min-w-0 flex-1 text-sm font-medium">{prediction.question}');
+  });
+
+  it("the sibling is pinned so it cannot starve the question instead", () => {
+    expect(beginner).toContain('className="shrink-0 text-xs text-muted">{p.agreeA}');
+    expect(feedCard).toContain('<span className="shrink-0"><Pill tone="ai">');
+  });
+
+  it("NOT papered over with nowrap or a fixed width", () => {
+    for (const src of [beginner, feedCard]) {
+      expect(src).not.toMatch(/whitespace-nowrap[^"]*\{(p|prediction)\.question\}/);
+    }
+  });
+});
+
+describe("beginner conversion hand-off reuses the existing mirroring", () => {
+  const handoff = read("src/components/web/CashHandoff.tsx");
+
+  it("carries the LIVE slate id the mirrored pick already holds", () => {
+    expect(read("src/lib/beginner/types.ts")).toContain("slateId: string;");
+    expect(read("src/app/app/beginner/BeginnerJourney.tsx")).toContain(
+      "liveSlateId={legs[0]?.pick.slateId ?? null}",
+    );
+    expect(handoff).toContain("/app/slate/${slateId}");
+  });
+
+  it("no second mirroring implementation was written", () => {
+    expect(handoff).toContain("fetchBeginnerFeed");
+    expect(handoff).not.toMatch(/function .*[Mm]irror/);
+  });
+
+  it("renders on web only, so no mobile screen changes", () => {
+    expect(handoff).toContain("if (!isWeb()) return null;");
+    expect(read("src/components/web/BackToStart.tsx")).toContain("if (!isWeb()) return null;");
   });
 });
