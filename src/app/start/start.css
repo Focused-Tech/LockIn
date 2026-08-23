@@ -23,10 +23,13 @@
 
 /* The content grid. 1280 cap — NOT a phone column. */
 .lk-web-shell {
+  /* THE single width system. Header contents and body sections both render through
+     <Shell>, so these numbers apply once and cannot drift apart. */
   width: 100%;
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 0 32px;
+  max-width: 1320px;
+  margin-inline: auto;
+  padding-inline: 32px;
+  box-sizing: border-box;
 }
 
 /* ── header ─────────────────────────────────────────────────────────── */
@@ -35,8 +38,11 @@
   top: 0;
   z-index: 20;
   border-bottom: 1px solid var(--web-edge);
-  background: rgba(10, 13, 18, 0.88);
-  backdrop-filter: blur(8px);
+  /* OPAQUE. At 88% the sticky header let the hero wordmark and the section headings
+     scroll THROUGH it, which read as two overlapping text elements — one behind the
+     wordmark, one right of "Championship". There was no ghost NODE to delete (the
+     header has exactly four text nodes); the bleed-through was the defect. */
+  background: var(--web-bg);
 }
 .lk-web-headrow {
   display: flex;

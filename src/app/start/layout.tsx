@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { Shell } from "@/components/web/Shell";
 import "./start.css";
 
 /**
@@ -33,7 +34,7 @@ export default function StartLayout({ children }: { children: React.ReactNode })
   return (
     <div className="lk-web">
       <header className="lk-web-header">
-        <div className="lk-web-shell lk-web-headrow">
+        <Shell className="lk-web-headrow">
           <Link href="/start" className="lk-web-brand" aria-label="Lock In — home">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/wordmark-lockin.png" alt="Lock In" height={26} />
@@ -52,13 +53,13 @@ export default function StartLayout({ children }: { children: React.ReactNode })
               Sign in
             </Link>
           </div>
-        </div>
+        </Shell>
       </header>
 
       <main className="lk-web-main">{children}</main>
 
       <footer className="lk-web-footer">
-        <div className="lk-web-shell lk-web-footrow">
+        <Shell className="lk-web-footrow">
           <p className="lk-web-legal">
             A skill contest — knowledge and lock-in speed decide the winners. 18+. Paid contests are
             unavailable in WA, AZ, IA, LA, MT and SC.
@@ -70,7 +71,7 @@ export default function StartLayout({ children }: { children: React.ReactNode })
               </Link>
             ))}
           </nav>
-        </div>
+        </Shell>
       </footer>
     </div>
   );
