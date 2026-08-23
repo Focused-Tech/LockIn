@@ -64,6 +64,33 @@ export const SUB_10K_RAKE_BANDS: { belowCents: number; rate: number }[] = [
   { belowCents: 10_000_00, rate: 0.3 },
 ];
 
+/* ── SURFACE GATE — which categories are CASH SPORTS (Part A) ─────────────────── */
+/**
+ * The mobile binary serves coins everywhere and CASH only on SPORTS. Cash entertainment is a web
+ * surface concern and is omitted from the mobile payload entirely.
+ *
+ * This is an ALLOWLIST on purpose. A category not named here is treated as non-sports, so a category
+ * added later fails CLOSED (its cash slates stop serving on mobile) rather than leaking onto the
+ * binary because nobody remembered to classify it.
+ *
+ * Names must match `CATEGORIES` in src/lib/categories.ts exactly. Matching is case-insensitive.
+ */
+export const CASH_SPORTS_CATEGORIES: readonly string[] = [
+  "NASCAR",
+  "UFC",
+  "Boxing",
+  "Tennis",
+  "Golf",
+  "Soccer",
+  "NFL",
+  "NBA",
+  "MLB",
+  "NHL",
+];
+// ARCHITECT-SET: awaiting value — "Esports" is deliberately NOT in the list above. It is competitive
+// gaming, not a traditional sport, and the ruling said "cash SPORTS stays". Failing closed until the
+// architect rules. Adding the string to the list is the whole change if the answer is yes.
+
 /* ── Sport key (used by the stats provider + creator games) ──────────────────── */
 // The composite scoring WEIGHTS that used to live here were Claude's invention, not the architect's,
 // and have been removed. Cross-game settlement compares players on the `composite` already carried by
