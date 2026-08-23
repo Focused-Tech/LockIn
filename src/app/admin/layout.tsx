@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { AppFrame } from "@/components/app/AppFrame";
+import { BackToStart } from "@/components/web/BackToStart";
 import { getCurrentUserProfile } from "@/lib/firebase/session";
 
 /**
@@ -19,6 +20,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       isKeymaster={profile.keymaster === true}
       isAdmin={profile.isAdmin === true}
     >
+      <BackToStart />
       {children}
     </AppFrame>
   );

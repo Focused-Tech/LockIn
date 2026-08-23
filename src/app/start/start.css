@@ -1,0 +1,323 @@
+/**
+ * /start — WEB stylesheet. Desktop-first.
+ *
+ * The app's phone frame comes from AppFrame's `max-w-[430px]`; nothing here imports it. The content
+ * shell below caps at 1280px and only collapses to one column at true phone widths, so the page
+ * degrades to a narrow screen WITHOUT turning into the app shell.
+ */
+
+.lk-web {
+  --web-edge: #1e2a38;
+  --web-bg: #0a0d12;
+  --web-panel: #0d1118;
+  --web-text: #e8ecf2;
+  --web-muted: #6b7a8e;
+  --web-accent: #ff3b00;
+
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+  background: var(--web-bg);
+  color: var(--web-text);
+}
+
+/* The content grid. 1280 cap — NOT a phone column. */
+.lk-web-shell {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+/* ── header ─────────────────────────────────────────────────────────── */
+.lk-web-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  border-bottom: 1px solid var(--web-edge);
+  background: rgba(10, 13, 18, 0.88);
+  backdrop-filter: blur(8px);
+}
+.lk-web-headrow {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  height: 72px;
+}
+.lk-web-brand {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+.lk-web-brand img {
+  height: 26px;
+  width: auto;
+  display: block;
+}
+.lk-web-nav {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.lk-web-navlink {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--web-muted);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.lk-web-navlink:hover {
+  color: var(--web-text);
+}
+.lk-web-actions {
+  flex: 0 0 auto;
+}
+.lk-web-signin {
+  display: inline-block;
+  padding: 9px 18px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 59, 0, 0.35);
+  background: rgba(255, 59, 0, 0.1);
+  color: #ff7a4d;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.lk-web-signin:hover {
+  background: rgba(255, 59, 0, 0.16);
+}
+
+/* ── main ───────────────────────────────────────────────────────────── */
+.lk-web-main {
+  flex: 1 1 auto;
+  padding: 0 0 72px;
+}
+
+.lk-web-hero {
+  /* LONGHANDS on purpose: this element also carries .lk-web-shell, and a `padding`
+     shorthand here would reset that shell's horizontal padding to 0. */
+  padding-top: 72px;
+  padding-bottom: 40px;
+}
+.lk-web-h1 {
+  font-size: clamp(32px, 4.2vw, 56px);
+  line-height: 1.05;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  max-width: 18ch;
+}
+.lk-web-tag {
+  margin-top: 18px;
+  font-size: clamp(15px, 1.3vw, 19px);
+  line-height: 1.5;
+  color: var(--web-muted);
+  max-width: 62ch;
+}
+.lk-web-herocta {
+  margin-top: 28px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.lk-web-btn {
+  display: inline-block;
+  padding: 13px 24px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid var(--web-edge);
+  color: var(--web-text);
+}
+.lk-web-btn.primary {
+  border-color: transparent;
+  background: var(--web-accent);
+  color: #fff;
+}
+
+/* ── lane grid — a ROW of web cards, not stacked app rows ───────────── */
+.lk-web-sec {
+  padding-top: 20px;
+}
+.lk-web-sech {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--web-muted);
+  margin-bottom: 16px;
+}
+.lk-web-lanes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+.lk-web-lane {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0; /* grid child must be allowed to shrink, or its text collapses */
+  padding: 24px;
+  border: 1px solid var(--web-edge);
+  border-left: 4px solid var(--lane-accent, var(--web-accent));
+  border-radius: 16px;
+  background: var(--web-panel);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.12s ease, border-color 0.12s ease;
+}
+.lk-web-lane:hover {
+  transform: translateY(-2px);
+  border-color: #2b3a4d;
+  border-left-color: var(--lane-accent, var(--web-accent));
+}
+.lk-web-lanetop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.lk-web-lanetitle {
+  font-size: 19px;
+  font-weight: 700;
+  min-width: 0; /* see note on .lk-web-lane */
+}
+.lk-web-tagpill {
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--web-edge);
+  color: var(--web-muted);
+}
+.lk-web-lanebody {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--web-muted);
+  min-width: 0;
+}
+.lk-web-lanego {
+  margin-top: auto;
+  padding-top: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--lane-accent, var(--web-accent));
+}
+
+/* ── how it works ───────────────────────────────────────────────────── */
+.lk-web-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+.lk-web-step {
+  min-width: 0;
+  padding: 22px;
+  border: 1px solid var(--web-edge);
+  border-radius: 14px;
+  background: var(--web-panel);
+}
+.lk-web-stepn {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--web-accent);
+  letter-spacing: 0.08em;
+}
+.lk-web-steph {
+  margin-top: 8px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.lk-web-stepb {
+  margin-top: 6px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--web-muted);
+}
+
+/* ── categories ─────────────────────────────────────────────────────── */
+.lk-web-cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.lk-web-cat {
+  font-size: 14px;
+  padding: 9px 15px;
+  border-radius: 999px;
+  border: 1px solid var(--web-edge);
+  background: var(--web-panel);
+  color: var(--web-muted);
+}
+
+/* ── footer ─────────────────────────────────────────────────────────── */
+.lk-web-footer {
+  border-top: 1px solid var(--web-edge);
+  padding: 28px 0;
+}
+.lk-web-footrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.lk-web-legal {
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--web-muted);
+  max-width: 70ch;
+  min-width: 0;
+}
+.lk-web-footlinks {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.lk-web-footlink {
+  font-size: 13px;
+  color: var(--web-muted);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.lk-web-footlink:hover {
+  color: var(--web-text);
+}
+
+/* ── responsive ─────────────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .lk-web-lanes,
+  .lk-web-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .lk-web-shell {
+    padding: 0 20px;
+  }
+  .lk-web-nav {
+    display: none; /* nav collapses; the page stays a WEB page, not the app shell */
+  }
+  .lk-web-headrow {
+    height: 64px;
+    justify-content: space-between;
+  }
+  .lk-web-hero {
+    padding-top: 44px;
+    padding-bottom: 28px;
+  }
+  .lk-web-lanes,
+  .lk-web-steps {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .lk-web-footrow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

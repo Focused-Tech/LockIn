@@ -131,8 +131,10 @@ export function SlateCard({
           {prediction && (
             <div>
               <div className="mb-2 flex items-center justify-between">
-                <p className="text-sm font-medium">{prediction.question}</p>
-                <Pill tone="ai">AI estimate</Pill>
+                {/* Same defect as the beginner row: the question needs min-w-0 + flex-1 to wrap
+                    normally, and the pill needs shrink-0 so it is not squeezed in its place. */}
+                <p className="min-w-0 flex-1 text-sm font-medium">{prediction.question}</p>
+                <span className="shrink-0"><Pill tone="ai">AI estimate</Pill></span>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <OptionPill label={prediction.optionA} prob={prediction.probA} />
