@@ -321,3 +321,17 @@
     align-items: flex-start;
   }
 }
+
+/* HERO wordmark — the front door leads with the mark, then the tagline, then the two buttons. */
+.lk-web-hero-mark {
+  display: block;
+  height: clamp(44px, 5.4vw, 76px);
+  width: auto;
+  margin-bottom: 20px;
+}
+@media (max-width: 860px) {
+  .lk-web-hero-mark {
+    height: 40px;
+    margin-bottom: 16px;
+  }
+}

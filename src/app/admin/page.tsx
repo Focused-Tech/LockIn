@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
+import { isWeb } from "@/lib/surface";
 import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUserId, isAdminUid } from "@/lib/firebase/session";
 import {
@@ -91,6 +92,10 @@ export default async function AdminHome() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-6 p-6">
+      {/* On WEB the admin layout supplies the site header. Rendering this one as well is what put
+          the wordmark and "Admin" on top of "Applications" at desktop width. Mobile still needs it,
+          because the phone shell's TopNav carries no admin navigation. */}
+      {!isWeb() && (
       <header className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Logo />
@@ -116,6 +121,7 @@ export default async function AdminHome() {
           </Link>
         </nav>
       </header>
+      )}
 
       <div>
         <h1 className="text-xl font-semibold">Owner dashboard</h1>

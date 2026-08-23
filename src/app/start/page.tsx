@@ -61,7 +61,9 @@ export default async function StartPage() {
   return (
     <>
       <section className="lk-web-shell lk-web-hero">
-        <h1 className="lk-web-h1">Your call. Your cash.</h1>
+        {/* HERO: wordmark, tagline, two buttons. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img className="lk-web-hero-mark" src="/wordmark-lockin.png" alt="Lock In" />
         <p className="lk-web-tag">
           Here you play against people, not a house. Being right gets you paid. Being fast decides
           how much.

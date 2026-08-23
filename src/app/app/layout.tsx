@@ -1,5 +1,4 @@
 import { ChatAssistant } from "@/components/ChatAssistant";
-import { BackToStart } from "@/components/web/BackToStart";
 import { AppFrame } from "@/components/app/AppFrame";
 import { CrossParlayProvider } from "@/components/cross-parlay/CrossParlayProvider";
 import { NativeBridge } from "@/components/notifications/NativeBridge";
@@ -53,7 +52,6 @@ export default async function AppLayout({
             {/* COMPLIANCE — the Cross-Parlay Builder FAB is removed: "parlay" is a gambling term and
                 a compliance issue. The context provider stays (consumers reference it); the visible
                 bottom-left launcher is gone. */}
-            <BackToStart />
             <ChatAssistant />
             {profile.journeyLane && (
               <TutorialLauncher mode={tutorialMode} initialSeen={tutorialSeen} />
