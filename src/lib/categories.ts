@@ -1,5 +1,5 @@
 /**
- * Prediction categories — fixed reference data (no longer a DB table).
+ * Contest categories — fixed reference data (no longer a DB table).
  * Order is the display/sort order.
  */
 export interface Category {
@@ -22,10 +22,5 @@ export const CATEGORIES: readonly Category[] = [
   { name: "Entertainment", icon: "🎬" },
   { name: "TV Shows", icon: "📺" },
   { name: "Music", icon: "🎵" },
-  { name: "Politics", icon: "🗳️" },
-  { name: "Geopolitics", icon: "🌍" },
-  { name: "Crypto", icon: "🪙" },
-  { name: "Economics", icon: "📈" },
-  { name: "Weather", icon: "🌪️" },
   { name: "Viral", icon: "🔥" },
 ];
