@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE } from "@/lib/firebase/config";
+import { CURRENT_SURFACE } from "@/lib/surface";
 
 /** Routes that require an authenticated session. */
 const PROTECTED_PREFIXES = ["/app", "/onboarding"];
@@ -30,7 +31,10 @@ export function middleware(request: NextRequest) {
   // so the landing stays a static page off the critical path. Only "/" is
   // bounced — NOT /login,/signup — so a present-but-invalid cookie can't loop
   // (/app/choose verifies for real and falls to /login, which isn't bounced).
-  if (hasSession && pathname === "/") {
+  // WEB SURFACE: "/" is the front door, not a doorway into the app. Bouncing a signed-in visitor to
+  // /app/choose is precisely what made lockin.llc render the phone shell to a logged-in user.
+  // Mobile keeps the original behaviour, untouched.
+  if (hasSession && pathname === "/" && CURRENT_SURFACE !== "web") {
     return redirectTo(request, "/app/choose");
   }
 

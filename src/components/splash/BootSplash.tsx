@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { isNativePlatform } from "@/lib/platform";
+import { CURRENT_SURFACE } from "@/lib/surface";
 
 /**
  * OTA boot splash — reproduces the approved `lockin_splash_iphone.html` 1:1:
@@ -25,7 +27,16 @@ const SPLASH_MS = 3000;
 const BG_W = 502;
 const BG_H = 1080;
 
+/**
+ * On the WEBSITE the splash belongs AFTER SIGN IN, not on the public front door: a marketing page
+ * that opens with a full-screen app splash reads as the app, which is exactly what the web front
+ * door exists to stop. So on the web surface it renders only inside the signed-in area
+ * (/app, /admin, /onboarding). On MOBILE it renders everywhere, exactly as before.
+ */
+const SIGNED_IN_AREA = ["/app", "/admin", "/onboarding"];
+
 export function BootSplash() {
+  const pathname = usePathname();
   const [gone, setGone] = useState(false);
   const lockRef = useRef<SVGSVGElement | null>(null);
 
@@ -123,6 +134,12 @@ export function BootSplash() {
   }, []);
 
   if (gone) return null;
+
+  // Placed AFTER the hooks so hook order stays stable. On the website the splash is a post-sign-in
+  // moment; the public front door must never open with it.
+  if (CURRENT_SURFACE === "web" && !SIGNED_IN_AREA.some((p) => pathname?.startsWith(p))) {
+    return null;
+  }
 
   return (
     <div className="boot-splash" aria-hidden>
