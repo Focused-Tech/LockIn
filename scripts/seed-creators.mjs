@@ -8,7 +8,6 @@
  * Writes, idempotently (fixed uids):
  *   - 12 APPROVED creators: users/{uid} (creatorVerified) + an approved
  *     creatorApplications/{uid} (so it mirrors a reviewed application).
- *   - 3 PENDING applicants: so /admin/creators has a real review queue.
  *
  * Connect onboarding is interactive (a hosted Stripe form), so it can't be fully
  * scripted. This marks approved creators as "approved, payout setup pending"
@@ -50,11 +49,6 @@ const APPROVED = [
   { handle: "rpmradio", size: 58000, cats: ["NASCAR"], url: "https://youtube.com/@rpmradio" },
 ];
 
-const PENDING = [
-  { handle: "rookiereads", size: 9000, cats: ["NBA"], url: "https://youtube.com/@rookiereads" },
-  { handle: "weathernerd", size: 15000, cats: ["Weather"], url: "https://x.com/weathernerd" },
-  { handle: "viralvinny", size: 240000, cats: ["Viral", "Music"], url: "https://tiktok.com/@viralvinny" },
-];
 
 function baseUser(handle, extra) {
   return {
@@ -121,28 +115,13 @@ async function run() {
     });
   });
 
-  PENDING.forEach((c, i) => {
-    const uid = `seed-applicant-${String(i + 1).padStart(2, "0")}`;
-    batch.set(db.collection("users").doc(uid), baseUser(c.handle, { cats: c.cats }));
-    batch.set(db.collection("usernames").doc(c.handle.toLowerCase()), { uid });
-    batch.set(db.collection("creatorApplications").doc(uid), {
-      userId: uid,
-      username: c.handle,
-      audienceUrl: c.url,
-      audienceSize: c.size,
-      categories: c.cats,
-      pitch: `Applying to host ${c.cats.join("/")} contests for my ${c.size.toLocaleString()}-strong audience.`,
-      status: "pending",
-      reviewNote: null,
-      reviewedBy: null,
-      createdAt: FieldValue.serverTimestamp(),
-      reviewedAt: null,
-    });
-  });
+  // NO PENDING APPLICANTS ARE SEEDED. Creator approval is not a manual queue — marquee hosts
+  // are signed on paper, off-platform, and everyone else is verified automatically. Seeding a
+  // review inbox invented work that does not exist. Do not add fixtures back here.
 
   await batch.commit();
   console.log(
-    `Seeded ${APPROVED.length} approved creators + ${PENDING.length} pending applicants.` +
+    `Seeded ${APPROVED.length} approved creators (no pending applicants — approval is automatic).` +
       (FORCE_PAYOUTS ? " (payouts force-enabled for dry-run)" : ""),
   );
 }
