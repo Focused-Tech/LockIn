@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   ),
   title: "LockIn — Your call. Your cash.",
   description:
-    "Skill-based prediction contest platform. Not gambling. Not sports betting. 18+.",
+    "Here you play against people, not a house. Being right gets you paid. Being fast decides how much.",
   applicationName: "LockIn",
   appleWebApp: {
     capable: true,
