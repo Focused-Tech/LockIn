@@ -170,6 +170,7 @@ export async function submitEntry(
           ipState: ipRegion || user.registeredState || null,
           addressState: user.registeredState ?? null,
           attestation: att ? { affirmedState: att.affirmedState, acceptedAt: 0, text: att.text, version: att.version } : null,
+          dateOfBirth: user.dateOfBirth || null,
         });
         if (!verdict.ok) throw new Error(`CASH_${verdict.reason}`);
         if (user.cashBalanceCents < entryCostCents) throw new Error("LOW_CASH");
@@ -209,6 +210,10 @@ export async function submitEntry(
         return { ok: false, error: "We couldn't confirm your location for cash play." };
       case "CASH_cash_blocked":
         return { ok: false, error: "Paid contests aren't available in your state" };
+      case "CASH_no_dob":
+        return { ok: false, error: "Add your date of birth to enter for cash." };
+      case "CASH_under_min_age":
+        return { ok: false, error: "You don't meet the minimum age for paid contests in your state." };
       case "LOW_CASH":
         return { ok: false, error: "Add funds to enter this paid contest" };
       case "CLOSED":

@@ -12,6 +12,7 @@ import {
   type FormatTier,
   type StateConfig,
 } from "./states";
+import { ageFromDob } from "@/lib/validation";
 
 export type { StateCode, FormatTier, StateConfig } from "./states";
 export { STATE_CONFIG } from "./states";
@@ -110,6 +111,14 @@ export interface VerificationInputs {
   addressState: string | null;
   /** The signed penalty-of-perjury attestation (slice 1.3), or null if not accepted. */
   attestation: PerjuryAttestation | null;
+  /**
+   * YYYY-MM-DD, or null/empty when no date of birth is on record — the social-login signup path
+   * writes an empty string here (src/app/api/auth/social/route.ts), which fails this check exactly
+   * like a missing one. Age enforcement (Henry handoff assignment 4): checked against the
+   * JURISDICTION'S minAge (STATE_MIN_AGE, defaulting to DEFAULT_MIN_AGE until Frank rules the table),
+   * not a single global minimum.
+   */
+  dateOfBirth: string | null;
 }
 
 export interface PerjuryAttestation {
@@ -129,14 +138,14 @@ export const PERJURY_ATTESTATION_VERSION = "v1";
 
 export type VerificationResult =
   | { ok: true; state: StateCode; eligibility: Eligibility }
-  | { ok: false; reason: "no_location" | "address_mismatch" | "no_attestation" | "cash_blocked"; detail: string };
+  | { ok: false; reason: "no_location" | "address_mismatch" | "no_attestation" | "cash_blocked" | "no_dob" | "under_min_age"; detail: string };
 
 /**
  * Resolve the real-money verification stack. Fails CLOSED with a specific reason. Callers surface
  * the reason on screen (no silent catch).
  */
 export function verifyForCash(inputs: VerificationInputs): VerificationResult {
-  const { ipState, addressState, attestation } = inputs;
+  const { ipState, addressState, attestation, dateOfBirth } = inputs;
   if (!ipState) return { ok: false, reason: "no_location", detail: "We couldn't read your location. Paid play needs a confirmed state." };
   if (!attestation) return { ok: false, reason: "no_attestation", detail: "You must accept the residence attestation to play for cash." };
   // IP geo and the registered address must agree on the state — a cheap, vendor-free cross-check.
@@ -146,6 +155,16 @@ export function verifyForCash(inputs: VerificationInputs): VerificationResult {
   const eligibility = resolveEligibility(ipState);
   if (!eligibility.canPlayCash || !eligibility.state) {
     return { ok: false, reason: "cash_blocked", detail: eligibility.cashBlockReason ?? "Paid contests aren't available in your state." };
+  }
+  // AGE ENFORCEMENT (Henry handoff assignment 4) — the jurisdiction's minAge was resolved above but
+  // never checked anywhere before this. Also closes the no-DOB social-login path: an empty string
+  // (src/app/api/auth/social/route.ts) fails here exactly like a missing one, so no account reaches
+  // cash play without an age on record.
+  if (!dateOfBirth) {
+    return { ok: false, reason: "no_dob", detail: "We need your date of birth on file before you can play for cash." };
+  }
+  if (ageFromDob(dateOfBirth) < eligibility.minAge) {
+    return { ok: false, reason: "under_min_age", detail: `You must be ${eligibility.minAge}+ in ${eligibility.state} to play for cash.` };
   }
   return { ok: true, state: eligibility.state, eligibility };
 }
