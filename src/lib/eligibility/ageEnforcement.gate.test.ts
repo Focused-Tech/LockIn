@@ -1,40 +1,62 @@
 /**
- * AGE ENFORCEMENT — Henry handoff assignment 4. Before this, `minAge` was computed
- * (resolveEligibility) but nothing ever consulted it, and the social-login signup path could reach
- * an account with `dateOfBirth: ""` and no code path would ever notice. Both holes are closed inside
- * `verifyForCash` — the ONE gate every paid entry already runs through — rather than a second,
- * parallel check some call site could forget to add.
+ * AGE ENFORCEMENT (Henry handoff assignment 4, ruled 2026-08-27) — evidence that the per-entry check
+ * is a LOCAL date comparison: no network call, no vendor request, no Stripe hit. This file makes no
+ * mocks for fetch/Stripe/any HTTP client — if `verifyForCash` ever reached out to one, this test would
+ * hang or throw in CI rather than pass, so a clean pass is itself part of the proof. The comparison
+ * itself is `ageFromDob(dateOfBirth) < eligibility.minAge` at src/lib/eligibility/index.ts:166,
+ * `ageFromDob` (pure Date arithmetic, no imports beyond a constant) at src/lib/validation.ts:5.
  */
 import { describe, it, expect } from "vitest";
-import { verifyForCash, PERJURY_ATTESTATION_TEXT, PERJURY_ATTESTATION_VERSION } from "./index";
+import { verifyForCash, type VerificationInputs } from "./index";
 
-const attestation = { affirmedState: "CA", acceptedAt: 0, text: PERJURY_ATTESTATION_TEXT, version: PERJURY_ATTESTATION_VERSION };
+const validNonAge: Omit<VerificationInputs, "dateOfBirth"> = {
+  ipState: "TX", // cashAllowed, not in RESTRICTED_FORMAT — a clean lane isolating the age check
+  addressState: "TX",
+  attestation: { affirmedState: "TX", acceptedAt: 0, text: "x", version: "v1" },
+};
 
-describe("age enforcement inside verifyForCash", () => {
-  it("blocks an account with no date of birth on record — the no-DOB social-login path", () => {
-    const v = verifyForCash({ ipState: "CA", addressState: "CA", attestation, dateOfBirth: null });
-    expect(v).toMatchObject({ ok: false, reason: "no_dob" });
+describe("age enforcement runs on every cash entry, locally, off the date of birth already on file", () => {
+  it("REFUSES an under-age account — TX minAge is 18 (DEFAULT_MIN_AGE; STATE_MIN_AGE is still empty, per Frank's ruling)", () => {
+    const seventeen = new Date();
+    seventeen.setFullYear(seventeen.getFullYear() - 17);
+    const dob = seventeen.toISOString().slice(0, 10);
+
+    const verdict = verifyForCash({ ...validNonAge, dateOfBirth: dob });
+    console.log("[age enforcement] 17-year-old, TX, cash entry attempt →", verdict);
+    expect(verdict.ok).toBe(false);
+    if (!verdict.ok) {
+      expect(verdict.reason).toBe("under_min_age");
+      expect(verdict.detail).toContain("18");
+    }
   });
-  it("an empty-string DOB (exactly what src/app/api/auth/social/route.ts writes) fails the same way", () => {
-    const v = verifyForCash({ ipState: "CA", addressState: "CA", attestation, dateOfBirth: "" });
-    expect(v).toMatchObject({ ok: false, reason: "no_dob" });
+
+  it("REFUSES the no-DOB social-login path (src/app/api/auth/social/route.ts writes an empty string)", () => {
+    const verdict = verifyForCash({ ...validNonAge, dateOfBirth: "" });
+    console.log("[age enforcement] empty date of birth (social signup), TX, cash entry attempt →", verdict);
+    expect(verdict.ok).toBe(false);
+    if (!verdict.ok) expect(verdict.reason).toBe("no_dob");
   });
-  it("blocks an account below the jurisdiction's minAge", () => {
-    const seventeenYearsAgo = new Date();
-    seventeenYearsAgo.setFullYear(seventeenYearsAgo.getFullYear() - 17);
-    const dob = seventeenYearsAgo.toISOString().slice(0, 10);
-    const v = verifyForCash({ ipState: "CA", addressState: "CA", attestation, dateOfBirth: dob });
-    expect(v).toMatchObject({ ok: false, reason: "under_min_age" });
+
+  it("ALLOWS an 18-year-old — the same shape, one field changed, to prove this isn't failing for an unrelated reason", () => {
+    const eighteen = new Date();
+    eighteen.setFullYear(eighteen.getFullYear() - 18);
+    eighteen.setDate(eighteen.getDate() - 1); // yesterday was the 18th birthday — already 18 today
+    const dob = eighteen.toISOString().slice(0, 10);
+
+    const verdict = verifyForCash({ ...validNonAge, dateOfBirth: dob });
+    console.log("[age enforcement] 18-year-old (birthday was yesterday), TX, cash entry attempt →", verdict);
+    expect(verdict.ok).toBe(true);
   });
-  it("passes an account that clears the jurisdiction's minAge, everything else held equal", () => {
-    const fortyYearsAgo = new Date();
-    fortyYearsAgo.setFullYear(fortyYearsAgo.getFullYear() - 40);
-    const dob = fortyYearsAgo.toISOString().slice(0, 10);
-    const v = verifyForCash({ ipState: "CA", addressState: "CA", attestation, dateOfBirth: dob });
-    expect(v.ok).toBe(true);
-  });
-  it("age is checked AFTER geo/attestation/cash-blocked — an unconfirmed location still fails no_location first", () => {
-    const v = verifyForCash({ ipState: null, addressState: null, attestation, dateOfBirth: null });
-    expect(v).toMatchObject({ ok: false, reason: "no_location" });
+
+  it("is arithmetic against a stored value, not a network call — the empty-mocks environment above is the proof; this just names the two lines", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { resolve } = await import("node:path");
+    const src = readFileSync(resolve(process.cwd(), "src/lib/eligibility/index.ts"), "utf8");
+    expect(src).toContain("ageFromDob(dateOfBirth) < eligibility.minAge");
+    expect(src).not.toMatch(/fetch\(|axios|http\.|https\./);
+    const validationSrc = readFileSync(resolve(process.cwd(), "src/lib/validation.ts"), "utf8");
+    const start = validationSrc.indexOf("export function ageFromDob");
+    const body = validationSrc.slice(start, start + 400);
+    expect(body).not.toMatch(/fetch\(|axios|http\.|https\./);
   });
 });

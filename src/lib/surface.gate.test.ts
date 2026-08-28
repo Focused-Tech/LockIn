@@ -288,3 +288,22 @@ describe("enforcement location", () => {
     expect(src).toMatch(/\)\s*\)\s*\{\s*return null;/);
   });
 });
+
+/* ══ 5. CreatorBuilder — the app must not INVITE anyone to it either (2026-08-27 ruling) ═══════════
+ * "Not a design question" — the Reality TV chip pairing with a cash stake in this screen isn't hidden
+ * data (§1-4 above), it's a navigational element on the app's own hosting builder. Same source-read
+ * pattern as the enforcement-location check above: this file imports client-only React, so it's
+ * asserted as text rather than rendered. */
+describe("CreatorBuilder — sports-only on the mobile surface", () => {
+  it("the category chips and the subcategory search are both surface-gated, off the ruled allowlist", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { resolve } = await import("node:path");
+    const src = readFileSync(resolve(process.cwd(), "src/app/app/create/CreatorBuilder.tsx"), "utf8");
+    expect(src).toContain("CASH_SPORTS_CATEGORIES");
+    expect(src).toMatch(/isMobile\(\)\s*\?\s*CASH_SPORTS_CATEGORIES/);
+    expect(src).toMatch(/domain=\{isMobile\(\)\s*\?\s*"sports"\s*:\s*undefined\}/);
+    // no hardcoded local entertainment string can slip back in ahead of the CASH_SPORTS_CATEGORIES
+    // branch — it must come from the one architect-set list the server-side gate also reads.
+    expect(src).not.toMatch(/isMobile\(\)\s*\?\s*\[[^\]]*Reality TV/);
+  });
+});

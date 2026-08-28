@@ -8,14 +8,21 @@
  */
 import { useEffect, useRef, useState, useTransition } from "react";
 import { searchSubcategoriesAction } from "@/lib/subcategories/actions";
-import type { Subcategory } from "@/lib/subcategories/types";
+import type { Subcategory, QuestionDomain } from "@/lib/subcategories/types";
 
 export function SubcategorySearch({
   onSelect,
   selected,
+  domain,
 }: {
   onSelect: (s: Subcategory) => void;
   selected?: Subcategory | null;
+  /**
+   * STORE COMPLIANCE STRIP — restrict results to one domain. Used by CreatorBuilder (app, cash) to
+   * keep entertainment shows out of the app's cash-hosting search entirely — not hidden after a
+   * pick, never offered. Omit for an unrestricted search (the website's builder).
+   */
+  domain?: QuestionDomain;
 }) {
   const [q, setQ] = useState("");
   const [matches, setMatches] = useState<Subcategory[]>([]);
@@ -37,13 +44,14 @@ export function SubcategorySearch({
       start(async () => {
         const res = await searchSubcategoriesAction(query);
         if (id !== seq.current) return; // ignore out-of-order responses
-        setMatches(res.matches);
-        setFallback(res.fallback);
+        const inDomain = (s: Subcategory) => !domain || s.domain === domain;
+        setMatches(res.matches.filter(inDomain));
+        setFallback(res.fallback && inDomain(res.fallback) ? res.fallback : null);
         setOpen(true);
       });
     }, 180);
     return () => clearTimeout(t);
-  }, [q, start]);
+  }, [q, start, domain]);
 
   const pick = (s: Subcategory) => {
     onSelect(s);
