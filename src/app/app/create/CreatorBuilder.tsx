@@ -15,6 +15,8 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { SubcategorySearch } from "@/components/create/SubcategorySearch";
 import type { Subcategory } from "@/lib/subcategories/types";
+import { CASH_SPORTS_CATEGORIES } from "@/lib/contest/architectSet";
+import { isMobile } from "@/lib/surface";
 import "./creator-builder.css";
 
 // Addendum C/D — the existing creator DASHBOARD is RE-PARENTED under the hub as a seventh view. Its
@@ -86,9 +88,12 @@ export function CreatorBuilder({ dashboard, creator }: { dashboard?: ReactNode; 
   // B — the searched subcategory (a specific show/league). Selecting one aligns the coarse category
   // chip; the subcategory carries the domain + cast source downstream.
   const [subcat, setSubcat] = useState<Subcategory | null>(null);
+  // STORE COMPLIANCE STRIP (Part A ruling, 2026-08-27) — cash entertainment is web-only; the app
+  // must not invite anyone to it. On the mobile surface the search below is domain-locked to sports,
+  // so this can never receive an entertainment result there. No branch needed here any more.
   const onSubcat = (s: Subcategory) => {
     setSubcat(s);
-    setCat(s.domain === "entertainment" ? "Reality TV" : s.category);
+    setCat(s.category);
   };
   const [stakes, setStakes] = useState<Record<string, boolean>>({ "$5": true, "$10": true, "$25": true, "$50": false });
   const [fee, setFee] = useState("$2");
@@ -390,14 +395,18 @@ export function CreatorBuilder({ dashboard, creator }: { dashboard?: ReactNode; 
           <div className="blk">
             <div className="lb">Category <i></i></div>
             <div className="chips" id="cats">
-              {["NBA", "NFL", "MLB", "WNBA", "Soccer", "Reality TV", "Music"].map((c) => (
+              {/* STORE COMPLIANCE STRIP (Part A ruling, 2026-08-27) — cash entertainment (Reality TV,
+                  Music, etc.) is web-only; the mobile surface must not invite anyone to it. Sports
+                  chips are the architect-set CASH_SPORTS_CATEGORIES allowlist, not a local list, so
+                  this can't drift from the one the server-side gate enforces. */}
+              {(isMobile() ? CASH_SPORTS_CATEGORIES : ["NBA", "NFL", "MLB", "WNBA", "Soccer", "Reality TV", "Music"]).map((c) => (
                 <button key={c} className={`chip${cat === c ? " on" : ""}`} onClick={() => setCat(c)}>{c}</button>
               ))}
             </div>
           </div>
           {/* B — SEARCH a specific show or league (a fixed list always misses shows, esp. reality TV).
               Data-driven: results come from the subcategory index, never a hardcoded list here. */}
-          <SubcategorySearch onSelect={onSubcat} selected={subcat} />
+          <SubcategorySearch onSelect={onSubcat} selected={subcat} domain={isMobile() ? "sports" : undefined} />
           <div className="blk">
             <div className="lb">Date <i></i></div>
             <input type="date" id="dt" defaultValue="2026-08-04" />

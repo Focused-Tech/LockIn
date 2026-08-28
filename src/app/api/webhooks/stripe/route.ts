@@ -58,6 +58,13 @@ export async function POST(req: Request) {
     case "account.updated":
       await syncConnectAccount(event.data.object as Stripe.Account);
       break;
+    case "identity.verification_session.verified":
+      await completeIdentityVerification(event.data.object as Stripe.Identity.VerificationSession);
+      break;
+    case "identity.verification_session.requires_input":
+    case "identity.verification_session.canceled":
+      await failIdentityVerification(event.data.object as Stripe.Identity.VerificationSession);
+      break;
     default:
       break;
   }
@@ -242,4 +249,35 @@ async function rewardProReferral(invoice: Stripe.Invoice) {
       { merge: true },
     );
   });
+}
+
+/**
+ * IDENTITY VERIFICATION (Henry handoff assignment 3) — the async second half of
+ * src/app/onboarding/actions.ts:verifyIdentity, which only opens the session and sets "pending".
+ * Stripe reviews the submitted document + selfie off-request; these two events are how "pending"
+ * ever resolves. Guarded by kycStatus === "pending" so a stale/duplicate event can't flip an account
+ * that has since been re-verified or was never in this flow.
+ */
+async function completeIdentityVerification(session: Stripe.Identity.VerificationSession) {
+  const uid = session.metadata?.uid;
+  if (!uid) return;
+  const ref = adminDb().collection(COLLECTIONS.users).doc(uid);
+  const snap = await ref.get();
+  const user = snap.data() as UserDoc | undefined;
+  if (!user || user.kycStatus !== "pending" || user.kycProviderId !== session.id) return;
+  await ref.set(
+    { kycStatus: "verified", kycVerifiedAt: FieldValue.serverTimestamp() },
+    { merge: true },
+  );
+}
+
+/** A verification that failed or was abandoned — blocks payout exactly like "none" did before this. */
+async function failIdentityVerification(session: Stripe.Identity.VerificationSession) {
+  const uid = session.metadata?.uid;
+  if (!uid) return;
+  const ref = adminDb().collection(COLLECTIONS.users).doc(uid);
+  const snap = await ref.get();
+  const user = snap.data() as UserDoc | undefined;
+  if (!user || user.kycStatus !== "pending" || user.kycProviderId !== session.id) return;
+  await ref.set({ kycStatus: "failed" }, { merge: true });
 }

@@ -280,6 +280,16 @@ export const PERSONAL_DATA_MAP: PersonalDataRule[] = [
     exportable: false,
     why: "Append-only abuse reports. Kept for moderation with the account link severed; not exported, because exporting would expose who reported whom.",
   },
+  {
+    collection: "questionSuggestions",
+    locators: [
+      { kind: "field", field: "suggestedByUid" },
+      { kind: "field", field: "creatorId" },
+    ],
+    strategy: "anonymize",
+    exportable: false,
+    why: "Follower suggestions the Locksmith reconstructed into the creator's queue. Kept (the creator's queue references it) with both account links severed; not exported — the Firestore rules never let a follower read this collection back either (server-only end to end), so the export shouldn't either.",
+  },
 
   /* ── No per-user personal data ────────────────────────────────────────────────────────────── */
   {
@@ -302,6 +312,13 @@ export const PERSONAL_DATA_MAP: PersonalDataRule[] = [
     strategy: "none",
     exportable: false,
     why: "Generation batch records for the question pool. Carries no player identity.",
+  },
+  {
+    collection: "subcategories",
+    locators: [],
+    strategy: "none",
+    exportable: false,
+    why: "The searchable show/league index (entertainment slates). Reference data seeded by the app, not per-user.",
   },
 ];
 
