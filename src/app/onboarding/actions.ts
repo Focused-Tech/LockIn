@@ -3,6 +3,7 @@
 import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUserId } from "@/lib/firebase/session";
+import { getStripeServer } from "@/lib/stripe";
 import { COLLECTIONS } from "@/lib/firebase/types";
 import { PERJURY_ATTESTATION_TEXT, PERJURY_ATTESTATION_VERSION } from "@/lib/eligibility";
 
@@ -29,12 +30,28 @@ export interface KycInput {
   affirmResidence: boolean;
 }
 
-export type KycResult = { ok: true } | { ok: false; error: string };
+export type KycResult =
+  | { ok: true; clientSecret: string }
+  | { ok: false; error: string };
 
 /**
- * MOCK Persona identity verification. Simulates the ~3s provider round-trip,
- * then marks the user verified. SSN is intentionally NOT persisted. Real Persona
- * integration replaces the delay + status write here.
+ * REAL identity verification (Henry handoff assignment 3 — Stripe Identity, the ruled provider).
+ * Two steps, not one: this records the self-reported fields we still need on our own account (the
+ * residence attestation + registered state that `verifyForCash`'s address cross-check reads — those
+ * aren't proof of identity, just a signed statement) and opens a Stripe Identity VerificationSession.
+ * `kycStatus` moves to "pending" here, NOT "verified" — Stripe inspects the actual ID + a selfie
+ * asynchronously; the webhook (`identity.verification_session.verified` /
+ * `.requires_input` / `.canceled` in src/app/api/webhooks/stripe/route.ts) is what flips it to
+ * "verified" or "failed" once that finishes. A failed verification therefore blocks payout the same
+ * way an unverified one always did (submitEntry/verifyForCash never read this file's writes directly).
+ *
+ * The client calls `stripe.verifyIdentity(clientSecret)` (@stripe/stripe-js) with the value returned
+ * here to launch Stripe's own hosted document-capture modal — this file never touches the ID photo,
+ * so it needs no Firebase Storage bucket for it (that gap in the original handoff doesn't apply once
+ * the document capture is Stripe-hosted, not ours).
+ *
+ * SSN (still collected for identity-adjacent record-keeping some jurisdictions ask for) is
+ * intentionally NOT persisted, same as before.
  */
 export async function verifyIdentity(input: KycInput): Promise<KycResult> {
   const uid = await getCurrentUserId();
@@ -47,18 +64,22 @@ export async function verifyIdentity(input: KycInput): Promise<KycResult> {
     return { ok: false, error: "Accept the residence attestation to verify for cash play." };
   }
 
-  // Simulate the Persona verification round-trip.
-  await new Promise((resolve) => setTimeout(resolve, 3000));
-
   const state = input.state.toUpperCase();
+
+  const session = await getStripeServer().identity.verificationSessions.create({
+    type: "document",
+    metadata: { uid },
+    options: { document: { require_matching_selfie: true } },
+  });
+  if (!session.client_secret) return { ok: false, error: "Could not start identity verification" };
+
   await adminDb()
     .collection(COLLECTIONS.users)
     .doc(uid)
     .set(
       {
-        kycStatus: "verified",
-        kycVerifiedAt: FieldValue.serverTimestamp(),
-        kycProviderId: `mock_persona_${uid.slice(0, 8)}`,
+        kycStatus: "pending",
+        kycProviderId: session.id,
         registeredState: state,
         geoState: state,
         // §2 — record the penalty-of-perjury residence attestation ONCE, here in the signup flow
@@ -73,7 +94,7 @@ export async function verifyIdentity(input: KycInput): Promise<KycResult> {
       { merge: true },
     );
 
-  return { ok: true };
+  return { ok: true, clientSecret: session.client_secret };
 }
 
 /** Skip KYC — kycStatus stays 'none'; paid contests remain locked. */

@@ -9,6 +9,7 @@ import type { JourneyLane } from "@/lib/firebase/types";
 import { setJourneyLane } from "@/app/app/beginner/actions";
 import { TutorialLauncher } from "@/components/app/TutorialLauncher";
 import type { TutorialMode } from "@/lib/tutorial/tutorials";
+import { getStripe } from "@/lib/stripe/client";
 import {
   saveCategories,
   skipKyc,
@@ -291,8 +292,22 @@ function KycStep({ onDone }: { onDone: () => void }) {
         affirmResidence: form.get("affirmResidence") === "on",
       };
       const result = await verifyIdentity(input);
-      if (result.ok) onDone();
-      else setError(result.error);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      // Stripe's own hosted document + selfie capture modal. kycStatus is already "pending" (set by
+      // verifyIdentity above) — the webhook (identity.verification_session.verified/requires_input/
+      // canceled) is what resolves it to "verified"/"failed" once Stripe finishes reviewing, which can
+      // take longer than this modal stays open. Moving on here is correct either way: paid entry and
+      // withdrawal both gate on kycStatus === "verified" downstream, not on this call returning.
+      const stripe = await getStripe();
+      const { error: stripeError } = (await stripe?.verifyIdentity(result.clientSecret)) ?? {};
+      if (stripeError) {
+        setError(stripeError.message ?? "Identity verification didn't complete.");
+        return;
+      }
+      onDone();
     });
 
   if (mode === "prompt") {
