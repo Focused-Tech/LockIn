@@ -7,7 +7,23 @@
  *
  * @vitest-environment jsdom
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+
+// SettingsView now mounts the working "Download my data" / "Delete account" rows, which reach server
+// actions. Those pull in firebase-admin and `server-only`, neither of which can load in a jsdom
+// render — so they are stubbed here. The behaviour of the actions themselves is covered by
+// src/server/account/accountData.gate.test.ts, which runs them for real against an in-memory store.
+vi.mock("server-only", () => ({}));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: () => {}, push: () => {}, refresh: () => {} }),
+  usePathname: () => "/app/settings",
+}));
+vi.mock("./actions", () => ({
+  getDeletionStatus: async () => ({ blockers: [], kept: [], removed: [], confirmPhrase: "tester" }),
+  deleteMyAccount: async () => ({ ok: false, error: "stub" }),
+  getMyDataExport: async () => ({ ok: false, error: "stub" }),
+}));
+
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createElement as h } from "react";
