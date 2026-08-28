@@ -13,6 +13,8 @@
  */
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { SubcategorySearch } from "@/components/create/SubcategorySearch";
+import type { Subcategory } from "@/lib/subcategories/types";
 import "./creator-builder.css";
 
 // Addendum C/D — the existing creator DASHBOARD is RE-PARENTED under the hub as a seventh view. Its
@@ -81,6 +83,13 @@ export function CreatorBuilder({ dashboard, creator }: { dashboard?: ReactNode; 
   ]);
   const [askUsed, setAskUsed] = useState<Record<string, boolean>>({});
   const [cat, setCat] = useState("NBA");
+  // B — the searched subcategory (a specific show/league). Selecting one aligns the coarse category
+  // chip; the subcategory carries the domain + cast source downstream.
+  const [subcat, setSubcat] = useState<Subcategory | null>(null);
+  const onSubcat = (s: Subcategory) => {
+    setSubcat(s);
+    setCat(s.domain === "entertainment" ? "Reality TV" : s.category);
+  };
   const [stakes, setStakes] = useState<Record<string, boolean>>({ "$5": true, "$10": true, "$25": true, "$50": false });
   const [fee, setFee] = useState("$2");
   const [pracNote, setPracNote] = useState(false);
@@ -386,6 +395,9 @@ export function CreatorBuilder({ dashboard, creator }: { dashboard?: ReactNode; 
               ))}
             </div>
           </div>
+          {/* B — SEARCH a specific show or league (a fixed list always misses shows, esp. reality TV).
+              Data-driven: results come from the subcategory index, never a hardcoded list here. */}
+          <SubcategorySearch onSelect={onSubcat} selected={subcat} />
           <div className="blk">
             <div className="lb">Date <i></i></div>
             <input type="date" id="dt" defaultValue="2026-08-04" />

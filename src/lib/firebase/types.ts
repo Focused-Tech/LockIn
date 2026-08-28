@@ -87,6 +87,18 @@ export const COLLECTIONS = {
    * a published slate/package; server-side moderation acts on it (may unpublish). NO money moves.
    */
   contentReports: "contentReports",
+  /**
+   * Subcategory index (B): subcategories/{slug}. A show or league a creator can search for. Public
+   * read (the creator searches it); server-write only (seeded from src/lib/subcategories/seed.ts, then
+   * extended by adding docs — no deploy). Carries the domain + stat vocabulary + subject source.
+   */
+  subcategories: "subcategories",
+  /**
+   * Follower question suggestions (E): questionSuggestions/{id}. Server-write only, never client-read.
+   * A follower submits a plain-language idea; it is moderated + reconstructed by the Locksmith into a
+   * compliant proposal that lands in the CREATOR's queue. A follower can never publish.
+   */
+  questionSuggestions: "questionSuggestions",
 } as const;
 
 /** Per-user, per-mode tutorial record — users/{uid}/tutorials/{mode}. A version bump re-offers it. */
@@ -577,6 +589,43 @@ export interface ContentReportDoc {
   reason: string | null;
   reporterId: string;
   createdAt: FsTimestamp;
+}
+
+// ── questionSuggestions/{id} — follower suggestions reconstructed by the Locksmith (E) ────────────
+/**
+ * `reconstructed`  — moderated + rewritten into a compliant proposal; sits in the creator's queue.
+ * `rejected_abuse` — failed the same abuse moderation as creator text; never surfaced to the creator.
+ * `rejected_incompatible` — the Locksmith could not map it to an approved archetype; not surfaced.
+ * `accepted` / `dismissed` — the creator acted on it. A follower can never publish.
+ */
+export type QuestionSuggestionStatus =
+  | "reconstructed"
+  | "rejected_abuse"
+  | "rejected_incompatible"
+  | "accepted"
+  | "dismissed";
+
+/**
+ * One follower question suggestion. Server-write only, never client-read: the follower submits via a
+ * server action (moderation → Locksmith reconstruction → structural guard); the creator reads their
+ * queue server-side (Admin SDK). Stores WHO suggested it and WHICH slate (E.f).
+ */
+export interface QuestionSuggestionDoc {
+  slateId: string;
+  creatorId: string;
+  suggestedByUid: string;
+  suggestedByUsername: string;
+  /** the follower's original plain-language idea. */
+  rawText: string;
+  status: QuestionSuggestionStatus;
+  /** the Locksmith's compliant rewrite (present when status === "reconstructed"/"accepted"). */
+  reconstructedQuestion: string | null;
+  /** the approved archetype the suggestion was mapped to. */
+  archetype: string | null;
+  /** internal note: moderation category or incompatibility reason (never shown to the follower). */
+  note: string | null;
+  createdAt: FsTimestamp;
+  reviewedAt: FsTimestamp | null;
 }
 
 // ── enrolmentKeys/{keyId} ──────────────────────────────────────────────────────

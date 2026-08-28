@@ -180,5 +180,19 @@ service cloud.firestore {
       allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow write: if false;
     }
+
+    // subcategories — the searchable show/league index (B). PUBLIC read (a creator searches it);
+    // server-write only (seeded, then extended by adding docs with no deploy). No secrets here.
+    match /subcategories/{slug} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // questionSuggestions — follower suggestions (E). Server-only end to end: submitted via a server
+    // action (moderated + reconstructed by the Locksmith), read by the creator via the Admin SDK. A
+    // follower can never read the queue or publish.
+    match /questionSuggestions/{id} {
+      allow read, write: if false;
+    }
   }
 }

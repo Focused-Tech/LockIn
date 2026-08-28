@@ -20,6 +20,7 @@
     "seed:beginner": "node scripts/seed-beginner.mjs",
     "unseed:beginner": "node scripts/unseed-beginner.mjs",
     "seed:settlement-demo": "node scripts/seed-settlement-demo.mjs",
+    "seed:subcategories": "node --env-file=.env.local scripts/seed-subcategories.mjs",
     "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes,storage"
   },
   "dependencies": {
