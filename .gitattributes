@@ -1,0 +1,7 @@
+# These three design sources are stored VERBATIM. They arrived with CRLF line
+# endings, and core.autocrlf=true would rewrite them to LF in the blob — a
+# byte-level change to files that are meant to be preserved exactly as authored.
+# -text disables all end-of-line conversion for these paths only.
+design/lockin_cordell_demo_v3.html -text
+design/lockin_cordell_demo_v2.html -text
+design/LOCKIN_WEB_MASTER_REFERENCE_v9_2026-08-23.html -text
