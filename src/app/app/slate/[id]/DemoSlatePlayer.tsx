@@ -71,7 +71,8 @@ export function DemoSlatePlayer({
       key={`${id}-${plays}-${loaded ? 1 : 0}`}
       slate={slate}
       cashBalanceCents={cashBalanceCents}
-      cashAttested
+      kycVerified
+      kycStatus="verified"
       registeredState={registeredState}
       existingEntry={null}
       shadowEarnings={null}

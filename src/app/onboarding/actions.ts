@@ -1,11 +1,9 @@
 "use server";
 
-import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUserId } from "@/lib/firebase/session";
-import { getStripeServer } from "@/lib/stripe";
 import { COLLECTIONS } from "@/lib/firebase/types";
-import { PERJURY_ATTESTATION_TEXT, PERJURY_ATTESTATION_VERSION } from "@/lib/eligibility";
+import { getKycProvider } from "@/lib/kyc";
 
 /** Persist selected interest categories onto the user's Firestore profile. */
 export async function saveCategories(categoryNames: string[]): Promise<void> {
@@ -35,20 +33,18 @@ export type KycResult =
   | { ok: false; error: string };
 
 /**
- * REAL identity verification (Henry handoff assignment 3 — Stripe Identity, the ruled provider).
- * Two steps, not one: this records the self-reported fields we still need on our own account (the
- * residence attestation + registered state that `verifyForCash`'s address cross-check reads — those
- * aren't proof of identity, just a signed statement) and opens a Stripe Identity VerificationSession.
- * `kycStatus` moves to "pending" here, NOT "verified" — Stripe inspects the actual ID + a selfie
- * asynchronously; the webhook (`identity.verification_session.verified` /
- * `.requires_input` / `.canceled` in src/app/api/webhooks/stripe/route.ts) is what flips it to
- * "verified" or "failed" once that finishes. A failed verification therefore blocks payout the same
- * way an unverified one always did (submitEntry/verifyForCash never read this file's writes directly).
+ * REAL identity verification (Henry handoff assignment 3), via the provider-agnostic KYC adapter
+ * (src/lib/kyc — swap-point pattern, `getKycProvider()`). Opens a verification session and records
+ * the registered state; `kycStatus` moves to "pending" here, NOT "verified" — the concrete provider
+ * (Stripe Identity by default; `KYC_PROVIDER=mock` for local dev) inspects the actual ID + a selfie
+ * asynchronously, and the ONE authoritative webhook (`/api/webhooks/kyc`, `processKycWebhook` in
+ * src/lib/kyc/webhook.ts) is what flips it to "verified" (with the provider-VERIFIED DOB the new
+ * eligibility gate requires) or "rejected" once that finishes. This file never marks a user verified
+ * itself — only the signed webhook may do that.
  *
- * The client calls `stripe.verifyIdentity(clientSecret)` (@stripe/stripe-js) with the value returned
- * here to launch Stripe's own hosted document-capture modal — this file never touches the ID photo,
- * so it needs no Firebase Storage bucket for it (that gap in the original handoff doesn't apply once
- * the document capture is Stripe-hosted, not ours).
+ * The client uses the returned `clientSecretOrUrl` to launch the provider's own hosted flow
+ * (Stripe Identity: `stripe.verifyIdentity(clientSecret)` via @stripe/stripe-js) — this file never
+ * touches the ID photo, so it needs no Firebase Storage bucket for it.
  *
  * SSN (still collected for identity-adjacent record-keeping some jurisdictions ask for) is
  * intentionally NOT persisted, same as before.
@@ -65,13 +61,7 @@ export async function verifyIdentity(input: KycInput): Promise<KycResult> {
   }
 
   const state = input.state.toUpperCase();
-
-  const session = await getStripeServer().identity.verificationSessions.create({
-    type: "document",
-    metadata: { uid },
-    options: { document: { require_matching_selfie: true } },
-  });
-  if (!session.client_secret) return { ok: false, error: "Could not start identity verification" };
+  const session = await getKycProvider().createSession(uid);
 
   await adminDb()
     .collection(COLLECTIONS.users)
@@ -79,22 +69,14 @@ export async function verifyIdentity(input: KycInput): Promise<KycResult> {
     .set(
       {
         kycStatus: "pending",
-        kycProviderId: session.id,
+        kycReferenceId: session.sessionId,
         registeredState: state,
         geoState: state,
-        // §2 — record the penalty-of-perjury residence attestation ONCE, here in the signup flow
-        // (the state is known at this step). No longer re-confirmed on every slate.
-        cashAttestation: {
-          affirmedState: state,
-          acceptedAt: FieldValue.serverTimestamp(),
-          text: PERJURY_ATTESTATION_TEXT,
-          version: PERJURY_ATTESTATION_VERSION,
-        },
       },
       { merge: true },
     );
 
-  return { ok: true, clientSecret: session.client_secret };
+  return { ok: true, clientSecret: session.clientSecretOrUrl };
 }
 
 /** Skip KYC — kycStatus stays 'none'; paid contests remain locked. */

@@ -37,6 +37,27 @@ service cloud.firestore {
         allow read: if isUser(userId);
         allow write: if false;
       }
+
+      // taxYears — annual tax rollups, read your own. Written by the Admin SDK
+      // (settlement tax seam) only; never client-writable.
+      match /taxYears/{year} {
+        allow read: if isUser(userId);
+        allow write: if false;
+      }
+    }
+
+    // winningsLedger — immutable per-contest winnings ledger. Owner reads their
+    // own; written (once) by the Admin SDK at settlement. Never client-writable.
+    match /winningsLedger/{entryId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow write: if false;
+    }
+
+    // w9Forms — tax-info records (stub). Owner reads their own; written
+    // server-side only.
+    match /w9Forms/{userId} {
+      allow read: if isUser(userId);
+      allow write: if false;
     }
 
     // usernames/{lower} — uniqueness reservations, server-managed only.

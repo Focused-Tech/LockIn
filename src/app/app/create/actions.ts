@@ -1,12 +1,13 @@
 "use server";
 
 import { z } from "zod";
+import { headers } from "next/headers";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUserProfile } from "@/lib/firebase/session";
 import { COLLECTIONS } from "@/lib/firebase/types";
 import { CATEGORIES } from "@/lib/categories";
-import { canCreatorHostCash, blockedStateMessage } from "@/lib/eligibility";
+import { getJurisdiction, evaluatePaidEntry } from "@/lib/eligibility";
 import { suggestOddsMock, type OddsSuggestion } from "@/lib/ai/probability";
 import { notifyFollowersNewSlate } from "@/lib/notifications/send";
 import { detectBannedArchetype } from "@/lib/contest/questionEngine";
@@ -74,11 +75,12 @@ export async function createSlate(
   if (!profile.creatorVerified) {
     return { ok: false, error: "Apply to become a creator to host contests" };
   }
-  // SLICE 1.4 — creator-side cash gate (stricter; operator exposure sits with LockIn). Routed
-  // through the ONE resolver, fail-closed on an unknown state.
-  if (!canCreatorHostCash(profile.registeredState)) {
-    const msg = blockedStateMessage(profile.registeredState);
-    return { ok: false, error: `${msg.title}. ${msg.law}` };
+  // Creator-side cash gate — hosting exposes LockIn to the same jurisdiction/age/KYC risk as playing,
+  // so it is held to the SAME real-money gate as submitEntry, not a separate, looser one.
+  const jurisdictionKey = getJurisdiction(await headers());
+  const gate = evaluatePaidEntry({ user: profile, jurisdictionKey });
+  if (!gate.allowed) {
+    return { ok: false, error: gate.message };
   }
   const uid = profile.id;
 

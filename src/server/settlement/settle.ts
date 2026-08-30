@@ -17,6 +17,7 @@ import { fetchEspnGameResult, resolveFeedPrediction, isFeedSlateId, type GameRes
 import { isH2HSlateId, fetchAthleteStat, resolveH2H, H2H_CONFIG, type H2HLegMeta } from "@/server/feeds/crossGame";
 import { applySlateToParlays } from "./crossParlay";
 import { notifyResultsReady } from "@/lib/notifications/send";
+import { recordWinningForTax } from "@/lib/ledger/winnings";
 import { HOSTING_FEE_SPLIT } from "@/lib/constants";
 
 export type SettleResult =
@@ -244,6 +245,16 @@ export async function settleSlate(slateId: string): Promise<SettleResult> {
   });
 
   // 4. Apply per-entry results + credit balances (chunked batches).
+  // Fee lookup for the tax ledger: a winning PAID entry's cost = tier*100 + fee.
+  const feeById = new Map(
+    inputs.map((e) => [
+      e.id,
+      { isPaid: e.isPaid, feeCents: e.entryTier * 100 + e.hostingFeeCents },
+    ]),
+  );
+  // Cash winners to record for tax AFTER balances are credited.
+  const taxWinners: { uid: string; grossCents: number; entryFeeCents: number }[] =
+    [];
   let batch = db.batch();
   let ops = 0;
   const flush = async () => {
@@ -278,6 +289,17 @@ export async function settleSlate(slateId: string): Promise<SettleResult> {
         merge: true,
       });
       ops += 1;
+
+      // Track CASH winnings (non-refunded) for the immutable tax ledger. Free
+      // (coin) prizes are not reportable cash winnings and are skipped.
+      if (!r.refunded && r.payoutCents > 0) {
+        const fee = feeById.get(r.id);
+        taxWinners.push({
+          uid: r.userId,
+          grossCents: r.payoutCents,
+          entryFeeCents: fee?.isPaid ? fee.feeCents : 0,
+        });
+      }
     }
 
     // Persisted per-category aggregate (one entry per user per slate, so each
@@ -306,6 +328,27 @@ export async function settleSlate(slateId: string): Promise<SettleResult> {
     if (ops >= BATCH_LIMIT) await flush();
   }
   await flush();
+
+  // 4a. Tax seam: immutable winnings ledger + rolling annual totals + 1099 flag.
+  // Idempotent per (slate,user); safe to re-run. Never blocks settlement — a
+  // failure here is logged and surfaced, not swallowed, but balances are already
+  // credited above.
+  for (const w of taxWinners) {
+    try {
+      await recordWinningForTax(db, {
+        uid: w.uid,
+        slateId,
+        grossCents: w.grossCents,
+        entryFeeCents: w.entryFeeCents,
+      });
+    } catch (err) {
+      console.error("[settleSlate] tax ledger write failed", {
+        slateId,
+        uid: w.uid,
+        err,
+      });
+    }
+  }
 
   // 4b. Creator hosting earnings: 40% of hosting fees on non-refunded paid
   // entries → creatorEarnings ledger + credit the creator's balance.

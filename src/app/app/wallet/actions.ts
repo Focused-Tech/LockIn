@@ -18,7 +18,13 @@ import {
   fetchDepositUsage,
   isSelfExcluded,
 } from "@/server/data/responsiblePlay";
-import { PERJURY_ATTESTATION_TEXT, PERJURY_ATTESTATION_VERSION } from "@/lib/eligibility";
+import {
+  PERJURY_ATTESTATION_TEXT,
+  PERJURY_ATTESTATION_VERSION,
+  isEffectivelyKycVerified,
+} from "@/lib/eligibility";
+import { evaluateWithdrawal } from "@/lib/tax/withdrawal";
+import { TAX_THRESHOLDS } from "@/lib/tax/config";
 
 export type DepositResult =
   | {
@@ -154,7 +160,7 @@ export async function createDepositIntent(input: {
 
 export type WithdrawResult =
   | { ok: true; withdrawalId: string }
-  | { ok: false; error: string };
+  | { ok: false; error: string; code?: "w9_required" };
 
 /**
  * Request a withdrawal: verifies KYC, holds the funds (decrements the cash
@@ -183,13 +189,41 @@ export async function requestWithdrawal(input: {
   const userRef = db.collection(COLLECTIONS.users).doc(uid);
   const withdrawalRef = db.collection(COLLECTIONS.withdrawals).doc();
 
+  // Tax/AML context (W-9 on file + this year's reporting flag). Read up front;
+  // both change rarely and don't need transactional consistency.
+  const taxYear = new Date().getUTCFullYear();
+  const [w9Snap, yearSnap] = await Promise.all([
+    db.collection(COLLECTIONS.w9Forms).doc(uid).get(),
+    userRef.collection(COLLECTIONS.taxYears).doc(String(taxYear)).get(),
+  ]);
+  const w9OnFile =
+    (w9Snap.data() as { onFile?: boolean } | undefined)?.onFile === true;
+  const taxReportingRequired =
+    (yearSnap.data() as { taxReportingRequired?: boolean } | undefined)
+      ?.taxReportingRequired === true;
+
+  // Captured out of the tx for post-commit AML logging (boolean — no narrowing
+  // hazard). The withdrawal always pays the authenticated user's OWN account
+  // (uid in the payout metadata) — no third-party payouts are possible here.
+  let amlReview = false;
+
   try {
     await db.runTransaction(async (tx) => {
       const snap = await tx.get(userRef);
       const user = snap.data() as UserDoc | undefined;
       if (!user) throw new Error("NO_PROFILE");
-      if (user.kycStatus !== "verified") throw new Error("NOT_VERIFIED");
+      // Identity: architect/admin bypass; grandfathered creators count verified.
+      if (!isEffectivelyKycVerified(user)) throw new Error("NOT_VERIFIED");
       if (user.cashBalanceCents < amountCents) throw new Error("INSUFFICIENT");
+
+      // Tax/AML gate: W-9 required above threshold (architect/admin exempt);
+      // large withdrawals flagged for manual review (never auto-blocked).
+      const decision = evaluateWithdrawal(
+        { user, amountCents, w9OnFile, taxReportingRequired },
+        TAX_THRESHOLDS,
+      );
+      if (!decision.allowed) throw new Error("W9_REQUIRED");
+      amlReview = decision.amlReview;
 
       tx.update(userRef, {
         cashBalanceCents: user.cashBalanceCents - amountCents,
@@ -199,6 +233,7 @@ export async function requestWithdrawal(input: {
         amountCents,
         stripePayoutId: null,
         status: "pending",
+        amlReview: decision.amlReview,
         requestedAt: FieldValue.serverTimestamp(),
         completedAt: null,
       });
@@ -208,8 +243,26 @@ export async function requestWithdrawal(input: {
     if (m === "NOT_VERIFIED") {
       return { ok: false, error: "Verify your identity to withdraw" };
     }
+    if (m === "W9_REQUIRED") {
+      return {
+        ok: false,
+        code: "w9_required",
+        error:
+          "Add your tax info (W-9) before withdrawing. You can complete it in your wallet settings.",
+      };
+    }
     if (m === "INSUFFICIENT") return { ok: false, error: "Insufficient balance" };
+    console.error("[requestWithdrawal] failed", { uid, amountCents, reason: m || err });
     return { ok: false, error: "Could not request withdrawal" };
+  }
+
+  // AML: flag large withdrawals for manual review (server-side log; not blocked).
+  if (amlReview) {
+    console.error("[requestWithdrawal] AML_REVIEW flagged withdrawal", {
+      uid,
+      amountCents,
+      withdrawalId: withdrawalRef.id,
+    });
   }
 
   // Creators with an onboarded connected account get a real Connect transfer to
@@ -249,8 +302,13 @@ export async function requestWithdrawal(input: {
         { merge: true },
       );
     }
-  } catch {
-    // Roll back the hold and mark the record failed.
+  } catch (err) {
+    // NO silent failure: log, then roll back the hold and mark the record failed.
+    console.error("[requestWithdrawal] payout initiation failed — rolling back", {
+      uid,
+      withdrawalId: withdrawalRef.id,
+      err,
+    });
     await db.runTransaction(async (tx) => {
       const snap = await tx.get(userRef);
       const user = snap.data() as UserDoc | undefined;

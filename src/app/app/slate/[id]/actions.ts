@@ -12,12 +12,15 @@ import {
   type UserDoc,
 } from "@/lib/firebase/types";
 import { validateLeg, firstBannedLeg, type Archetype, type Leg } from "@/lib/contest/questionEngine";
-import {
-  FREE_ENTRY_COIN_COST,
-  type EntryTier,
-} from "@/lib/constants";
-import { verifyForCash, PERJURY_ATTESTATION_TEXT, PERJURY_ATTESTATION_VERSION } from "@/lib/eligibility";
+import { FREE_ENTRY_COIN_COST, type EntryTier } from "@/lib/constants";
 import { isSelfExcluded } from "@/server/data/responsiblePlay";
+import {
+  getJurisdiction,
+  evaluatePaidEntry,
+  PERJURY_ATTESTATION_TEXT,
+  PERJURY_ATTESTATION_VERSION,
+  type PaidGateCode,
+} from "@/lib/eligibility";
 
 /**
  * §2 — record the player's penalty-of-perjury RESIDENCE ATTESTATION (the cash-entry gate). This is
@@ -52,22 +55,32 @@ export type SubmitEntryInput = {
 
 export type SubmitEntryResult =
   | { ok: true; entryId: string }
-  | { ok: false; error: string };
+  | { ok: false; error: string; code?: PaidGateCode };
+
+/** Carries the specific block reason/code out of the transaction closure. */
+class PaidBlockedError extends Error {
+  constructor(
+    readonly code: PaidGateCode,
+    readonly blockMessage: string,
+  ) {
+    super("PAID_BLOCKED");
+  }
+}
 
 /**
  * Submit a pick card as a contest entry. Enforces: contest is live + unlocked,
  * picks cover every prediction once, one entry per user (entry doc id = uid),
- * sufficient balance, and — for paid entries — KYC + geo eligibility. Balance
- * debit, slate entry-count bump, and the entry write happen atomically.
+ * sufficient balance, and — for PAID entries — KYC + real-money eligibility
+ * (age derived from DOB + jurisdiction allowlist, `src/lib/eligibility`, the
+ * single source of truth). PRACTICE (free) entries skip the eligibility gate
+ * entirely and always proceed. Balance debit, slate entry-count bump, and the
+ * entry write happen atomically.
  */
 export async function submitEntry(
   input: SubmitEntryInput,
 ): Promise<SubmitEntryResult> {
   const uid = await getCurrentUserId();
   if (!uid) return { ok: false, error: "Not signed in" };
-
-  // §2 — IP-derived state from Vercel's edge geo header (vendor-free), for the cash cross-check.
-  const ipRegion = (await headers()).get("x-vercel-ip-country-region");
 
   const db = adminDb();
   const slateRef = db.collection(COLLECTIONS.slates).doc(input.slateId);
@@ -134,6 +147,13 @@ export async function submitEntry(
   const userRef = db.collection(COLLECTIONS.users).doc(uid);
   const entryRef = slateRef.collection(COLLECTIONS.entries).doc(uid);
 
+  // Resolve the request's jurisdiction from geo headers up front (stable across
+  // transaction retries). PRACTICE entries never touch this. FAIL CLOSED: a null
+  // key means "location unknown" and isRealMoneyEligible() will reject.
+  const jurisdictionKey = input.free
+    ? null
+    : getJurisdiction(await headers());
+
   try {
     await db.runTransaction(async (tx) => {
       const [entrySnap, userSnap, freshSlateSnap] = await Promise.all([
@@ -162,17 +182,11 @@ export async function submitEntry(
           coinBalance: user.coinBalance - FREE_ENTRY_COIN_COST,
         });
       } else {
-        // §2 — CASH GATE: IP-geo + registered-address cross-check + residence attestation. NO ID/KYC
-        // precondition (that's a withdrawal-time check). Falls back to the registered state for IP when
-        // the edge geo header is absent (local/dev), so it's the address self-check there.
-        const att = user.cashAttestation;
-        const verdict = verifyForCash({
-          ipState: ipRegion || user.registeredState || null,
-          addressState: user.registeredState ?? null,
-          attestation: att ? { affirmedState: att.affirmedState, acceptedAt: 0, text: att.text, version: att.version } : null,
-          dateOfBirth: user.dateOfBirth || null,
-        });
-        if (!verdict.ok) throw new Error(`CASH_${verdict.reason}`);
+        // Authoritative real-money gate: jurisdiction + age AND identity (KYC).
+        const gate = evaluatePaidEntry({ user, jurisdictionKey });
+        if (!gate.allowed) {
+          throw new PaidBlockedError(gate.code, gate.message);
+        }
         if (user.cashBalanceCents < entryCostCents) throw new Error("LOW_CASH");
         tx.update(userRef, {
           cashBalanceCents: user.cashBalanceCents - entryCostCents,
@@ -197,23 +211,23 @@ export async function submitEntry(
     });
   } catch (err) {
     const m = err instanceof Error ? err.message : "";
+    // NO silent failure: log every rejection/error. On ANY error we return
+    // ok:false — real-money play never proceeds on an unhandled failure.
+    console.error("[submitEntry] rejected", {
+      slateId: input.slateId,
+      free: input.free,
+      reason: m || err,
+    });
+    // Real-money block (geo/age OR identity) — surface the specific, fail-closed
+    // reason + code so the client can prompt verification or offer practice.
+    if (err instanceof PaidBlockedError) {
+      return { ok: false, error: err.blockMessage, code: err.code };
+    }
     switch (m) {
       case "ALREADY_ENTERED":
         return { ok: false, error: "You've already entered this contest" };
       case "LOW_COINS":
         return { ok: false, error: "Not enough coins for a free entry" };
-      case "CASH_no_attestation":
-        return { ok: false, error: "Accept the residence attestation to enter for cash." };
-      case "CASH_address_mismatch":
-        return { ok: false, error: "Your location doesn't match your registered state — update your address to continue." };
-      case "CASH_no_location":
-        return { ok: false, error: "We couldn't confirm your location for cash play." };
-      case "CASH_cash_blocked":
-        return { ok: false, error: "Paid contests aren't available in your state" };
-      case "CASH_no_dob":
-        return { ok: false, error: "Add your date of birth to enter for cash." };
-      case "CASH_under_min_age":
-        return { ok: false, error: "You don't meet the minimum age for paid contests in your state." };
       case "LOW_CASH":
         return { ok: false, error: "Add funds to enter this paid contest" };
       case "CLOSED":

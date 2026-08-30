@@ -91,6 +91,13 @@ export const PERSONAL_DATA_MAP: PersonalDataRule[] = [
     why: "Which practice questions were dealt to this player. Deleted with the parent.",
   },
   {
+    collection: "taxYears",
+    locators: [{ kind: "subcollection" }],
+    strategy: "delete",
+    exportable: true,
+    why: "Annual tax rollup (users/{uid}/taxYears/{year}). FLAG FOR REVIEW: like every subcollection rule here, this goes with the parent doc — there is no subcollection-level anonymize path today. Tax rollups may need real retention (IRS record-keeping), which this doesn't yet provide; exported first so the user keeps their own copy before it goes.",
+  },
+  {
     collection: "tutorials",
     locators: [{ kind: "subcollection" }],
     strategy: "delete",
@@ -178,6 +185,20 @@ export const PERSONAL_DATA_MAP: PersonalDataRule[] = [
     strategy: "anonymize",
     exportable: true,
     why: "Money-out records. Kept as required financial records with the account link severed.",
+  },
+  {
+    collection: "winningsLedger",
+    locators: [{ kind: "field", field: "userId" }],
+    strategy: "anonymize",
+    exportable: true,
+    why: "Immutable per-contest winnings ledger (winningsLedger/{slateId}_{uid}) — a required financial/tax record. Kept with the account link severed.",
+  },
+  {
+    collection: "w9Forms",
+    locators: [{ kind: "docId" }],
+    strategy: "anonymize",
+    exportable: false,
+    why: "W-9 tax-info record (w9Forms/{uid}). Required tax documentation — kept, not deleted; not exported because it holds tax-filing PII, not general account data.",
   },
   {
     collection: "creatorEarnings",

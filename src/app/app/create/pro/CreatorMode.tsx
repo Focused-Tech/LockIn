@@ -18,7 +18,7 @@ import {
   type LegContext,
 } from "@/lib/contest/questionEngine";
 import { ARCHETYPE_CHOICES } from "@/lib/contest/archetypeLibrary";
-import type { FormatTier } from "@/lib/eligibility";
+import type { FormatTier } from "@/lib/contest/questionEngine";
 import { enginePlayersFor, QUESTION_TEMPLATES, type CreatorGame } from "@/lib/contest/games";
 
 /** nice label + blurb for an archetype id, from the shared library (one source). */

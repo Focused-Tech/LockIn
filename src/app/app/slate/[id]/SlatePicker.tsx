@@ -15,6 +15,9 @@ import { EXCLUDED_STATES, type EntryTier } from "@/lib/constants";
 import type { FeedSlate, FeedPrediction } from "@/lib/feed";
 import type { ShadowEarnings } from "@/server/data/shadowEarnings";
 import { AddToParlay } from "@/components/cross-parlay/AddToParlay";
+import { VerifyIdentityButton } from "@/components/kyc/VerifyIdentityButton";
+import type { PaidGateCode } from "@/lib/eligibility";
+import type { KycStatus } from "@/lib/firebase/types";
 import { formatCents, formatCentsShort, formatCoinsShort, formatMultiple } from "@/lib/utils";
 import { submitEntry } from "./actions";
 import "./slate-detail.css";
@@ -88,7 +91,8 @@ interface LockedEntry {
 export function SlatePicker({
   slate,
   cashBalanceCents,
-  cashAttested,
+  kycVerified,
+  kycStatus,
   registeredState,
   existingEntry,
   shadowEarnings,
@@ -97,8 +101,8 @@ export function SlatePicker({
 }: {
   slate: FeedSlate;
   cashBalanceCents: number;
-  /** §2 — whether the player has accepted the residence attestation (the cash-entry gate). */
-  cashAttested: boolean;
+  kycVerified: boolean;
+  kycStatus: KycStatus;
   registeredState: string | null;
   existingEntry: LockedEntry | null;
   shadowEarnings?: ShadowEarnings | null;
@@ -122,16 +126,15 @@ export function SlatePicker({
   );
 
   // §1 — ADVANCED IS CASH ONLY. No paid/free toggle, no coin path (coins are the beginner lane).
-  // §2 — the cash-entry gate is geo (registered state) + the penalty-of-perjury attestation. It does
-  // NOT require ID/KYC (that's deferred to the withdrawal threshold). `kycVerified` is no longer read.
+  // The real-money gate is jurisdiction + age + KYC, evaluated authoritatively server-side
+  // (evaluatePaidEntry in submitEntry). This is a client-side pre-check only, to disable the button
+  // before a round trip — not exhaustive (age isn't checked here), so the server call is still the
+  // one that counts, surfacing `error` + `blockCode` (kyc_required/kyc_rejected) on rejection.
   const geoBlocked = registeredState
     ? (EXCLUDED_STATES as readonly string[]).includes(registeredState)
     : false;
-  // §2 — the residence attestation now lives at signup + the wallet (not re-confirmed per contest).
-  // The slate stays affirmation-free; the server still requires it (verifyForCash). A player who
-  // hasn't attested yet is pointed to the wallet rather than gated with perjury text here.
-  // DEMO slates bypass the cash/attestation gate entirely — they never move money.
-  const canEnterCash = isDemo || (!geoBlocked && availableTiers.length > 0 && cashAttested);
+  // DEMO slates bypass the cash/KYC gate entirely — they never move money.
+  const canEnterCash = isDemo || (!geoBlocked && availableTiers.length > 0 && kycVerified);
   const locked = slate.status !== "live";
 
   const [tier, setTier] = useState<EntryTier>(availableTiers[0] ?? 5);
@@ -141,6 +144,7 @@ export function SlatePicker({
     existingEntry,
   );
   const [error, setError] = useState<string | null>(null);
+  const [blockCode, setBlockCode] = useState<PaidGateCode | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   // Live prize pool as entries land.
@@ -197,6 +201,7 @@ export function SlatePicker({
 
   async function onSubmit() {
     setError(null);
+    setBlockCode(null);
     setSubmitting(true);
     const startedAt = Date.now(); // hold the lock-in animation for its full ~950ms before transitioning
     const picksArr: EntryPick[] = predictions.map((p) => ({
@@ -230,6 +235,11 @@ export function SlatePicker({
     } else {
       setSubmitting(false);
       setError(result.error);
+      setBlockCode(result.code ?? null);
+      // Real-money blocked (geo/age OR identity): the error + (for kyc_*) the verify CTA render
+      // above; this screen is cash-only (no coin/free toggle), so there's no other mode to fall back
+      // into — the player's options are verify, or leave for the beginner/coin lane (the geo block's
+      // own link above already offers that for the geo case).
     }
   }
 
@@ -517,17 +527,26 @@ export function SlatePicker({
         </div>
       )}
 
-      {/* geo block — coins fallback; residence attestation lives at signup + wallet now. Demo skips both. */}
+      {error && (
+        <div className="flex flex-col gap-2 lg:col-start-2">
+          <p
+            role="alert"
+            className="rounded border border-[rgba(232,84,84,0.25)] bg-[rgba(232,84,84,0.10)] px-3 py-2 text-sm text-loss"
+          >
+            {error}
+          </p>
+          {(blockCode === "kyc_required" || blockCode === "kyc_rejected") && (
+            <VerifyIdentityButton kycStatus={kycStatus} />
+          )}
+        </div>
+      )}
+
+      {/* geo block — coins fallback. Demo skips it; KYC-required is surfaced via the error block above
+          (VerifyIdentityButton), once the server actually rejects an attempt. */}
       {isDemo ? null : geoBlocked ? (
         <div className="rounded border border-border bg-surface px-3 py-2 text-xs text-muted lg:col-start-2">
           Paid contests aren&apos;t available in your state.{" "}
           <Link href="/app/beginner" className="font-semibold text-accent">Play the beginner lane in coins →</Link>
-        </div>
-      ) : !cashAttested ? (
-        <div className="rounded border border-border bg-surface px-3 py-2 text-xs text-muted lg:col-start-2">
-          Confirm your residence in your{" "}
-          <Link href="/app/wallet" className="font-semibold text-accent">wallet</Link>{" "}
-          to enter for cash.
         </div>
       ) : null}
 

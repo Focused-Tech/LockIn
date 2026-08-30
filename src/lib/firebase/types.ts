@@ -99,6 +99,12 @@ export const COLLECTIONS = {
    * compliant proposal that lands in the CREATOR's queue. A follower can never publish.
    */
   questionSuggestions: "questionSuggestions",
+  /** Immutable per-contest winnings ledger: winningsLedger/{slateId}_{uid}. */
+  winningsLedger: "winningsLedger",
+  /** Annual tax rollup per user: users/{uid}/taxYears/{year}. */
+  taxYears: "taxYears",
+  /** W-9 tax-info records (stub): w9Forms/{uid}. */
+  w9Forms: "w9Forms",
 } as const;
 
 /** Per-user, per-mode tutorial record — users/{uid}/tutorials/{mode}. A version bump re-offers it. */
@@ -112,7 +118,7 @@ export interface TutorialDoc {
 /** Which Explore lane a user has chosen (set at onboarding, switchable later). */
 export type JourneyLane = "beginner" | "advanced";
 
-export type KycStatus = "none" | "pending" | "verified" | "failed";
+export type KycStatus = "unverified" | "pending" | "verified" | "rejected";
 export type CreatorTier = "basic" | "pro" | "elite" | "partner";
 export type SlateStatus =
   | "draft"
@@ -142,7 +148,16 @@ export interface UserDoc {
   coinBalance: number;
   cashBalanceCents: number;
   kycStatus: KycStatus;
-  kycProviderId: string | null;
+  /** Which KYC vendor produced the current status (e.g. "stripe" | "mock"). */
+  kycProvider: string | null;
+  /** Provider session/verification reference id. NOT PII. */
+  kycReferenceId: string | null;
+  /**
+   * Provider-VERIFIED date of birth (YYYY-MM-DD). Authoritative age source once
+   * kycStatus === "verified" — replaces the self-entered `dateOfBirth` for the
+   * real-money age check. Null until a provider verifies identity.
+   */
+  kycVerifiedDob: string | null;
   kycVerifiedAt: FsTimestamp | null;
   geoState: string | null;
   registeredState: string | null;
@@ -171,6 +186,11 @@ export interface UserDoc {
    * participation_pct renders as "—" (never 0) everywhere it's shown.
    */
   verifiedFollowers?: number | null;
+  /**
+   * Platform architect/owner. Real-money is ALWAYS allowed for these accounts;
+   * they are never routed through geo/age/KYC/tax verification. Missing = false.
+   */
+  isArchitect?: boolean;
   isCreator: boolean;
   creatorVerified: boolean;
   creatorTier: CreatorTier;

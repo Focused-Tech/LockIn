@@ -5,7 +5,12 @@
  * player per game, maximum. Two-way needs two games; four-way needs four. Validated PER LEG (a
  * card of one-game legs does not launder them), rejected at publish.
  */
-import type { FormatTier } from "@/lib/eligibility";
+/**
+ * Which question pool a player sees (slice 2.4 — CA/FL get the tighter RESTRICTED set). The
+ * eligibility module dropped this concept when it moved to the jurisdiction+age+KYC gate
+ * (src/lib/eligibility), so it lives here now, next to its only real consumer (archetypePool).
+ */
+export type FormatTier = "standard" | "restricted";
 
 export interface EnginePlayer {
   name: string;

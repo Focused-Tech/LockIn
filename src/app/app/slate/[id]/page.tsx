@@ -165,7 +165,8 @@ export default async function SlatePage({
           <SlatePicker
             slate={slate}
             cashBalanceCents={profile.cashBalanceCents}
-            cashAttested={!!profile.cashAttestation}
+            kycVerified={profile.kycStatus === "verified"}
+            kycStatus={profile.kycStatus}
             registeredState={profile.registeredState}
             existingEntry={existingEntry}
             shadowEarnings={shadowEarnings}

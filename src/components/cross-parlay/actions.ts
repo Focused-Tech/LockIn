@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase/admin";
 import { getCurrentUserProfile } from "@/lib/firebase/session";
@@ -14,12 +15,16 @@ import {
   CROSS_PARLAY_MAX_PICKS,
   CROSS_PARLAY_MIN_PICKS,
   CROSS_PARLAY_MIN_SLATES,
-  EXCLUDED_STATES,
   FREE_ENTRY_COIN_COST,
   type EntryTier,
 } from "@/lib/constants";
 import { parlayMultiplier } from "@/lib/contest/crossParlay";
 import { isSelfExcluded } from "@/server/data/responsiblePlay";
+import {
+  getJurisdiction,
+  evaluatePaidEntry,
+  type PaidGateCode,
+} from "@/lib/eligibility";
 
 export interface SubmitParlayInput {
   picks: { slateId: string; predictionId: string; pickValue: "a" | "b" }[];
@@ -29,7 +34,7 @@ export interface SubmitParlayInput {
 
 export type SubmitParlayResult =
   | { ok: true; parlayId: string }
-  | { ok: false; error: string };
+  | { ok: false; error: string; code?: PaidGateCode };
 
 export async function submitCrossParlay(
   input: SubmitParlayInput,
@@ -91,16 +96,22 @@ export async function submitCrossParlay(
     });
   }
 
-  // Paid entries require KYC + an eligible state (same gate as single entries).
+  // PAID entries require BOTH real-money eligibility (jurisdiction + age) AND
+  // identity verification (KYC) — the same single gate as single entries.
+  // PRACTICE (free) parlays skip this entirely. FAIL CLOSED on unknown
+  // location/age/verification.
   if (!input.free) {
-    if (profile.kycStatus !== "verified") {
-      return { ok: false, error: "Verify your identity to enter paid contests" };
-    }
-    if (
-      profile.registeredState &&
-      (EXCLUDED_STATES as readonly string[]).includes(profile.registeredState)
-    ) {
-      return { ok: false, error: "Paid contests aren't available in your state" };
+    const gate = evaluatePaidEntry({
+      user: profile,
+      jurisdictionKey: getJurisdiction(await headers()),
+    });
+    if (!gate.allowed) {
+      // NO silent failure: log the specific reason; surface it; never proceed.
+      console.error("[submitCrossParlay] real-money blocked", {
+        code: gate.code,
+        reason: gate.reason,
+      });
+      return { ok: false, error: gate.message, code: gate.code };
     }
   }
 
@@ -147,6 +158,7 @@ export async function submitCrossParlay(
     });
   } catch (err) {
     const m = err instanceof Error ? err.message : "";
+    console.error("[submitCrossParlay] transaction failed", { reason: m || err });
     if (m === "FUNDS") return { ok: false, error: "Insufficient balance" };
     return { ok: false, error: "Could not submit chain" };
   }

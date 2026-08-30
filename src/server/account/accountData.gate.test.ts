@@ -76,7 +76,7 @@ describe("personal-data map covers every collection", () => {
     expect(withheld).toContain("questionSuggestions");
     // Everything else withheld must be a per-device/seen-record, never money or user content.
     for (const c of withheld) {
-      expect(["locksmithReports", "contentReports", "questionSuggestions", "triviaSeen", "tutorials", "championshipCards", "usernames"]).toContain(c);
+      expect(["locksmithReports", "contentReports", "questionSuggestions", "triviaSeen", "tutorials", "championshipCards", "usernames", "w9Forms"]).toContain(c);
     }
     expect(exportableRules().length).toBeGreaterThan(10);
   });
