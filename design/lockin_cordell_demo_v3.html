@@ -1,0 +1,1163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lock In — the creator builds a slate</title>
+<style>
+:root{
+  --orange:#FC3E01; --orange-br:#FF5A1F; --ink:#0A0D12; --panel:#121722;
+  --panel-2:#182131; --line:rgba(255,255,255,.10); --txt:#E7E7EB; --mut:#8FA0B4;
+  --gold:#F0C463; --green:#2FB98A; --purple:#7C5CF5; --bad:#E0402C; --dead:#6B7787;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ink);color:var(--txt);
+  font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:22px}
+header{display:flex;align-items:center;gap:14px;padding:14px 0 16px;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:60;background:rgba(10,13,18,.94);backdrop-filter:blur(10px)}
+.mark{width:46px;height:46px;border-radius:11px;background:var(--orange);display:grid;place-items:center;
+  font-weight:800;font-size:12px;letter-spacing:.5px;color:#fff;flex:0 0 auto;line-height:1.05;text-align:center}
+h1{font-size:19px;margin:0;font-weight:650;letter-spacing:.2px}
+h1 em{font-style:normal;color:var(--orange-br)}
+.sub{color:var(--mut);font-size:12.5px;margin-top:2px}
+.controls{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+button{background:var(--panel-2);color:var(--txt);border:1px solid var(--line);
+  border-radius:9px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:550}
+button:hover{border-color:var(--orange-br)}
+button.primary{background:var(--orange);border-color:var(--orange-br);color:#fff}
+.stage{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:18px}
+.card{scroll-margin-top:104px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;
+  opacity:.30;transition:opacity .45s, border-color .45s, transform .45s;transform:translateY(6px)}
+.card.on{opacity:1;border-color:rgba(252,62,1,.34);transform:none}
+.card h2{font-size:12px;letter-spacing:1.1px;text-transform:uppercase;color:var(--mut);margin:0 0 12px}
+.full{grid-column:1/-1}
+.row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:14px}
+.row:last-child{border-bottom:0}
+.k{color:var(--mut)}
+.pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:650;letter-spacing:.3px}
+.p-ok{background:rgba(47,185,138,.16);color:var(--green)}
+.p-no{background:rgba(224,64,44,.18);color:#FF6B57}
+.p-wait{background:rgba(240,196,99,.16);color:var(--gold)}
+.p-lock{background:rgba(143,160,180,.14);color:var(--mut)}
+.p-net{background:rgba(124,92,245,.18);color:#A78BFF}
+.field{margin-bottom:9px}
+.lab{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.7px}
+.val{border:1px solid var(--line);border-radius:8px;padding:8px 11px;background:var(--panel-2);
+  min-height:34px;font-size:14px}
+.val.hl{border-color:var(--orange-br)}
+.cursor::after{content:"▌";color:var(--orange-br);animation:bl 1s steps(2) infinite}
+@keyframes bl{50%{opacity:0}}
+.note{background:rgba(252,62,1,.09);border:1px solid rgba(252,62,1,.30);border-radius:10px;
+  padding:10px 13px;font-size:13px;margin-top:10px}
+.note.cool{background:rgba(124,92,245,.10);border-color:rgba(124,92,245,.32)}
+.note.good{background:rgba(47,185,138,.10);border-color:rgba(47,185,138,.32)}
+@keyframes trace{0%{background:rgba(252,62,1,.28)}100%{background:transparent}}
+.tr{animation:trace 1.5s ease-out}
+/* ── the build log: Locksmith turns, host turns, validator verdicts ───────── */
+#build-log{max-height:340px;overflow-y:auto;padding-right:6px;
+  scrollbar-width:thin;scrollbar-color:var(--orange-br) rgba(255,255,255,.07)}
+#build-log::-webkit-scrollbar{width:9px}
+#build-log::-webkit-scrollbar-track{background:rgba(255,255,255,.07);border-radius:5px}
+#build-log::-webkit-scrollbar-thumb{background:var(--orange-br);border-radius:5px;border:2px solid var(--panel)}
+.vx{display:flex;gap:10px;align-items:flex-start;margin-bottom:9px}
+.vx .who{font-size:10.5px;color:var(--mut);width:74px;flex:0 0 auto;padding-top:6px;text-transform:uppercase;letter-spacing:.6px}
+.vx .who.ai{color:var(--purple)}
+.vx .who.host{color:var(--gold)}
+.vx .said{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-size:13.5px;flex:1}
+.vx .said.red{border-color:rgba(224,64,44,.55);background:rgba(224,64,44,.10)}
+.vx .said.green{border-color:rgba(47,185,138,.45);background:rgba(47,185,138,.08)}
+.flagline{display:flex;gap:8px;font-size:12.5px;color:#FFB0A2;margin-top:6px}
+.flagline b{color:#FF6B57;flex:0 0 auto}
+.chk{display:flex;gap:8px;font-size:12.5px;color:var(--mut);margin-top:5px}
+.chk b{color:var(--green);flex:0 0 auto}
+/* ── leg cards ───────────────────────────────────────────────────────────── */
+.leg{border:1px solid var(--line);border-left:4px solid var(--orange);border-radius:11px;
+  background:var(--panel-2);padding:11px 13px;margin-bottom:8px;opacity:.25;transition:opacity .4s}
+.leg.show{opacity:1}
+.leg .lg{font-size:10.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.9px}
+.leg .qq{font-weight:600;font-size:14px;margin-top:3px}
+.leg .cx{color:var(--mut);font-size:12px;margin-top:4px}
+.opts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.opt{border:1px solid var(--line);border-radius:8px;padding:5px 11px;font-size:12.5px;background:rgba(255,255,255,.03)}
+.opt.win{border-color:var(--green);color:var(--green);background:rgba(47,185,138,.10);font-weight:650}
+/* ── share card ──────────────────────────────────────────────────────────── */
+.share{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#0D1119;max-width:420px}
+.share .top{background:linear-gradient(135deg,var(--orange) 0%,#B32A00 100%);padding:14px 16px}
+.share .brand{font-weight:800;letter-spacing:.6px;font-size:13px;color:#fff}
+.share .topic{font-size:20px;font-weight:750;margin-top:6px;color:#fff;line-height:1.2}
+.share .who{font-size:12px;color:rgba(255,255,255,.86);margin-top:5px}
+.share .body{padding:14px 16px}
+.share .clockbig{font-size:30px;font-weight:750;font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+.sealed{border:1px dashed rgba(255,255,255,.18);border-radius:10px;padding:9px 11px;margin-bottom:7px;font-size:12.5px;color:var(--mut)}
+.sealed b{color:var(--txt);font-weight:600}
+.pricepills{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}
+.pp{border:1px solid var(--line);border-radius:9px;padding:6px 11px;font-size:12.5px;background:var(--panel-2)}
+.pp b{color:var(--gold)}
+.cap{font-size:13px;font-style:italic;color:var(--txt);border-left:3px solid var(--gold);padding-left:10px;margin-top:10px}
+.legal{font-size:10.5px;color:var(--dead);margin-top:11px;line-height:1.45}
+/* ── story mockup ────────────────────────────────────────────────────────── */
+.story{width:236px;aspect-ratio:9/16;border-radius:20px;border:1px solid var(--line);
+  background:linear-gradient(170deg,#1A1030 0%,#0A0D12 55%,#2A0E02 100%);padding:12px;display:flex;
+  flex-direction:column;gap:8px;position:relative;overflow:hidden}
+.story .ig{display:flex;align-items:center;gap:7px;font-size:11px;color:#fff}
+.story .av{width:24px;height:24px;border-radius:50%;background:var(--orange);display:grid;place-items:center;font-size:9.5px;font-weight:750}
+.story .mini{background:rgba(10,13,18,.72);border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:10px;margin-top:auto}
+.story .mini .t{font-weight:700;font-size:12.5px;line-height:1.25}
+.story .mini .m{font-size:10.5px;color:#C9D3E0;margin-top:5px}
+.story .swipe{text-align:center;font-size:10px;color:#C9D3E0;padding-top:6px}
+/* ── metrics ─────────────────────────────────────────────────────────────── */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:6px}
+.metric{background:var(--panel-2);border:1px solid var(--line);border-radius:11px;padding:14px}
+.metric .n{font-size:26px;font-weight:750;letter-spacing:-.5px;font-variant-numeric:tabular-nums}
+.metric .l{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.7px;margin-top:3px}
+.metric.green .n{color:var(--green)} .metric.gold .n{color:var(--gold)}
+.metric.purple .n{color:var(--purple)} .metric.orange .n{color:var(--orange-br)}
+/* ── payout board ────────────────────────────────────────────────────────── */
+.payrow{display:flex;align-items:center;gap:12px;padding:11px 13px;border:1px solid var(--line);
+  border-radius:11px;background:var(--panel-2);margin-bottom:8px;opacity:.25;transition:opacity .45s}
+.payrow.show{opacity:1}
+.payrow .tag{font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--mut);width:96px;flex:0 0 auto}
+.payrow .desc{flex:1;font-size:13px}
+.payrow .desc b{font-size:14px}
+.payrow .amt{font-size:19px;font-weight:750;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.payrow.w{border-color:rgba(240,196,99,.42)} .payrow.w .amt{color:var(--gold)}
+.payrow.c{border-color:rgba(47,185,138,.42)} .payrow.c .amt{color:var(--green)}
+.payrow.k{border-color:rgba(255,255,255,.20)}
+.payrow.n{border-color:rgba(124,92,245,.50)} .payrow.n .amt{color:#A78BFF}
+/* ── leaderboard + standings tables ──────────────────────────────────────── */
+.lb{display:grid;grid-template-columns:52px 1fr 92px 96px 118px;gap:10px;align-items:center;
+  padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--panel-2);
+  margin-bottom:6px;font-size:13px}
+.lb .r{font-weight:750;color:var(--gold);font-variant-numeric:tabular-nums}
+.lb .who{font-weight:600}
+.lb .who small{display:block;color:var(--mut);font-weight:400;font-size:11px}
+.lb .c{color:var(--mut);font-size:12.5px;font-variant-numeric:tabular-nums}
+.lb .p{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;color:var(--gold)}
+.lb.head{background:transparent;border:0;color:var(--mut);font-size:10.5px;text-transform:uppercase;
+  letter-spacing:.8px;padding:0 11px 2px;margin-bottom:2px}
+.lb.head .p{color:var(--mut);font-weight:600}
+.lb.hero{border-color:rgba(240,196,99,.45)}
+.lb.gap{border-style:dashed;opacity:.62;background:transparent}
+.lb.me{border-color:var(--orange-br);background:rgba(252,62,1,.07)}
+.lb.me .r{color:var(--orange-br)}
+.divrow{display:grid;grid-template-columns:78px 1fr 120px 96px;gap:10px;align-items:center;
+  padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2);margin-bottom:7px;font-size:13px}
+.divrow .d{font-weight:750;color:var(--green);font-variant-numeric:tabular-nums}
+.divrow .s{color:var(--mut);font-size:12px}
+.divrow.mine{border-color:var(--orange-br);background:rgba(252,62,1,.07)}
+@media(max-width:760px){ .lb{grid-template-columns:44px 1fr 96px} .lb .c{display:none} }
+/* ── step bar ────────────────────────────────────────────────────────────── */
+.clock{font-variant-numeric:tabular-nums;color:var(--mut);font-size:12px;white-space:nowrap}
+.step{position:fixed;left:0;right:0;bottom:0;background:rgba(10,13,18,.96);border-top:1px solid var(--line);
+  padding:11px 22px;font-size:13px;display:flex;gap:12px;align-items:center;backdrop-filter:blur(8px);z-index:70}
+.step b{color:var(--orange-br);font-weight:650}
+.prog{height:3px;background:rgba(255,255,255,.08);border-radius:2px;flex:1;overflow:hidden}
+.prog i{display:block;height:100%;background:var(--orange-br);width:0;transition:width .3s}
+.speed{display:flex;align-items:center;gap:0;border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-right:4px}
+.speed .sl{font-size:10.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.8px;padding:0 10px}
+.speed button{border:0;border-left:1px solid var(--line);border-radius:0;padding:8px 11px;font-size:12px;background:transparent}
+.speed button:hover{background:var(--panel-2)}
+.speed button.act{background:var(--orange);color:#fff}
+.foot{color:var(--mut);font-size:11.5px;margin-top:14px;text-align:center;padding-bottom:64px}
+/* ── picker ──────────────────────────────────────────────────────────────── */
+.pick{position:fixed;inset:0;z-index:120;background:rgba(6,8,12,.97);overflow-y:auto;padding:34px 22px 80px}
+.pick.hide{display:none}
+.pickwrap{max-width:900px;margin:0 auto}
+.pick h3{font-size:26px;margin:0 0 4px;font-weight:750;letter-spacing:-.4px}
+.pick .ps{color:var(--mut);font-size:13.5px;margin-bottom:20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:11px}
+.tile{border:1px solid var(--line);background:var(--panel);border-radius:13px;padding:14px;cursor:pointer;
+  transition:border-color .18s,transform .18s}
+.tile:hover{border-color:var(--orange-br);transform:translateY(-2px)}
+.tile .em{font-size:22px}
+.tile .tn{font-weight:650;margin-top:7px;font-size:14.5px}
+.tile .tm{color:var(--mut);font-size:11.5px;margin-top:3px}
+.tile .seat{color:var(--gold);font-size:11px;margin-top:6px;font-weight:600}
+.back{margin-bottom:16px}
+@media(max-width:820px){ .stage{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+
+<!-- ─── picker: Frank chooses the category, then the host ─────────────────── -->
+<div class="pick" id="pick">
+  <div class="pickwrap">
+    <div id="pick-body"></div>
+  </div>
+</div>
+
+<div class="wrap">
+<header>
+  <div class="mark">LOCK<br>IN</div>
+  <div>
+    <h1>Lock <em>In</em> — a host builds a slate, start to finish</h1>
+    <div class="sub" id="hdr-sub">Runs itself · every number computed live from the platform's own rules</div>
+  </div>
+  <div class="controls">
+    <div class="speed" id="speed"><span class="sl">Speed</span><button data-s="0.6">Follow</button><button data-s="1">Normal</button><button data-s="1.6">Fast</button><button data-s="2.6">Full</button></div>
+    <button id="swap">⇄ Host</button>
+    <button id="replay" class="primary">↻ Replay</button>
+    <button id="pause">⏸ Pause</button>
+    <button id="prev">‹ Step</button>
+    <button id="next">Step ›</button>
+  </div>
+</header>
+
+<div class="stage">
+
+  <div class="card" id="c-host">
+    <h2>1 · The host takes the category seat</h2>
+    <div class="field"><div class="lab">Host</div><div class="val" id="h-name"></div></div>
+    <div class="field"><div class="lab">Category</div><div class="val" id="h-cat"></div></div>
+    <div class="field"><div class="lab">Verified reach</div><div class="val hl" id="h-reach"></div></div>
+    <div class="field"><div class="lab">Seat</div><div class="val" id="h-seat"></div></div>
+    <div class="note">Hosts don't play their own slate and never see an answer before the room does. The seat is a business, not an entry.</div>
+  </div>
+
+  <div class="card" id="c-event">
+    <h2>2 · The event — one topic, three legs</h2>
+    <div class="field"><div class="lab">Event</div><div class="val" id="e-sub"></div></div>
+    <div class="field"><div class="lab">Slate topic</div><div class="val hl" id="e-topic"></div></div>
+    <div id="e-rules"></div>
+    <div class="note">One topic per slate. Three questions on it. <b>Nobody answers more than five questions until the Championship.</b></div>
+  </div>
+
+  <div class="card full" id="c-build">
+    <h2>3 · The build — the Locksmith drafts, checks, and rewrites</h2>
+    <div class="sub" style="margin-bottom:10px">Every question runs the rulebook before it can publish. A question that fails turns red and the check names the exact fix — not just a no.</div>
+    <div id="build-log"></div>
+    <div style="display:flex;gap:8px;align-items:center;margin-top:12px">
+      <div style="width:34px;height:34px;border-radius:9px;background:var(--purple);display:grid;place-items:center;flex:0 0 auto;font-size:15px">&#128273;</div>
+      <div class="val" id="host-input" style="flex:1;display:flex;align-items:center;color:var(--mut)">Host types a question&hellip;</div>
+      <div class="pill p-wait" style="padding:9px 14px">Check</div>
+    </div>
+  </div>
+
+  <div class="card" id="c-legs">
+    <h2>4 · The slate — three legs, one topic</h2>
+    <div id="leg-list"></div>
+    <div class="note good" id="legs-note" style="display:none">All three legs cleared the rulebook. Nothing that failed ever reached the public.</div>
+  </div>
+
+  <div class="card" id="c-price">
+    <h2>5 · Price the room — two charges, one screen</h2>
+    <div class="row"><span class="k">Entry — goes to the players' pool</span><span id="pr-stake">—</span></div>
+    <div class="row"><span class="k">Host fee — the host's revenue</span><span id="pr-fee">—</span></div>
+    <div class="row"><span class="k">Host share of the fee</span><span id="pr-share">—</span></div>
+    <div class="row"><span class="k">Audience</span><span id="pr-reach">—</span></div>
+    <div class="row"><span class="k">Participation standard</span><span id="pr-conv">—</span></div>
+    <div class="row"><span class="k">Projected entries</span><span id="pr-entries">—</span></div>
+    <div class="row"><span class="k">Projected players' pool</span><span id="pr-pool">—</span></div>
+    <div class="note">The pool is the players' money and pays the players. The host is paid out of the fee — never out of the pool, so a host getting paid never shrinks a winner.</div>
+  </div>
+
+  <div class="card full" id="c-publish">
+    <h2>6 · Publish — sealed</h2>
+    <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start">
+      <div class="share" id="share-card">
+        <div class="top">
+          <div class="brand">LOCK IN</div>
+          <div class="topic" id="sc-topic">—</div>
+          <div class="who" id="sc-who">—</div>
+        </div>
+        <div class="body">
+          <div class="row" style="border:0;padding-top:0"><span class="k" id="sc-clocklab">Questions open in</span><span class="clockbig" id="sc-clock">—</span></div>
+          <div id="sc-rows"></div>
+          <div class="pricepills" id="sc-pills"></div>
+          <div class="row"><span class="k">Players' pool</span><span id="sc-pool">—</span></div>
+          <div class="row"><span class="k">Entries</span><span id="sc-entries">—</span></div>
+          <div class="cap" id="sc-cap">—</div>
+          <div class="legal">Skill contest. Every entrant answers the same questions at the same moment; results settle against the named public source. Void where prohibited. 18+.</div>
+        </div>
+      </div>
+      <div style="flex:1;min-width:280px">
+        <div id="pub-log"></div>
+        <div class="note cool" style="margin-top:12px">
+          The public card shows the topic, the pool, the price and the clock — <b>never the questions</b>.
+          They stay sealed until the countdown hits zero, so nobody can work an answer up in advance and
+          the wait does the promoting.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="c-share">
+    <h2>7 · Distribution — the host's own audience</h2>
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      <div class="story" id="story">
+        <div class="ig"><div class="av" id="st-av">—</div><span id="st-handle">—</span><span style="margin-left:auto;color:#C9D3E0">now</span></div>
+        <div class="mini">
+          <div class="t" id="st-topic">—</div>
+          <div class="m" id="st-meta">—</div>
+        </div>
+        <div class="swipe">&#8593; swipe up to lock in</div>
+      </div>
+      <div style="flex:1;min-width:240px">
+        <div id="share-log"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="c-clock">
+    <h2>8 · The countdown — the room fills</h2>
+    <div class="metrics">
+      <div class="metric orange"><div class="n" id="ck-clock">—</div><div class="l">Until questions open</div></div>
+      <div class="metric"><div class="n" id="ck-entries">0</div><div class="l">Entries</div></div>
+      <div class="metric gold"><div class="n" id="ck-pool">$0</div><div class="l">Players' pool</div></div>
+    </div>
+    <div id="clock-log" style="margin-top:12px"></div>
+  </div>
+
+  <div class="card full" id="c-reveal">
+    <h2>9 · The reveal — the same three questions, at the same second</h2>
+    <div id="reveal-list"></div>
+    <div id="lock-log" style="margin-top:10px"></div>
+    <div class="note" style="margin-top:10px">Being right gets you paid. Being fast decides how much — every lock is timestamped to the millisecond, and the timestamp breaks every tie.</div>
+  </div>
+
+  <div class="card full" id="c-settle">
+    <h2>10 · Settlement — every leg against a named public source</h2>
+    <div id="settle-log"></div>
+  </div>
+
+  <div class="card full" id="c-board">
+    <h2>11 · The contest leaderboard — this room, ranked</h2>
+    <div class="sub" style="margin-bottom:10px">Every entrant who got all three right is ranked by <b>lock-in speed</b>. The clock is the tiebreaker, and it is the only one.</div>
+    <div id="board-list"></div>
+    <div class="note" id="board-note" style="display:none"></div>
+  </div>
+
+  <div class="card full" id="c-payout">
+    <h2>12 · The payout board</h2>
+    <div id="pay-list"></div>
+    <div class="note cool" id="pay-note" style="display:none"></div>
+  </div>
+
+  <div class="card full" id="c-champ">
+    <h2>13 · The Championship — the players' standings</h2>
+    <div class="sub" style="margin-bottom:10px">Four divisions by entry tier, running year-round. A seat is earned on <b>win rate</b> inside your division across the season — there is no buy-in to qualify, and there never will be.</div>
+    <div style="display:flex;gap:18px;flex-wrap:wrap">
+      <div style="flex:1;min-width:340px">
+        <div id="div-list"></div>
+      </div>
+      <div style="flex:1;min-width:280px">
+        <div id="champ-log"></div>
+      </div>
+    </div>
+    <div class="note" id="champ-note" style="display:none"></div>
+  </div>
+
+  <div class="card full" id="c-crown">
+    <h2>14 · The creator playoffs — the hosts' standings</h2>
+    <div class="sub" style="margin-bottom:10px">A separate track, and not the players'. Hosts are ranked on the one thing a host controls: <b>how many people they bring to the board</b>. Quarterly playoffs, finals in the biggest week of the year.</div>
+    <div id="crown-list"></div>
+    <div class="note" id="crown-note" style="display:none"></div>
+  </div>
+
+  <div class="card full" id="c-scale">
+    <h2>15 · What one seat is worth — and what fifty look like</h2>
+    <div class="metrics" id="scale-metrics"></div>
+    <div class="note" id="scale-note" style="display:none"></div>
+  </div>
+
+</div>
+<div class="foot" id="foot">Lock In · demonstration build · example scenario — illustrative reach and figures, not a live deal</div>
+</div>
+
+<div class="step">
+  <span id="step-label"><b>Ready</b> — pick a category to start…</span>
+  <span class="clock" id="simclock">Build</span><span class="clock" id="livecount">entries 0</span><span class="clock" id="clock"></span>
+  <div class="prog"><i id="prog"></i></div>
+</div>
+
+<script>
+/* ── Lock In — creator demo v2 ───────────────────────────────────────────────
+   Format follows the Legal Defense Corps demo: a stage of cards that light up
+   as a scripted run advances, with speed / pause / step controls and a step bar.
+   Difference: the run is parameterised. Frank picks the category and the host
+   first, and every figure on screen is computed from that host's real inputs
+   through the platform's ruled economics — never typed in as a fixed prop.     */
+
+const CATS = [
+ {id:"nfl", name:"NFL Football", emoji:"🏈", color:"#2FB98A",
+  creators:[
+   {id:"sharpe", name:"Shannon Sharpe", initials:"SS", followers:15000000, tier:"15M", marquee:true, role:"Category Boss — example scenario", stake:25, fee:3,
+    topic:"Sunday: Who Shows Out", sub:"Week 1 · Early Window",
+    caption:"Five million of y'all got opinions every Sunday. Time to put a timestamp on 'em. Lock in.",
+    legs:[
+     {q:"Bigger passing night Sunday: Mahomes in KC or Allen in Buffalo?", opts:["Mahomes","Allen"], ctx:"Two arms, two different games. Season form on the card — you make the call."},
+     {q:"Who owns the ground across the early window: Bijan, Gibbs, or Pacheco?", opts:["Bijan","Gibbs","Pacheco"], ctx:"Field leader — three backs, three different games. Most rushing yards takes it."},
+     {q:"First to 3 touchdowns on the day: Chase, Lamb, or St. Brown?", opts:["Chase","Lamb","St. Brown"], ctx:"A race across three games. First to the number, not the biggest number."}
+    ],
+    bad:{q:"Will Mahomes throw for over 300 yards?",
+     flags:["One athlete, one game — every question needs names from different games.","A number to clear (300+) — thresholds don't fly here.","Yes/no over-a-number shape — that whole format is off the board."],
+     fixIntro:"Same star, same story — reframed as a head-to-head across two games:",
+     fixed:{q:"Bigger passing night Sunday: Mahomes in KC or Allen in Buffalo?", opts:["Mahomes","Allen"], ctx:"Two arms, two different games. Season form on the card — you make the call."}}
+   },
+   {id:"clark", name:"Ryan Clark", initials:"RC", followers:1000000, tier:"1M", marquee:false, role:"Second seat — example scenario", stake:10, fee:1,
+    topic:"The Pivot: Sunday Calls", sub:"Week 1 · Full Slate",
+    caption:"We talk it every week. Today you call it with us.",
+    legs:[
+     {q:"Bigger day through the air: Burrow in Cincy or Stroud in Houston?", opts:["Burrow","Stroud"], ctx:"Head-to-head, two different games."},
+     {q:"Who owns the boards of the box score: which defense forces more takeaways — SF, BAL, or NYJ?", opts:["SF","BAL","NYJ"], ctx:"Field leader across three games. Total takeaways settles it."},
+     {q:"First receiver to 100 yards across the late window: Hill, Adams, or Aiyuk?", opts:["Hill","Adams","Aiyuk"], ctx:"A race across three games."}
+    ],
+    bad:{q:"Will the Ravens win by 10 or more?",
+     flags:["Team outcome — who wins is exactly the question this platform never asks.","A margin is a number to clear — same problem twice."],
+     fixIntro:"Turn who wins into who shows out:",
+     fixed:{q:"Bigger day through the air: Burrow in Cincy or Stroud in Houston?", opts:["Burrow","Stroud"], ctx:"Head-to-head, two different games."}}
+   }
+  ]},
+ {id:"nba", name:"NBA Basketball", emoji:"🏀", color:"#FC3E01",
+  creators:[
+   {id:"teague", name:"Jeff Teague", initials:"JT", followers:1000000, tier:"1M", marquee:false, role:"Category Boss — example scenario", stake:10, fee:1,
+    topic:"Friday Night: Whose League Is It?", sub:"Friday · 8-game board",
+    caption:"I played with half these dudes. Let's see if you watch like I watch.",
+    legs:[
+     {q:"Whose night reads loudest Friday: Luka, Ant, or Wemby?", opts:["Luka","Ant","Wemby"], ctx:"Biggest stat night across three different games. Form on the card."},
+     {q:"Who owns the glass across the Friday board: Sabonis, Gobert, or AD?", opts:["Sabonis","Gobert","AD"], ctx:"Field leader — total rebounds, three games."},
+     {q:"First to 30 points anywhere on the slate: SGA, Tatum, or Booker?", opts:["SGA","Tatum","Booker"], ctx:"A race across three games. First there wins it."}
+    ],
+    bad:{q:"Will the Lakers beat the Nuggets?",
+     flags:["Game outcome — who wins a game is never a question here.","One game carrying the whole leg — names must come from different games."],
+     fixIntro:"Keep the stars, lose the scoreboard:",
+     fixed:{q:"Whose night reads loudest Friday: Luka, Ant, or Wemby?", opts:["Luka","Ant","Wemby"], ctx:"Biggest stat night across three different games."}}
+   }
+  ]},
+ {id:"pop", name:"Pop Culture", emoji:"🎤", color:"#7C5CF5",
+  creators:[
+   {id:"katt", name:"Katt Williams", initials:"KW", followers:5000000, tier:"5M", marquee:true, role:"Category Boss — example scenario", stake:10, fee:2,
+    topic:"The Special Drops Friday", sub:"Pop Culture · The Drop",
+    caption:"I already told y'all what happens next. Friday you find out who was listening.",
+    legs:[
+     {q:"Which city sells out first once tour dates post: Atlanta, Houston, or Detroit?", opts:["Atlanta","Houston","Detroit"], ctx:"Settles: ticketing pages, dated."},
+     {q:"Which clip crosses 1M views first: the opener, the encore, or the crowd moment?", opts:["Opener","Encore","Crowd moment"], ctx:"Settles: platform view counts, dated."},
+     {q:"Where does the first sit-down land after the drop: podcast, morning radio, or late night?", opts:["Podcast","Morning radio","Late night"], ctx:"Settles: announced air dates."}
+    ],
+    bad:{q:"Who's the funniest comic alive right now?",
+     flags:["Nothing settles it — no episode, chart, post, or list ever answers this.","No artifact means nothing to pay out on. Name the thing that settles it, or it isn't a question."],
+     fixIntro:"Point it at something with a receipt:",
+     fixed:{q:"Where does the first sit-down land after the drop: podcast, morning radio, or late night?", opts:["Podcast","Morning radio","Late night"], ctx:"Settles: announced air dates."}}
+   }
+  ]},
+ {id:"comedy", name:"Comedy", emoji:"😂", color:"#F0C463",
+  creators:[
+   {id:"south85", name:"85 South Show", initials:"85", followers:5000000, tier:"5M", marquee:true, role:"Category Boss — example scenario", stake:10, fee:2,
+    topic:"Roast Season Opens", sub:"Comedy · The Roast",
+    caption:"Somebody's getting cooked this month. Call the kitchen.",
+    legs:[
+     {q:"Who's announced on the roast card first?", opts:["The rapper","The ball player","The reality star"], ctx:"Settles: official card announcement, dated."},
+     {q:"Which clip from the tour hits 1M first: the freestyle, the crowd work, or the walk-on?", opts:["Freestyle","Crowd work","Walk-on"], ctx:"Settles: platform view counts, dated."},
+     {q:"Who responds on record first after the trailer drops?", opts:["Camp A","Camp B","Nobody in 7 days"], ctx:"Settles: on-record statement or post, dated window."}
+    ],
+    bad:{q:"Who's really lying about the beef?",
+     flags:["No resolution exists — nobody ever rules on who lied.","A question about somebody's character never settles. What people DO settles; what they ARE doesn't."],
+     fixIntro:"Ask what happens on record instead:",
+     fixed:{q:"Who responds on record first after the trailer drops?", opts:["Camp A","Camp B","Nobody in 7 days"], ctx:"Settles: on-record statement or post, dated window."}}
+   },
+   {id:"dl", name:"DL Hughley", initials:"DL", followers:5000000, tier:"5M", marquee:true, role:"Second seat — example scenario", stake:10, fee:2,
+    topic:"The Radio Week", sub:"Comedy · The Response",
+    caption:"Five mornings a week I make the calls. This week you make 'em with me.",
+    legs:[
+     {q:"Who addresses the interview on record first?", opts:["The host","The guest","Neither in 7 days"], ctx:"Settles: on-record statement, 7-day window."},
+     {q:"Which special gets announced first this month?", opts:["Comic A","Comic B","Comic C"], ctx:"Settles: platform announcement, dated."},
+     {q:"Which morning-show moment clears 1M views first?", opts:["Monday's","Wednesday's","Friday's"], ctx:"Settles: platform counts, dated."}
+    ],
+    bad:{q:"Will the interview get over 2 million views?",
+     flags:["A number to clear — thresholds are off the board in every category.","Yes/no over-a-number shape — that format never publishes."],
+     fixIntro:"Make it a race instead of a bar:",
+     fixed:{q:"Which morning-show moment clears 1M views first?", opts:["Monday's","Wednesday's","Friday's"], ctx:"First past the line settles it — a race, not a bar."}}
+   }
+  ]},
+ {id:"music", name:"Hip-Hop & Music", emoji:"🎧", color:"#FF4D8D",
+  creators:[
+   {id:"budden", name:"Joe Budden", initials:"JB", followers:5000000, tier:"5M", marquee:true, role:"Category Boss — example scenario", stake:10, fee:2,
+    topic:"Release Friday: The Chart Race", sub:"Music · The Drop",
+    caption:"The pod already made the calls. Your turn to timestamp yours.",
+    legs:[
+     {q:"Which album debuts higher on the chart Friday?", opts:["Album A","Album B"], ctx:"Settles: the published chart, dated."},
+     {q:"Which single off the album leads streaming after week one?", opts:["Track 1","Track 4","Track 7"], ctx:"Settles: platform chart, dated."},
+     {q:"Who announces a tour first after release week?", opts:["Artist A","Artist B","Neither in 14 days"], ctx:"Settles: official announcement, dated window."}
+    ],
+    bad:{q:"Will the album do over 150K first week?",
+     flags:["A number to clear — thresholds don't publish, in any category.","Yes/no over-a-number shape — off the board."],
+     fixIntro:"Race two releases instead of clearing a bar:",
+     fixed:{q:"Which album debuts higher on the chart Friday?", opts:["Album A","Album B"], ctx:"Settles: the published chart, dated."}}
+   },
+   {id:"rage", name:"The Lady of Rage", initials:"LR", followers:1000000, tier:"1M", marquee:false, role:"West Coast & Legacy — example scenario", stake:10, fee:1,
+    topic:"Legacy Weekend", sub:"Music · West Coast & Legacy",
+    caption:"Afro puffs never left. Neither did the West. Lock your calls in.",
+    legs:[
+     {q:"Which anniversary edition posts first this quarter?", opts:["Record A","Record B","Record C"], ctx:"Settles: official release listing, dated."},
+     {q:"Which legacy act gets announced for the festival first?", opts:["Act A","Act B","Act C"], ctx:"Settles: festival lineup announcement."},
+     {q:"Which classic crosses the streaming milestone first?", opts:["Track A","Track B"], ctx:"Settles: platform milestone, dated."}
+    ],
+    bad:{q:"Who had the better verse back in '96?",
+     flags:["Nothing settles it — no chart, list, or artifact ever answers a taste question.","If you can't name the thing that settles it, it isn't a question."],
+     fixIntro:"Point it at a milestone with a date on it:",
+     fixed:{q:"Which classic crosses the streaming milestone first?", opts:["Track A","Track B"], ctx:"Settles: platform milestone, dated."}}
+   }
+  ]},
+ {id:"reality", name:"Reality TV", emoji:"📺", color:"#4DA6FF",
+  creators:[
+   {id:"yee", name:"Angela Yee", initials:"AY", followers:5000000, tier:"5M", marquee:true, role:"Category Boss — example scenario", stake:10, fee:2,
+    topic:"Reunion Night", sub:"Reality TV · built before it airs",
+    caption:"I ask the questions for a living. Tonight you answer three of mine.",
+    legs:[
+     {q:"Who brings the receipts first?", opts:["Cast A","Cast B","Cast C"], ctx:"Settles: the broadcast. Slate locks before air — that's the rule."},
+     {q:"Who leaves the couch first?", opts:["Cast A","Cast B","Nobody"], ctx:"Settles: the broadcast."},
+     {q:"Whose apology actually lands on camera?", opts:["Cast A","Cast B","No apology airs"], ctx:"Settles: the broadcast."}
+    ],
+    bad:{q:"Will there be over 3 walk-offs at the reunion?",
+     flags:["A number to clear — thresholds are off the board.","Yes/no over-a-number shape — that format never publishes."],
+     fixIntro:"Ask WHO, not how many:",
+     fixed:{q:"Who leaves the couch first?", opts:["Cast A","Cast B","Nobody"], ctx:"Settles: the broadcast."}}
+   }
+  ]},
+ {id:"gospel", name:"Gospel", emoji:"🙌", color:"#B58CFF",
+  creators:[
+   {id:"smiley", name:"Rickey Smiley", initials:"RS", followers:5000000, tier:"5M", marquee:true, role:"Category Boss — example scenario", stake:10, fee:2,
+    topic:"Award Sunday", sub:"Gospel · The Stage",
+    caption:"Church, we watching together this Sunday. Make your calls before the doors open.",
+    legs:[
+     {q:"Who takes the opening performance slot?", opts:["Artist A","Artist B","A choir"], ctx:"Settles: the broadcast rundown."},
+     {q:"Who's announced in the tribute lineup first?", opts:["Artist A","Artist B","Artist C"], ctx:"Settles: official lineup announcement, dated."},
+     {q:"Which moment trends first after the show: the medley, the tribute, or the acceptance?", opts:["Medley","Tribute","Acceptance"], ctx:"Settles: platform trending lists, dated."}
+    ],
+    bad:{q:"Who's got the best voice in gospel?",
+     flags:["Nothing settles it — taste never resolves.","Name the artifact that answers it — a rundown, a lineup, a list — or it isn't a question."],
+     fixIntro:"Anchor it to the rundown:",
+     fixed:{q:"Who takes the opening performance slot?", opts:["Artist A","Artist B","A choir"], ctx:"Settles: the broadcast rundown."}}
+   }
+  ]},
+ {id:"wnba", name:"WNBA", emoji:"⛹🏽‍♀️", color:"#FF8A3D", seatOpen:true,
+  creators:[
+   {id:"bossfox-w", name:"Boss Fox", initials:"BF", followers:1000000, tier:"1M", marquee:false, role:"House demo — boss seat open", stake:10, fee:1,
+    topic:"Friday Doubleheader", sub:"WNBA · two games, one night",
+    caption:"The house doesn't play — the house hosts. Seat's open for the right boss.",
+    legs:[
+     {q:"Bigger night Friday: A'ja in Vegas or Caitlin in Indy?", opts:["A'ja","Caitlin"], ctx:"Head-to-head, two different games."},
+     {q:"Who owns the assists column across the doubleheader?", opts:["Guard A","Guard B","Guard C"], ctx:"Field leader — most assists across both games."},
+     {q:"First to 20 points anywhere on the night?", opts:["Player A","Player B","Player C"], ctx:"A race across the doubleheader."}
+    ],
+    bad:{q:"Will A'ja score 25 or more?",
+     flags:["One athlete, one game — names must come from different games.","A number to clear — thresholds are off the board."],
+     fixIntro:"Two stars, two games, one call:",
+     fixed:{q:"Bigger night Friday: A'ja in Vegas or Caitlin in Indy?", opts:["A'ja","Caitlin"], ctx:"Head-to-head, two different games."}}
+   }
+  ]},
+ {id:"wrestling", name:"Wrestling", emoji:"🤼", color:"#E7E7EB", seatOpen:true,
+  creators:[
+   {id:"bossfox-wr", name:"Boss Fox", initials:"BF", followers:1000000, tier:"1M", marquee:false, role:"House demo — boss seat open", stake:10, fee:1,
+    topic:"Premium Live Event Week", sub:"Wrestling · card week",
+    caption:"Everybody's got a theory about Sunday. Timestamp yours.",
+    legs:[
+     {q:"Who's revealed as the surprise entrant first?", opts:["Name A","Name B","A returning legend"], ctx:"Settles: the broadcast."},
+     {q:"Which match opens the card?", opts:["Title match","Grudge match","Tag match"], ctx:"Settles: broadcast running order."},
+     {q:"Who's announced for the NEXT event live on air?", opts:["Name A","Name B","Nobody"], ctx:"Settles: the broadcast."}
+    ],
+    bad:{q:"Who wins the main event?",
+     flags:["A winner call — outcomes are the one thing this platform never asks, in any category."],
+     fixIntro:"The card itself is the story — ask about the card:",
+     fixed:{q:"Which match opens the card?", opts:["Title match","Grudge match","Tag match"], ctx:"Settles: broadcast running order."}}
+   }
+  ]},
+ {id:"fashion", name:"Fashion", emoji:"🧥", color:"#2FD1C8", seatOpen:true,
+  creators:[
+   {id:"bossfox-f", name:"Boss Fox", initials:"BF", followers:1000000, tier:"1M", marquee:false, role:"House demo — boss seat open", stake:10, fee:1,
+    topic:"Fashion Week Opens", sub:"Fashion · the calendar",
+    caption:"The tents go up Monday. Get your calls in before the first look walks.",
+    legs:[
+     {q:"Which house announces its collab first?", opts:["House A","House B","House C"], ctx:"Settles: official announcement, dated."},
+     {q:"Who opens the headline show?", opts:["Model A","Model B","A debut face"], ctx:"Settles: runway order."},
+     {q:"Which drop sells out first once listings post?", opts:["Drop A","Drop B"], ctx:"Settles: retailer listing status, dated."}
+    ],
+    bad:{q:"Who wore it best?",
+     flags:["Taste never settles — no artifact answers it.","Name the receipt — an announcement, a runway order, a listing — or it isn't a question."],
+     fixIntro:"Ask about the calendar, not the opinion:",
+     fixed:{q:"Which house announces its collab first?", opts:["House A","House B","House C"], ctx:"Settles: official announcement, dated."}}
+   }
+  ]}
+];
+
+/* ── economics (Frank-ruled; the network override rate is PROPOSED) ───────── */
+const CONV_DEFAULT = 10;             // % of a host's audience that enters
+const CREATOR_SHARE_STD = 0.70;      // standard host share of the host fee
+const CREATOR_SHARE_MARQUEE = 0.75;  // marquee hosts only
+const KEYMASTER_OVERRIDE = 0.10;     // of the retained share of host fees
+const NETWORK_OVERRIDE = 0.15;       // PROPOSED — final rate set with Cordell
+const NETWORK_TITLE = "Co-Founder, Lock In Creator Network";
+
+/* the rake curve. Ruled: the percentage is NEVER shown on any screen. */
+function rakePct(pool){
+  if(pool < 3000)  return 15;
+  if(pool < 6000)  return 20;
+  if(pool < 10000) return 30;
+  return Math.min(65, 40 + 6.75 * Math.log10(pool/10000));
+}
+/* the place-percentage curve — % of the top-250 budget by finishing place.
+   Every place is capped at 1,000x the entry; the overflow stays with the house. */
+const PLACE_CURVE = [
+  {to:1, pct:0.12}, {to:2, pct:0.07}, {to:3, pct:0.045}, {to:4, pct:0.03}, {to:5, pct:0.025},
+  {to:10, pct:0.02}, {to:25, pct:0.01}, {to:50, pct:0.005}, {to:100, pct:0.0025},
+  {to:175, pct:0.0015}, {to:250, pct:0.0012}
+];
+function placePay(rank, e){
+  if(rank > 250) return e.floorEach;              // the paid band's 1.5x floor
+  for(var i=0;i<PLACE_CURVE.length;i++){
+    if(rank <= PLACE_CURVE[i].to) return Math.min(PLACE_CURVE[i].pct * e.top250, e.heroCap);
+  }
+  return e.floorEach;
+}
+function econ(cr, convPct){
+  const entries   = Math.round(cr.followers * convPct/100);
+  const pool      = entries * cr.stake;
+  const net       = pool * (1 - rakePct(pool)/100);
+  const paid      = Math.round(entries * 0.20);       // top 20% of the field paid
+  const floorEach = 1.5 * cr.stake;                   // ruled floor: 1.5x entry
+  const floorTot  = Math.max(0, paid - 250) * floorEach;
+  const top250    = Math.max(0, net - floorTot);
+  const heroCap   = 1000 * cr.stake;                  // ruled hero cap: 1000x
+  const first     = Math.min(0.12 * top250, heroCap);
+  const fifth     = Math.min(0.045 * top250, heroCap);
+  const grossFees = entries * cr.fee;
+  const share     = cr.marquee ? CREATOR_SHARE_MARQUEE : CREATOR_SHARE_STD;
+  const creator   = grossFees * share;
+  const retained  = grossFees - creator;
+  return { entries, pool, net, paid, floorEach, heroCap, first, fifth, top250,
+           grossFees, share, creator, retained,
+           keymaster: retained * KEYMASTER_OVERRIDE,
+           network:   retained * NETWORK_OVERRIDE };
+}
+
+/* ── helpers ──────────────────────────────────────────────────────────────── */
+const $ = function(id){ return document.getElementById(id); };
+const money = function(n){ return "$" + Math.round(n).toLocaleString("en-US"); };
+const num   = function(n){ return Math.round(n).toLocaleString("en-US"); };
+const reach = function(n){ return n >= 1e6 ? (n/1e6) + "M" : num(n); };
+
+var timers=[], stepIdx=0, playing=false, paused=false;
+var PACE_BASE=1.5, SPEED=0.6;
+
+/* PAUSE holds mid-step: every await passes through wait(), which parks until
+   un-paused rather than only checking between steps. */
+function wait(ms){
+  return new Promise(function(res){
+    var start=Date.now(), left=ms;
+    (function tick(){
+      if(!playing) return;
+      if(paused){ timers.push(setTimeout(tick,120)); return; }
+      var spent=Date.now()-start; start=Date.now();
+      left-=spent*SPEED;
+      if(left<=0) return res();
+      timers.push(setTimeout(tick, Math.min(left,120)));
+    })();
+  });
+}
+function beat(ms){ return wait(ms*PACE_BASE); }
+function focus(node,mode){
+  if(!node || !node.scrollIntoView) return;
+  try{ node.scrollIntoView({behavior:"smooth", block:mode||"center"}); }catch(e){ node.scrollIntoView(); }
+}
+function on(el){ var n=$(el); n.classList.add("on"); focus(n); }
+function log(el,html){
+  var host=$(el);
+  host.insertAdjacentHTML("beforeend", html);
+  var added=host.lastElementChild;
+  if(added){ added.classList.add("tr"); focus(added,"nearest"); }
+}
+function line(txt,cls){ return '<div class="row"><span class="'+(cls||"")+'">'+txt+'</span></div>'; }
+function kv(k,v,cls){ return '<div class="row"><span class="k">'+k+'</span><span class="'+(cls||"")+'">'+v+'</span></div>'; }
+function type(el,txt,ms){
+  ms=(ms||22)*PACE_BASE;
+  return new Promise(function(res){
+    var n=$(el); n.textContent=""; n.classList.add("cursor"); var i=0;
+    (function tick(){
+      if(!playing) return;
+      if(paused){ timers.push(setTimeout(tick,120)); return; }
+      n.textContent=txt.slice(0,++i);
+      if(i>=txt.length){ n.classList.remove("cursor"); return res(); }
+      timers.push(setTimeout(tick, ms/SPEED));
+    })();
+  });
+}
+/* count a number up in place — used for the entry ticker and the pool. */
+function count(el, to, ms, fmt){
+  fmt = fmt || num;
+  return new Promise(function(res){
+    var start=Date.now(), from=0;
+    (function tick(){
+      if(!playing) return;
+      if(paused){ timers.push(setTimeout(tick,120)); return; }
+      var p=Math.min(1,(Date.now()-start)*SPEED/ms);
+      var v=from+(to-from)*(1-Math.pow(1-p,3));
+      $(el).textContent=fmt(v);
+      if(p>=1) return res();
+      timers.push(setTimeout(tick,60));
+    })();
+  });
+}
+/* the sim clock reads in real-world labels the room would actually see. */
+var SIM="Build";
+function setClock(l){ SIM=l; $("simclock").textContent=l; }
+function setLive(n){ $("livecount").textContent="entries "+num(n); }
+
+function ai(text, cls){
+  log("build-log",'<div class="vx"><div class="who ai">&#128273; Locksmith</div>'+
+    '<div class="said '+(cls||"")+'">'+text+'</div></div>');
+}
+function host(text, cls){
+  log("build-log",'<div class="vx"><div class="who host">'+STATE.cr.name+'</div>'+
+    '<div class="said '+(cls||"")+'">&ldquo;'+text+'&rdquo;</div></div>');
+}
+function verdict(text, ok){
+  log("build-log",'<div class="vx"><div class="who">Rulebook</div>'+
+    '<div class="said '+(ok?"green":"red")+'"><b>'+(ok?"&#10003; CLEARED":"&#10007; BLOCKED")+'</b> &middot; '+text+'</div></div>');
+}
+function capNote(v, cap, cr){
+  return (Math.round(v) >= Math.round(cap))
+    ? ' &middot; <span class="pill p-wait">at the cap</span> 1,000&times; the ' + money(cr.stake) + ' entry'
+    : ' &middot; cap for this room is ' + money(cap) + ' (1,000&times; the entry)';
+}
+function legCard(l, i, hidden){
+  return '<div class="leg'+(hidden?"":" show")+'"><div class="lg">Leg '+(i+1)+'</div>'+
+    '<div class="qq">'+l.q+'</div><div class="cx">'+l.ctx+'</div></div>';
+}
+
+/* ── the run ──────────────────────────────────────────────────────────────── */
+var STATE = { cat:null, cr:null, e:null, legs:[] };
+
+var STEPS = [
+{ label:"The host takes the category seat", run: async function(){
+    var cr=STATE.cr;
+    on("c-host");
+    await type("h-name", cr.name);
+    await type("h-cat", STATE.cat.name + (STATE.cat.seatOpen ? "  ·  boss seat open" : ""));
+    await type("h-reach", reach(cr.followers) + " followers  ·  " + cr.tier + " tier" + (cr.marquee ? "  ·  marquee" : ""));
+    await type("h-seat", cr.role);
+}},
+{ label:"One topic, three legs — the unit of play", run: async function(){
+    var cr=STATE.cr;
+    on("c-event");
+    await type("e-sub", cr.sub);
+    await type("e-topic", cr.topic, 30);
+    $("e-rules").innerHTML="";
+    var R=[["Questions on this slate","3"],["Answers per player","3"],
+           ["Ceiling before the Championship","5 questions"],["Public before the reveal","topic, pool, price, clock"]];
+    for(var i=0;i<R.length;i++){ log("e-rules", kv(R[i][0], R[i][1])); await beat(180); }
+}},
+{ label:"The Locksmith drafts the first leg", run: async function(){
+    var cr=STATE.cr;
+    on("c-build"); on("c-legs");
+    ai("I've got the event, the cast and your voice. Here's leg one — say the word and I'll redraft it.");
+    await beat(700);
+    ai("<b>"+cr.legs[0].q+"</b><div class=\"chk\"><b>&#10003;</b> Names from different games &middot; no outcome call &middot; no number to clear</div>", "green");
+    await beat(500);
+    verdict("Settles against a public source. Ready to publish.", true);
+    $("leg-list").innerHTML = legCard(cr.legs[0], 0);
+    focus($("leg-list"),"nearest");
+}},
+{ label:"The host writes one himself — and it fails", run: async function(){
+    var cr=STATE.cr;
+    on("c-build");
+    ai("Want to write one yourself? Type it and I'll run it.");
+    await beat(450);
+    var box=$("host-input"); box.style.color="var(--txt)";
+    await type("host-input", cr.bad.q, 26);
+    await beat(400);
+    host(cr.bad.q);
+    box.textContent="Host types a question…"; box.style.color="var(--mut)";
+    await beat(500);
+    verdict("This one can't publish. Two things, both fixable:", false);
+    for(var i=0;i<cr.bad.flags.length;i++){
+      log("build-log",'<div class="vx"><div class="who"></div><div class="said red">'+
+        '<div class="flagline"><b>&#9888;</b><span>'+cr.bad.flags[i]+'</span></div></div></div>');
+      await beat(420);
+    }
+}},
+{ label:"The Locksmith rewrites it — same idea, compliant shape", run: async function(){
+    var cr=STATE.cr;
+    ai(cr.bad.fixIntro);
+    await beat(600);
+    ai("<b>"+cr.bad.fixed.q+"</b><div class=\"chk\"><b>&#10003;</b> "+cr.bad.fixed.ctx+"</div>", "green");
+    await beat(450);
+    verdict("Cleared. A blocked question never reaches the public — it gets fixed in the pen.", true);
+    host("Yeah. That's the one.");
+    $("leg-list").innerHTML = legCard(cr.legs[0],0) + legCard(cr.bad.fixed,1);
+    focus($("leg-list"),"nearest");
+}},
+{ label:"Third leg drafted and cleared — the slate is built", run: async function(){
+    var cr=STATE.cr;
+    ai("<b>"+cr.legs[2].q+"</b><div class=\"chk\"><b>&#10003;</b> "+cr.legs[2].ctx+"</div>","green");
+    await beat(500);
+    verdict("Three legs, one topic, all cleared.", true);
+    STATE.legs=[cr.legs[0], cr.bad.fixed, cr.legs[2]];
+    $("leg-list").innerHTML = STATE.legs.map(function(l,i){ return legCard(l,i); }).join("");
+    $("legs-note").style.display="block";
+    await beat(300);
+}},
+{ label:"Price the room — entry to the pool, fee to the host", run: async function(){
+    var cr=STATE.cr, e=STATE.e;
+    on("c-price");
+    $("pr-stake").textContent = money(cr.stake) + " per entry";
+    await beat(260);
+    $("pr-fee").textContent = money(cr.fee) + " per entry";
+    await beat(260);
+    $("pr-share").innerHTML = Math.round(e.share*100) + "% " + (cr.marquee
+      ? '<span class="pill p-wait">marquee</span>' : '<span class="pill p-lock">standard</span>');
+    await beat(260);
+    $("pr-reach").textContent = reach(cr.followers) + " followers";
+    await beat(260);
+    $("pr-conv").textContent = CONV_DEFAULT + "% of the audience enters";
+    await beat(300);
+    await count("pr-entries", e.entries, 900);
+    await count("pr-pool", e.pool, 900, money);
+}},
+{ label:"Publish — the card goes out sealed", run: async function(){
+    var cr=STATE.cr, e=STATE.e;
+    on("c-publish");
+    $("sc-topic").textContent = cr.topic;
+    $("sc-who").textContent   = "Hosted by " + cr.name + "  ·  " + STATE.cat.name;
+    $("sc-clock").textContent = "45:00";
+    $("sc-rows").innerHTML=""; 
+    for(var i=0;i<STATE.legs.length;i++){
+      log("sc-rows",'<div class="sealed"><b>Leg '+(i+1)+'</b> &middot; '+STATE.legs[i].ctx+
+        ' <span class="pill p-lock" style="float:right">&#128274; sealed</span></div>');
+      await beat(220);
+    }
+    $("sc-pills").innerHTML = '<div class="pp">Entry <b>'+money(cr.stake)+'</b></div>'+
+      '<div class="pp">Host fee <b>'+money(cr.fee)+'</b></div>'+
+      '<div class="pp">Total to play <b>'+money(cr.stake+cr.fee)+'</b></div>';
+    $("sc-pool").textContent = money(e.pool) + " projected";
+    $("sc-entries").textContent = num(e.entries) + " projected";
+    $("sc-cap").textContent = "\u201C" + cr.caption + "\u201D";
+    $("pub-log").innerHTML="";
+    var P=[["Slate state","<span class=\"pill p-wait\">PUBLISHED — SEALED</span>"],
+           ["Question text","<span class=\"pill p-lock\">hidden until reveal</span>"],
+           ["Answer options","<span class=\"pill p-lock\">hidden until reveal</span>"],
+           ["Visible now","topic · pool · price · clock"],
+           ["Host's own caption","carried on the card"]];
+    for(var j=0;j<P.length;j++){ log("pub-log", kv(P[j][0],P[j][1])); await beat(200); }
+    setClock("T\u221245m");
+}},
+{ label:"The host posts it — the audience is the distribution", run: async function(){
+    var cr=STATE.cr, e=STATE.e;
+    on("c-share");
+    $("st-av").textContent = cr.initials;
+    $("st-handle").textContent = cr.name;
+    $("st-topic").textContent = cr.topic;
+    $("st-meta").textContent = "Locks in 45 min · " + money(cr.stake+cr.fee) + " to play · " + money(e.pool) + " pool";
+    $("share-log").innerHTML="";
+    var S=[["Posted to","story · feed · the show's channel"],
+           ["Media spend","<span class=\"pill p-ok\">$0</span>"],
+           ["Reach","the host's own " + reach(cr.followers) + " followers"],
+           ["One tap","opens the sealed slate"]];
+    for(var i=0;i<S.length;i++){ log("share-log", kv(S[i][0],S[i][1])); await beat(230); }
+    log("share-log",'<div class="note" style="margin-top:10px">Nobody buys traffic here. The roster <b>is</b> the distribution — that is the whole thesis of the network.</div>');
+}},
+{ label:"The countdown runs and the room fills", run: async function(){
+    var cr=STATE.cr, e=STATE.e;
+    on("c-clock");
+    var marks=[["T\u221245m",0.15],["T\u221230m",0.38],["T\u221210m",0.72],["T\u22121m",0.94],["T\u22120",1]];
+    for(var i=0;i<marks.length;i++){
+      setClock(marks[i][0]);
+      $("ck-clock").textContent = marks[i][0].replace("T\u2212","");
+      $("sc-clock").textContent = marks[i][0].replace("T\u2212","");
+      var ent = Math.round(e.entries*marks[i][1]);
+      $("ck-entries").textContent = num(ent);
+      $("ck-pool").textContent    = money(ent*cr.stake);
+      $("sc-entries").textContent = num(ent);
+      $("sc-pool").textContent    = money(ent*cr.stake);
+      setLive(ent);
+      log("clock-log", kv(marks[i][0], num(ent)+" in  ·  pool "+money(ent*cr.stake)));
+      await beat(620);
+    }
+    $("ck-clock").textContent="0";
+}},
+{ label:"Reveal — the questions open for everyone at once", run: async function(){
+    var cr=STATE.cr;
+    on("c-reveal");
+    setClock("REVEAL");
+    $("sc-clocklab").textContent="Questions open";
+    $("sc-clock").textContent="NOW";
+    $("sc-rows").innerHTML="";
+    $("reveal-list").innerHTML="";
+    for(var i=0;i<STATE.legs.length;i++){
+      var l=STATE.legs[i];
+      log("reveal-list", '<div class="leg show"><div class="lg">Leg '+(i+1)+'</div><div class="qq">'+l.q+
+        '</div><div class="cx">'+l.ctx+'</div><div class="opts">'+
+        l.opts.map(function(o){ return '<div class="opt">'+o+'</div>'; }).join("")+'</div></div>');
+      log("sc-rows",'<div class="sealed"><b>Leg '+(i+1)+'</b> &middot; '+l.q+'</div>');
+      await beat(520);
+    }
+    $("lock-log").innerHTML="";
+    var L=[["Lock 1","0.7s after reveal"],["Lock 2","1.4s"],["Lock 3","2.1s"]];
+    for(var j=0;j<L.length;j++){ log("lock-log", kv("Player "+(j+1)+" locks all three", L[j][1])); await beat(280); }
+    setClock("LOCKED");
+}},
+{ label:"Settlement — each leg against a named public source", run: async function(){
+    on("c-settle");
+    $("settle-log").innerHTML="";
+    for(var i=0;i<STATE.legs.length;i++){
+      var l=STATE.legs[i];
+      log("settle-log",'<div class="leg show"><div class="lg">Leg '+(i+1)+' settled</div>'+
+        '<div class="qq">'+l.q+'</div><div class="opts">'+
+        l.opts.map(function(o,k){ return '<div class="opt'+(k===0?" win":"")+'">'+o+(k===0?" &#10003;":"")+'</div>'; }).join("")+
+        '</div><div class="cx">Source: '+l.ctx+'</div></div>');
+      await beat(520);
+    }
+    log("settle-log",'<div class="note good">Perfect cards are ranked by lock time. Being right gets you paid; being fast decides how much.</div>');
+    setClock("SETTLED");
+}},
+{ label:"The contest leaderboard — the room ranked by lock-in speed", run: async function(){
+    var cr=STATE.cr, e=STATE.e;
+    on("c-board");
+    var HANDLES=["@triple_lock","@thecousin","@nightshift_ny","@auntie_dee","@fadedfive",
+                 "@bigbrodre","@quietstorm","@thirdrowtay","@sundayscholar","@onemorecall"];
+    var TIMES=["0.71s","0.94s","1.12s","1.40s","1.63s"];
+    $("board-list").innerHTML="";
+    log("board-list",'<div class="lb head"><span>Rank</span><span>Entrant</span><span>Card</span><span>Lock time</span><span class="p">Takes home</span></div>');
+    for(var r=1;r<=5;r++){
+      log("board-list",'<div class="lb hero"><span class="r">'+r+'</span>'+
+        '<span class="who">'+HANDLES[r-1]+'<small>perfect card &middot; '+
+          (Math.round(placePay(r,e))>=Math.round(e.heroCap) ? "at the room's cap, 1,000&times; the entry"
+            : (r===1?"fastest in the room":"hero band"))+'</small></span>'+
+        '<span class="c">3 / 3</span><span class="c">'+TIMES[r-1]+'</span>'+
+        '<span class="p">'+money(placePay(r,e))+'</span></div>');
+      await beat(360);
+    }
+    var rest=[[12,"@quietstorm","3 / 3","2.90s"],[50,"@thirdrowtay","3 / 3","6.44s"],
+              [250,"@sundayscholar","3 / 3","41.2s"]];
+    log("board-list",'<div class="lb gap"><span class="r">&hellip;</span><span class="who">'+
+      num(e.paid)+' entrants finish in the paid band</span><span class="c"></span><span class="c"></span><span class="p"></span></div>');
+    await beat(300);
+    for(var i=0;i<rest.length;i++){
+      var q=rest[i];
+      log("board-list",'<div class="lb"><span class="r">'+q[0]+'</span>'+
+        '<span class="who">'+q[1]+'<small>'+(q[0]<=250?"paid on the place curve":"paid band")+'</small></span>'+
+        '<span class="c">'+q[2]+'</span><span class="c">'+q[3]+'</span>'+
+        '<span class="p">'+money(placePay(q[0],e))+'</span></div>');
+      await beat(340);
+    }
+    log("board-list",'<div class="lb me"><span class="r">'+num(Math.round(e.paid*0.6))+'</span>'+
+      '<span class="who">You<small>right on all three, slower on the clock &mdash; still inside the paid band</small></span>'+
+      '<span class="c">3 / 3</span><span class="c">3m 08s</span>'+
+      '<span class="p">'+money(e.floorEach)+'</span></div>');
+    await beat(300);
+    $("board-note").style.display="block";
+    $("board-note").innerHTML="Nobody in the paid band takes less than <b>"+money(e.floorEach)+
+      "</b> &mdash; 1.5&times; what they put in. Above that the board pays on the place curve, and no single entrant "+
+      "can take more than <b>"+money(e.heroCap)+"</b> in this room. Same three questions for everyone, "+
+      "so the only thing that separates the top of this board is the clock.";
+}},
+{ label:"The payout board", run: async function(){
+    var cr=STATE.cr, e=STATE.e;
+    on("c-payout");
+    $("pay-list").innerHTML="";
+    var rows=[
+      ["w","Winners","<b>Top card of the room</b><br><span class=\"k\">Fastest perfect card"+capNote(e.first,e.heroCap,cr)+"</span>", money(e.first)],
+      ["w","Winners","<b>Fifth-fastest perfect card</b><br><span class=\"k\">The hero band runs five deep"+capNote(e.fifth,e.heroCap,cr)+"</span>", money(e.fifth)],
+      ["w","Winners","<b>"+num(e.paid)+" players paid in total</b><br><span class=\"k\">Top 20% of the field &middot; nobody in the paid band takes less than "+money(e.floorEach)+", 1.5&times; their entry &middot; this is the whole amount returned to the room</span>", money(e.net)],
+      ["c","Host","<b>"+cr.name+"</b><br><span class=\"k\">"+Math.round(e.share*100)+"% of "+money(cr.fee)+" &times; "+num(e.entries)+" entries &middot; never out of the players' pool</span>", money(e.creator)],
+      ["c","Host","<b>At two events a month</b><br><span class=\"k\">The same slate, run again</span>", money(e.creator*2)],
+      ["k","Keymaster","<b>Whoever brought this host in</b><br><span class=\"k\">10% override on the retained fee &middot; for the term of the seat</span>", money(e.keymaster)],
+      ["n","Network","<b>"+NETWORK_TITLE+"</b><br><span class=\"k\">Override on the retained fee, every event, every host on the roster &middot; <span class=\"pill p-net\">proposed rate — set together</span></span>", money(e.network)]
+    ];
+    for(var i=0;i<rows.length;i++){
+      var r=rows[i];
+      log("pay-list",'<div class="payrow '+r[0]+' show"><div class="tag">'+r[1]+'</div>'+
+        '<div class="desc">'+r[2]+'</div><div class="amt">'+r[3]+'</div></div>');
+      await beat(480);
+    }
+    $("pay-note").style.display="block";
+    $("pay-note").innerHTML="Every figure on this board is computed live from this host's audience, entry price and fee "+
+      "through the platform's own rules. Change the host at the top and the whole board re-runs.";
+}},
+{ label:"Championship standings — the players' track", run: async function(){
+    var cr=STATE.cr, e=STATE.e;
+    on("c-champ");
+    var DIVS=[{t:5,rate:"58.1%",seat:"season leaders in division"},
+              {t:10,rate:"61.4%",seat:"season leaders in division"},
+              {t:25,rate:"63.9%",seat:"season leaders in division"},
+              {t:50,rate:"66.2%",seat:"season leaders in division"}];
+    var mine = (cr.stake===5||cr.stake===10||cr.stake===25||cr.stake===50) ? cr.stake : 10;
+    $("div-list").innerHTML="";
+    log("div-list",'<div class="lb head" style="grid-template-columns:78px 1fr 120px 96px"><span>Division</span><span>Qualifies on</span><span>Cut line, win rate</span><span>Buy-in</span></div>');
+    for(var i=0;i<DIVS.length;i++){
+      var d=DIVS[i], me=(d.t===mine);
+      log("div-list",'<div class="divrow'+(me?" mine":"")+'"><span class="d">$'+d.t+'</span>'+
+        '<span class="s">Win rate accrued in this division across the season'+(me?' &middot; <b>the division this room feeds</b>':'')+'</span>'+
+        '<span class="s">'+d.rate+'</span>'+
+        '<span class="s">'+(d.t===50? money(55)+" ($50 + $5 Boss fee)" : "none to qualify")+'</span></div>');
+      await beat(340);
+    }
+    $("champ-log").innerHTML="";
+    var C=[["Grand prize","<b>$10,000,000 guaranteed</b>"],
+           ["Seats","1,000,000 paid &middot; <b>10,000 free on top</b>"],
+           ["The free path","$0 &mdash; no entry, no host fee, ever"],
+           ["The finale","6 legs, set by Boss Fox &mdash; the only slate that goes past five"],
+           ["Settles","all six right, then lock-in speed ranks the top five"],
+           ["Seeding","lock-in speed across the season"]];
+    for(var j=0;j<C.length;j++){ log("champ-log", kv(C[j][0],C[j][1])); await beat(240); }
+    $("champ-note").style.display="block";
+    $("champ-note").innerHTML="A seat is never for sale. It is earned on win rate, and ten thousand seats cost nothing "+
+      "at all &mdash; which is what lets someone turn nothing into ten million, and what keeps this a contest of skill "+
+      "rather than anything else.";
+}},
+{ label:"Creator playoff standings — the hosts' track", run: async function(){
+    var cr=STATE.cr;
+    on("c-crown");
+    /* every host in the demo roster, ranked on the one number a host controls:
+       people brought to the board. Quarter = 2 events a month, three months. */
+    var roster=[];
+    CATS.forEach(function(c){ c.creators.forEach(function(x){
+      /* the house host demos three open-seat categories — one row, not three */
+      if(roster.some(function(r){ return r.cr.name===x.name; })) return;
+      var ent = Math.round(x.followers * CONV_DEFAULT/100);
+      roster.push({cr:x, cat:c, ent:ent, tally: ent*6,
+        house: x.name==="Boss Fox"});
+    }); });
+    roster.sort(function(a,b){ return b.tally-a.tally; });
+    $("crown-list").innerHTML="";
+    log("crown-list",'<div class="lb head"><span>Seed</span><span>Host</span><span>Category</span><span>Per event</span><span class="p">Quarter tally</span></div>');
+    for(var i=0;i<roster.length;i++){
+      var r=roster[i], me=(r.cr.id===cr.id);
+      log("crown-list",'<div class="lb'+(me?" me":(i<4?" hero":""))+'"><span class="r">'+(i+1)+'</span>'+
+        '<span class="who">'+r.cr.name+'<small>'+(r.house ? 'the house host &mdash; holding the seat until a boss takes it' : reach(r.cr.followers)+' followers'+(me?' &middot; the host in this run':''))+'</small></span>'+
+        '<span class="c">'+(r.house ? "open seats" : r.cat.name)+'</span><span class="c">'+num(r.ent)+'</span>'+
+        '<span class="p">'+num(r.tally)+'</span></div>');
+      await beat(230);
+    }
+    $("crown-note").style.display="block";
+    $("crown-note").innerHTML="Ranked on players brought to the board, not on anybody's opinion of a host &mdash; "+
+      "the top seeds play a quarterly bracket and the finals land in the biggest week of the year. "+
+      "<b>The purse is set by the network</b>, and it is a separate track from the players' Championship: "+
+      "no host is ever competing against their own room.";
+}},
+{ label:"One seat, then fifty — what the roster is worth", run: async function(){
+    var cr=STATE.cr, e=STATE.e;
+    on("c-scale");
+    $("scale-metrics").innerHTML="";
+    var M=[
+      ["gold", money(e.creator), "Host, per event"],
+      ["gold", money(e.creator*24), "Host, per year at 2/mo"],
+      ["purple", money(e.network*24), "Network override, this seat / yr"],
+      ["purple", money(e.network*24*10), "Ten seats like this one"],
+      ["orange", "50", "Categories scoped"],
+      ["green", "100", "Hosts at 1M+ the roster is built for"]
+    ];
+    for(var i=0;i<M.length;i++){
+      log("scale-metrics",'<div class="metric '+M[i][0]+'"><div class="n">'+M[i][1]+'</div><div class="l">'+M[i][2]+'</div></div>');
+      await beat(300);
+    }
+    $("scale-note").style.display="block";
+    $("scale-note").innerHTML="The override compounds with the roster, not with one name. Every host brought in "+
+      "adds a line that pays on every event they run &mdash; which is why the seat is a founding operating role and not a fee.";
+}}
+];
+
+/* ── runner ───────────────────────────────────────────────────────────────── */
+async function runFrom(i){
+  for(; i<STEPS.length && playing; i++){
+    stepIdx=i;
+    $("step-label").innerHTML="<b>"+(i+1)+"/"+STEPS.length+"</b> &mdash; "+STEPS[i].label;
+    $("prog").style.width=((i+1)/STEPS.length*100)+"%";
+    await STEPS[i].run();
+    await beat(900);
+  }
+  if(playing) $("step-label").innerHTML="<b>Complete</b> &mdash; "+STATE.cr.name+
+    ": one topic, three legs, "+num(STATE.e.entries)+" entries, "+money(STATE.e.pool)+" in the room.";
+}
+function reset(){
+  playing=false; paused=false;
+  timers.forEach(clearTimeout); timers=[];
+  var cards=document.querySelectorAll(".card");
+  for(var i=0;i<cards.length;i++) cards[i].classList.remove("on");
+  ["h-name","h-cat","h-reach","h-seat","e-sub","e-topic"].forEach(function(k){ $(k).textContent=""; });
+  ["build-log","leg-list","e-rules","pub-log","share-log","clock-log","reveal-list","lock-log",
+   "settle-log","board-list","pay-list","div-list","champ-log","crown-list","scale-metrics","sc-rows","sc-pills"].forEach(function(k){ $(k).innerHTML=""; });
+  ["pr-stake","pr-fee","pr-share","pr-reach","pr-conv","pr-entries","pr-pool"].forEach(function(k){ $(k).textContent="\u2014"; });
+  ["sc-topic","sc-who","sc-pool","sc-entries","sc-cap","st-av","st-handle","st-topic","st-meta"]
+    .forEach(function(k){ $(k).textContent="\u2014"; });
+  $("sc-clocklab").textContent="Questions open in"; $("sc-clock").textContent="\u2014";
+  $("ck-clock").textContent="\u2014"; $("ck-entries").textContent="0"; $("ck-pool").textContent="$0";
+  ["legs-note","pay-note","scale-note","board-note","champ-note","crown-note"].forEach(function(k){ $(k).style.display="none"; });
+  var hi=$("host-input"); hi.textContent="Host types a question\u2026"; hi.style.color="var(--mut)";
+  setClock("Build"); setLive(0);
+  $("prog").style.width="0";
+  $("pause").textContent="\u23F8 Pause";
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function boot(){
+  reset();
+  STATE.e = econ(STATE.cr, CONV_DEFAULT);
+  $("hdr-sub").innerHTML = STATE.cat.name + " &middot; hosted by <b>" + STATE.cr.name + "</b> &middot; " +
+    reach(STATE.cr.followers) + " followers &middot; example scenario";
+  $("foot").textContent = "Lock In · demonstration build · " + STATE.cr.name +
+    " shown as an example scenario — illustrative reach and figures, not a live deal";
+  setTimeout(function(){ playing=true; runFrom(0); }, 80);
+}
+
+/* ── picker: category, then host ──────────────────────────────────────────── */
+function showCats(){
+  playing=false;
+  $("pick").classList.remove("hide");
+  var html='<h3>Pick a category.</h3><div class="ps">The ten the roster opens with. Each one has a boss seat.</div><div class="grid">';
+  CATS.forEach(function(c,i){
+    html+='<div class="tile" onclick="pickCat('+i+')"><div class="em">'+c.emoji+'</div>'+
+      '<div class="tn">'+c.name+'</div><div class="tm">'+c.creators.length+
+      (c.creators.length>1?" hosts":" host")+' in this demo</div>'+
+      (c.seatOpen?'<div class="seat">BOSS SEAT OPEN</div>':'')+'</div>';
+  });
+  $("pick-body").innerHTML = html+'</div>';
+}
+function pickCat(i){
+  var c=CATS[i];
+  var html='<button class="back" onclick="showCats()">&lsaquo; Categories</button>'+
+    '<h3>'+c.emoji+' '+c.name+'</h3><div class="ps">Pick the host. Every figure in the run is computed from theirs.</div><div class="grid">';
+  c.creators.forEach(function(cr,j){
+    html+='<div class="tile" onclick="pickCreator('+i+','+j+')"><div class="tn">'+cr.name+'</div>'+
+      '<div class="tm">'+reach(cr.followers)+' followers &middot; '+cr.tier+' tier'+(cr.marquee?" · marquee":"")+'</div>'+
+      '<div class="tm">'+money(cr.stake)+' entry &middot; '+money(cr.fee)+' host fee</div>'+
+      '<div class="seat">'+cr.role+'</div></div>';
+  });
+  $("pick-body").innerHTML = html+'</div>';
+}
+function pickCreator(i,j){
+  STATE.cat = CATS[i];
+  STATE.cr  = CATS[i].creators[j];
+  $("pick").classList.add("hide");
+  boot();
+}
+
+/* ── controls ─────────────────────────────────────────────────────────────── */
+(function(){
+  var box=$("speed"), btns=box.querySelectorAll("button");
+  function select(v){
+    SPEED=parseFloat(v);
+    for(var i=0;i<btns.length;i++) btns[i].classList.toggle("act", btns[i].dataset.s===String(v));
+  }
+  for(var i=0;i<btns.length;i++){ (function(b){ b.onclick=function(){ select(b.dataset.s); }; })(btns[i]); }
+  select("0.6");   // default: followable. Full is one click away.
+})();
+$("swap").onclick   = function(){ reset(); showCats(); };
+$("replay").onclick = function(){ if(!STATE.cr) return showCats(); boot(); };
+$("pause").onclick  = function(){ paused=!paused; $("pause").textContent = paused ? "\u25B6 Resume" : "\u23F8 Pause"; };
+$("next").onclick   = function(){ if(!STATE.cr) return; playing=false; paused=false;
+  setTimeout(function(){ playing=true; runFrom(Math.min(stepIdx+1,STEPS.length-1)); },60); };
+$("prev").onclick   = function(){
+  if(!STATE.cr) return;
+  var t=Math.max(stepIdx-1,0); reset();
+  setTimeout(async function(){ playing=true;
+    for(var i=0;i<t;i++){ stepIdx=i; await STEPS[i].run(); }
+    runFrom(t);
+  },60);
+};
+(function(){ var s=Date.now(); setInterval(function(){
+  var d=Math.floor((Date.now()-s)/1000);
+  $("clock").textContent=("0"+Math.floor(d/60)).slice(-2)+":"+("0"+(d%60)).slice(-2);
+},1000); })();
+
+showCats();
+</script>
+</body></html>

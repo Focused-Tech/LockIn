@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lock In — WEB MASTER REFERENCE v9</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Public+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════════════════════════════════════
+   LOCK IN — WEB MASTER REFERENCE v9 · 2026-08-23
+   This file IS the spec. Every signed-in web screen, in the design system of
+   Frank's approved website (lockin_website zip, 2026-08-17). CC: build the
+   product's web surface to match these screens. THE LAW panel below is
+   binding. This is a static reference — data shown is placeholder.
+   ══════════════════════════════════════════════════════════════════════════ */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#0A0D12; --ink2:#0E131A; --panel-a:#161C25; --panel-b:#10151D;
+  --edge:#232B36; --grey:#E7E7EB; --dim:#8B93A1; --dimmer:#5C6675;
+  --orange:#FC3E01; --gold:#F0C463; --brass:#A86F2D; --cash:#2FB98A;
+  --creator:#7C5CF5; --r:15px; --gap:16px;
+}
+html{scroll-behavior:smooth}
+body{background:var(--ink);color:var(--grey);
+  font-family:"Public Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+.mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
+h1,h2,h3{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-weight:800;
+  letter-spacing:-.03em;line-height:.98}
+h1{font-size:clamp(34px,6.5vw,64px)}
+h2{font-size:clamp(26px,4vw,40px);margin-bottom:14px}
+h3{font-size:clamp(18px,2vw,22px);letter-spacing:-.02em;margin-bottom:7px}
+p{color:#C3C9D2}
+/* ONE container. Header contents and page contents both live inside .wrap —
+   their left and right edges MUST align. This is the item that kept failing. */
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--brass);display:flex;align-items:center;
+  gap:10px;margin-bottom:16px}
+.eyebrow::after{content:"";flex:1;height:1px;
+  background:linear-gradient(90deg,rgba(168,111,45,.55),rgba(168,111,45,0))}
+
+/* ---- header: full-bleed background, .wrap contents. NO app top bar, NO coin
+   chip, NO back chevron, NO bottom nav — on ANY web screen, ever. ---- */
+header{position:sticky;top:0;z-index:50;background:rgba(10,13,18,.92);
+  backdrop-filter:blur(14px);border-bottom:1px solid var(--edge)}
+.nav{display:flex;align-items:center;gap:8px;height:62px}
+.mark{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:23px;
+  letter-spacing:-.045em;margin-right:auto;display:flex;align-items:center;gap:1px}
+.mark .o{width:17px;height:19px;position:relative;display:inline-block;
+  border:3px solid var(--orange);border-radius:4px;margin:0 1px;transform:translateY(2px)}
+.mark .o::before{content:"";position:absolute;left:50%;top:-8px;width:11px;height:11px;
+  border:3px solid var(--orange);border-bottom:none;border-radius:6px 6px 0 0;transform:translateX(-50%)}
+.mark .lk{color:var(--orange)}.mark .in{color:var(--grey)}
+.nav a.pg{font-size:13.5px;color:var(--dim);padding:7px 9px;border-radius:8px;white-space:nowrap;cursor:pointer}
+.nav a.pg:hover{color:#fff;background:rgba(255,255,255,.05)}
+.nav a.pg.here{color:#fff}
+.nav a.pg.here::after{content:"";display:block;height:2px;background:var(--orange);margin-top:5px;border-radius:2px}
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--orange);color:#fff;
+  font-weight:700;font-size:15px;padding:13px 22px;border-radius:11px;border:1px solid var(--orange);cursor:pointer}
+.btn:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent;color:var(--grey);border-color:var(--edge)}
+.btn.ghost:hover{border-color:var(--brass);background:rgba(168,111,45,.08)}
+.btn.sm{padding:8px 14px;font-size:13px;border-radius:9px}
+.btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:24px}
+
+/* ---- panels & grids (the approved site's own components) ---- */
+.panel{background:linear-gradient(160deg,var(--panel-a),var(--panel-b));
+  border:1px solid var(--edge);border-left:4px solid var(--brass);
+  border-radius:var(--r);padding:16px;position:relative;
+  box-shadow:inset 1px 0 0 rgba(0,0,0,.45)}
+.panel.act{border-left-color:var(--orange)}
+.panel.cre{border-left-color:var(--creator)}
+.panel.coin{border-left-color:var(--gold)}
+.panel.cash{border-left-color:var(--cash)}
+.panel .open{display:inline-block;margin-top:10px;font-weight:700;font-size:14px;color:var(--orange);cursor:pointer}
+.panel.cre .open{color:#A78BFF}
+.grid{display:grid;gap:var(--gap)}
+@media(min-width:760px){.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:960px){.g4{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:959px){.g4{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.g4{grid-template-columns:1fr}}
+section{padding:56px 0;border-top:1px solid rgba(35,43,54,.6)}
+section:first-of-type{border-top:none}
+.hero{padding:64px 0 48px;border-top:none}
+.tag{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:10.5px;
+  letter-spacing:.14em;text-transform:uppercase;padding:4px 9px;border-radius:20px;
+  border:1px solid var(--edge);color:var(--dim)}
+.tag.gold{color:var(--gold);border-color:rgba(240,196,99,.4)}
+.tag.cre{color:var(--creator);border-color:rgba(124,92,245,.45)}
+.tag.cash{color:var(--cash);border-color:rgba(47,185,138,.4)}
+.board{margin-top:24px;border:1px solid var(--edge);border-radius:var(--r);
+  background:linear-gradient(160deg,#12171F,#0C1017);overflow:hidden}
+.board .bh{display:flex;align-items:center;gap:10px;padding:11px 15px;
+  border-bottom:1px solid var(--edge);font-family:"IBM Plex Mono",monospace;
+  font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dimmer)}
+.board .bh b{color:var(--gold);font-weight:500}
+.row{display:grid;grid-template-columns:38px 1fr auto auto;gap:10px;align-items:center;
+  padding:9px 15px;border-bottom:1px solid rgba(35,43,54,.5);font-size:14px}
+.row:last-child{border-bottom:none}
+.row .pl{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--dimmer)}
+.row .who{color:#C3C9D2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .ts{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--dim)}
+.row .pz{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--cash);min-width:74px;text-align:right}
+.row.top{background:linear-gradient(90deg,rgba(240,196,99,.10),transparent 70%)}
+.row.top .who{color:#fff;font-weight:600}
+ul.tick{list-style:none;margin-top:10px}
+ul.tick li{position:relative;padding-left:20px;margin-bottom:7px;color:#C3C9D2;font-size:15px}
+ul.tick li::before{content:"›";position:absolute;left:2px;top:-1px;color:var(--brass);font-size:17px;font-weight:700}
+table{width:100%;border-collapse:collapse;font-size:14.5px}
+th{text-align:left;font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--dimmer);padding:9px 10px;border-bottom:1px solid var(--edge);font-weight:500}
+td{padding:11px 10px;border-bottom:1px solid rgba(35,43,54,.5);color:#C3C9D2}
+tr:last-child td{border-bottom:none}
+td.n{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+.quiet{color:var(--dimmer);font-size:13px}
+footer{border-top:1px solid var(--edge);padding:32px 0 44px;margin-top:20px}
+.legal{font-size:12px;color:var(--dimmer);line-height:1.75}
+
+/* ---- SIGNATURE: the expanding category board ---- */
+.tiers{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 6px}
+.tier{flex:1;min-width:130px;border:1px solid var(--edge);border-radius:12px;padding:14px 16px;
+  background:linear-gradient(160deg,var(--panel-a),var(--panel-b));cursor:pointer;text-align:center;
+  transition:border-color .14s,transform .12s}
+.tier:hover{border-color:var(--brass);transform:translateY(-1px)}
+.tier.on{border-color:var(--cash);background:rgba(47,185,138,.10)}
+.tier .amt{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:30px;
+  letter-spacing:-.03em;line-height:1}
+.tier.on .amt{color:var(--cash)}
+.tier .lbl{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--dimmer);margin-top:6px}
+.bandrow{display:grid;grid-template-columns:120px 1fr auto;gap:12px;align-items:center;
+  padding:11px 14px;border:1px solid var(--edge);border-radius:11px;background:var(--panel-b);margin-bottom:7px}
+.bandrow .mult{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:24px;
+  letter-spacing:-.02em;color:var(--gold)}
+.bandrow .pay{font-family:"IBM Plex Mono",monospace;color:var(--cash);font-size:15px;text-align:right;white-space:nowrap}
+.bandrow.floor .mult{color:var(--dim);font-size:19px}
+/* Signed-in chrome: ONE line naming the lane you chose, plus the way back.
+   This replaces the public nav once a lane is open. Never both at once. */
+#lanebar{border-bottom:1px solid var(--edge);background:var(--ink2);display:none}
+#lanebar.on{display:block}
+#lanebar .lb{display:flex;align-items:center;gap:12px;height:46px}
+#lanebar .now{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--gold);margin-right:auto}
+#lanebar a{font-size:13px;color:var(--dim);padding:6px 10px;border-radius:8px;cursor:pointer}
+#lanebar a:hover{color:#fff;background:rgba(255,255,255,.05)}
+.famlab{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--brass);margin:20px 0 9px}
+.famlab:first-child{margin-top:0}
+.catgrid{display:grid;gap:9px;grid-template-columns:repeat(auto-fill,minmax(168px,1fr))}
+.cat{display:flex;align-items:center;gap:8px;padding:11px 13px;border:1px solid var(--edge);
+  border-radius:11px;background:linear-gradient(160deg,var(--panel-a),var(--panel-b));
+  cursor:pointer;font-size:14px;font-weight:600;transition:border-color .14s,transform .12s;
+  user-select:none}
+.cat:hover{border-color:var(--brass);transform:translateY(-1px)}
+.cat.open{border-color:var(--orange);background:rgba(252,62,1,.10);color:#fff}
+.cat .n{margin-right:auto}
+.cat .cnt{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--dimmer)}
+.cat.open .cnt{color:var(--orange)}
+.cat .chev{font-size:11px;color:var(--dimmer);transition:transform .16s}
+.cat.open .chev{transform:rotate(90deg);color:var(--orange)}
+.subpanel{grid-column:1/-1;border:1px solid rgba(252,62,1,.35);border-radius:12px;
+  background:linear-gradient(160deg,#13181F,#0B0F15);padding:14px 15px;
+  animation:drop .18s ease-out}
+@keyframes drop{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.subpanel .sh{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--brass);margin-bottom:10px;display:flex;
+  align-items:center;gap:9px}
+.subpanel .sh .st{border:1px solid rgba(240,196,99,.4);color:var(--gold);border-radius:20px;
+  padding:2px 8px;letter-spacing:.1em}
+.subpanel .sh .st.prop{border-color:rgba(139,147,161,.4);color:var(--dim)}
+.subs{display:flex;gap:8px;flex-wrap:wrap}
+.sub{border:1px solid var(--edge);border-radius:9px;padding:7px 12px;font-size:13px;
+  color:#C3C9D2;background:rgba(255,255,255,.02);cursor:pointer}
+.sub:hover{border-color:var(--creator);color:#fff}
+
+/* ---- reference chrome (not part of the product): view switcher + spec ---- */
+.refbar{position:fixed;right:14px;bottom:14px;z-index:90;background:#070A0E;
+  border:1px solid var(--brass);border-radius:12px;padding:10px;max-width:250px;
+  font-size:12px;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+.refbar .rt{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.2em;
+  color:var(--brass);text-transform:uppercase;margin-bottom:7px}
+.refbar a{display:block;padding:5px 8px;border-radius:7px;color:var(--dim);cursor:pointer}
+.refbar a:hover{background:rgba(255,255,255,.06);color:#fff}
+.refbar a.here{color:#fff;background:rgba(252,62,1,.14)}
+.refbar .tog{margin-top:8px;padding-top:8px;border-top:1px solid var(--edge);
+  display:flex;gap:6px;align-items:center;color:var(--dimmer)}
+.refbar .tog button{flex:1;background:#12171F;border:1px solid var(--edge);color:var(--dim);
+  border-radius:7px;padding:5px;font-size:11px;cursor:pointer}
+.refbar .tog button.on{border-color:var(--orange);color:#fff}
+.spec{border:1px dashed var(--brass);border-radius:12px;padding:14px 16px;margin:0 0 26px;
+  font-family:"IBM Plex Mono",monospace;font-size:12px;line-height:1.8;color:#C9A96A;
+  background:rgba(168,111,45,.05)}
+.spec b{color:var(--gold);font-weight:500}
+.spec .h{letter-spacing:.2em;text-transform:uppercase;font-size:10.5px;margin-bottom:6px;color:var(--brass)}
+.view{display:none}
+.view.on{display:block}
+.staff{display:none}
+body.roles .staff{display:block}
+.anonhint{display:block}
+body.roles .anonhint{display:none}
+</style></head>
+<body class="roles">
+
+<!-- ═══ HEADER — the ONLY chrome any web screen has ═══ -->
+<header><div class="wrap"><nav class="nav">
+  <a class="mark" data-go="start"><span class="lk">L</span><span class="o"></span><span class="lk">ck</span><span class="in">In</span></a>
+  <!-- PUBLIC NAV ONLY. Lanes are NOT in the header. Staff lanes are NOT in the
+       header. The demo is NOT in the header — it is reached only from inside the
+       admin console. Signed-in users see the lane bar below instead. -->
+  <span class="links" style="display:flex;align-items:center;gap:2px">
+    <a class="pg">How it works</a>
+    <a class="pg">Categories</a>
+    <a class="pg" data-go="championship">Championship</a>
+    <a class="pg" data-go="season">The Season</a>
+  </span>
+  <a class="btn sm" style="margin-left:10px">Sign in</a>
+</nav></div></header>
+<div id="lanebar"></div>
+
+<main class="wrap">
+
+<!-- ════════════════════════ THE LAW (binding, all screens) ═══════════════ -->
+<div class="spec" style="margin-top:22px">
+  <div class="h">THE LAW — applies to every web screen in this file</div>
+  1. ONE shell. Web = this header + .wrap(1080px) + footer. Decided in ONE layout,
+     inherited by every route. Never per-page.<br>
+  2. NEVER on web: app top bar · back chevron · coin chip · bottom nav
+     (The&nbsp;Floor/Board/Locksmith) · phone column · PWA banner ≥900px · boot splash
+     on public pages.<br>
+  3. Header contents and page contents share .wrap — left/right edges ALIGN.<br>
+  4. Each lane routes to ITS OWN screen. Advanced → Advanced. A mis-route is a
+     release blocker.<br>
+  5. Staff lanes (Admin/Keymaster/Keyholder) render ONLY for a signed-in user with
+     that flag, checked server-side. Anonymous sees three lanes.<br>
+  6. Banned words anywhere on web: bet, betting, wager, odds, gambling, prediction,
+     market, parlay. ("Not gambling / not sports betting" survives only inside the
+     approved legal footer line.)<br>
+  7. Event classes name the host tier and set the entries: ICON $50/$25/$10 ·
+     LEGEND (10M) $25/$15/$10 · HERO (5M) $15/$10/$5. The entry NEVER decides the
+     band; lock-in speed does, and the multiple lands on the player's own entry.
+     Never imply paying more improves a placing.<br>
+  8. NAVIGATION. The header is PUBLIC marketing only — never lane links, never
+     staff links, never the demo. Once a lane is chosen the header is replaced by
+     a single lane bar naming the current lane, with movement only between
+     creator / advanced / beginner, plus Switch lane and Sign out. Staff lanes are
+     entered from /start by a flag-holder. <b>The demo is reachable ONLY from
+     inside the admin console</b> and appears in no navigation anywhere.<br>
+  9. Fonts: Bricolage Grotesque display · Public Sans body · IBM Plex Mono numbers.
+     Colors: the :root tokens in this file. Nothing else.
+</div>
+
+<!-- ════════════════════════ VIEW: /start — THE FRONT DOOR ════════════════ -->
+<div class="view on" id="v-start">
+  <section class="hero">
+    <div class="eyebrow">Lock In</div>
+    <h1>Here you play against people,<br>not a house.</h1>
+    <p class="quiet" style="font-size:clamp(16px,2vw,19px);color:#AEB6C1;max-width:60ch;margin-top:14px">
+      Being right gets you paid. Being fast decides how much.</p>
+    <div class="btns"><a class="btn">Create account</a><a class="btn ghost">How it works</a></div>
+  </section>
+
+  <section>
+    <div class="eyebrow">Choose your lane</div>
+    <p class="quiet" style="margin-bottom:14px">All six lanes. Staff lanes render only for a signed-in holder of that flag — flip to "anonymous" in the panel to see the three-lane public state.</p>
+    <div class="grid g3">
+      <div class="panel cre"><h3>Creator</h3>
+        <p class="quiet" style="font-size:14px">Host contests for your audience. Draft your questions, set the entry, take your cut.</p>
+        <span class="open" data-go="creator">Open →</span></div>
+      <div class="panel act"><h3>Advanced</h3>
+        <p class="quiet" style="font-size:14px">Every contest, every category, real payouts. Lock in to win.</p>
+        <span class="open" data-go="advanced">Open →</span></div>
+      <div class="panel coin"><h3>Beginner</h3>
+        <p class="quiet" style="font-size:14px">Play the same live contests in practice first. When you're ready, take the real one.</p>
+        <span class="open" data-go="beginner">Open →</span></div>
+      <div class="panel staff"><h3>Admin <span class="tag" style="float:right">staff</span></h3>
+        <p class="quiet" style="font-size:14px">Owner console — exceptions, settlements, reports and platform state.</p>
+        <span class="open" data-go="admin">Open →</span></div>
+      <div class="panel staff"><h3>Keymaster <span class="tag" style="float:right">staff</span></h3>
+        <p class="quiet" style="font-size:14px">Your network: downline requests, enrolment keys, production and override.</p>
+        <span class="open" data-go="keymaster">Open →</span></div>
+      <div class="panel staff"><h3>Keyholder <span class="tag" style="float:right">staff</span></h3>
+        <p class="quiet" style="font-size:14px">Your creators, your referral links, and what they have produced.</p>
+        <span class="open" data-go="keyholder">Open →</span></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">On the platform</div>
+    <div class="grid g3" style="margin-bottom:44px">
+      <div class="panel coin"><h3>The Championship</h3>
+        <p class="quiet" style="font-size:14px">Four divisions, running all year. $10,000,000 guaranteed, and a free way in.</p>
+        <span class="open" data-go="championship">Open →</span></div>
+      <div class="panel cre"><h3>The Season</h3>
+        <p class="quiet" style="font-size:14px">Hosts compete all year for the crowns. Boss of the Bosses, Super Bowl week.</p>
+        <span class="open" data-go="season">Open →</span></div>
+      <div class="panel cash"><h3>Tonight's board</h3>
+        <p class="quiet" style="font-size:14px">Who is winning, what they took home, and how fast they locked.</p>
+        <span class="open" data-go="leaderboard">Open →</span></div>
+    </div>
+
+    <div class="eyebrow">How it works</div>
+    <div class="grid g3">
+      <div class="panel"><span class="mono" style="color:var(--orange);font-size:12px">01</span>
+        <h3 style="margin-top:6px">Pick a contest</h3>
+        <p class="quiet" style="font-size:14px">One topic, three questions, a published close time. You can see the whole card before you commit.</p></div>
+      <div class="panel"><span class="mono" style="color:var(--orange);font-size:12px">02</span>
+        <h3 style="margin-top:6px">Make your calls</h3>
+        <p class="quiet" style="font-size:14px">Answer every question and lock in. Speed is part of the score, so the clock matters.</p></div>
+      <div class="panel"><span class="mono" style="color:var(--orange);font-size:12px">03</span>
+        <h3 style="margin-top:6px">Get paid on the result</h3>
+        <p class="quiet" style="font-size:14px">Every question settles against a named public source. The best cards split the pool.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">Categories</div>
+    <p class="quiet" style="margin-bottom:6px">All fifty seats. Tap a category and the row beneath it opens with its subcategories.</p>
+    <p class="quiet" id="cat-count" style="margin-bottom:20px"></p>
+    <div id="catfamilies"></div>
+    <div class="spec" style="margin-top:22px"><div class="h">Categories — build note</div>
+      Fifty categories, grouped in five families, driven by ONE array. Rows reflow
+      by viewport; the panel inserts after the LAST CHIP IN THE SAME VISUAL ROW,
+      spans full width, recomputes on resize, one open at a time. Subcategories
+      tagged <b>ruled</b> are Frank's; <b>proposed</b> are Claude's drafts awaiting
+      his ruling. The finance trio is GONE — replaced by Beauty &amp; Cosmetics, Home
+      &amp; Design and Business &amp; Brand Moves, which settle on announcements, launches
+      and campaigns, never a price, an index or an earnings number, enforced in the
+      VALIDATOR not in guidance. Excluded lanes never render: politics, true crime,
+      high-school/recruiting, health, weather, astrology, relationships.</div>
+  </section>
+</div>
+
+<!-- ════════════════════════ VIEW: /creator ═══════════════════════════════ -->
+<div class="view" id="v-creator">
+  <div class="spec"><div class="h">Creator lane — web</div>
+    Full-width web page. No phone column, no bottom nav, no coin chip. No coin
+    "practice mode" tile — coins never surface on this lane. Empty stats are
+    OMITTED, never rendered as "— reach · $0 earned".</div>
+  <section class="hero" style="padding:44px 0 30px">
+    <div class="eyebrow">Creator</div>
+    <h1 style="font-size:clamp(30px,5vw,52px)">Run your own slate.</h1>
+    <p class="quiet" style="max-width:58ch;margin-top:10px;font-size:16px">Real followers, real pot, real payout. Write the questions your people argue about, set the prize, and put your name on the card.</p>
+  </section>
+  <section style="padding-top:0;border-top:none">
+    <div class="grid g2">
+      <div class="panel act"><h3>Build a slate</h3>
+        <p class="quiet" style="font-size:14px">Pick the night, write the questions, set the prize. The Locksmith drafts in your voice and checks every question before it can publish.</p>
+        <span class="open">Start →</span></div>
+      <div class="panel"><h3>Your slates</h3>
+        <p class="quiet" style="font-size:14px">Everything you've hosted — entries, settlement state, and what each night paid.</p>
+        <span class="open">Open →</span></div>
+      <div class="panel cre"><h3>Read the rules</h3>
+        <p class="quiet" style="font-size:14px">What a question can ask, and what is never allowed.</p>
+        <span class="open">Open →</span></div>
+      <div class="panel cre"><h3>Talk to the Locksmith</h3>
+        <p class="quiet" style="font-size:14px">Ask her anything — her lockpicks name the fix before you write it.</p>
+        <span class="open">Open →</span></div>
+    </div>
+  </section>
+</div>
+
+<!-- ════════════════════════ VIEW: /advanced ══════════════════════════════ -->
+<div class="view" id="v-advanced">
+  <div class="spec"><div class="h">Advanced lane — web</div>
+    This is the cash floor as a WEB page: category rail + live slate grid +
+    the board. Never the word "market". Clicking Advanced lands HERE — the
+    mis-route to Beginner is the bug this screen exists to kill.</div>
+  <section class="hero" style="padding:44px 0 26px">
+    <div class="eyebrow">Advanced</div>
+    <h1 style="font-size:clamp(30px,5vw,52px)">Every contest. Every category.</h1>
+    <p class="quiet" style="margin-top:10px">Real payouts. Lock in to win.</p>
+  </section>
+  <section style="padding-top:0;border-top:none">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
+      <span class="tag gold">All</span><span class="tag">NBA</span><span class="tag">NFL</span>
+      <span class="tag">Hip-Hop</span><span class="tag">Comedy</span><span class="tag">Reality TV</span>
+      <span class="tag">Boxing</span><span class="tag">Gospel</span>
+    </div>
+    <div class="grid g3">
+      <div class="panel cash"><span class="tag">NBA</span>
+        <h3 style="margin-top:8px">Sunday's marquee night</h3>
+        <p class="quiet" style="font-size:13.5px">Sealed · 3 questions · reveals 7:00 PM</p>
+        <p class="mono" style="color:var(--cash);font-size:14px;margin-top:8px">$10 entry · $184,300 pool</p>
+        <span class="open">Enter →</span></div>
+      <div class="panel cash"><span class="tag">Hip-Hop</span>
+        <h3 style="margin-top:8px">First-week numbers</h3>
+        <p class="quiet" style="font-size:13.5px">Sealed · 3 questions · reveals 9:00 PM</p>
+        <p class="mono" style="color:var(--cash);font-size:14px;margin-top:8px">$10 entry · $92,150 pool</p>
+        <span class="open">Enter →</span></div>
+      <div class="panel cash"><span class="tag">Comedy</span>
+        <h3 style="margin-top:8px">The special drops Friday</h3>
+        <p class="quiet" style="font-size:13.5px">Sealed · 3 questions · reveals Fri 8:00 PM</p>
+        <p class="mono" style="color:var(--cash);font-size:14px;margin-top:8px">$5 entry · $41,905 pool</p>
+        <span class="open">Enter →</span></div>
+    </div>
+    <div class="eyebrow" style="margin-top:36px">Pick your entry</div>
+    <div class="spec"><div class="h">Event classes and entry tiers — RULED (Frank, Aug 23)</div>
+      An event is classed by the HOST who runs it, and the class sets the three
+      entries a player can pick from:<br>
+      &nbsp;&nbsp;<b>ICON</b> — the marquee names &nbsp;·&nbsp; $50 · $25 · $10<br>
+      &nbsp;&nbsp;<b>LEGEND</b> — 10M &nbsp;·&nbsp; $25 · $15 · $10<br>
+      &nbsp;&nbsp;<b>HERO</b> — 5M &nbsp;·&nbsp; $15 · $10 · $5<br><br>
+      <b>What you put in does NOT decide your band. Lock-in speed does.</b> Two
+      players who lock at the same speed land in the same band; the one who entered
+      higher simply wins a bigger number, because the multiple applies to
+      <b>their own entry</b>. Paying more never buys a better placing, and paying
+      less never costs you one. This copy must be unmissable on the entry screen —
+      it is the whole fairness claim of the product.
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px" id="classpick">
+      <span class="tag gold" data-cls="icon">Icon event</span>
+      <span class="tag" data-cls="legend">Legend event</span>
+      <span class="tag" data-cls="hero">Hero event</span>
+    </div>
+    <div class="tiers" id="tierpick"></div>
+    <p class="quiet" id="tiernote" style="margin-bottom:22px"></p>
+
+    <div class="eyebrow">Your band, and what it pays you</div>
+    <p class="quiet" style="margin-bottom:12px">Bands are set by <b>lock-in speed</b> among cards that got every leg right. The multiplier lands on <b>your</b> entry — change the tier above and every figure below re-computes.</p>
+    <div id="bandladder"></div>
+    <div class="spec" style="margin-top:14px"><div class="h">Band ladder — APPROVED (Frank, Aug 23) · 1000× / 500× / 250× / 100× / 25× / 1.5× floor</div>
+      <b>Winners = the top 20% of the field.</b> 100,000 entries pays 20,000;
+      <b>100,000 winners needs a 500,000-entry room.</b> The band SEATS shown are the
+      500k-room ladder — 1,125 players in the multiplier bands and 98,875 on the
+      floor, which is what makes it fit.<br><br>
+      Worked and affordable at the ruled rates:<br>
+      &nbsp;&nbsp;100k @ $10 &rarr; 20,000 winners &middot; bands 5/10/15/20/30 &middot; fits with $1.2K spare<br>
+      &nbsp;&nbsp;<b>500k @ $10 &rarr; 100,000 winners</b> &middot; bands 5/20/40/100/960 &middot; fits with $16K spare<br>
+      &nbsp;&nbsp;1.5M @ $25 &rarr; 300,000 winners &middot; bands 5/25/50/150/1,000 &middot; fits with $499K spare<br><br>
+      Band SEAT COUNTS scale with the field; the multiples never do.
+      <b>RULED (Frank, Aug 23): 50,000 entries is the MINIMUM for the 1,000× top
+      band. Below 50,000 the top band is capped at 500×</b>, and the ladder keeps
+      scaling down with pot size exactly as the canon place-curve does — the
+      advertised top multiple is a function of the field, and no host may advertise
+      a multiple their field size hasn't unlocked. The entry screen must show the
+      CURRENT top multiple for the room's size, live.<br><br>
+      Still open, one line each: <b>$15 maps to no Championship division</b>
+      ($5/$10/$25/$50) — open a $15 division or accrue it into $10. And <b>HERO</b>
+      names both an event class and the top payout band; the class keeps the name and
+      the band reads "top band" until you name it.
+    </div>
+
+    <div class="eyebrow" style="margin-top:36px">Tonight's board</div>
+    <div class="board" style="margin-top:0">
+      <div class="bh"><b>The board</b> · tonight</div>
+      <div class="row top"><span class="pl">1</span><span class="who">@triple_lock</span><span class="ts">0.71s</span><span class="pz">$10,000</span></div>
+      <div class="row"><span class="pl">2</span><span class="who">@thecousin</span><span class="ts">0.94s</span><span class="pz">$7,594</span></div>
+      <div class="row"><span class="pl">3</span><span class="who">@nightshift_ny</span><span class="ts">1.12s</span><span class="pz">$5,807</span></div>
+    </div>
+  </section>
+</div>
+
+<!-- ════════════════════════ VIEW: /beginner ══════════════════════════════ -->
+<div class="view" id="v-beginner">
+  <div class="spec"><div class="h">Beginner lane — web · THE CONVERSION TOOL</div>
+    Mirrors LIVE slates in practice (ruled). Coin figures may appear INSIDE a
+    practice card only — never in the header, never as a lane of coin games.
+    At the end of a practice card: the hand-off to the SAME slate's cash
+    version, web or mobile app. No "% agree" bars, no "more markets".</div>
+  <section class="hero" style="padding:44px 0 26px">
+    <div class="eyebrow">Beginner</div>
+    <h1 style="font-size:clamp(30px,5vw,52px)">Practice on the real thing.</h1>
+    <p class="quiet" style="max-width:58ch;margin-top:10px">The same live contests, mirrored in practice. Same questions, same clock, nothing leaves your pocket. When you're ready, take the real one.</p>
+  </section>
+  <section style="padding-top:0;border-top:none">
+    <div class="grid g2">
+      <div class="panel coin"><span class="tag">NBA</span> <span class="tag gold">practice mirror</span>
+        <h3 style="margin-top:8px">Sunday's marquee night</h3>
+        <p class="quiet" style="font-size:13.5px">The live slate, mirrored. 3 questions · sealed until 7:00 PM · practice coins only inside this card.</p>
+        <span class="open">Practice →</span></div>
+      <div class="panel cash"><span class="tag cash">the real one</span>
+        <h3 style="margin-top:8px">Ready for Sunday?</h3>
+        <p class="quiet" style="font-size:13.5px">The cash version of the slate you just practiced. Same three questions when the clock hits zero.</p>
+        <p class="quiet" style="font-size:13px;margin-top:8px">Pick your entry — <b>$25 · $15 · $10</b> on this Legend event. Your entry never changes your band; the clock does.</p>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <a class="btn sm">Take it here</a>
+          <a class="btn sm ghost">Open in the app</a>
+        </div></div>
+    </div>
+  </section>
+</div>
+
+<!-- ════════════════════════ VIEW: /admin ═════════════════════════════════ -->
+<div class="view" id="v-admin">
+  <div class="spec"><div class="h">Admin — web · EXCEPTIONS, not an approval inbox</div>
+    Creator verification is automated (connect account → ownership verified →
+    tier by threshold → seat opens). This console holds only what automation
+    could NOT settle. Marquee seats are marked from a signed contract, by
+    Frank — never requested in-app. No fixture data, ever.</div>
+  <section class="hero" style="padding:44px 0 26px">
+    <div class="eyebrow">Admin</div>
+    <h1 style="font-size:clamp(30px,5vw,52px)">Owner console.</h1>
+  </section>
+  <section style="padding-top:0;border-top:none">
+    <div class="grid g3" style="margin-bottom:20px">
+      <div class="panel"><h3 class="mono" style="font-size:26px">2</h3><p class="quiet" style="font-size:13px">Verification exceptions</p></div>
+      <div class="panel"><h3 class="mono" style="font-size:26px">0</h3><p class="quiet" style="font-size:13px">Disputed settlements</p></div>
+      <div class="panel"><h3 class="mono" style="font-size:26px">14</h3><p class="quiet" style="font-size:13px">Slates settling tonight</p></div>
+    </div>
+    <div class="eyebrow">Verification exceptions</div>
+    <table>
+      <tr><th>Account</th><th>Reason</th><th>State</th><th></th></tr>
+      <tr><td>@example_host</td><td>Platform API returned mismatched ownership</td><td class="n">needs review</td><td><a class="btn sm ghost">Open</a></td></tr>
+      <tr><td>@example_two</td><td>Follower count unavailable — re-verify</td><td class="n">retrying</td><td><a class="btn sm ghost">Open</a></td></tr>
+    </table>
+    <p class="quiet" style="margin-top:14px">Marquee seats: marked from contract in <span class="mono">Settings → Seats</span>. There is no in-app marquee application.</p>
+    <div class="eyebrow" style="margin-top:30px">Tools</div>
+    <div class="panel cre"><h3>Demo — how a slate works</h3>
+      <p class="quiet" style="font-size:14px">A click-through of one slate, start to settlement. Placeholder host and players only. This is the ONLY route to it.</p>
+      <span class="open" data-go="demo">Open the demo →</span></div>
+  </section>
+</div>
+
+<!-- ════════════════════════ VIEW: /keymaster ═════════════════════════════ -->
+<div class="view" id="v-keymaster">
+  <div class="spec"><div class="h">Keymaster — web</div>
+    Network overview as a web page. Tables, not app rows. Money figures in
+    Plex Mono. No bottom nav.</div>
+  <section class="hero" style="padding:44px 0 26px">
+    <div class="eyebrow">Keymaster</div>
+    <h1 style="font-size:clamp(30px,5vw,52px)">Your network.</h1>
+  </section>
+  <section style="padding-top:0;border-top:none">
+    <div class="eyebrow">Downline</div>
+    <table>
+      <tr><th>Keyholder</th><th>Creators</th><th>Production · 30d</th><th>Override</th></tr>
+      <tr><td>@keyholder_one</td><td class="n">6</td><td class="n">$412,900</td><td class="n">$4,129</td></tr>
+      <tr><td>@keyholder_two</td><td class="n">3</td><td class="n">$188,240</td><td class="n">$1,882</td></tr>
+    </table>
+    <div class="btns"><a class="btn sm">Issue enrolment key</a><a class="btn sm ghost">Requests</a></div>
+  </section>
+</div>
+
+<!-- ════════════════════════ VIEW: /keyholder ═════════════════════════════ -->
+<div class="view" id="v-keyholder">
+  <div class="spec"><div class="h">Keyholder — web</div>
+    Same rules as Keymaster: web tables, header nav only.</div>
+  <section class="hero" style="padding:44px 0 26px">
+    <div class="eyebrow">Keyholder</div>
+    <h1 style="font-size:clamp(30px,5vw,52px)">Your creators.</h1>
+  </section>
+  <section style="padding-top:0;border-top:none">
+    <div class="eyebrow">Roster</div>
+    <table>
+      <tr><th>Creator</th><th>Category</th><th>Slates · 30d</th><th>Production · 30d</th></tr>
+      <tr><td>@example_creator</td><td>Comedy</td><td class="n">4</td><td class="n">$96,410</td></tr>
+      <tr><td>@example_creator2</td><td>Hip-Hop</td><td class="n">2</td><td class="n">$54,020</td></tr>
+    </table>
+    <div class="btns"><a class="btn sm">Referral links</a></div>
+  </section>
+</div>
+
+<!-- ════════════════════════ VIEW: /board — CONTEST LEADERBOARD ═══════════ -->
+<div class="view" id="v-leaderboard">
+  <div class="spec"><div class="h">Contest leaderboard — web</div>
+    The room ranked by LOCK-IN SPEED among cards that got every leg right.
+    Pays on the place curve; every place capped at 1,000&times; the entry; nobody in
+    the paid band takes less than 1.5&times; their entry. When a place hits the cap,
+    SAY SO on the row — otherwise identical figures read as a bug. The rake
+    percentage is NEVER displayed anywhere.</div>
+  <section class="hero" style="padding:44px 0 26px">
+    <div class="eyebrow">Tonight's board</div>
+    <h1 style="font-size:clamp(30px,5vw,52px)">Being right is the entry.<br>Being fast is the edge.</h1>
+  </section>
+  <section style="padding-top:0;border-top:none">
+    <div class="board" style="margin-top:0">
+      <div class="bh"><b>NBA · Sunday's marquee night</b> · settled · 100,000 entries · $1,000,000 pool</div>
+      <div class="row top"><span class="pl">1</span><span class="who">@triple_lock — perfect card, fastest in the room</span><span class="ts">0.71s</span><span class="pz">$10,000</span></div>
+      <div class="row"><span class="pl">2</span><span class="who">@thecousin — perfect card, hero band</span><span class="ts">0.94s</span><span class="pz">$7,594</span></div>
+      <div class="row"><span class="pl">3</span><span class="who">@nightshift_ny — perfect card, hero band</span><span class="ts">1.12s</span><span class="pz">$5,807</span></div>
+      <div class="row"><span class="pl">4</span><span class="who">@auntie_dee</span><span class="ts">1.40s</span><span class="pz">$3,871</span></div>
+      <div class="row"><span class="pl">5</span><span class="who">@fadedfive</span><span class="ts">1.63s</span><span class="pz">$3,226</span></div>
+      <div class="row"><span class="pl">50</span><span class="who">@thirdrowtay — paid on the place curve</span><span class="ts">6.44s</span><span class="pz">$645</span></div>
+      <div class="row"><span class="pl">250</span><span class="who">@sundayscholar — last place on the curve</span><span class="ts">41.2s</span><span class="pz">$155</span></div>
+      <div class="row"><span class="pl">20k</span><span class="who">Everyone else in the paid top 20%</span><span class="ts">—</span><span class="pz">$15 floor</span></div>
+      <div class="bf">20,000 of 100,000 entrants paid. Every payout is a multiple of <b>that player's own entry</b> — the band is earned on lock-in speed, never bought with a bigger entry. Nobody in the paid band takes less than 1.5&times; what they put in; nobody takes more than 1,000&times; it.</div>
+    </div>
+  </section>
+</div>
+
+<!-- ════════════════════════ VIEW: /championship — PLAYERS ════════════════ -->
+<div class="view" id="v-championship">
+  <div class="spec"><div class="h">The Championship — players' standings</div>
+    Four divisions by entry tier, year-round. Seats earned on WIN RATE inside
+    your division across the season — no buy-in to qualify, ever; that rule is
+    the firewall and it is never softened in copy. Lock-in speed seeds and
+    breaks ties. Boss Fox sets the six-leg finale — the ONLY slate that goes
+    past five. 1,000,000 paid seats with 10,000 FREE seats on top, never folded
+    into the million.</div>
+  <section class="hero" style="padding:44px 0 26px">
+    <div class="eyebrow">The Championship</div>
+    <h1 style="font-size:clamp(30px,5vw,52px)">$10,000,000 guaranteed.<br>No shortcut in.</h1>
+    <p class="quiet" style="max-width:58ch;margin-top:12px">One season. One seat. One champion per division. Play well enough, long enough, and you earn the finale — where the best player in each division takes the crown.</p>
+  </section>
+  <section style="padding-top:0;border-top:none">
+    <div class="eyebrow">Divisions</div>
+    <table style="margin-bottom:26px">
+      <tr><th>Division</th><th>Qualifies on</th><th>Cut line · win rate</th><th>Buy-in to qualify</th></tr>
+      <tr><td class="n">$5</td><td>Win rate in division, all season</td><td class="n">58.1%</td><td>none</td></tr>
+      <tr><td class="n">$10</td><td>Win rate in division, all season</td><td class="n">61.4%</td><td>none</td></tr>
+      <tr><td class="n">$25</td><td>Win rate in division, all season</td><td class="n">63.9%</td><td>none</td></tr>
+      <tr><td class="n">$50</td><td>Win rate in division, all season</td><td class="n">66.2%</td><td>none</td></tr>
+    </table>
+    <div class="grid g2">
+      <div class="panel coin"><h3>The seats</h3>
+        <ul class="tick">
+          <li>1,000,000 paid seats</li>
+          <li><b>10,000 free seats on top</b> — $0, no entry, no host fee</li>
+          <li>Seeded by lock-in speed across the season</li>
+        </ul></div>
+      <div class="panel act"><h3>The finale</h3>
+        <ul class="tick">
+          <li>Six legs, set by Boss Fox — the only slate past five</li>
+          <li>All six right, then lock-in speed ranks the top five</li>
+          <li>Champion per division</li>
+        </ul></div>
+    </div>
+  </section>
+</div>
+
+<!-- ════════════════════════ VIEW: /season — CREATOR TOURNAMENT ═══════════ -->
+<div class="view" id="v-season">
+  <div class="spec"><div class="h">The Season — hosts' standings (creator tournament)</div>
+    A SEPARATE track from the players' Championship — no host ever competes
+    against their own room. Hosts are ranked on PARTICIPANTS BROUGHT TO THE
+    BOARD, not followers. Quarterly brackets, finals Super Bowl week, Boss of
+    the Bosses. Crowns are Frank's figures. The creator-playoff PURSE for any
+    other prize is NOT set — never print a number Frank has not given.</div>
+  <section class="hero" style="padding:44px 0 26px">
+    <div class="eyebrow">The Season</div>
+    <h1 style="font-size:clamp(30px,5vw,52px)">Boss of the Bosses.</h1>
+    <p class="quiet" style="max-width:58ch;margin-top:12px">Twelve months. Fifty categories. One host ends the year as the boss of all of it — crowned Super Bowl week.</p>
+  </section>
+  <section style="padding-top:0;border-top:none">
+    <div class="eyebrow">The bill</div>
+    <div class="grid g3" style="margin-bottom:26px">
+      <div class="panel act"><span class="tag gold">Main event</span>
+        <h3 style="margin-top:8px">The Marquee Crown</h3>
+        <p class="mono" style="color:var(--gold);font-size:30px;font-weight:700;letter-spacing:-.02em">$25M</p>
+        <p class="quiet" style="font-size:13px">Winner take all · the biggest rooms on the platform</p></div>
+      <div class="panel"><span class="tag">Co-main</span>
+        <h3 style="margin-top:8px">The Boss Crown</h3>
+        <p class="mono" style="color:var(--gold);font-size:30px;font-weight:700;letter-spacing:-.02em">$10M</p>
+        <p class="quiet" style="font-size:13px">Winner take all · the category bosses</p></div>
+      <div class="panel"><span class="tag">Opener</span>
+        <h3 style="margin-top:8px">The Rising Crown</h3>
+        <p class="mono" style="color:var(--gold);font-size:30px;font-weight:700;letter-spacing:-.02em">$5M</p>
+        <p class="quiet" style="font-size:13px">Winner take all · everyone building toward a boss seat</p></div>
+    </div>
+
+    <div class="eyebrow">Host standings · quarter to date</div>
+    <table style="margin-bottom:24px">
+      <tr><th>Seed</th><th>Host</th><th>League</th><th>Per event</th><th>Quarter tally</th></tr>
+      <tr><td class="n">1</td><td>Example marquee host</td><td>Marquee</td><td class="n">1,500,000</td><td class="n">9,000,000</td></tr>
+      <tr><td class="n">2</td><td>Example boss host</td><td>Boss</td><td class="n">500,000</td><td class="n">3,000,000</td></tr>
+      <tr><td class="n">3</td><td>Example boss host</td><td>Boss</td><td class="n">500,000</td><td class="n">3,000,000</td></tr>
+      <tr><td class="n">4</td><td>Example rising host</td><td>Rising</td><td class="n">100,000</td><td class="n">600,000</td></tr>
+    </table>
+
+    <div class="grid g2">
+      <div class="panel cre"><h3>How a host is ranked</h3>
+        <ul class="tick">
+          <li>Participants brought to the board — not follower count</li>
+          <li>Quarterly brackets advance the top of each league</li>
+          <li>Finals: finalists host side by side, same night, same clock</li>
+        </ul></div>
+      <div class="panel coin"><h3>What a finalist plays for</h3>
+        <ul class="tick">
+          <li>Every finalist names a development project of their choosing</li>
+          <li>A share of the crown is paid to it directly, in their name</li>
+          <li>Set as a term of the published rules, not a handshake</li>
+        </ul></div>
+    </div>
+    <div class="eyebrow" style="margin-top:36px">The season — records, not purses</div>
+    <div class="spec"><div class="h">Season structure — RULED (Frank, Aug 23)</div>
+      <b>THREE SEMIFINALS, one every three months</b>, leading into the finals.
+      They are played for <b>DIVISION RECORDS, not cash</b> — the same way a sports
+      season is played for a record and a seed. <b>No payout during the season other
+      than what creators earn hosting.</b> Never render a purse, a prize or a payout
+      on a semifinal screen.<br><br>
+      <b>Division leaders are decided by CATEGORY.</b> Like the Oscars: the best
+      performer in a category — <b>most contests run, most paid out to their room</b> —
+      is that division's leader and qualifies for the finals. Every other creator
+      keeps hosting all season; they simply are not in the finals for the big prize.
+    </div>
+    <div class="grid g4" style="margin-top:16px">
+      <div class="panel"><h3>Semifinal 1</h3><p class="quiet" style="font-size:13.5px">Month 3 · records only</p></div>
+      <div class="panel"><h3>Semifinal 2</h3><p class="quiet" style="font-size:13.5px">Month 6 · records only</p></div>
+      <div class="panel"><h3>Semifinal 3</h3><p class="quiet" style="font-size:13.5px">Month 9 · records only</p></div>
+      <div class="panel act"><h3>The Finals</h3><p class="quiet" style="font-size:13.5px">Super Bowl week · the crowns</p></div>
+    </div>
+    <p class="quiet" style="margin-top:12px">A division leader is the category's best performer on the season: contests run and payouts delivered to their room. Fifty categories, fifty leaders, three leagues.</p>
+
+    <div class="eyebrow" style="margin-top:36px">The $50,000,000, allocated</div>
+    <table style="margin-bottom:10px">
+      <tr><th>Line</th><th>Goes to</th><th class="n" style="text-align:right">Amount</th></tr>
+      <tr><td>Icon crown</td><td>The winning Icon host</td><td class="n" style="text-align:right">$15,000,000</td></tr>
+      <tr><td>Icon cause</td><td>Their nonprofit / hometown project, paid direct</td><td class="n" style="text-align:right">$10,000,000</td></tr>
+      <tr><td>Legend crown</td><td>The winning Legend host</td><td class="n" style="text-align:right">$10,000,000</td></tr>
+      <tr><td>Legend cause match</td><td>Their project, paid direct</td><td class="n" style="text-align:right">$5,000,000</td></tr>
+      <tr><td>Hero crown</td><td>The winning Hero host</td><td class="n" style="text-align:right">$5,000,000</td></tr>
+      <tr><td>Hero cause match</td><td>Their project, paid direct</td><td class="n" style="text-align:right">$2,500,000</td></tr>
+      <tr><td><b>Division Leaders' Fund</b> <span class="tag" style="margin-left:6px">proposed</span></td><td>50 division leaders &times; $50,000 to each one's named project</td><td class="n" style="text-align:right">$2,500,000</td></tr>
+      <tr><td><b>Total</b></td><td>Season purse</td><td class="n" style="text-align:right"><b>$50,000,000</b></td></tr>
+    </table>
+    <p class="quiet">The Icon crown reads $25,000,000 publicly — $15M to the host and $10M to the cause, both named on the night. Cause payments are made by Lock In directly to each organisation, in the winner's name, never passing through the winner, and set as a term of the published rules.</p>
+
+    <div class="eyebrow" style="margin-top:36px">How the purse is funded</div>
+    <div class="spec"><div class="h">Funding — ruled, and NOT one event</div>
+      The crowns are <b>NOT</b> funded by the finals night. The purse ACCRUES across
+      the whole season: a percentage of the proceeds of every competition that leads
+      up to the finals, plus Lock In's own matching contribution. It builds over
+      however long it takes to more than cover the target. Never describe any single
+      event as covering the purse, and never tell a player their entry is a donation.</div>
+    <div class="grid g3" style="margin-top:16px">
+      <div class="panel cash"><h3>It builds all season</h3>
+        <p class="quiet" style="font-size:14px">A set percentage of the proceeds from every qualifying competition goes into the season purse. Every night hosted feeds the crowns.</p></div>
+      <div class="panel coin"><h3>Lock In matches</h3>
+        <p class="quiet" style="font-size:14px">The company adds its own matching contribution out of its retained share — never out of any player's pool.</p></div>
+      <div class="panel cre"><h3>Target: $50,000,000</h3>
+        <p class="quiet" style="font-size:14px">$25M · $10M · $5M are the three crowns. The remaining <b>$10M is not yet allocated</b> — Frank's ruling owed before it appears anywhere public.</p></div>
+    </div>
+
+    <div class="eyebrow" style="margin-top:36px">Where the marquee crown goes</div>
+    <div class="panel cre" style="margin-top:4px">
+      <h3>$10,000,000 to the winner's cause</h3>
+      <p class="quiet" style="font-size:14.5px">Of the $25,000,000 marquee crown, <b>$10,000,000 is directed to the winner's nonprofit or hometown development project of their choosing</b> — paid by Lock In directly to that organisation, in the winner's name, never passing through the winner. Set as a term of the published official rules, not a handshake. That is how the first one starts and how it ends.</p>
+    </div>
+
+    <div class="eyebrow" style="margin-top:36px">The finals — a national broadcast</div>
+    <div class="grid g2" style="margin-top:4px">
+      <div class="panel act"><h3>Aired and streamed from the platform</h3>
+        <ul class="tick">
+          <li>Nationally broadcast, and streamed on Lock In</li>
+          <li>Super Bowl week — the biggest attention week of the year</li>
+          <li>Every category has a live room on the night</li>
+        </ul></div>
+      <div class="panel"><h3>Room to room</h3>
+        <ul class="tick">
+          <li>A host runs every room, from the platform</li>
+          <li>The broadcast cuts room to room</li>
+          <li>Each cut reports that category's leaderboard live</li>
+          <li>One crown at the end: Boss of the Bosses</li>
+        </ul></div>
+    </div>
+
+    <p class="quiet" style="margin-top:22px">Complete official rules, eligibility, league placement and prize terms are published before the season opens and govern in all cases.</p>
+  </section>
+</div>
+
+<!-- ════════════════════════ VIEW: /admin/demo — HOW A SLATE WORKS ════════ -->
+<div class="view" id="v-demo">
+  <div class="spec"><div class="h">Demo — ADMIN ONLY · reached from the admin console, from nowhere else</div>
+    <b>This demo shows HOW A SLATE WORKS. Nothing else.</b> It is not a business
+    presentation.<br><br>
+    NOT in this demo, at all: payout splits, host earnings, keymaster or network
+    overrides, rake, revenue, "what a seat is worth", Championship or season
+    standings.<br><br>
+    NO REAL NAMES. The host is <b>Boss Fox</b>, the house creator. Players are
+    avatar placeholders — @player_one, @player_two. <b>No marquee or roster name
+    ever appears in a demo</b>, and the demo data module is
+    <b>import "server-only"</b> so no name list can reach a client bundle.<br><br>
+    It is click-through: the operator advances it a step at a time. Ten steps, and
+    every step must actually PLAY — a step that exists only as a title is not built.</div>
+  <section class="hero" style="padding:44px 0 26px">
+    <div class="eyebrow">Demo</div>
+    <h1 style="font-size:clamp(30px,5vw,52px)">How a slate works.</h1>
+    <p class="quiet" style="max-width:58ch;margin-top:12px">One topic, three questions, a sealed card and a clock. Step through it and watch what the host does and what the room sees.</p>
+  </section>
+  <section style="padding-top:0;border-top:none">
+    <div class="eyebrow">The ten steps</div>
+    <div class="grid g2">
+      <div class="panel cre"><h3>Building it</h3><ul class="tick">
+        <li><b>1 · Pick the topic.</b> Boss Fox takes one subject and nothing else.</li>
+        <li><b>2 · Leg one.</b> The Locksmith drafts it in the host's voice.</li>
+        <li><b>3 · A bad question.</b> The host writes one that breaks the rules.</li>
+        <li><b>4 · The rulebook blocks it</b> and names each violation on screen.</li>
+        <li><b>5 · Rewritten clean</b>, and leg three clears. Three legs, sealed.</li>
+      </ul></div>
+      <div class="panel act"><h3>Running it</h3><ul class="tick">
+        <li><b>6 · Publish sealed.</b> Nobody can see the card yet.</li>
+        <li><b>7 · The countdown.</b> The room fills while the card stays shut.</li>
+        <li><b>8 · Reveal.</b> Three questions, one clock, everybody at once.</li>
+        <li><b>9 · Locks land.</b> Answers in, times recorded to the millisecond.</li>
+        <li><b>10 · Settlement.</b> Each leg resolves against its named public source.</li>
+      </ul></div>
+    </div>
+
+    <div class="eyebrow" style="margin-top:34px">What the room sees at step 10</div>
+    <div class="board" style="margin-top:0">
+      <div class="bh"><b>Demo slate</b> · hosted by Boss Fox · settled</div>
+      <div class="row top"><span class="pl">1</span><span class="who">@player_one — all three legs right</span><span class="ts">0.71s</span><span class="pz">—</span></div>
+      <div class="row"><span class="pl">2</span><span class="who">@player_two — all three legs right</span><span class="ts">0.94s</span><span class="pz">—</span></div>
+      <div class="row"><span class="pl">3</span><span class="who">@player_three — all three legs right</span><span class="ts">1.12s</span><span class="pz">—</span></div>
+      <div class="bf">The demo stops here. Being right puts you on the board; being fast orders it. What each place pays is not part of this demo.</div>
+    </div>
+
+    <div class="btns"><a class="btn">Step through it</a><a class="btn ghost">Restart</a></div>
+    <p class="quiet" style="margin-top:14px">Admin console → Demo. This screen has no public route and appears in no navigation.</p>
+  </section>
+</div>
+
+</main>
+
+<footer><div class="wrap">
+  <div class="legal">Lock In is a skill contest platform. Every entrant answers the same questions at the
+  same moment; being right and being fast decides the outcome, and no one plays against a house.
+  Not gambling. Not sports betting. 18+. · Terms · Privacy · Rules &amp; eligibility · Responsible play</div>
+</div></footer>
+
+<!-- ═══ reference chrome — NOT part of the product ═══ -->
+<div class="refbar">
+  <div class="rt">Reference nav · not product chrome</div>
+  <a data-go="start" class="here">/start — front door</a>
+  <a data-go="creator">Creator lane</a>
+  <a data-go="advanced">Advanced lane</a>
+  <a data-go="beginner">Beginner (conversion)</a>
+  <a data-go="admin">Admin (exceptions)</a>
+  <a data-go="keymaster">Keymaster</a>
+  <a data-go="keyholder">Keyholder</a>
+  <a data-go="leaderboard">Contest leaderboard</a>
+  <a data-go="championship">Championship (players)</a>
+  <a data-go="season">The Season (hosts)</a>
+  <a data-go="demo">Presentation demo</a>
+  <div class="tog"><button id="t-anon">anonymous</button><button id="t-roles" class="on">signed in + roles</button></div>
+</div>
+
+<script>
+/* ── the category board ──────────────────────────────────────────────────
+   ONE array drives the grid. Add the remaining seats from CATEGORY_MAP_50
+   and the board fills itself — no markup changes. ruled:true = Frank's
+   own subcategory list. ruled:false = Claude's proposal, awaiting ruling. */
+var FAMILIES=[
+ {f:"Sports", cats:[
+  {n:"NFL",ruled:false,subs:["Sunday slate","Primetime","Draft night","Playoffs","Super Bowl week"]},
+  {n:"NBA",ruled:false,subs:["Regular season","Playoffs","Draft night","Trade deadline","All-Star weekend"]},
+  {n:"WNBA",ruled:true,subs:["Head-to-heads","Field leaders","The slate","The draft"]},
+  {n:"College Football / HBCU",ruled:false,subs:["Rivalry week","Bowl season","Classics","Signing day"]},
+  {n:"College Basketball",ruled:false,subs:["Conference play","March","Selection day"]},
+  {n:"Baseball",ruled:false,subs:["Regular season","Postseason","Trade deadline","Opening day"]},
+  {n:"Soccer",ruled:false,subs:["Premier League","Champions League","World Cup","Transfer window"]},
+  {n:"Combat — Boxing / MMA",ruled:false,subs:["Fight night","Undercards","Title fights","Weigh-ins"]},
+  {n:"Wrestling",ruled:true,subs:["The card","The rumble","The title","The promo"]},
+  {n:"Tennis",ruled:false,subs:["Grand Slams","Tour events","Rivalries"]},
+  {n:"Golf",ruled:false,subs:["Majors","Weekend rounds","Ryder Cup"]},
+  {n:"Motorsports",ruled:false,subs:["Race day","Qualifying","Season standings"]},
+  {n:"Track & Olympic",ruled:false,subs:["Championships","Trials","The Games"]},
+  {n:"Fitness & Physique",ruled:false,subs:["The Games","Olympia","Qualifiers"]}
+ ]},
+ {f:"Culture & entertainment", cats:[
+  {n:"Pop Culture",ruled:true,subs:["The Interview","The Response","The Room","The Drop","The Stage","The Feed"]},
+  {n:"Comedy",ruled:true,subs:["The special","The set","The roast","The response","The clip"]},
+  {n:"Reality TV",ruled:false,subs:["Reunions","Eliminations","Casting","Premieres"]},
+  {n:"Competition TV",ruled:false,subs:["Eliminations","Finales","Judging","Casting"]},
+  {n:"Music — Hip-Hop",ruled:false,subs:["First-week numbers","Release week","Features","Tour dates"]},
+  {n:"Music — R&B",ruled:false,subs:["Chart week","Release week","Award season","Collaborations"]},
+  {n:"Gospel & Inspiration",ruled:true,subs:["The charts","The stage","The tour","The Sunday"]},
+  {n:"Afrobeats & Global",ruled:false,subs:["Chart week","Festival sets","Collaborations"]},
+  {n:"Latin Music",ruled:false,subs:["Chart week","Release week","Award season"]},
+  {n:"Country & Crossover",ruled:false,subs:["Chart week","Award season","Collaborations"]},
+  {n:"K-Pop & Global Fandom",ruled:false,subs:["Comebacks","Chart milestones","Tour dates"]},
+  {n:"Film & Box Office",ruled:false,subs:["Opening weekend","Top ten","Award season"]},
+  {n:"TV Series & Streaming",ruled:false,subs:["Platform top tens","Renewals","Premieres","Finales"]},
+  {n:"Awards & Ceremonies",ruled:false,subs:["The broadcast","The carpet","The performances"]},
+  {n:"Fashion & Red Carpet",ruled:true,subs:["The carpet","The collection","The lists","The collab"]},
+  {n:"Food & Cooking TV",ruled:true,subs:["The judging","The elimination","The menu","The opening"]},
+  {n:"Daytime & Talk",ruled:false,subs:["The bookings","The show as aired","The moments"]},
+  {n:"Anime & Manga",ruled:false,subs:["Release dates","Adaptations","Box office"]},
+  {n:"Books & Lit",ruled:false,subs:["Bestseller lists","Club picks","Adaptations"]},
+  {n:"Festivals & Live Events",ruled:false,subs:["Lineups","Headliners","Set lists"]}
+ ]},
+ {f:"Digital & internet", cats:[
+  {n:"Streaming & Gaming",ruled:false,subs:["Milestones","Collabs","Events"]},
+  {n:"Esports",ruled:false,subs:["Tournament results","Rosters","Majors"]},
+  {n:"Video Game Releases",ruled:false,subs:["Launch dates","Sales milestones","Review aggregates"]},
+  {n:"Podcast Charts",ruled:false,subs:["Chart week","Guest bookings","Milestones"]},
+  {n:"Sneakers & Streetwear",ruled:false,subs:["Release calendar","Collabs","Sellouts"]},
+  {n:"Tech & Launch Events",ruled:false,subs:["The keynote","Ship dates","Reveals"]},
+  {n:"The Feed",ruled:false,subs:["Viral milestones","Platform counters","Trends"]},
+  {n:"Dance & Choreo",ruled:false,subs:["Competition results","Challenge milestones","Tours"]}
+ ]},
+ {f:"Lifestyle & community", cats:[
+  {n:"HBCU Bands & Halftime",ruled:false,subs:["The broadcast","Battle results","Classics"]},
+  {n:"Greek Life & Step",ruled:false,subs:["Competition results","Probates","Conventions"]},
+  {n:"Cars & Auto Culture",ruled:false,subs:["Auctions","Reveals","Show results"]},
+  {n:"Space & Science Events",ruled:false,subs:["Launches","Landings","Missions"]},
+  {n:"Chess & Mind Sports",ruled:false,subs:["Official results","Championships","Rating milestones"]}
+ ]},
+ {f:"Brand & lifestyle business", cats:[
+  {n:"Beauty & Cosmetics",ruled:false,subs:["Product launches","Collaborations","Award season"]},
+  {n:"Home & Design",ruled:false,subs:["Renovation shows","Reveals","Design awards"]},
+  {n:"Business & Brand Moves",ruled:false,subs:["Announcements","Launches & openings","Campaigns & ad buys"]}
+ ]}
+];
+var CATEGORIES=[]; FAMILIES.forEach(function(g){ g.cats.forEach(function(c){ CATEGORIES.push(c); }); });
+/* CUT — never render: Politics · Geopolitics · Crypto · Economics · Weather ·
+   True crime · High-school recruiting · Health · Astrology · Relationships */
+
+(function(){
+  var host=document.getElementById('catfamilies');
+  if(!host) return;
+  FAMILIES.forEach(function(g){
+    var h=document.createElement('div'); h.className='famlab'; h.textContent=g.f+' · '+g.cats.length;
+    host.appendChild(h);
+    var grid=document.createElement('div'); grid.className='catgrid';
+    g.cats.forEach(function(c,i){
+      var el=document.createElement('div'); el.className='cat';
+      el.innerHTML='<span class="n"></span><span class="cnt"></span><span class="chev">›</span>';
+      el.querySelector('.n').textContent=c.n;
+      el.querySelector('.cnt').textContent=c.subs.length;
+      el.onclick=function(){ toggle(grid,i,c,el); };
+      grid.appendChild(el);
+    });
+    host.appendChild(grid);
+  });
+  var subTotal=0; CATEGORIES.forEach(function(c){ subTotal+=c.subs.length; });
+  document.getElementById('cat-count').textContent =
+    CATEGORIES.length+' categories \u00b7 '+subTotal+' subcategories \u00b7 two funded seats per category is the hundred-host goal';
+
+  function closeAll(){
+    document.querySelectorAll('#catfamilies .subpanel').forEach(function(p){ p.remove(); });
+    document.querySelectorAll('#catfamilies .cat').forEach(function(c){ c.classList.remove('open'); });
+  }
+  function toggle(grid,i,c,me){
+    var wasOpen=me.classList.contains('open');
+    closeAll();
+    if(wasOpen) return;
+    me.classList.add('open');
+    var chips=[].slice.call(grid.querySelectorAll('.cat'));
+    var top=me.offsetTop, last=me;
+    chips.forEach(function(x){ if(Math.abs(x.offsetTop-top)<2) last=x; });
+    var panel=document.createElement('div'); panel.className='subpanel';
+    panel.innerHTML='<div class="sh"><span>'+c.n+'</span><span class="st'+(c.ruled?'':' prop')+'">'+
+      (c.ruled?'ruled':'proposed — needs Frank')+'</span></div><div class="subs"></div>';
+    var wrap=panel.querySelector('.subs');
+    c.subs.forEach(function(t){ var b=document.createElement('span'); b.className='sub'; b.textContent=t; wrap.appendChild(b); });
+    last.insertAdjacentElement('afterend', panel);
+  }
+  window.addEventListener('resize', closeAll);
+})();
+
+/* ── entry tiers → band ladder ────────────────────────────────────────────
+   RULED: three tiers per event, tier set by event size. The tier NEVER moves
+   you between bands — lock-in speed does. The band multiplier applies to the
+   player's own entry, which is why every figure below is a function of it. */
+var EVENT_CLASSES={
+  icon:   {label:"Icon",   host:"the marquee names", tiers:[50,25,10]},
+  legend: {label:"Legend", host:"10M",               tiers:[25,15,10]},
+  hero:   {label:"Hero",   host:"5M",                tiers:[15,10,5]}
+};
+/* Payout bands. The top band and the floor are RULED; the middle rungs are
+   placeholders. The multiple always applies to the player's OWN entry. */
+var BANDS=[
+ {mult:1000, seats:"5",      who:"Top band — the five fastest perfect cards"},
+ {mult:500,  seats:"20",     who:"Second band"},
+ {mult:250,  seats:"40",     who:"Third band"},
+ {mult:100,  seats:"100",    who:"Fourth band"},
+ {mult:25,   seats:"~960",   who:"Fifth band"},
+ {mult:1.5,  seats:"the rest",who:"The floor — everyone else in the paid top 20%", floor:true}
+];
+(function(){
+  var clsPick=document.getElementById('classpick'),
+      pick=document.getElementById('tierpick'),
+      note=document.getElementById('tiernote'),
+      ladder=document.getElementById('bandladder');
+  if(!clsPick||!pick||!ladder) return;
+  function money(n){ return "$"+Math.round(n).toLocaleString("en-US"); }
+  function drawLadder(entry){
+    ladder.innerHTML="";
+    BANDS.forEach(function(b){
+      var el=document.createElement('div');
+      el.className='bandrow'+(b.floor?' floor':'');
+      el.innerHTML='<span class="mult">'+(b.floor?'1.5&times;':b.mult.toLocaleString()+'&times;')+'</span>'+
+        '<span class="who">'+b.who+' <span class="tag" style="margin-left:6px">'+b.seats+'</span></span>'+
+        '<span class="pay">'+money(b.mult*entry)+'</span>';
+      ladder.appendChild(el);
+    });
+  }
+  function drawTiers(key){
+    var c=EVENT_CLASSES[key];
+    pick.innerHTML="";
+    c.tiers.forEach(function(amt,i){
+      var t=document.createElement('div');
+      t.className='tier'+(i===0?' on':'');
+      t.innerHTML='<div class="amt">$'+amt+'</div><div class="lbl">entry</div>';
+      t.onclick=function(){
+        pick.querySelectorAll('.tier').forEach(function(x){ x.classList.remove('on'); });
+        t.classList.add('on'); drawLadder(amt);
+      };
+      pick.appendChild(t);
+    });
+    note.innerHTML=c.label+' event \u00b7 hosted by '+c.host+' \u00b7 tiers '+
+      c.tiers.map(function(a){ return "$"+a; }).join(" / ")+
+      '. Same three questions, same clock, same board for everyone in the room.';
+    drawLadder(c.tiers[0]);
+  }
+  clsPick.querySelectorAll('[data-cls]').forEach(function(t){
+    t.onclick=function(){
+      clsPick.querySelectorAll('[data-cls]').forEach(function(x){ x.className='tag'; });
+      t.className='tag gold'; drawTiers(t.dataset.cls);
+    };
+  });
+  drawTiers('icon');
+})();
+
+/* Router: every lane opens ITS OWN view.
+   LANES a signed-in player may move between: creator, advanced, beginner.
+   STAFF lanes are reached from /start only, by a flag-holder. The DEMO is
+   reachable ONLY from inside the admin console — never a nav item anywhere. */
+var PLAYER_LANES={creator:"Creator",advanced:"Advanced",beginner:"Beginner"};
+var STAFF_LANES={admin:"Admin",keymaster:"Keymaster",keyholder:"Keyholder",demo:"Presentation demo"};
+function go(id){
+  document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('on'); });
+  var t=document.getElementById('v-'+id); if(t) t.classList.add('on');
+  var bar=document.getElementById('lanebar');
+  var name=PLAYER_LANES[id]||STAFF_LANES[id];
+  if(name){
+    var links='';
+    if(PLAYER_LANES[id]){
+      Object.keys(PLAYER_LANES).forEach(function(k){
+        if(k!==id) links+='<a data-go="'+k+'">'+PLAYER_LANES[k]+'</a>';
+      });
+    }
+    bar.className='on';
+    bar.innerHTML='<div class="wrap"><div class="lb"><span class="now">'+name+'</span>'+
+      links+'<a data-go="start">Switch lane</a><a>Sign out</a></div></div>';
+  } else { bar.className=''; bar.innerHTML=''; }
+  document.querySelectorAll('.refbar [data-go]').forEach(function(a){
+    a.classList.toggle('here', a.dataset.go===id);
+  });
+  window.scrollTo({top:0});
+}
+document.addEventListener('click',function(e){
+  var a=e.target.closest('[data-go]'); if(!a) return;
+  e.preventDefault(); go(a.dataset.go);
+});
+document.getElementById('t-anon').onclick=function(){
+  document.body.classList.remove('roles'); this.classList.add('on');
+  document.getElementById('t-roles').classList.remove('on');
+};
+document.getElementById('t-roles').onclick=function(){
+  document.body.classList.add('roles'); this.classList.add('on');
+  document.getElementById('t-anon').classList.remove('on');
+};
+</script>
+</body></html>
