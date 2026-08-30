@@ -8,6 +8,7 @@ import { getCurrentUserProfile } from "@/lib/firebase/session";
 import { COLLECTIONS } from "@/lib/firebase/types";
 import { CATEGORIES } from "@/lib/categories";
 import { getJurisdiction, evaluatePaidEntry } from "@/lib/eligibility";
+import { isMobile, isCashSportsCategory } from "@/lib/surface";
 import { suggestOddsMock, type OddsSuggestion } from "@/lib/ai/probability";
 import { notifyFollowersNewSlate } from "@/lib/notifications/send";
 import { detectBannedArchetype } from "@/lib/contest/questionEngine";
@@ -94,6 +95,13 @@ export async function createSlate(
   const tierKeys = new Set(input.tiers.map((t) => t.tier));
   if (tierKeys.size !== input.tiers.length) {
     return { ok: false, error: "Duplicate entry tier" };
+  }
+
+  // SURFACE GATE, WRITE SIDE — every slate here carries at least one paid tier (the schema requires
+  // it), so hosting IS cash hosting. Fail closed on a non-cash-sports category from the mobile
+  // surface: hiding it from the feed isn't enough if a creator could still publish it from the app.
+  if (!isCashSportsCategory(input.category) && isMobile()) {
+    return { ok: false, error: "This category isn't available to host from the app." };
   }
   // COMPLIANCE — reject any banned archetype before publish: team/game outcome, spread, combined
   // total, over/under, or a single-athlete numeric threshold. Over/under is banned outright.

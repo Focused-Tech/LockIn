@@ -25,6 +25,7 @@ import {
   evaluatePaidEntry,
   type PaidGateCode,
 } from "@/lib/eligibility";
+import { isMobile, isCashSportsCategory } from "@/lib/surface";
 
 export interface SubmitParlayInput {
   picks: { slateId: string; predictionId: string; pickValue: "a" | "b" }[];
@@ -64,6 +65,7 @@ export async function submitCrossParlay(
 
   const db = adminDb();
   const now = Date.now();
+  const paidOnMobile = !input.free && isMobile();
 
   // Validate each pick against live, unlocked slates; capture lock times.
   const resolved: CrossParlayPick[] = [];
@@ -74,6 +76,11 @@ export async function submitCrossParlay(
     const lockMs = slate.lockTime?.toMillis?.() ?? 0;
     if (slate.status !== "live" || lockMs <= now) {
       return { ok: false, error: "A selected contest is no longer open" };
+    }
+    // SURFACE GATE, WRITE SIDE — same rule as the single-slate entry: a paid leg on a non-cash-sports
+    // slate is refused from the mobile surface, per leg, since a chain spans multiple slates.
+    if (paidOnMobile && !isCashSportsCategory(slate.category)) {
+      return { ok: false, error: "This contest isn't offered in the app." };
     }
     const predSnap = await slateSnap.ref
       .collection(COLLECTIONS.predictions)

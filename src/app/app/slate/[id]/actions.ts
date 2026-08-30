@@ -21,6 +21,7 @@ import {
   PERJURY_ATTESTATION_VERSION,
   type PaidGateCode,
 } from "@/lib/eligibility";
+import { isMobile, isCashSlate, isCashSportsCategory } from "@/lib/surface";
 
 /**
  * §2 — record the player's penalty-of-perjury RESIDENCE ATTESTATION (the cash-entry gate). This is
@@ -120,6 +121,13 @@ export async function submitEntry(
   );
   if (bannedLeg)
     return { ok: false, error: "This contest is under review and can't be entered." };
+
+  // SURFACE GATE, WRITE SIDE (Part A closes the read side only — feed/direct-link/share/embed/tRPC).
+  // Cash entertainment must not be enterable from the app even with a known slate id: fail closed on
+  // a paid entry in a non-cash-sports category, from the mobile surface. Coin entries are unaffected.
+  if (!input.free && isCashSlate(slate) && !isCashSportsCategory(slate.category) && isMobile()) {
+    return { ok: false, error: "This contest isn't offered in the app." };
+  }
 
   // §2.3 — re-enforce ONE-PLAYER-PER-GAME at ENTRY (not only at publish). Any archetype leg that
   // violates validateLeg (questionEngine.ts:75) rejects the whole entry.

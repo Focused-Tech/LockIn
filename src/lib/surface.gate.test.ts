@@ -10,9 +10,11 @@
  * Negative controls throughout: every "it is gone on mobile" assertion is paired with the same call
  * on the web surface showing it IS there, so a gate that simply returned nothing would fail.
  */
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 vi.mock("server-only", () => ({}));
 
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import {
   resolveSurface,
   isCashSlate,
@@ -305,5 +307,76 @@ describe("CreatorBuilder — sports-only on the mobile surface", () => {
     // no hardcoded local entertainment string can slip back in ahead of the CASH_SPORTS_CATEGORIES
     // branch — it must come from the one architect-set list the server-side gate also reads.
     expect(src).not.toMatch(/isMobile\(\)\s*\?\s*\[[^\]]*Reality TV/);
+  });
+});
+
+/* ══ 6. THE WRITE SIDE — Frank's 2026-08-27 ruling: "five of seven surfaces gated is functionally
+ * zero, because the two that are open are the two where money moves." §1-5 above only prove the
+ * READ side (a hidden slate isn't served). This proves the actual transaction is refused too: a
+ * paid entry / a hosted slate in a non-cash-sports category, submitted from the mobile surface,
+ * fails at the server — with the identical call succeeding on web. Both directions, same shape as
+ * the age negative control (src/lib/eligibility/eligibility.test.ts).
+ *
+ * submitEntry / createSlate / submitCrossParlay each call `isMobile()` bare (no surface argument),
+ * so proving both directions means overriding CURRENT_SURFACE itself — module-reset + a fresh import,
+ * same technique the age negative control uses for STATE_MIN_AGE. */
+describe("write-side surface gate — the same boolean the actions call, both directions", () => {
+  const ENV_KEY = "NEXT_PUBLIC_SURFACE";
+  const original = process.env[ENV_KEY];
+
+  afterEach(() => {
+    if (original === undefined) delete process.env[ENV_KEY];
+    else process.env[ENV_KEY] = original;
+    vi.resetModules();
+  });
+
+  it("BLOCKS a cash entertainment write on the mobile surface", async () => {
+    vi.resetModules();
+    delete process.env[ENV_KEY]; // unset → CURRENT_SURFACE defaults to "mobile"
+    const { isMobile, isCashSportsCategory } = await import("./surface");
+    const category = "Entertainment";
+    const refused = !isCashSportsCategory(category) && isMobile();
+    console.log("[write-side gate] mobile surface, Entertainment, paid write attempt → refused:", refused);
+    expect(refused).toBe(true);
+  });
+
+  it("ALLOWS the identical write on the web surface — same category, different surface", async () => {
+    vi.resetModules();
+    process.env[ENV_KEY] = "web";
+    const { isMobile, isCashSportsCategory } = await import("./surface");
+    const category = "Entertainment";
+    const refused = !isCashSportsCategory(category) && isMobile();
+    console.log("[write-side gate] web surface, Entertainment, paid write attempt → refused:", refused);
+    expect(refused).toBe(false);
+  });
+
+  it("cash SPORTS is never refused on either surface — the line is category, not platform", async () => {
+    vi.resetModules();
+    delete process.env[ENV_KEY];
+    const { isMobile, isCashSportsCategory } = await import("./surface");
+    expect(!isCashSportsCategory("NFL") && isMobile()).toBe(false);
+  });
+
+  it("all three write paths call the gate before touching the transaction/balance", () => {
+    const sites: { file: string; balanceMarker: string }[] = [
+      { file: "src/app/app/slate/[id]/actions.ts", balanceMarker: "cashBalanceCents: user.cashBalanceCents -" },
+      { file: "src/app/app/create/actions.ts", balanceMarker: "batch.set(slateRef" },
+      { file: "src/components/cross-parlay/actions.ts", balanceMarker: "cashBalanceCents: user.cashBalanceCents -" },
+    ];
+    for (const { file, balanceMarker } of sites) {
+      const src = readFileSync(resolve(process.cwd(), file), "utf8");
+      expect(src).toContain("isCashSportsCategory");
+      expect(src).toContain("isMobile()");
+      const gateIdx = src.indexOf("isCashSportsCategory");
+      const writeIdx = src.indexOf(balanceMarker);
+      expect(writeIdx).toBeGreaterThan(gateIdx);
+    }
+  });
+
+  it("coin writes are unaffected — the gate only fires on a paid/cash write", () => {
+    const entry = readFileSync(resolve(process.cwd(), "src/app/app/slate/[id]/actions.ts"), "utf8");
+    expect(entry).toMatch(/!input\.free\s*&&\s*isCashSlate\(slate\)\s*&&\s*!isCashSportsCategory/);
+    const parlay = readFileSync(resolve(process.cwd(), "src/components/cross-parlay/actions.ts"), "utf8");
+    expect(parlay).toContain("paidOnMobile = !input.free && isMobile()");
   });
 });
